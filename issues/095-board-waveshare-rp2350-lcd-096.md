@@ -8,7 +8,7 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **Small fix:** `emitC` struct typedef topo-order (same as `emitH`) so cross-module struct fields compile |
-| Where does the code live? | [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) (mirror also under [`boards/waveshare_rp2350_lcd_096/`](../boards/waveshare_rp2350_lcd_096/)) |
+| Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.1.0` |
 | Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.6.0` (`*_rp2350`) |
 | Board extras | Pin map + ST7735S 160×80 driver + examples |
 
