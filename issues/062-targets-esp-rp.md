@@ -30,7 +30,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 
 ## What is not out of the box
 
-- generic board pack / Klin-tree `examples/rp2040/…` (lives in [`machine_rp`](https://github.com/klin-lang/machine_rp); Waveshare RP2350-LCD-0.96 staged under [`boards/waveshare_rp2350_lcd_096/`](../boards/waveshare_rp2350_lcd_096/) → [095](095-board-waveshare-rp2350-lcd-096.md))
+- generic board pack / Klin-tree `examples/rp2040/…` (lives in [`machine_rp`](https://github.com/klin-lang/machine_rp); Waveshare RP2350-LCD-0.96 → [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) [095](095-board-waveshare-rp2350-lcd-096.md))
 - automatic ESP-IDF or pico-sdk in Klin CLI (example ships its own `idf.py` flow)
 - freestanding ESP image (no IDF)
 - Classic Xtensa ESP32 / C6 / S3 ports

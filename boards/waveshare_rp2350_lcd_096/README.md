@@ -3,6 +3,9 @@
 Board pack for [Waveshare RP2350-LCD-0.96](https://www.waveshare.com/wiki/RP2350-LCD-0.96)
 in [Klin](https://github.com/klin-lang/klin).
 
+**Canonical repo:** https://github.com/klin-lang/waveshare_rp2350_lcd_096  
+This tree under `klin` is a working mirror for the compiler PR / emitC fix.
+
 Not a MicroPython port. No GC, no hidden heap, no hidden clocks.
 
 Chip API: [`machine_rp`](https://github.com/klin-lang/machine_rp) (`*_rp2350`).
@@ -50,8 +53,7 @@ fn main() {
 
 ```sh
 klin get github/klin-lang/machine_rp@v0.6.0
-# after this pack is published:
-# klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.1.0
+klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.1.0
 ```
 
 ## Examples (Arm Cortex-M33)
@@ -64,13 +66,6 @@ make elf                # needs arm-none-eabi-gcc
 ```
 
 Flash the `.elf` / UF2 with your usual Pico 2 / RP2350 flow (picotool, OpenOCD, …).
-
-## Staging note
-
-While this tree lives under `klin` at `boards/waveshare_rp2350_lcd_096/`, the
-intended home is **`github.com/klin-lang/waveshare_rp2350_lcd_096`** (same
-layout: top-level `waveshare_rp2350_lcd_096/` module + `examples/`). Copy or
-`git subtree split` when the empty org repo exists.
 
 ## License
 

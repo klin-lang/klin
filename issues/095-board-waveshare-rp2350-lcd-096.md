@@ -1,6 +1,6 @@
 # 095 — Board pack: Waveshare RP2350-LCD-0.96
 
-**Status:** ✅ MVP staged (`@v0.1.0` layout); promote to own GitHub repo when created  
+**Status:** ✅ MVP published `@v0.1.0`  
 **Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [010](010-bare-metal.md); board pack UX [075](075-board-pack-init-host.md)
 
 ## Verdict
@@ -8,7 +8,7 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **Small fix:** `emitC` struct typedef topo-order (same as `emitH`) so cross-module struct fields compile |
-| Where does the code live? | Staged: [`boards/waveshare_rp2350_lcd_096/`](../boards/waveshare_rp2350_lcd_096/) → intended [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) |
+| Where does the code live? | [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) (mirror also under [`boards/waveshare_rp2350_lcd_096/`](../boards/waveshare_rp2350_lcd_096/)) |
 | Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.6.0` (`*_rp2350`) |
 | Board extras | Pin map + ST7735S 160×80 driver + examples |
 
@@ -24,22 +24,16 @@
 - PIO / DMA LCD, fonts, framebuffer heap
 - `klin init <board>` automation ([075](075-board-pack-init-host.md))
 
-## Promote to own repo
+## Published
 
 ```sh
-# After creating empty github.com/klin-lang/waveshare_rp2350_lcd_096:
-git subtree split -P boards/waveshare_rp2350_lcd_096 -b board-ws-rp2350
-git push git@github.com:klin-lang/waveshare_rp2350_lcd_096.git board-ws-rp2350:main
-```
-
-Then:
-
-```sh
+klin get github/klin-lang/machine_rp@v0.6.0
 klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.1.0
 ```
 
 ## Links
 
+- Repo: https://github.com/klin-lang/waveshare_rp2350_lcd_096  
 - Wiki: https://www.waveshare.com/wiki/RP2350-LCD-0.96  
 - Chip port: [062](062-targets-esp-rp.md) / [`machine_rp`](https://github.com/klin-lang/machine_rp)  
 - Board pack model: [075](075-board-pack-init-host.md)  
