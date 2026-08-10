@@ -1,0 +1,65 @@
+/// Waveshare RP2350-LCD-0.96 pin map (CircuitPython / Arduino / wiki).
+/// No onboard NeoPixel in the CircuitPython board def — blink = LCD backlight.
+module waveshare_rp2350_lcd_096
+
+/// ST7735S SPI unit (SPI1).
+pub fn lcd_spi(): i32 {
+    return 1
+}
+
+pub fn lcd_dc(): i32 {
+    return 8
+}
+
+pub fn lcd_cs(): i32 {
+    return 9
+}
+
+pub fn lcd_sclk(): i32 {
+    return 10
+}
+
+pub fn lcd_mosi(): i32 {
+    return 11
+}
+
+pub fn lcd_rst(): i32 {
+    return 12
+}
+
+/// Backlight (PWM-capable).
+pub fn lcd_bl(): i32 {
+    return 25
+}
+
+/// Dummy MISO for `machine.spi_out_rp2350` (LCD is write-only).
+pub fn lcd_miso_unused(): i32 {
+    return 13
+}
+
+pub fn lcd_width(): i32 {
+    return 160
+}
+
+pub fn lcd_height(): i32 {
+    return 80
+}
+
+/// ST7735S window offsets (Waveshare 160×80).
+pub fn lcd_x_offset(): i32 {
+    return 1
+}
+
+pub fn lcd_y_offset(): i32 {
+    return 26
+}
+
+/// VBUS sense (input).
+pub fn vbus_sense(): i32 {
+    return 24
+}
+
+/// Battery / voltage monitor ADC GPIO (GP29 = ADC3).
+pub fn voltage_monitor(): i32 {
+    return 29
+}

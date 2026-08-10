@@ -1,0 +1,267 @@
+/// ST7735S 160×80 IPS on Waveshare RP2350-LCD-0.96 (4-wire SPI).
+/// Init / offsets match Waveshare Pico-LCD-0.96 MicroPython demo.
+module waveshare_rp2350_lcd_096
+
+import "github/klin-lang/machine_rp" machine
+
+pub struct Lcd {
+    spi: machine.Spi
+    dc: machine.Pin
+    cs: machine.Pin
+    rst: machine.Pin
+    bl: machine.Pin
+    width: i32
+    height: i32
+}
+
+fn spi_put(lcd: Lcd, b: i32) {
+    let drain = lcd.spi.write_read_u8(b & 255)
+    let _keep = drain * 0
+}
+
+fn write_cmd(lcd: Lcd, cmd: i32) {
+    lcd.dc.low()
+    lcd.cs.low()
+    spi_put(lcd, cmd)
+    lcd.cs.high()
+}
+
+fn write_data_u8(lcd: Lcd, v: i32) {
+    lcd.dc.high()
+    lcd.cs.low()
+    spi_put(lcd, v)
+    lcd.cs.high()
+}
+
+fn write_color(lcd: Lcd, color: i32) {
+    // Waveshare buffer order: low byte then high byte of the 16-bit constant.
+    write_data_u8(lcd, color & 255)
+    write_data_u8(lcd, (color >> 8) & 255)
+}
+
+fn soft_reset(lcd: Lcd) {
+    lcd.rst.high()
+    delay_ms(20)
+    lcd.rst.low()
+    delay_ms(20)
+    lcd.rst.high()
+    delay_ms(20)
+}
+
+/// Open SPI1 + control pins and run ST7735S init. `peri_clk_hz` = clk_peri (explicit).
+pub fn lcd_out(peri_clk_hz: i32, spi_baud_hz: i32): Lcd {
+    let spi = machine.spi_out_rp2350(
+        lcd_spi(),
+        lcd_sclk(),
+        lcd_mosi(),
+        lcd_miso_unused(),
+        peri_clk_hz,
+        spi_baud_hz,
+        0
+    )
+    let dc = machine.pin_out_rp2350(lcd_dc())
+    let cs = machine.pin_out_rp2350(lcd_cs())
+    let rst = machine.pin_out_rp2350(lcd_rst())
+    let bl = machine.pin_out_rp2350(lcd_bl())
+    cs.high()
+    dc.high()
+    bl.high()
+
+    let lcd = Lcd{
+        spi: spi,
+        dc: dc,
+        cs: cs,
+        rst: rst,
+        bl: bl,
+        width: lcd_width(),
+        height: lcd_height()
+    }
+    lcd_init(lcd)
+    return lcd
+}
+
+fn lcd_init(lcd: Lcd) {
+    soft_reset(lcd)
+
+    write_cmd(lcd, 0x11) // SLPOUT
+    delay_ms(120)
+
+    write_cmd(lcd, 0x21) // INVON
+    write_cmd(lcd, 0x21)
+
+    write_cmd(lcd, 0xB1)
+    write_data_u8(lcd, 0x05)
+    write_data_u8(lcd, 0x3A)
+    write_data_u8(lcd, 0x3A)
+
+    write_cmd(lcd, 0xB2)
+    write_data_u8(lcd, 0x05)
+    write_data_u8(lcd, 0x3A)
+    write_data_u8(lcd, 0x3A)
+
+    write_cmd(lcd, 0xB3)
+    write_data_u8(lcd, 0x05)
+    write_data_u8(lcd, 0x3A)
+    write_data_u8(lcd, 0x3A)
+    write_data_u8(lcd, 0x05)
+    write_data_u8(lcd, 0x3A)
+    write_data_u8(lcd, 0x3A)
+
+    write_cmd(lcd, 0xB4)
+    write_data_u8(lcd, 0x03)
+
+    write_cmd(lcd, 0xC0)
+    write_data_u8(lcd, 0x62)
+    write_data_u8(lcd, 0x02)
+    write_data_u8(lcd, 0x04)
+
+    write_cmd(lcd, 0xC1)
+    write_data_u8(lcd, 0xC0)
+
+    write_cmd(lcd, 0xC2)
+    write_data_u8(lcd, 0x0D)
+    write_data_u8(lcd, 0x00)
+
+    write_cmd(lcd, 0xC3)
+    write_data_u8(lcd, 0x8D)
+    write_data_u8(lcd, 0x6A)
+
+    write_cmd(lcd, 0xC4)
+    write_data_u8(lcd, 0x8D)
+    write_data_u8(lcd, 0xEE)
+
+    write_cmd(lcd, 0xC5)
+    write_data_u8(lcd, 0x0E)
+
+    write_cmd(lcd, 0xE0)
+    write_data_u8(lcd, 0x10)
+    write_data_u8(lcd, 0x0E)
+    write_data_u8(lcd, 0x02)
+    write_data_u8(lcd, 0x03)
+    write_data_u8(lcd, 0x0E)
+    write_data_u8(lcd, 0x07)
+    write_data_u8(lcd, 0x02)
+    write_data_u8(lcd, 0x07)
+    write_data_u8(lcd, 0x0A)
+    write_data_u8(lcd, 0x12)
+    write_data_u8(lcd, 0x27)
+    write_data_u8(lcd, 0x37)
+    write_data_u8(lcd, 0x00)
+    write_data_u8(lcd, 0x0D)
+    write_data_u8(lcd, 0x0E)
+    write_data_u8(lcd, 0x10)
+
+    write_cmd(lcd, 0xE1)
+    write_data_u8(lcd, 0x10)
+    write_data_u8(lcd, 0x0E)
+    write_data_u8(lcd, 0x03)
+    write_data_u8(lcd, 0x03)
+    write_data_u8(lcd, 0x0F)
+    write_data_u8(lcd, 0x06)
+    write_data_u8(lcd, 0x02)
+    write_data_u8(lcd, 0x08)
+    write_data_u8(lcd, 0x0A)
+    write_data_u8(lcd, 0x13)
+    write_data_u8(lcd, 0x26)
+    write_data_u8(lcd, 0x36)
+    write_data_u8(lcd, 0x00)
+    write_data_u8(lcd, 0x0D)
+    write_data_u8(lcd, 0x0E)
+    write_data_u8(lcd, 0x10)
+
+    write_cmd(lcd, 0x3A) // COLMOD RGB565
+    write_data_u8(lcd, 0x05)
+
+    write_cmd(lcd, 0x36) // MADCTL landscape
+    write_data_u8(lcd, 0xA8)
+
+    write_cmd(lcd, 0x29) // DISPON
+}
+
+pub fn (lcd: Lcd) backlight(on: bool) {
+    if on {
+        lcd.bl.high()
+    } else {
+        lcd.bl.low()
+    }
+}
+
+pub fn (lcd: Lcd) set_window(x0: i32, y0: i32, x1: i32, y1: i32) {
+    let xs = x0 + lcd_x_offset()
+    let xe = x1 + lcd_x_offset()
+    let ys = y0 + lcd_y_offset()
+    let ye = y1 + lcd_y_offset()
+
+    write_cmd(lcd, 0x2A) // CASET
+    write_data_u8(lcd, 0x00)
+    write_data_u8(lcd, xs)
+    write_data_u8(lcd, 0x00)
+    write_data_u8(lcd, xe)
+
+    write_cmd(lcd, 0x2B) // RASET
+    write_data_u8(lcd, 0x00)
+    write_data_u8(lcd, ys)
+    write_data_u8(lcd, 0x00)
+    write_data_u8(lcd, ye)
+
+    write_cmd(lcd, 0x2C) // RAMWR
+}
+
+pub fn (lcd: Lcd) fill(color: i32) {
+    lcd.fill_rect(0, 0, lcd.width, lcd.height, color)
+}
+
+pub fn (lcd: Lcd) fill_rect(x: i32, y: i32, w: i32, h: i32, color: i32) {
+    if w <= 0 {
+        return
+    }
+    if h <= 0 {
+        return
+    }
+    let x1 = x + w - 1
+    let y1 = y + h - 1
+    lcd.set_window(x, y, x1, y1)
+
+    // Stream pixels with CS held low (faster than per-byte CS toggle).
+    lcd.dc.high()
+    lcd.cs.low()
+    let lo = color & 255
+    let hi = (color >> 8) & 255
+    let mut n = w * h
+    while n > 0 {
+        spi_put(lcd, lo)
+        spi_put(lcd, hi)
+        n = n - 1
+    }
+    lcd.cs.high()
+}
+
+pub fn (lcd: Lcd) pixel(x: i32, y: i32, color: i32) {
+    if x < 0 {
+        return
+    }
+    if y < 0 {
+        return
+    }
+    if x >= lcd.width {
+        return
+    }
+    if y >= lcd.height {
+        return
+    }
+    lcd.set_window(x, y, x, y)
+    write_color(lcd, color)
+}
+
+pub fn (lcd: Lcd) hline(x: i32, y: i32, w: i32, color: i32) {
+    lcd.fill_rect(x, y, w, 1, color)
+}
+
+pub fn (lcd: Lcd) vline(x: i32, y: i32, h: i32, color: i32) {
+    lcd.fill_rect(x, y, 1, h, color)
+}
+
+pub fn (lcd: Lcd) deinit() {
+    lcd.backlight(false)
+    lcd.spi.deinit()
+}

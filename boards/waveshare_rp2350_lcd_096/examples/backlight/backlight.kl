@@ -1,0 +1,13 @@
+/// Blink LCD backlight (GP25) — simplest “alive” demo on RP2350-LCD-0.96.
+import "github/klin-lang/machine_rp" machine
+import "../../waveshare_rp2350_lcd_096" board
+
+@[link("startup.s")]
+@[link("image_def.S")]
+fn main() {
+    let bl = machine.pin_out_rp2350(board.lcd_bl())
+    while true {
+        bl.toggle()
+        board.delay_ms(300)
+    }
+}

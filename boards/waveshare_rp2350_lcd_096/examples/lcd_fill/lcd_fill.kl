@@ -1,0 +1,23 @@
+/// Cycle solid colors on the 160×80 ST7735S.
+import "../../waveshare_rp2350_lcd_096" board
+
+@[link("startup.s")]
+@[link("image_def.S")]
+fn main() {
+    // Default clk_peri ≈ ROSC; keep SPI modest until a clock tree is set.
+    let lcd = board.lcd_out(12000000, 1000000)
+    lcd.backlight(true)
+
+    while true {
+        lcd.fill(board.color_red())
+        board.delay_ms(400)
+        lcd.fill(board.color_green())
+        board.delay_ms(400)
+        lcd.fill(board.color_blue())
+        board.delay_ms(400)
+        lcd.fill(board.color_white())
+        board.delay_ms(400)
+        lcd.fill(board.color_black())
+        board.delay_ms(400)
+    }
+}

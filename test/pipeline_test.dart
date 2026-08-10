@@ -4078,6 +4078,38 @@ fn main() {}
     expect(h, contains('klin_take_outer'));
   });
 
+  test('emitC emits nested struct typedefs before dependents', () {
+    // Declaration order Outer → Mid → Inner must still typedef Inner first.
+    const source = '''
+struct Outer {
+  mid: Mid
+}
+struct Mid {
+  inner: Inner
+}
+struct Inner {
+  x: i32
+}
+fn main() {
+  let o = Outer{ mid: Mid{ inner: Inner{ x: 1 } } }
+  let _ = o.mid.inner.x
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'struct_order.kl');
+    // Typedef close lines: "} <module>_Inner;" — use the closing tag to avoid
+    // matching field type mentions inside later structs.
+    final innerTd = c.indexOf('} Inner;');
+    final midTd = c.indexOf('} Mid;');
+    final outerTd = c.indexOf('} Outer;');
+    expect(innerTd, greaterThanOrEqualTo(0));
+    expect(midTd, greaterThanOrEqualTo(0));
+    expect(outerTd, greaterThanOrEqualTo(0));
+    expect(innerTd, lessThan(midTd));
+    expect(midTd, lessThan(outerTd));
+  });
+
   test('C caller can #include emitH header (issue 046)', () async {
     final kl = File('${tmp.path}/lib_add_h.kl');
     await kl.writeAsString('''

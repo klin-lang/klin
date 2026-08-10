@@ -1,0 +1,5 @@
+module waveshare_rp2350_lcd_096
+
+pub fn version(): i32 {
+    return 1
+}

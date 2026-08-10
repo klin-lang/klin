@@ -1,0 +1,22 @@
+module waveshare_rp2350_lcd_096
+
+import testing
+
+// Host-safe checks only (no MMIO). Skipped on package import (*_test.kl).
+
+fn test_version() {
+    testing.assert_eq_i32(version(), 1)
+}
+
+fn test_pin_map() {
+    testing.assert_eq_i32(lcd_dc(), 8)
+    testing.assert_eq_i32(lcd_cs(), 9)
+    testing.assert_eq_i32(lcd_sclk(), 10)
+    testing.assert_eq_i32(lcd_mosi(), 11)
+    testing.assert_eq_i32(lcd_rst(), 12)
+    testing.assert_eq_i32(lcd_bl(), 25)
+    testing.assert_eq_i32(lcd_width(), 160)
+    testing.assert_eq_i32(lcd_height(), 80)
+    testing.assert_eq_i32(lcd_x_offset(), 1)
+    testing.assert_eq_i32(lcd_y_offset(), 26)
+}
