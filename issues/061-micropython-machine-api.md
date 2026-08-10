@@ -11,7 +11,7 @@
 | Change the Klin compiler? | **No** for the library itself |
 | Where does the code live? | External repos (not `stdlib/`): **`machine_stm32`**, **`machine_rp`**, **`machine_esp`**, **`machine_stm8`**, **`machine_xmega`**, **`machine_avr`**, **`machine_pic16`**, **`machine_ch32v`**, **`machine_gd32v`** |
 | STM32? | **Yes** — [`machine_stm32`](https://github.com/klin-lang/machine_stm32) (`Pin` + `Pwm` + `Rc` + `Uart` + `I2c` + `Spi` + `Adc` `@v0.5.0`; F411/F401-class — **no HW DAC**) |
-| RP2040 / RP2350? | **`machine_rp`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc ✅ `@v0.6.0` (**no HW DAC**); ([062](062-targets-esp-rp.md)); board [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.1.0` → [095](095-board-waveshare-rp2350-lcd-096.md) |
+| RP2040 / RP2350? | **`machine_rp`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc ✅ `@v0.6.0` (**no HW DAC**); ([062](062-targets-esp-rp.md)); board [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.2.0` → [095](095-board-waveshare-rp2350-lcd-096.md) |
 | ESP32-C3? | **`machine_esp`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc ✅ `@v0.4.0` (**no HW DAC** on C3); minimal ESP-IDF boot; Wi‑Fi / freestanding later ([062](062-targets-esp-rp.md)) |
 | STM8? | **`machine_stm8`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc ✅ `@v0.2.0` (STM8S103/S003; **no DAC**); ([062](062-targets-esp-rp.md)) |
 | ATxmega? | **`machine_xmega`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Dac** ✅ `@v0.2.0` (ATxmega128A1U-class; DACB) |
