@@ -14,7 +14,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 | Target | Realistic? | Notes |
 |---|---|---|
 | **RP2040** | ✅ path exists | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.6.0` — Pin+Pwm+Rc+Uart+I2c+Spi+Adc (no DAC). |
-| **RP2350** | ✅ Arm + RISC-V | Same APIs via `*_rp2350` twins. |
+| **RP2350** | ✅ Arm + RISC-V | Same APIs via `*_rp2350` twins. Board: Waveshare LCD-0.96 → [095](095-board-waveshare-rp2350-lcd-096.md). |
 | **ESP32-C3** | ✅ Pin…Adc | [`machine_esp`](https://github.com/klin-lang/machine_esp) `@v0.4.0` — MMIO + LEDC; minimal **ESP-IDF** boot; no DAC; no Wi‑Fi in MVP. |
 | **STM8S** | ✅ Pin…Adc (emit-c) | [`machine_stm8`](https://github.com/klin-lang/machine_stm8) `@v0.2.0` — no DAC; SDCC link later. |
 | **CH32V003** | ✅ Pin…Adc | [`machine_ch32v`](https://github.com/klin-lang/machine_ch32v) `@v0.1.0` — QingKe RV32EC ([086](086-machine-ch32v.md)). |
@@ -30,7 +30,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 
 ## What is not out of the box
 
-- board pack / Klin-tree `examples/rp2040/…` (lives in [`machine_rp`](https://github.com/klin-lang/machine_rp) instead)
+- generic board pack / Klin-tree `examples/rp2040/…` (lives in [`machine_rp`](https://github.com/klin-lang/machine_rp); Waveshare RP2350-LCD-0.96 → [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) [095](095-board-waveshare-rp2350-lcd-096.md))
 - automatic ESP-IDF or pico-sdk in Klin CLI (example ships its own `idf.py` flow)
 - freestanding ESP image (no IDF)
 - Classic Xtensa ESP32 / C6 / S3 ports
