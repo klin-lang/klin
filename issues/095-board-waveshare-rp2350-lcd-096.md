@@ -1,6 +1,6 @@
 # 095 — Board pack: Waveshare RP2350-LCD-0.96
 
-**Status:** ✅ published `@v0.2.0`  
+**Status:** ✅ published `@v0.3.0`  
 **Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [010](010-bare-metal.md); board pack UX [075](075-board-pack-init-host.md)
 
 ## Verdict
@@ -8,9 +8,9 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **Small fix:** `emitC` struct typedef topo-order (same as `emitH`) so cross-module struct fields compile |
-| Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.2.0` |
+| Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.3.0` |
 | Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.6.0` (`*_rp2350`) |
-| Board extras | Pin map + ST7735S + font 5×7 + ADC temp/battery helpers + examples |
+| Board extras | Pin map + ST7735S + font 5×7 + ADC temp/battery + UART0 console helpers + examples |
 
 ## Scope
 
@@ -26,19 +26,26 @@
 - `enable_clk_adc()` + `temp_c_from_adc12` / `battery_mv_from_adc12` / `battery_pct`
 - Examples: `lcd_text`, `temp_chip`, `battery_mv`
 
-Tag: [v0.2.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag/v0.2.0)
+### `@v0.3.0`
+
+- UART0 pin helpers (GP0/GP1) + `uart0_out` / `uart_write_codes` / `uart_write_codes_n`
+- Example: `uart_console` (LCD TX/RX/CH counters + serial banner/echo @ 115200)
+- Note: Type-C is native USB — console needs external USB–UART on the header
+
+Tag: [v0.3.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag/v0.3.0)
 
 ## Out of scope
 
 - Onboard WS2812 (not in CircuitPython board def for this PCB)
 - PIO / DMA LCD, framebuffer heap, LVGL
+- USB CDC ACM console (native USB stack)
 - `klin init <board>` automation ([075](075-board-pack-init-host.md))
 
 ## Published
 
 ```sh
 klin get github/klin-lang/machine_rp@v0.6.0
-klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.2.0
+klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.3.0
 ```
 
 ## Links
