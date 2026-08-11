@@ -2298,6 +2298,38 @@ pub fn clamp(v: i32, lo: i32, hi: i32): i32 {
     );
   });
 
+  test('remote import incomplete @[link] units suggests klin get', () {
+    final cache = Directory.systemTemp.createTempSync('klin_incomplete_link_');
+    addTearDown(() => cache.deleteSync(recursive: true));
+    final work = Directory.systemTemp.createTempSync('klin_incomplete_work_');
+    addTearDown(() => work.deleteSync(recursive: true));
+    final pkg = Directory('${cache.path}/pkg/github/klin-lang/linkpkg')
+      ..createSync(recursive: true);
+    File('${pkg.path}/usb.kl').writeAsStringSync('''
+module usb
+@[link("usb_cdc_rp.c")]
+pub fn out() {}
+''');
+    File('${pkg.path}/.pin').writeAsStringSync('v0.1.0\n');
+    File('${work.path}/app.kl').writeAsStringSync('''
+import "github/klin-lang/linkpkg"
+fn main() { usb.out() }
+''');
+    expect(
+      () => loadProject(
+        '${work.path}/app.kl',
+        klinCacheDir: cache.path,
+      ),
+      throwsA(
+        isA<FileSystemException>().having(
+          (e) => e.message,
+          'message',
+          allOf(contains('incomplete'), contains('klin get')),
+        ),
+      ),
+    );
+  });
+
   test('local github/ directory does not shadow remote import (issue 049)', () {
     final cache = Directory.systemTemp.createTempSync('klin_shadow049_');
     addTearDown(() => cache.deleteSync(recursive: true));
