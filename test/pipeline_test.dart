@@ -2541,6 +2541,19 @@ fn main() { RCC.AHB1ENR.GPIOAEN.set(1) }
     );
   });
 
+  test('packageCacheHasRequiredLinkUnits detects missing @[link] .c', () {
+    final dir = Directory.systemTemp.createTempSync('klin_link_units_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    File('${dir.path}/usb.kl').writeAsStringSync('''
+@[link("usb_cdc_rp.c")]
+@[link("-lm")]
+fn usb_cdc_out() {}
+''');
+    expect(packageCacheHasRequiredLinkUnits(dir.path), isFalse);
+    File('${dir.path}/usb_cdc_rp.c').writeAsStringSync('void f(void) {}\n');
+    expect(packageCacheHasRequiredLinkUnits(dir.path), isTrue);
+  });
+
   test('packageContentHash is stable and order-independent (issue 065)', () {
     final dir = Directory.systemTemp.createTempSync('klin_hash065_');
     addTearDown(() => dir.deleteSync(recursive: true));
