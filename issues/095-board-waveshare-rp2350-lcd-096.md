@@ -62,21 +62,28 @@
 - Same `ws2812_out` / `show` API; bit-bang kept as `ws2812_bb_*`
 - Example `ws2812_strip` unchanged at the call site
 
-Tag: [v0.8.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag/v0.8.0)
+### `@v0.9.0`
+
+- **POWMAN** switched-core power-down with LPOSC 1 kHz timer alarm wake
+- Helpers: `powman_timer_start_lposc` / `powman_alarm_in_ms` / `powman_enter_swcore_off` + scratch / `powman_woke_from_swcore_pd`
+- Wake **reboots** the cores — wake count in `powman_scratch_*`
+- Example: `powman_demo` (Arm); `sleep_demo` light-sleep unchanged
+
+Tag: [v0.9.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag/v0.9.0)
 
 ## Out of scope
 
 - Onboard WS2812 (none on this PCB)
 - PIO·DMA LCD
 - USB CDC ACM console (native USB stack)
-- POWMAN deep sleep / XOSC dormant resume
+- XOSC dormant (clocks stop without SWCORE PD)
 - `klin init <board>` automation ([075](075-board-pack-init-host.md))
 
 ## Published
 
 ```sh
 klin get github/klin-lang/machine_rp@v0.8.0
-klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.8.0
+klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.9.0
 ```
 
 ## Links
