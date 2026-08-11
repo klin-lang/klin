@@ -999,8 +999,7 @@ Future<(String pkgDir, String commit)> fetchRemote(
     for (final entity in Directory(sourceDir).listSync(followLinks: false)) {
       if (entity is! File) continue;
       final name = entity.path.split(Platform.pathSeparator).last;
-      if (!name.endsWith('.kl')) continue;
-      if (name.endsWith('_test.kl')) continue;
+      if (!_isPackageSourceFile(name)) continue;
       entity.copySync('${staging.path}${Platform.pathSeparator}$name');
     }
     if (!isPackageInstalled(staging.path)) {
@@ -1130,6 +1129,18 @@ bool _hasKlSources(String dir) {
     final name = entity.path.split(Platform.pathSeparator).last;
     if (name.endsWith('.kl') && !name.endsWith('_test.kl')) return true;
   }
+  return false;
+}
+
+/// Package install copies Klin sources plus freestanding C/ASM units that
+/// `@[link]` may reference (e.g. `usb_cdc_rp.c`).
+bool _isPackageSourceFile(String name) {
+  if (name.endsWith('_test.kl')) return false;
+  if (name.endsWith('.kl')) return true;
+  if (name.endsWith('.c')) return true;
+  if (name.endsWith('.h')) return true;
+  if (name.endsWith('.s')) return true;
+  if (name.endsWith('.S')) return true;
   return false;
 }
 

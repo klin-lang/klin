@@ -44,7 +44,9 @@ klin run -L/opt/lib -lfoo main.kl
 ```
 
 `@[link]` + `-l` / `-L` go to `gcc`/`clang`/`tcc` argv. With `--emit-c`
-the `@[link]` list also goes to `out/<base>.link` (bare-metal Makefile).
+the `@[link]` list also goes to `out/<base>.link` (bare-metal Makefile);
+non-flag paths that exist next to the declaring `.kl` are written as
+**absolute** paths (so package cache `.c` / `.s` units link from any cwd).
 Paths also cover ASM units (`.s` / `.S`) — [docs/10-asm.md](10-asm.md),
 [`examples/asm_add/`](../examples/asm_add/).
 

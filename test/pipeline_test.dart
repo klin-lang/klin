@@ -4387,6 +4387,29 @@ fn main() {}
     expect(await linkFile.readAsString(), 'driver.a\n');
   });
 
+  test('--emit-c .link resolves existing @[link] paths to absolute', () async {
+    final driver = File('${tmp.path}/usb_stub.c');
+    await driver.writeAsString('void klin_usb_stub(void) {}\n');
+    final source = File('${tmp.path}/emit_abs_link.kl');
+    await source.writeAsString('''
+@[link("usb_stub.c")]
+fn main() {}
+''');
+    final proc = await Process.run(
+      'dart',
+      ['run', 'bin/klin.dart', '--emit-c', source.path],
+    );
+    final cFile = File('out/emit_abs_link.c');
+    final linkFile = File('out/emit_abs_link.link');
+    addTearDown(() async {
+      if (await cFile.exists()) await cFile.delete();
+      if (await linkFile.exists()) await linkFile.delete();
+    });
+    expect(proc.exitCode, 0, reason: proc.stderr.toString());
+    final linkBody = await linkFile.readAsString();
+    expect(linkBody.trim(), driver.absolute.path);
+  });
+
   test('--emit-h writes header without compiling or running', () async {
     final source = File('${tmp.path}/emit_h_only.kl');
     await source.writeAsString('''
