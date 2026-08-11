@@ -93,12 +93,13 @@ building the core from scratch.
 | [059](059-kstruct-macros.md) | `$kstruct` / `$kstruct_from` macros (richer klinstruct) | 💭 | 026, 052 |
 | [060](060-map-kv.md) | KV map (hash map) — language / stdlib / C | 💭 | 007, 057? |
 | [061](061-micropython-machine-api.md) | MicroPython-style `machine` API (PWM, UART, …) | ✅ (+ rp Pio+Dma+UsbCdc `@v0.11.0` / ch32v `@v0.1.0` / gd32v `@v0.2.0`) | 010, 031? |
-| [062](062-targets-esp-rp.md) | MCU targets: ESP32 / RP2040 / RP2350 / STM8 / CH32V / GD32V | 🚧 (RP Pio+Dma+UsbCdc ✅ `@v0.11.0`; ESP+STM8+CH32V+GD32V Pin…Adc ✅) | 010 |
+| [062](062-targets-esp-rp.md) | MCU targets: ESP32 / RP2040 / RP2350 / STM8 / CH32V / GD32V | 🚧 (RP Pio+Dma+UsbCdc ✅ `@v0.11.0`; ESP C3+S3+STM8+CH32V+GD32V Pin…Adc ✅) | 010 |
 | [086](086-machine-ch32v.md) | `machine_ch32v` CH32V003 QingKe Pin…Adc | ✅ `@v0.1.0` | 061, 062 |
 | [087](087-machine-gd32v.md) | `machine_gd32v` GD32VF103 Nuclei Pin…Adc | ✅ `@v0.2.0` | 061, 086 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
 | [098](098-board-adafruit-rp2040-can-feather.md) | Board pack Adafruit RP2040 CAN Feather (MCP25625) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/adafruit_rp2040_can_feather)) | 061, 062, 075 |
+| [099](099-machine-esp-esp32-s3.md) | `machine_esp` ESP32-S3 Pin…Adc (`*_s3`) | ✅ `@v0.5.0`/`@v0.6.0` ([repo](https://github.com/klin-lang/machine_esp)) | 061, 062 |
 | [064](064-if-cond-struct-literal-parse.md) | `if`/`while` condition ending in a name mistaken for a struct literal | ✅ | — |
 | [068](068-shared-type-decl.md) | Shared type annotation (`a, b: i32` like Go; both forms OK) | ✅ | 002, 004, 005 |
 | [069](069-eventemitter-signals.md) | Observer / EventEmitter / Signals (library; JS-signals explicitly) | 💭 | 013, 057 |
