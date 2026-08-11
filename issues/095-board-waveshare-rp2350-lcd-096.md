@@ -1,6 +1,6 @@
 # 095 — Board pack: Waveshare RP2350-LCD-0.96
 
-**Status:** ✅ published `@v0.8.0`  
+**Status:** ✅ published `@v0.9.0`  
 **Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [010](010-bare-metal.md); board pack UX [075](075-board-pack-init-host.md)
 
 ## Verdict
@@ -8,9 +8,9 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **Small fix:** `emitC` struct typedef topo-order (same as `emitH`) so cross-module struct fields compile |
-| Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.8.0` |
+| Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.9.0` |
 | Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.8.0` (`*_rp2350`; **Pio** + sideset/shift) |
-| Board extras | Pin map + ST7735S + font + ADC + UART0 + sprites + light-sleep + WS2812 (PIO) + Hazard3 RISC-V twin + examples |
+| Board extras | Pin map + ST7735S + font + ADC + UART0 + sprites + light-sleep + **POWMAN** + WS2812 (PIO) + Hazard3 RISC-V twin + examples |
 
 ## Scope
 
