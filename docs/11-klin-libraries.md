@@ -83,6 +83,8 @@ import "github/klin-lang/osa"
   (writes `klin.mod` + `klin.lock`).
 - Install copies `.kl` plus freestanding `@[link]` units (`.c` / `.h` / `.s` / `.S`);
   `*_test.kl` stays out of the cache tree.
+- Incomplete cache (`.kl` present but named `@[link]` units missing) → error on
+  import; `klin get` re-stages the package.
 - `klin run` without network. Manifest: `klin.mod` (`require path ref`).
 - Lock: `klin.lock` — commit SHA + `sha256` of sources ([065](../issues/065-project-lockfile.md) ✅).
 - Fixture: https://github.com/klin-lang/osa ([063](../issues/063-remote-fixture-osa.md)).
