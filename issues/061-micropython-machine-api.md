@@ -204,6 +204,7 @@ dac.write_u12(2048)
 4. **Uart** (USART1/2/6, explicit clk/baud) — ✅ `@v0.4.0` (`uart_f411`)  
 5. **I2c** / **Spi** / **Adc** — ✅ `@v0.5.0` (`i2c_f411`, `spi_f411`, `adc_f411`)  
 6. DAC only if/when targeting a chip that has it (not F411)  
+7. No PIO (STM32 silicon — not RP-style PIO)  
 
 **`machine_rp`**
 
@@ -235,7 +236,7 @@ dac.write_u12(2048)
 
 1. **Pin** + blink ATmega328P (Arduino Uno D13 = PB5) — ✅ `@v0.1.0` (`blink_uno`)  
 2. **Pin** + blink ATmega2560 (Arduino Mega D13 = PB7) — ✅ `@v0.1.0` (`blink_mega`, `pin_out_2560`)  
-3. **Pwm** / **Rc** / **Uart** / **I2c** / **Spi** / **Adc** — ✅ `@v0.2.0` (**328P MMIO**; no DAC)  
+3. **Pwm** / **Rc** / **Uart** / **I2c** / **Spi** / **Adc** — ✅ `@v0.2.0` (**328P MMIO**; no DAC; no PIO)  
 4. ATmega2560 bus factories / tinyAVR / AVR Dx — later  
 
 
