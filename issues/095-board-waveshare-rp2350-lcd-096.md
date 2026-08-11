@@ -1,6 +1,6 @@
 # 095 — Board pack: Waveshare RP2350-LCD-0.96
 
-**Status:** ✅ published `@v0.4.0`  
+**Status:** ✅ published `@v0.5.0`  
 **Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [010](010-bare-metal.md); board pack UX [075](075-board-pack-init-host.md)
 
 ## Verdict
@@ -8,9 +8,9 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **Small fix:** `emitC` struct typedef topo-order (same as `emitH`) so cross-module struct fields compile |
-| Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.4.0` |
+| Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.5.0` |
 | Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.6.0` (`*_rp2350`) |
-| Board extras | Pin map + ST7735S + font + ADC + UART0 + 8×8 sprites + examples |
+| Board extras | Pin map + ST7735S + font + ADC + UART0 + sprites + light-sleep helpers + examples |
 
 ## Scope
 
@@ -38,20 +38,27 @@
 - Stock icons: heart / check / cross / battery / arrow_r / smile
 - Example: `lcd_sprites`
 
-Tag: [v0.4.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag/v0.4.0)
+### `@v0.5.0`
+
+- Light sleep: `sleep_cpu_hz` / `sleep_systick_reload` (host-safe math)
+- Example: `sleep_demo` — SysTick + WFI, backlight off, wake counter (`N=`)
+- Not POWMAN deep sleep / dormant; no USER button on this PCB (timer wake)
+
+Tag: [v0.5.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag/v0.5.0)
 
 ## Out of scope
 
 - Onboard WS2812 (not in CircuitPython board def for this PCB)
 - PIO / DMA LCD, framebuffer heap, LVGL
 - USB CDC ACM console (native USB stack)
+- POWMAN deep sleep / XOSC dormant resume
 - `klin init <board>` automation ([075](075-board-pack-init-host.md))
 
 ## Published
 
 ```sh
 klin get github/klin-lang/machine_rp@v0.6.0
-klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.4.0
+klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.5.0
 ```
 
 ## Links
