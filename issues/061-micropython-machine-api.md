@@ -2,7 +2,7 @@
 
 **Status:** ✅ decided (external package; not Klin stdlib)
 **Depends on:** [010](010-bare-metal.md); nice to have [031](031-hal-libraries.md), [027](027-svd-ergonomic-api.md), [053](053-device-board-assets.md)
-**Packages:** [`machine_stm32`](https://github.com/klin-lang/machine_stm32) (`Pin`…`Adc` `@v0.5.0`), [`machine_rp`](https://github.com/klin-lang/machine_rp) (`Pin`…`Adc`+**Pio**+**Dma**+**UsbCdc** `@v0.11.0`), [`machine_esp`](https://github.com/klin-lang/machine_esp) (`Pin`…`Adc` `@v0.4.0`), [`machine_stm8`](https://github.com/klin-lang/machine_stm8) (`Pin`…`Adc` `@v0.2.0`), [`machine_avr`](https://github.com/klin-lang/machine_avr) (`Pin` 328P+2560; `Pwm`…`Adc` **328P** `@v0.2.0`), [`machine_xmega`](https://github.com/klin-lang/machine_xmega) (`Pin`…`Dac` `@v0.2.0`), [`machine_pic16`](https://github.com/klin-lang/machine_pic16) (`Pin`…`Dac` `@v0.2.0`), [`machine_ch32v`](https://github.com/klin-lang/machine_ch32v) (`Pin`…`Adc` `@v0.1.0`; [086](086-machine-ch32v.md)), [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v) (`Pin`…`Adc` `@v0.2.0`; [087](087-machine-gd32v.md))
+**Packages:** [`machine_stm32`](https://github.com/klin-lang/machine_stm32) (`Pin`…`Adc` `@v0.5.0`), [`machine_rp`](https://github.com/klin-lang/machine_rp) (`Pin`…`Adc`+**Pio**+**Dma**+**UsbCdc** `@v0.11.0`), [`machine_esp`](https://github.com/klin-lang/machine_esp) (C3 + **S3** `*_s3` Pin…Adc `@v0.6.0`; [099](099-machine-esp-esp32-s3.md)), [`machine_stm8`](https://github.com/klin-lang/machine_stm8) (`Pin`…`Adc` `@v0.2.0`), [`machine_avr`](https://github.com/klin-lang/machine_avr) (`Pin` 328P+2560; `Pwm`…`Adc` **328P** `@v0.2.0`), [`machine_xmega`](https://github.com/klin-lang/machine_xmega) (`Pin`…`Dac` `@v0.2.0`), [`machine_pic16`](https://github.com/klin-lang/machine_pic16) (`Pin`…`Dac` `@v0.2.0`), [`machine_ch32v`](https://github.com/klin-lang/machine_ch32v) (`Pin`…`Adc` `@v0.1.0`; [086](086-machine-ch32v.md)), [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v) (`Pin`…`Adc` `@v0.2.0`; [087](087-machine-gd32v.md))
 
 ## Verdict
 
@@ -12,7 +12,7 @@
 | Where does the code live? | External repos (not `stdlib/`): **`machine_stm32`**, **`machine_rp`**, **`machine_esp`**, **`machine_stm8`**, **`machine_xmega`**, **`machine_avr`**, **`machine_pic16`**, **`machine_ch32v`**, **`machine_gd32v`** |
 | STM32? | **Yes** — [`machine_stm32`](https://github.com/klin-lang/machine_stm32) (`Pin` + `Pwm` + `Rc` + `Uart` + `I2c` + `Spi` + `Adc` `@v0.5.0`; F411/F401-class — **no HW DAC**); board [`nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re) `@v0.1.3` → [096](096-board-nucleo-f411re.md) |
 | RP2040 / RP2350? | **`machine_rp`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Pio**+**Dma**+**UsbCdc** ✅ `@v0.11.0` (**no HW DAC**; UsbCdc RP2350 poll; Pio `out_pins`/TX DMA); ([062](062-targets-esp-rp.md)); boards [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.13.0` → [095](095-board-waveshare-rp2350-lcd-096.md), [`adafruit_rp2040_can_feather`](https://github.com/klin-lang/adafruit_rp2040_can_feather) `@v0.1.0` (MCP25625 SPI CAN) → [098](098-board-adafruit-rp2040-can-feather.md) |
-| ESP32-C3? | **`machine_esp`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc ✅ `@v0.4.0` (**no HW DAC** on C3); minimal ESP-IDF boot; Wi‑Fi / freestanding later ([062](062-targets-esp-rp.md)) |
+| ESP32-C3 / **S3**? | **`machine_esp`** — C3 `pin_out`…`adc_out` ✅; S3 twin `*_s3` Pin…Adc ✅ `@v0.6.0` ([099](099-machine-esp-esp32-s3.md); **no HW DAC** API); minimal ESP-IDF boot; Wi‑Fi / freestanding / classic ESP32 / C6 later ([062](062-targets-esp-rp.md)) |
 | STM8? | **`machine_stm8`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc ✅ `@v0.2.0` (STM8S103/S003; **no DAC**); ([062](062-targets-esp-rp.md)) |
 | ATxmega? | **`machine_xmega`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Dac** ✅ `@v0.2.0` (ATxmega128A1U-class; DACB) |
 | megaAVR (Arduino Uno/Mega)? | **`machine_avr`** — Pin ✅ 328P+2560; **Pwm…Adc** ✅ **328P only** `@v0.2.0` (**no DAC**; 2560 bus factories later) |
@@ -20,7 +20,7 @@
 | CH32V003 (QingKe RISC-V)? | **`machine_ch32v`** — Pin…Adc ✅ `@v0.1.0` ([086](086-machine-ch32v.md)); **10-bit** ADC |
 | GD32VF103 (Nuclei RISC-V)? | **`machine_gd32v`** — Pin…Adc ✅ `@v0.2.0` ([087](087-machine-gd32v.md)); **12-bit** ADC |
 | Other PIC? | Separate ports if/when needed — not one library for all MCUs |
-| DAC? | Only where the silicon has it — **yes** on ATxmega (DACB) and PIC16F18855 (DAC1); **not** on F411/F401, RP2040/2350, ESP32-C3, STM8S, megaAVR 328P/2560, CH32V003, GD32VF103. F407-class / classic ESP32 later if needed. |
+| DAC? | Only where the silicon has it — **yes** on ATxmega (DACB) and PIC16F18855 (DAC1); **not** on F411/F401, RP2040/2350, ESP32-C3/S3 (no `Dac` API), STM8S, megaAVR 328P/2560, CH32V003, GD32VF103. F407-class / classic ESP32 later if needed. |
 | PIO? | Only RP2040/RP2350 silicon — **yes** in [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.8.0`+ (sideset/shift/frac); **not** on stm32/esp/stm8/avr/xmega/pic16/ch32v/gd32v (no fake PIO). |
 | DMA? | Only RP2040/RP2350 — **yes** in [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.9.0` (`dma_out` / `write_dma*`); **not** on other `machine_*` ports. |
 | USB CDC? | RP2350 first — **yes** in [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.10.0` (`usb_cdc_out_rp2350` poll ACM); board Type-C console → [095](095-board-waveshare-rp2350-lcd-096.md); RP2040 later. |
@@ -135,6 +135,7 @@ Examples: [`pwm_f411`](https://github.com/klin-lang/machine_stm32/tree/main/exam
 [`pio_blink_pico`](https://github.com/klin-lang/machine_rp/tree/main/examples/pio_blink_pico),
 [`machine_esp/examples/pwm_c3`](https://github.com/klin-lang/machine_esp/tree/main/examples/pwm_c3),
 [`rc_c3`](https://github.com/klin-lang/machine_esp/tree/main/examples/rc_c3),
+[`blink_s3`](https://github.com/klin-lang/machine_esp/tree/main/examples/blink_s3) / [`pwm_s3`](https://github.com/klin-lang/machine_esp/tree/main/examples/pwm_s3) (S3 → [099](099-machine-esp-esp32-s3.md)),
 [`machine_stm8/examples/rc_pd4`](https://github.com/klin-lang/machine_stm8/tree/main/examples/rc_pd4).
 
 `machine_rp` `@v0.9.0`:
@@ -156,7 +157,7 @@ s.write_dma(d, buf, machine.dma_dreq_spi0_tx())
 // RP2350: *_rp2350 twins (+ dma_out_rp2350 / dma_dreq_spi*_tx_rp2350)
 ```
 
-`machine_esp` `@v0.4.0`:
+`machine_esp` `@v0.6.0` (C3 factories; S3 twins — [099](099-machine-esp-esp32-s3.md)):
 
 ```klin
 let led = machine.pwm_out(8, 0, 0, 80000000)
@@ -164,6 +165,11 @@ let u = machine.uart_out(0, 21, 20, 80000000, 115200)
 let bus = machine.i2c_out(0, 8, 9, 40000000, 100000)  // XTAL clock for I2C
 let s = machine.spi_out(2, 6, 7, 2, 80000000, 1000000, 0)
 let adc = machine.adc_out(0, 0)
+// ESP32-S3:
+let led_s3 = machine.pin_out_s3(2)
+let pwm_s3 = machine.pwm_out_s3(2, 0, 0, 80000000)
+let u_s3 = machine.uart_out_s3(0, 17, 18, 80000000, 115200)
+let adc_s3 = machine.adc_out_s3(1, 0) // CH0 → GPIO1
 ```
 
 `machine_stm8` `@v0.2.0` (UART1 PD5/PD6; ADC 10-bit — `read_u12` name kept for parity):
@@ -227,8 +233,9 @@ dac.write_u12(2048)
 
 1. **Pin** + blink ESP32-C3 — ✅  
 2. **PWM** / **Rc** (LEDC) — ✅ `@v0.2.0` / `@v0.3.0`  
-3. **Uart** / **I2c** / **Spi** / **Adc** — ✅ `@v0.4.0`  
-4. No DAC / no PIO on C3; freestanding / Wi‑Fi / other ESP chips later  
+3. **Uart** / **I2c** / **Spi** / **Adc** (C3) — ✅ `@v0.4.0`  
+4. **ESP32-S3** twin factories Pin…Adc (`*_s3`) — ✅ `@v0.5.0` / `@v0.6.0` ([099](099-machine-esp-esp32-s3.md))  
+5. No DAC / no PIO API; freestanding / Wi‑Fi / classic ESP32 / C6 later  
 
 **`machine_stm8`**
 
