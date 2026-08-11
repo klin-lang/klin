@@ -47,6 +47,7 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `str_eq.kl` | `stdlib/str` |
 | `math_basic.kl` | `stdlib/math` |
 | `bitwise.kl` | Bitwise operators |
+| `logical.kl` | Logical operators (`&&` / `||`) |
 | `enums.kl` | Enums ([072](../issues/072-enums.md)) |
 | `associated_fn.kl` | Associated functions |
 | `number_literals.kl` | Binary / exponent literals ([081](../issues/081-number-literals.md)) |

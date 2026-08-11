@@ -1173,12 +1173,35 @@ final class Parser {
   }
 
   Expr _expr() {
-    var result = _equality();
+    // error-`or { }` binds loosest; then logical || / && (issue 097 / D9).
+    var result = _logicalOr();
     while (_check(TokenKind.or_)) {
       final op = _advance();
       result = OrExpr(result, _orBlock(), op.pos);
     }
     return result;
+  }
+
+  /// Logical OR `||` — below error-`or`, above `&&` (Rust-like; issue 097).
+  Expr _logicalOr() {
+    var left = _logicalAnd();
+    while (_check(TokenKind.pipePipe)) {
+      final op = _advance();
+      final right = _logicalAnd();
+      left = BinaryExpr(left, op.lexeme, right, op.pos);
+    }
+    return left;
+  }
+
+  /// Logical AND `&&` — below `||`, above `==` / `!=`.
+  Expr _logicalAnd() {
+    var left = _equality();
+    while (_check(TokenKind.ampAmp)) {
+      final op = _advance();
+      final right = _equality();
+      left = BinaryExpr(left, op.lexeme, right, op.pos);
+    }
+    return left;
   }
 
   OrBlock _orBlock() {

@@ -1,0 +1,29 @@
+fn side_effect_false(): bool {
+  printf("side\n")
+  return false
+}
+
+fn main() {
+  let a = true
+  let b = false
+  if a && !b {
+    printf("and\n")
+  }
+  if b || a {
+    printf("or\n")
+  }
+  // Short-circuit: right side of `&&` must not run when left is false.
+  if b && side_effect_false() {
+    printf("bad\n")
+  }
+  // Short-circuit: right side of `||` must not run when left is true.
+  if a || side_effect_false() {
+    printf("skip\n")
+  }
+  // Precedence: `a || b && false` ⇒ `a || (b && false)` ⇒ true.
+  if a || b && false {
+    printf("prec\n")
+  }
+  let n: i32 = pick a && !b { 1 } { 0 }
+  printf("%d\n", n)
+}

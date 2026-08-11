@@ -105,6 +105,10 @@ final class Lexer {
         return Token(TokenKind.percent, '%', start);
       case '&':
         _advance();
+        if (!_atEnd && _peek == '&') {
+          _advance();
+          return Token(TokenKind.ampAmp, '&&', start);
+        }
         if (!_atEnd && _peek == '=') {
           _advance();
           return Token(TokenKind.ampEqual, '&=', start);
@@ -112,6 +116,10 @@ final class Lexer {
         return Token(TokenKind.ampersand, '&', start);
       case '|':
         _advance();
+        if (!_atEnd && _peek == '|') {
+          _advance();
+          return Token(TokenKind.pipePipe, '||', start);
+        }
         if (!_atEnd && _peek == '=') {
           _advance();
           return Token(TokenKind.pipeEqual, '|=', start);

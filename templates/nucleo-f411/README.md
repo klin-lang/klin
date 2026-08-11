@@ -35,8 +35,8 @@ Needs `arm-none-eabi-gcc` on `PATH`.
 Pin helpers + more examples live outside Klin:
 
 ```sh
-klin get github/klin-lang/nucleo_f411re@v0.1.2
-# require github/klin-lang/nucleo_f411re v0.1.2
+klin get github/klin-lang/nucleo_f411re@v0.1.3
+# require github/klin-lang/nucleo_f411re v0.1.3
 ```
 
 See [096](../../issues/096-board-nucleo-f411re.md) /

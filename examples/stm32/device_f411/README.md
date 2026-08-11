@@ -47,7 +47,7 @@ device github/tinygo-org/stm32-svd/svd/stm32f411.svd main
 
 - Local SVD sibling: [`../blink_f411/`](../blink_f411/)
 - Scaffold: `klin init nucleo-f411`
-- External board pack (pins + examples): [`nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re) `@v0.1.2` — [096](../../../issues/096-board-nucleo-f411re.md)
+- External board pack (pins + examples): [`nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re) `@v0.1.3` — [096](../../../issues/096-board-nucleo-f411re.md)
 - [docs/04-macros.md](../../../docs/04-macros.md)
 - [issues/053](../../../issues/053-device-board-assets.md), [074](../../../issues/074-board-ioc-klin-mod.md), [054](../../../issues/054-embedded-project-layout.md)
 - Board index: [`../README.md`](../README.md)

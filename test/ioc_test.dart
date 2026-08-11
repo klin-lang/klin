@@ -57,7 +57,7 @@ void main() {
     // Board pack repo is also allowlisted (issue 096).
     expect(
       parseRemoteAsset(
-        'github/klin-lang/nucleo_f411re/nucleo_f411re.ioc@v0.1.2',
+        'github/klin-lang/nucleo_f411re/nucleo_f411re.ioc@v0.1.3',
       ).repoPath,
       'github/klin-lang/nucleo_f411re',
     );

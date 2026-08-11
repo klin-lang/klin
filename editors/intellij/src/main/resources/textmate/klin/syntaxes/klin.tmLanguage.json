@@ -162,16 +162,16 @@
           "match": "="
         },
         {
+          "name": "keyword.operator.logical.klin",
+          "match": "&&|\\|\\||!"
+        },
+        {
           "name": "keyword.operator.bitwise.klin",
           "match": "\\||\\^|~|&"
         },
         {
           "name": "keyword.operator.arithmetic.klin",
           "match": "\\+|-|\\*|/|%"
-        },
-        {
-          "name": "keyword.operator.logical.klin",
-          "match": "!"
         }
       ]
     },
