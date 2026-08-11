@@ -182,17 +182,21 @@ final class KlinMod {
   final int version;
   final Map<String, String> requires; // path → ref (Klin packages)
   final Map<String, String> devices; // path → ref (SVD assets, issue 053)
+  final Map<String, String> boards; // path → ref (.ioc assets, issue 074)
 
   KlinMod({
     this.version = 1,
     Map<String, String>? requires,
     Map<String, String>? devices,
+    Map<String, String>? boards,
   })  : requires = Map<String, String>.from(requires ?? {}),
-        devices = Map<String, String>.from(devices ?? {});
+        devices = Map<String, String>.from(devices ?? {}),
+        boards = Map<String, String>.from(boards ?? {});
 
   static KlinMod empty() => KlinMod();
 
-  bool get isEmpty => requires.isEmpty && devices.isEmpty;
+  bool get isEmpty =>
+      requires.isEmpty && devices.isEmpty && boards.isEmpty;
 }
 
 /// Find `klin.mod` walking up from [startDir]. Returns null if none.
@@ -211,6 +215,7 @@ File? findKlinModFile(String startDir) {
 KlinMod parseKlinMod(String content) {
   final requires = <String, String>{};
   final devices = <String, String>{};
+  final boards = <String, String>{};
   var version = 1;
   for (final rawLine in content.split('\n')) {
     final line = rawLine.trim();
@@ -231,9 +236,19 @@ KlinMod parseKlinMod(String content) {
       devices[parts[1]] = parts[2];
       continue;
     }
+    if (parts.length == 3 && parts[0] == 'board') {
+      parseRemoteAsset('${parts[1]}@${parts[2]}');
+      boards[parts[1]] = parts[2];
+      continue;
+    }
     throw FormatException('invalid klin.mod line: `$rawLine`');
   }
-  return KlinMod(version: version, requires: requires, devices: devices);
+  return KlinMod(
+    version: version,
+    requires: requires,
+    devices: devices,
+    boards: boards,
+  );
 }
 
 String formatKlinMod(KlinMod mod) {
@@ -245,6 +260,10 @@ String formatKlinMod(KlinMod mod) {
   final devKeys = mod.devices.keys.toList()..sort();
   for (final path in devKeys) {
     buf.writeln('device $path ${mod.devices[path]}');
+  }
+  final boardKeys = mod.boards.keys.toList()..sort();
+  for (final path in boardKeys) {
+    buf.writeln('board $path ${mod.boards[path]}');
   }
   return buf.toString();
 }
@@ -263,7 +282,12 @@ const allowedDeviceRepos = {
   'github/tinygo-org/stm32-svd',
 };
 
-/// Parsed `host/owner/repo/rel/path.svd` with optional `@ref`.
+/// MVP allowlist for CubeMX `.ioc` board pinouts (issue 074).
+const allowedBoardRepos = {
+  'github/klin-lang/boards',
+};
+
+/// Parsed `host/owner/repo/rel/path.{svd,ioc}` with optional `@ref`.
 final class RemoteAsset {
   final String host;
   final String owner;
@@ -284,6 +308,10 @@ final class RemoteAsset {
 
   String get repoPath => '$host/$owner/$repo';
 
+  bool get isBoard => filePath.toLowerCase().endsWith('.ioc');
+
+  bool get isDevice => filePath.toLowerCase().endsWith('.svd');
+
   RemoteImport get asRepo => RemoteImport(
         host: host,
         owner: owner,
@@ -292,18 +320,23 @@ final class RemoteAsset {
       );
 }
 
-/// True when [spec] looks like a remote device asset (`….svd`).
-bool isRemoteDevicePath(String spec) {
+bool _isRemoteAssetPath(String spec, String suffix) {
   var path = spec.trim();
   final at = path.lastIndexOf('@');
   if (at > 0) path = path.substring(0, at).trim();
-  if (!path.toLowerCase().endsWith('.svd')) return false;
+  if (!path.toLowerCase().endsWith(suffix)) return false;
   final slash = path.indexOf('/');
   if (slash <= 0) return false;
   return remoteHosts.contains(path.substring(0, slash));
 }
 
-/// Parse `github/owner/repo/rel/file.svd` or `…@ref`.
+/// True when [spec] looks like a remote device asset (`….svd`).
+bool isRemoteDevicePath(String spec) => _isRemoteAssetPath(spec, '.svd');
+
+/// True when [spec] looks like a remote board pinout (`….ioc`).
+bool isRemoteBoardPath(String spec) => _isRemoteAssetPath(spec, '.ioc');
+
+/// Parse `github/owner/repo/rel/file.{svd,ioc}` or `…@ref`.
 RemoteAsset parseRemoteAsset(String spec) {
   var path = spec.trim();
   String? ref;
@@ -312,21 +345,23 @@ RemoteAsset parseRemoteAsset(String spec) {
     ref = path.substring(at + 1).trim();
     path = path.substring(0, at).trim();
     if (ref.isEmpty) {
-      throw FormatException('empty @ref in remote device `$spec`');
+      throw FormatException('empty @ref in remote asset `$spec`');
     }
     if (ref.contains('..') || ref.contains('/') || ref.contains('\\')) {
-      throw FormatException('invalid @ref in remote device `$spec`');
+      throw FormatException('invalid @ref in remote asset `$spec`');
     }
   }
-  if (!path.toLowerCase().endsWith('.svd')) {
+  final isSvd = path.toLowerCase().endsWith('.svd');
+  final isIoc = path.toLowerCase().endsWith('.ioc');
+  if (!isSvd && !isIoc) {
     throw FormatException(
-      'remote device `$spec` must end with `.svd`',
+      'remote asset `$spec` must end with `.svd` or `.ioc`',
     );
   }
   final parts = path.split('/');
   if (parts.length < 4 || parts.any((p) => p.isEmpty)) {
     throw FormatException(
-      'remote device `$spec` must be host/owner/repo/path.svd '
+      'remote asset `$spec` must be host/owner/repo/path '
       '(optionally @ref)',
     );
   }
@@ -340,22 +375,26 @@ RemoteAsset parseRemoteAsset(String spec) {
   final repo = parts[2];
   if (!_isSafePathSegment(owner) || !_isSafePathSegment(repo)) {
     throw FormatException(
-      'remote device `$spec` has an invalid owner or repo segment',
+      'remote asset `$spec` has an invalid owner or repo segment',
     );
   }
   final fileParts = parts.sublist(3);
   for (final seg in fileParts) {
     if (!_isSafePathSegment(seg)) {
       throw FormatException(
-        'remote device `$spec` has an invalid path segment `$seg`',
+        'remote asset `$spec` has an invalid path segment `$seg`',
       );
     }
   }
   final repoKey = '$host/$owner/$repo';
-  if (!allowedDeviceRepos.contains(repoKey)) {
+  final allow = isSvd ? allowedDeviceRepos : allowedBoardRepos;
+  final allowHint = isSvd
+      ? 'github/tinygo-org/stm32-svd'
+      : 'github/klin-lang/boards';
+  if (!allow.contains(repoKey)) {
     throw FormatException(
-      'remote device repo `$repoKey` is not on the allowlist '
-      '(MVP: github/tinygo-org/stm32-svd)',
+      'remote ${isSvd ? 'device' : 'board'} repo `$repoKey` is not on the '
+      'allowlist (MVP: $allowHint)',
     );
   }
   return RemoteAsset(
@@ -450,8 +489,8 @@ Future<(String assetDir, String commit)> fetchRemoteAsset(
     File('${staging.path}$sep.commit')
         .writeAsStringSync('${commit.toLowerCase()}\n');
 
-    // Keep sibling .svd paths: prefer bytes from this checkout; only reuse
-    // prior cache bytes when pin and commit are unchanged (adding a file).
+    // Keep sibling .svd / .ioc paths: prefer bytes from this checkout; only
+    // reuse prior cache bytes when pin and commit are unchanged (adding a file).
     if (Directory(assetDir).existsSync()) {
       final prevPin = readPin(assetDir);
       final prevCommit = readCommit(assetDir);
@@ -461,7 +500,8 @@ Future<(String assetDir, String commit)> fetchRemoteAsset(
       for (final entity in Directory(assetDir).listSync(recursive: true)) {
         if (entity is! File) continue;
         final name = entity.path.split(sep).last;
-        if (!name.endsWith('.svd')) continue;
+        final lower = name.toLowerCase();
+        if (!lower.endsWith('.svd') && !lower.endsWith('.ioc')) continue;
         final rel = entity.path.substring(assetDir.length + 1);
         final staged = File('${staging.path}$sep$rel');
         if (staged.existsSync()) continue;
@@ -693,6 +733,196 @@ String resolveSvdPath(
   }
 
   throw FileSystemException('SVD file not found', localFile.path);
+}
+
+/// Ensure [asset] (`.ioc`) is installed per [mod] / lock. Updates `board` lines.
+///
+/// Writes **only** into `$KLIN_CACHE/asset/` — never overwrites a project-local
+/// `board/*.ioc` (issue 074).
+Future<(String filePath, String ref, bool modUpdated)> ensureRemoteBoard({
+  required RemoteAsset asset,
+  required KlinMod mod,
+  required File modFile,
+  KlinLock? lock,
+  File? lockFile,
+  String? cacheRoot,
+  bool force = false,
+}) async {
+  if (!asset.isBoard) {
+    throw FormatException(
+      'ensureRemoteBoard expects a `.ioc` asset, got `${asset.path}`',
+    );
+  }
+  var modUpdated = false;
+  String version;
+  if (asset.ref != null) {
+    version = asset.ref!;
+    if (mod.boards[asset.path] != version) modUpdated = true;
+  } else if (mod.boards.containsKey(asset.path)) {
+    version = mod.boards[asset.path]!;
+  } else {
+    version = await resolveLatestRef(asset.asRepo);
+    modUpdated = true;
+  }
+
+  final lockEntry = lock?.packages[asset.path];
+  final assetDir = assetCacheDir(asset, cacheRoot: cacheRoot);
+  final cachePin = readPin(assetDir);
+  final cacheCommit = readCommit(assetDir);
+  final cachedFile = cachedDeviceFilePath(asset, cacheRoot: cacheRoot);
+
+  final cacheReusable = !force &&
+      cachePin == version &&
+      cacheCommit != null &&
+      cachedFile != null;
+
+  final useLock = !force &&
+      !cacheReusable &&
+      lockEntry != null &&
+      lockEntry.version == version &&
+      RegExp(r'^[0-9a-f]{7,40}$').hasMatch(lockEntry.commit);
+  final gitRef = cacheReusable
+      ? cacheCommit
+      : (useLock ? lockEntry.commit : version);
+
+  final (_, commit) = await fetchRemoteAsset(
+    asset,
+    gitRef: gitRef,
+    pin: version,
+    cacheRoot: cacheRoot,
+    force: force,
+  );
+  final filePath = cachedDeviceFilePath(asset, cacheRoot: cacheRoot);
+  if (filePath == null) {
+    throw FileSystemException(
+      'board `${asset.path}` missing after fetch',
+      assetDir,
+    );
+  }
+  final hash = fileContentHash(filePath);
+  if (useLock) {
+    if (lockEntry.hash != hash) {
+      throw StateError(
+        'klin.lock hash mismatch for `${asset.path}@$version` '
+        '(expected sha256:${lockEntry.hash}, got sha256:$hash)',
+      );
+    }
+    if (!commit.startsWith(lockEntry.commit) &&
+        !lockEntry.commit.startsWith(commit)) {
+      throw StateError(
+        'klin.lock commit mismatch for `${asset.path}@$version` '
+        '(expected ${lockEntry.commit}, got $commit)',
+      );
+    }
+  } else if (!force &&
+      lockEntry != null &&
+      lockEntry.version == version &&
+      RegExp(r'^[0-9a-f]{7,40}$').hasMatch(lockEntry.commit) &&
+      (commit.startsWith(lockEntry.commit) ||
+          lockEntry.commit.startsWith(commit)) &&
+      lockEntry.hash != hash) {
+    throw StateError(
+      'klin.lock hash mismatch for `${asset.path}@$version` '
+      '(expected sha256:${lockEntry.hash}, got sha256:$hash)',
+    );
+  }
+
+  if (modUpdated || mod.boards[asset.path] != version) {
+    mod.boards[asset.path] = version;
+    saveKlinMod(modFile, mod);
+    modUpdated = true;
+  }
+
+  final outLock = lock ?? KlinLock.empty();
+  final prev = outLock.packages[asset.path];
+  if (prev == null ||
+      prev.version != version ||
+      prev.commit != commit ||
+      prev.hash != hash) {
+    outLock.packages[asset.path] = KlinLockEntry(
+      version: version,
+      commit: commit,
+      hash: hash,
+    );
+    final prefix = '${asset.repoPath}/';
+    for (final path in outLock.packages.keys.toList()) {
+      if (path == asset.path || !path.startsWith(prefix)) continue;
+      if (!path.toLowerCase().endsWith('.ioc')) continue;
+      final entry = outLock.packages[path]!;
+      if (entry.version != version) continue;
+      final siblingFile = cachedDeviceFilePath(
+        parseRemoteAsset(path),
+        cacheRoot: cacheRoot,
+      );
+      if (siblingFile == null) continue;
+      outLock.packages[path] = KlinLockEntry(
+        version: version,
+        commit: commit,
+        hash: fileContentHash(siblingFile),
+      );
+    }
+    final outFile = lockFile ?? klinLockFileFor(modFile);
+    saveKlinLock(outFile, outLock);
+  }
+  return (filePath, version, modUpdated);
+}
+
+/// Resolve a `$board("…")` path to a local `.ioc` file.
+///
+/// Order: existing local file (project `board/*.ioc` wins) → asset cache
+/// (offline). Never downloads. Never overwrites a local project `.ioc`.
+String resolveBoardPath(
+  String boardArg, {
+  required String sourcePath,
+  String? cacheRoot,
+}) {
+  final sourceFile = File(sourcePath).absolute;
+  final sourceDir = sourceFile.parent;
+  final localFile = File(
+    boardArg.startsWith('/') ||
+            (boardArg.length >= 3 &&
+                boardArg[1] == ':' &&
+                (boardArg[2] == '\\' || boardArg[2] == '/'))
+        ? boardArg
+        : '${sourceDir.path}${Platform.pathSeparator}$boardArg',
+  ).absolute;
+  if (localFile.existsSync()) return localFile.path;
+
+  if (isRemoteBoardPath(boardArg)) {
+    final asset = parseRemoteAsset(boardArg);
+    RemoteAsset effective = asset;
+    if (asset.ref == null) {
+      final modFile = findKlinModFile(sourceDir.path);
+      if (modFile != null) {
+        final mod = loadKlinMod(modFile);
+        final pinned = mod.boards[asset.path];
+        if (pinned != null) {
+          effective = RemoteAsset(
+            host: asset.host,
+            owner: asset.owner,
+            repo: asset.repo,
+            filePath: asset.filePath,
+            ref: pinned,
+          );
+        }
+      }
+    }
+    final cached = cachedDeviceFilePath(effective, cacheRoot: cacheRoot);
+    if (cached != null) {
+      final dir = assetCacheDir(effective, cacheRoot: cacheRoot);
+      final pin = readPin(dir);
+      if (effective.ref == null || pin == effective.ref) return cached;
+    }
+    throw FileSystemException(
+      'remote board `${asset.path}` is not in the Klin cache; '
+      'run `klin get ${asset.path}${asset.ref != null ? '@${asset.ref}' : ''}` '
+      'first (compile stays offline)',
+      cachedDeviceFilePath(asset, cacheRoot: cacheRoot) ??
+          assetCacheDir(asset, cacheRoot: cacheRoot),
+    );
+  }
+
+  throw FileSystemException('board .ioc file not found', localFile.path);
 }
 
 // --- klin.lock (issue 065) --------------------------------------------------

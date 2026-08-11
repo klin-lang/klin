@@ -1,14 +1,12 @@
 # 074 — `board` in `klin.mod` + narrow CubeMX `.ioc` (pinout)
 
-**Status:** 💭 under consideration (after MVP [053](053-device-board-assets.md))
+**Status:** ✅ MVP (`board` + `$board` + local `.ioc`; remote allowlist ready)  
 **Depends on:** [053](053-device-board-assets.md) (`$device` + `device` in mod + `asset/` cache); optionally [054](054-embedded-project-layout.md); **not** [031](031-hal-libraries.md)
 
 ## Context
 
 [053](053-device-board-assets.md) = chip / SVD (`device` + `$device`).  
-This issue = **board / pinout**, including future CubeMX **`.ioc`** reading.
-
-For now **no IOC implementation**. Here we record the model so decisions are not lost:
+This issue = **board / pinout** via CubeMX **`.ioc`**.
 
 - single **`klin.mod`** file (not separate `klin.hw` / `klin.dev`)
 - **`board`** directive (not `hardware`, not `device`)
@@ -21,7 +19,7 @@ For now **no IOC implementation**. Here we record the model so decisions are not
 ```text
 klin 1
 require  github/klin-lang/osa v0.1.0
-device   github/tinygo-org/stm32-svd/stm32f411.svd v0.1.0
+device   github/tinygo-org/stm32-svd/svd/stm32f411.svd main
 board    github/klin-lang/boards/nucleo_f411re.ioc v0.1.0
 ```
 
@@ -29,24 +27,23 @@ board    github/klin-lang/boards/nucleo_f411re.ioc v0.1.0
 |---|---|---|
 | `require` | Klin package (`.kl`) | `import` |
 | `device` | chip SVD (`.svd`) — [053](053-device-board-assets.md) | `$device("…")` |
-| `board` | board / pinout (`.ioc` or later other pack) | `$board("…")` |
+| `board` | board / pinout (`.ioc`) | `$board("…")` |
 
-Explicit (line in mod) and implicit (`klin get …@ref` appends `board`) — like `require` / `device`.
-
-## Source syntax (later)
+## Source syntax
 
 ```klin
-$device("github/tinygo-org/stm32-svd/stm32f411.svd", use: "RCC,GPIOA,STK")
-$board("github/klin-lang/boards/nucleo_f411re.ioc")
+$device("github/tinygo-org/stm32-svd/svd/stm32f411.svd", "RCC,GPIOA,STK")
+$board("board/nucleo_f411re.ioc")
 
 fn main() {
-  // constants generated from IOC — pins only, e.g. LED → PA5
+  // BoardPin.LD2 / BoardPort.LD2 from .ioc (PA5)
   GPIOA.MODER.MODER5.write(.Output)
 }
 ```
 
 - `$` family (D3); **not** `import "*.ioc"`
 - same `klin get` / `asset/` cache / `klin.lock` as SVD; **different** parser after fetch
+- Codegen: `enum BoardPort: i32` + `enum BoardPin: i32` (labeled GPIOs only)
 
 ## Local `.ioc` in project (verdict)
 
@@ -62,32 +59,29 @@ Flow:
 
 1. **Local only** — `$board("board/nucleo.ioc")`; no `board github/…` line
    (or line only as documentation “where it came from").
-2. **Remote as seed** — `klin get` → cache; `klin init` / first setup
-   **copies** to `board/*.ioc`. From then on resolution = local path.
-3. **`klin update` does not overwrite** local `.ioc`. Refresh from upstream =
-   separate, explicit command (e.g. “reset from remote”), not default behavior.
+2. **Remote as seed** — `klin get` → cache only; copy into `board/*.ioc` is a
+   one-time scaffold / manual step (`klin init` ships a local `.ioc`).
+3. **`klin update` does not overwrite** local `.ioc`.
 
-Resolution like SVD ([053](053-device-board-assets.md)): **local-first** —
-existing file next to sources wins over `asset/` cache.
+Resolution like SVD ([053](053-device-board-assets.md)): **local-first**.
 
-Line `board github/…` in mod = pin **upstream** (seed version), not
-“always fetch from network instead of local”.
+## Criteria
 
-## When to start implementation
+- [x] `board` directive in `klin.mod` parser + lock
+- [x] `$board("…")` locally, then remote path (local-first)
+- [x] local `.ioc` in project not overwritten by `get`/`update`
+- [x] **subset** `.ioc` parser → pin constants (name → port/pin)
+- [x] zero HAL / clock tree / generated `main` from Cube
+- [x] e2e: Nucleo `.ioc` → `BoardPin.LD2` / `BoardPort.LD2`;
+      [`examples/stm32/device_f411/`](../examples/stm32/device_f411/) +
+      `templates/nucleo-f411/board/nucleo_f411re.ioc`
+- [x] docs: “does not replace Cube”; local truth vs upstream
 
-1. MVP 053 works (`device` + `$device` + offline).
-2. Manual pinouts in `board_…` / [054](054-embedded-project-layout.md) directory hurt.
-3. Scope still: **pinout only**.
+## Implementation notes
 
-## Scope (when it lands)
-
-- [ ] `board` directive in `klin.mod` parser + lock
-- [ ] `$board("…")` locally, then remote path (local-first)
-- [ ] local `.ioc` in project not overwritten by `get`/`update`
-- [ ] **subset** `.ioc` parser → pin constants (name → port/pin)
-- [ ] zero HAL / clock tree / generated `main` from Cube
-- [ ] e2e: one Nucleo `.ioc` → several constants; blink without manual pinout
-- [ ] docs: “does not replace Cube”; local truth vs upstream
+- `lib/ioc/` — parse / emit / expand
+- Allowlist: `github/klin-lang/boards` (remote seed when the repo exists)
+- Fixture: [`third_party/ioc/nucleo_f411re.ioc`](../third_party/ioc/nucleo_f411re.ioc)
 
 ## Do not
 
@@ -99,8 +93,8 @@ Line `board github/…` in mod = pin **upstream** (seed version), not
 
 ## Related
 
-- [053](053-device-board-assets.md) — `$device` / `device` (chip); IOC deliberately here, not in 053
+- [053](053-device-board-assets.md) — `$device` / `device` (chip)
 - [049](049-remote-imports.md) / [065](065-project-lockfile.md) — get / lock
 - [054](054-embedded-project-layout.md) — `board/` layout (startup/ld) separate from mod
-- [075](075-board-pack-init-host.md) — board pack / `klin init` (ld+startup); host without this magic
+- [075](075-board-pack-init-host.md) — board pack / `klin init` (ld+startup)
 - [031](031-hal-libraries.md) — HAL separately

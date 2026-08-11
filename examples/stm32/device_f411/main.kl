@@ -1,14 +1,26 @@
 // Remote SVD via klin.mod `device` + cache (issue 053).
+// Local `.ioc` pinout via `$board` (issue 074) — project file is truth.
 // Run `klin get` in this directory first (see README).
 $device("github/tinygo-org/stm32-svd/svd/stm32f411.svd", "RCC,GPIOA,STK")
+$board("board/nucleo_f411re.ioc")
 
 @[isr("SysTick_Handler")]
 fn systick_handler() {
+  // LD2 → PA5 from .ioc (`BoardPin.LD2`)
   GPIOA.ODR.ODR5.toggle()
 }
 
 @[link("board/startup.s")]
 fn main() {
+  // Sanity: Nucleo green LED must be PA5 (port A = 0, pin 5).
+  let port: i32 = cast(i32, BoardPort.LD2)
+  let pin: i32 = cast(i32, BoardPin.LD2)
+  if port != 0 {
+    return
+  }
+  if pin != 5 {
+    return
+  }
   RCC.AHB1ENR.GPIOAEN.set(1)
   GPIOA.MODER.MODER5.write(.Output)
   STK.RVR.RELOAD.write(7_999_999)

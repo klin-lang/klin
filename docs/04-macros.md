@@ -110,7 +110,22 @@ Examples:
 - remote + `klin.mod`: [`examples/stm32/device_f411/`](../examples/stm32/device_f411/)
   (`klin get` in example dir → cache + `klin.lock`)
 
-MVP allowlist: `github/tinygo-org/stm32-svd`. Board / `.ioc` separately (later).
+MVP allowlist: `github/tinygo-org/stm32-svd`.
+
+### `$board("path.ioc")` — CubeMX pinout (issue 074)
+
+Narrow expand: labeled GPIOs → `BoardPort` / `BoardPin` enums (not HAL, not
+clocks, not generated `main`). Local project `board/*.ioc` wins over cache;
+`klin get` of a remote `.ioc` fills `$KLIN_CACHE/asset/` only and **does not**
+overwrite a local file.
+
+```klin
+$board("board/nucleo_f411re.ioc")
+// BoardPin.LD2 == 5, BoardPort.LD2 == 0 (PA5)
+```
+
+Example: [`examples/stm32/device_f411/`](../examples/stm32/device_f411/).
+Remote allowlist: `github/klin-lang/boards`.
 
 ## What this is not
 
