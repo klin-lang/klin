@@ -11,7 +11,7 @@
 | Where does the code live? | External: [`klin-lang/machine_esp`](https://github.com/klin-lang/machine_esp) |
 | Pattern | Twin factories like `machine_rp` `*_rp2350` — **no** shared `#ifdef` mega-driver |
 | C3 | Unchanged: `pin_out` / `pwm_out` / … |
-| S3 | Explicit: `pin_out_s3` / `pwm_out_s3` / `rc_out_s3` / `uart_out_s3` / `i2c_out_s3` / `spi_out_s3` / `adc_out_s3` |
+| S3 | Explicit: `pin_out_s3` / `pin_in_s3` / `pwm_out_s3` / `rc_out_s3` / `uart_out_s3` / `i2c_out_s3` / `spi_out_s3` / `adc_out_s3` |
 
 ## What changed vs C3 (MMIO, not ISA)
 
