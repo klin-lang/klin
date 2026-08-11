@@ -54,6 +54,13 @@ void main() {
       () => parseRemoteAsset('github/acme/boards/x.ioc'),
       throwsA(isA<FormatException>()),
     );
+    // Board pack repo is also allowlisted (issue 096).
+    expect(
+      parseRemoteAsset(
+        'github/klin-lang/nucleo_f411re/nucleo_f411re.ioc@v0.1.2',
+      ).repoPath,
+      'github/klin-lang/nucleo_f411re',
+    );
   });
 
   test(r'$board expands local .ioc (issue 074)', () {

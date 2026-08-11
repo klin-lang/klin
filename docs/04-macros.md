@@ -125,7 +125,9 @@ $board("board/nucleo_f411re.ioc")
 ```
 
 Example: [`examples/stm32/device_f411/`](../examples/stm32/device_f411/).
-Remote allowlist: `github/klin-lang/boards`.
+Remote allowlist: `github/klin-lang/boards`,
+[`github/klin-lang/nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re)
+([096](../issues/096-board-nucleo-f411re.md)).
 
 ## What this is not
 

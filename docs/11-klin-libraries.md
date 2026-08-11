@@ -104,8 +104,10 @@ $device("github/tinygo-org/stm32-svd/svd/stm32f411.svd", "RCC,GPIOA")
 - Example: [`examples/stm32/device_f411/`](../examples/stm32/device_f411/).
 - Board / CubeMX `.ioc` pinout ([074](../issues/074-board-ioc-klin-mod.md)):
   `board path ref` in `klin.mod`, `$board("…")`, allowlist
-  `github/klin-lang/boards`. Local `board/*.ioc` is project truth — `get` /
-  `update` never overwrite it.
+  `github/klin-lang/boards` and
+  [`nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re) `@v0.1.2`
+  ([096](../issues/096-board-nucleo-f411re.md)). Local `board/*.ioc` is project
+  truth — `get` / `update` never overwrite it.
 
 ## Out of scope
 
