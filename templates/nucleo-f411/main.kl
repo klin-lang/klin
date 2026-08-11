@@ -1,0 +1,22 @@
+// Nucleo-F411RE PA5 blink — scaffold from `klin init nucleo-f411`.
+// Run `klin get` once (SVD → cache), then `make`.
+$device("github/tinygo-org/stm32-svd/svd/stm32f411.svd", "RCC,GPIOA,STK")
+
+@[isr("SysTick_Handler")]
+fn systick_handler() {
+  GPIOA.ODR.ODR5.toggle()
+}
+
+@[link("board/startup.s")]
+fn main() {
+  RCC.AHB1ENR.GPIOAEN.set(1)
+  GPIOA.MODER.MODER5.write(.Output)
+  STK.RVR.RELOAD.write(7_999_999)
+  STK.CVR.CURRENT.write(0)
+  STK.CSR.ENABLE.set(1)
+  STK.CSR.TICKINT.set(1)
+  STK.CSR.CLKSOURCE.set(1)
+  while true {
+    asm("wfi")
+  }
+}

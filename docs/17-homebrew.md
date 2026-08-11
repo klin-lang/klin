@@ -88,5 +88,7 @@ brew install --HEAD --formula Formula/klin.rb   # main
 - `bin/klin` — AOT (`dart compile exe`)
 - `share/klin/stdlib/` — stdlib (`pkgshare`); compiler also looks for `stdlib/`
   next to binary ([`lib/project.dart`](../lib/project.dart))
+- `share/klin/templates/` — MCU scaffolds for `klin init` (`pkgshare`); same
+  discovery as stdlib ([`lib/init.dart`](../lib/init.dart), [075](../issues/075-board-pack-init-host.md))
 
 Host `gcc` / `clang` / `tcc` still required for `klin run`.

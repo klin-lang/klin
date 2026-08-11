@@ -31,6 +31,7 @@ class Klin < Formula
     system "dart", "compile", "exe", "bin/klin.dart", "-o", "klin"
     bin.install "klin"
     (pkgshare/"stdlib").install Dir["stdlib/*"]
+    (pkgshare/"templates").install Dir["templates/*"]
   end
 
   def caveats
@@ -39,7 +40,9 @@ class Klin < Formula
 
       Stdlib is installed at:
         #{pkgshare}/stdlib
-      (`klin` discovers it next to the binary / under share/klin).
+      Board scaffolds (`klin init`) at:
+        #{pkgshare}/templates
+      (`klin` discovers them next to the binary / under share/klin).
     EOS
   end
 
