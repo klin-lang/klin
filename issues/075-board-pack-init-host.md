@@ -179,7 +179,9 @@ lower priority.
   [`examples/stm32/device_f411/`](../examples/stm32/device_f411/),
   [`machine_rp` examples](https://github.com/klin-lang/machine_rp/tree/main/examples),
   [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096),
-  [`nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re).
+  [`nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re),
+  [`adafruit_rp2040_can_feather`](https://github.com/klin-lang/adafruit_rp2040_can_feather)
+  ([098](098-board-adafruit-rp2040-can-feather.md)).
 
 ## Related
 
