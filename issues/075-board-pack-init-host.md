@@ -1,6 +1,6 @@
 # 075 — Board pack / `klin init` vs host (laptop): linker & startup
 
-**Status:** 💭 conclusions (docs); implementation later  
+**Status:** 🔨 MCU `klin init nucleo-f411` ✅ (host-init still 💭)  
 **Depends on:** [010](010-bare-metal.md), [054](054-embedded-project-layout.md), [053](053-device-board-assets.md); optionally [074](074-board-ioc-klin-mod.md)
 
 ## Verdict in brief
@@ -156,9 +156,18 @@ lower priority.
 
 - [x] documented split: host vs MCU (this issue + `examples/README`)
       — laptop: no magic, no `linker.ld`/`startup.s`/Makefile (`klin run`)
-- [ ] at least one board pack / Nucleo-F411 template without user editing ld
-- [ ] (optional) `klin init nucleo-f411` or equivalent scaffold in repo
+- [x] at least one board pack / Nucleo-F411 template without user editing ld
+      — bundled `templates/nucleo-f411/` (`board/startup.s`, `board/linker.ld`, blink `main.kl`)
+- [x] `klin init nucleo-f411 [dir]` — scaffold from `templates/` (`lib/init.dart`, CLI)
 - [ ] (optional, low priority) `klin init` host → `hello` + mod
+
+## Implementation notes
+
+- Templates ship **in the Klin distribution** (`templates/<board>/`), not fetched
+  from GitHub on every init (layer B in §1b). SVD still via `klin get` + `klin.mod`.
+- CLI refuses a non-empty destination. Default dir = `./<board>`.
+- Docs: [docs/06-cli.md](../docs/06-cli.md). Sibling demo:
+  [`examples/stm32/device_f411/`](../examples/stm32/device_f411/).
 
 ## Related
 

@@ -4,6 +4,7 @@ import 'package:klin/ast.dart';
 import 'package:klin/checker.dart';
 import 'package:klin/emit_c.dart';
 import 'package:klin/fmt.dart';
+import 'package:klin/init.dart';
 import 'package:klin/klin_test.dart';
 import 'package:klin/lexer.dart';
 import 'package:klin/link_args.dart';
@@ -23,6 +24,7 @@ import 'package:klin/version.dart';
 ///   klin fmt [-w] <file.kl…>
 ///   klin lsp
 ///   klin test [--cc …] [-I dir] [-l lib] [-L dir] [path…]
+///   klin init <board> [dir]
 ///   klin get [path[@ref]…]
 ///   klin update [path[@ref]…]
 ///   klin outdated [path…]
@@ -69,6 +71,10 @@ Future<void> main(List<String> args) async {
   }
   if (args.first == 'upgrade') {
     await _runUpgrade(args.skip(1).toList());
+    return;
+  }
+  if (args.first == 'init') {
+    await _runInit(args.skip(1).toList());
     return;
   }
 
@@ -266,6 +272,33 @@ Future<void> _runUpgrade(List<String> args) async {
     exit(1);
   } on FileSystemException catch (e) {
     stderr.writeln('klin upgrade: ${e.message}: ${e.path}');
+    exit(1);
+  }
+}
+
+/// `klin init <board> [dir]` — copy MCU board scaffold (issue 075).
+Future<void> _runInit(List<String> args) async {
+  if (args.isEmpty || args.length > 2) {
+    stderr.writeln(
+      'usage: klin init <board> [dir]\n'
+      '  known boards: ${knownInitBoards.join(', ')}',
+    );
+    exit(2);
+  }
+  final board = args[0];
+  final destPath = args.length == 2 ? args[1] : board;
+  try {
+    final created = scaffoldBoardInit(boardId: board, destDir: destPath);
+    stdout.writeln('klin init: $board → $destPath');
+    for (final rel in created) {
+      stdout.writeln('  $rel');
+    }
+    stdout.writeln('next: cd $destPath && klin get && make');
+  } on StateError catch (e) {
+    stderr.writeln('klin init: $e');
+    exit(1);
+  } on FileSystemException catch (e) {
+    stderr.writeln('klin init: ${e.message}: ${e.path}');
     exit(1);
   }
 }
@@ -637,6 +670,7 @@ String _usageText() =>
     '       klin fmt [-w] <file.kl…>\n'
     '       klin lsp\n'
     '       klin test [--cc gcc|clang|tcc] [-I dir] [-l lib] [-L dir] [path…]\n'
+    '       klin init <board> [dir]\n'
     '       klin get [path[@ref]…]\n'
     '       klin update [path[@ref]…]\n'
     '       klin outdated [path…]\n'

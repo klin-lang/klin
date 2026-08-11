@@ -16,10 +16,13 @@ each folder has `startup.s`, `linker.ld`, and a Makefile for
 
 Board packs keep startup/linker next to the app ([075](../../issues/075-board-pack-init-host.md)).
 Host CRT demos stay at `examples/*.kl` / non-`stm32/` folders.
+Fresh project: `klin init nucleo-f411` (bundled `templates/nucleo-f411/`).
 
 ## How
 
 See each subdirectory README (`make` after toolchain install).
+Scaffold: `dart run bin/klin.dart init nucleo-f411 my_blink` then
+`cd my_blink && dart run … get && make`.
 
 ## Links
 

@@ -66,7 +66,7 @@ Startup can still be raw `.s` ([010](010-bare-metal.md)) — the point is
 - [ ] blink (or new template) readable: Klin app separate from linker/startup
 - [ ] ARM build without regression (elf / `SysTick_Handler` as today)
 - [ ] `examples/README.md` describes the convention
-- [ ] (optional) `klin init` or copyable repo template
+- [x] (optional) `klin init nucleo-f411` — bundled `templates/nucleo-f411/` ([075](075-board-pack-init-host.md))
 
 ## Related
 
