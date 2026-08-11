@@ -1,6 +1,6 @@
 # 095 — Board pack: Waveshare RP2350-LCD-0.96
 
-**Status:** ✅ published `@v0.12.0`  
+**Status:** ✅ published `@v0.13.0`  
 **Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [010](010-bare-metal.md); board pack UX [075](075-board-pack-init-host.md)
 
 ## Verdict
@@ -8,9 +8,9 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **Small fix:** `emitC` struct typedef topo-order (same as `emitH`) so cross-module struct fields compile; package install copies `@[link]` `.c`/`.h`/`.s`; `--emit-c` `.link` resolves absolute paths |
-| Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.12.0` |
+| Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.13.0` |
 | Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.11.0` (`*_rp2350`; **Pio** + **Dma** + **UsbCdc**) |
-| Board extras | Pin map + ST7735S (**DMA→SPI1** or **PIO-as-SPI**) + font + ADC + UART0 + **USB CDC** + sprites + light-sleep + **POWMAN** + WS2812 (PIO) + Hazard3 RISC-V twin + examples |
+| Board extras | Pin map + ST7735S (**DMA→SPI1** or **PIO-as-SPI**) + font + ADC + UART0 + **USB CDC** + sprites + light-sleep + **oscillator dormant** + **POWMAN** + WS2812 (PIO) + Hazard3 RISC-V twin + examples |
 
 ## Scope
 
@@ -90,12 +90,19 @@
 - Bulk: DMA→PIO TXF + stall before CS; DC/CS/RST stay GPIO; HW `lcd_out` unchanged
 - Example: `lcd_pio_fill` (solid color cycle)
 
-Tag: [v0.12.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag/v0.12.0)
+### `@v0.13.0`
+
+- **Oscillator dormant** without POWMAN SWCORE PD (RAM/PC survive; no reboot)
+- Timer path (stock PCB, no USER button): `dormant_clocks_prep_lposc_timer` → `powman_alarm_in_ms` → `rosc_enter_dormant` → `powman_alarm_disarm` → `dormant_clocks_restore_rosc`
+- GPIO path (header): `dormant_clocks_prep_xosc` + `dormant_wake_gpio_enable` + `xosc_enter_dormant`
+- Example: `xosc_dormant_demo` — LCD `DORM 0.13` / `AWAKE` + `N=`
+- Tier contrast: `sleep_demo` (clocks keep running) / dormant (oscillator stop) / `powman_demo` (SWCORE PD reboot)
+
+Tag: [v0.13.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag/v0.13.0)
 
 ## Out of scope
 
 - Onboard WS2812 (none on this PCB)
-- XOSC dormant (clocks stop without SWCORE PD)
 - USB IRQ / TinyUSB stack (polling ACM only)
 - `klin init <board>` automation ([075](075-board-pack-init-host.md))
 
@@ -103,7 +110,7 @@ Tag: [v0.12.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/ta
 
 ```sh
 klin get github/klin-lang/machine_rp@v0.11.0
-klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.12.0
+klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.13.0
 ```
 
 ## Links
