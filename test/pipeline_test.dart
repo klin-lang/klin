@@ -2298,6 +2298,38 @@ pub fn clamp(v: i32, lo: i32, hi: i32): i32 {
     );
   });
 
+  test('remote import incomplete @[link] units suggests klin get', () {
+    final cache = Directory.systemTemp.createTempSync('klin_incomplete_link_');
+    addTearDown(() => cache.deleteSync(recursive: true));
+    final work = Directory.systemTemp.createTempSync('klin_incomplete_work_');
+    addTearDown(() => work.deleteSync(recursive: true));
+    final pkg = Directory('${cache.path}/pkg/github/klin-lang/linkpkg')
+      ..createSync(recursive: true);
+    File('${pkg.path}/usb.kl').writeAsStringSync('''
+module usb
+@[link("usb_cdc_rp.c")]
+pub fn out() {}
+''');
+    File('${pkg.path}/.pin').writeAsStringSync('v0.1.0\n');
+    File('${work.path}/app.kl').writeAsStringSync('''
+import "github/klin-lang/linkpkg"
+fn main() { usb.out() }
+''');
+    expect(
+      () => loadProject(
+        '${work.path}/app.kl',
+        klinCacheDir: cache.path,
+      ),
+      throwsA(
+        isA<FileSystemException>().having(
+          (e) => e.message,
+          'message',
+          allOf(contains('incomplete'), contains('klin get')),
+        ),
+      ),
+    );
+  });
+
   test('local github/ directory does not shadow remote import (issue 049)', () {
     final cache = Directory.systemTemp.createTempSync('klin_shadow049_');
     addTearDown(() => cache.deleteSync(recursive: true));
@@ -2539,6 +2571,19 @@ fn main() { RCC.AHB1ENR.GPIOAEN.set(1) }
       ),
       isFalse,
     );
+  });
+
+  test('packageCacheHasRequiredLinkUnits detects missing @[link] .c', () {
+    final dir = Directory.systemTemp.createTempSync('klin_link_units_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    File('${dir.path}/usb.kl').writeAsStringSync('''
+@[link("usb_cdc_rp.c")]
+@[link("-lm")]
+fn usb_cdc_out() {}
+''');
+    expect(packageCacheHasRequiredLinkUnits(dir.path), isFalse);
+    File('${dir.path}/usb_cdc_rp.c').writeAsStringSync('void f(void) {}\n');
+    expect(packageCacheHasRequiredLinkUnits(dir.path), isTrue);
   });
 
   test('packageContentHash is stable and order-independent (issue 065)', () {
@@ -4385,6 +4430,29 @@ fn main() {}
     expect(proc.exitCode, 0, reason: proc.stderr.toString());
     expect(await cFile.exists(), isTrue);
     expect(await linkFile.readAsString(), 'driver.a\n');
+  });
+
+  test('--emit-c .link resolves existing @[link] paths to absolute', () async {
+    final driver = File('${tmp.path}/usb_stub.c');
+    await driver.writeAsString('void klin_usb_stub(void) {}\n');
+    final source = File('${tmp.path}/emit_abs_link.kl');
+    await source.writeAsString('''
+@[link("usb_stub.c")]
+fn main() {}
+''');
+    final proc = await Process.run(
+      'dart',
+      ['run', 'bin/klin.dart', '--emit-c', source.path],
+    );
+    final cFile = File('out/emit_abs_link.c');
+    final linkFile = File('out/emit_abs_link.link');
+    addTearDown(() async {
+      if (await cFile.exists()) await cFile.delete();
+      if (await linkFile.exists()) await linkFile.delete();
+    });
+    expect(proc.exitCode, 0, reason: proc.stderr.toString());
+    final linkBody = await linkFile.readAsString();
+    expect(linkBody.trim(), driver.absolute.path);
   });
 
   test('--emit-h writes header without compiling or running', () async {

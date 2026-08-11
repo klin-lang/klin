@@ -134,9 +134,22 @@ Future<void> main(List<String> args) async {
     final cSource = emitC(program, sourcePath);
     await File(cPath).writeAsString(cSource);
     if (opts.emitC) {
-      final links = collectLinkAttrs(program);
-      if (links.isNotEmpty) {
-        await File('out/$base.link').writeAsString('${links.join('\n')}\n');
+      // Resolve @[link] paths (package .c / .s) so bare-metal Makefiles work.
+      final resolved = <String>[];
+      for (final ref in collectLinkAttrRefs(program, sourceDir)) {
+        final raw = ref.raw;
+        if (raw.startsWith('-')) {
+          resolved.add(raw);
+        } else {
+          final fromSource =
+              File('${ref.sourceDir}${Platform.pathSeparator}$raw');
+          resolved.add(
+            fromSource.existsSync() ? fromSource.absolute.path : raw,
+          );
+        }
+      }
+      if (resolved.isNotEmpty) {
+        await File('out/$base.link').writeAsString('${resolved.join('\n')}\n');
       }
     }
   }

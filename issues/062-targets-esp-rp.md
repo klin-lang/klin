@@ -13,8 +13,8 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 
 | Target | Realistic? | Notes |
 |---|---|---|
-| **RP2040** | ✅ path exists | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.9.0` — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Pio**+**Dma** (sideset/shift; no DAC). |
-| **RP2350** | ✅ Arm + RISC-V | Same APIs via `*_rp2350` twins. Board: Waveshare LCD-0.96 → [095](095-board-waveshare-rp2350-lcd-096.md). |
+| **RP2040** | ✅ path exists | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.10.0` — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Pio**+**Dma**+**UsbCdc** (UsbCdc RP2350 first; sideset/shift; no DAC). |
+| **RP2350** | ✅ Arm + RISC-V | Same APIs via `*_rp2350` twins (+ UsbCdc poll). Board: Waveshare LCD-0.96 → [095](095-board-waveshare-rp2350-lcd-096.md). |
 | **ESP32-C3** | ✅ Pin…Adc | [`machine_esp`](https://github.com/klin-lang/machine_esp) `@v0.4.0` — MMIO + LEDC; minimal **ESP-IDF** boot; no DAC; no Wi‑Fi in MVP. |
 | **STM8S** | ✅ Pin…Adc (emit-c) | [`machine_stm8`](https://github.com/klin-lang/machine_stm8) `@v0.2.0` — no DAC; SDCC link later. |
 | **CH32V003** | ✅ Pin…Adc | [`machine_ch32v`](https://github.com/klin-lang/machine_ch32v) `@v0.1.0` — QingKe RV32EC ([086](086-machine-ch32v.md)). |
@@ -45,9 +45,10 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 5. **Uart** / **I2c** / **Spi** / **Adc** on RP + ESP + STM8 — ✅ (`machine_rp@v0.6.0`, `machine_esp@v0.4.0`, `machine_stm8@v0.2.0`)  
 6. **Pio** on RP — ✅ (`machine_rp@v0.8.0`; board WS2812 PIO → [095](095-board-waveshare-rp2350-lcd-096.md); not on other MCU families)  
 7. **Dma** on RP — ✅ (`machine_rp@v0.9.0`; board DMA→SPI1 LCD → [095](095-board-waveshare-rp2350-lcd-096.md))  
-8. **CH32V003** Pin…Adc — ✅ (`machine_ch32v@v0.1.0`; [086](086-machine-ch32v.md))  
-9. **GD32VF103** Pin…Adc — ✅ (`machine_gd32v@v0.2.0`; [087](087-machine-gd32v.md))  
-10. Wi‑Fi / freestanding ESP / SDCC STM8 — later  
+8. **UsbCdc** on RP2350 — ✅ (`machine_rp@v0.10.0`; board Type-C console → [095](095-board-waveshare-rp2350-lcd-096.md); RP2040 later)  
+9. **CH32V003** Pin…Adc — ✅ (`machine_ch32v@v0.1.0`; [086](086-machine-ch32v.md))  
+10. **GD32VF103** Pin…Adc — ✅ (`machine_gd32v@v0.2.0`; [087](087-machine-gd32v.md))  
+11. Wi‑Fi / freestanding ESP / SDCC STM8 — later  
 
 ## Out of scope
 

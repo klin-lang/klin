@@ -1,16 +1,16 @@
 # 095 — Board pack: Waveshare RP2350-LCD-0.96
 
-**Status:** ✅ published `@v0.10.0`  
+**Status:** ✅ published `@v0.11.0`  
 **Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [010](010-bare-metal.md); board pack UX [075](075-board-pack-init-host.md)
 
 ## Verdict
 
 | Question | Answer |
 |---|---|
-| Change the Klin compiler? | **Small fix:** `emitC` struct typedef topo-order (same as `emitH`) so cross-module struct fields compile |
-| Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.10.0` |
-| Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.9.0` (`*_rp2350`; **Pio** + **Dma**) |
-| Board extras | Pin map + ST7735S (**DMA→SPI1** bulk) + font + ADC + UART0 + sprites + light-sleep + **POWMAN** + WS2812 (PIO) + Hazard3 RISC-V twin + examples |
+| Change the Klin compiler? | **Small fix:** `emitC` struct typedef topo-order (same as `emitH`) so cross-module struct fields compile; package install copies `@[link]` `.c`/`.h`/`.s`; `--emit-c` `.link` resolves absolute paths |
+| Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.11.0` |
+| Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.10.0` (`*_rp2350`; **Pio** + **Dma** + **UsbCdc**) |
+| Board extras | Pin map + ST7735S (**DMA→SPI1** bulk) + font + ADC + UART0 + **USB CDC** + sprites + light-sleep + **POWMAN** + WS2812 (PIO) + Hazard3 RISC-V twin + examples |
 
 ## Scope
 
@@ -30,7 +30,7 @@
 
 - UART0 pin helpers (GP0/GP1) + `uart0_out` / `uart_write_codes` / `uart_write_codes_n`
 - Example: `uart_console` (LCD TX/RX/CH counters + serial banner/echo @ 115200)
-- Note: Type-C is native USB — console needs external USB–UART on the header
+- Note (pre-`@v0.11.0`): Type-C is native USB — UART console needs external USB–UART on the header; CDC ACM lands in `@v0.11.0`
 
 ### `@v0.4.0`
 
@@ -76,21 +76,28 @@
 - Channel: `lcd_dma_ch()` → 0; DC/CS stay CPU GPIO; commands / `pixel` stay byte SPI
 - Closes board “PIO·DMA LCD” checklist as DMA-paced HW SPI (PIO-as-SPI remux later)
 
-Tag: [v0.10.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag/v0.10.0)
+### `@v0.11.0`
+
+- **USB CDC ACM** Type-C console (`machine_rp@v0.10.0` freestanding poll driver)
+- Clocks: `usb_clock.kl` — XOSC → PLL_USB 48 MHz → `clk_usb` (caller-owned; no hidden clock)
+- IO: `usb_cdc_out` / `usb_write_codes*` (`poll` + `write_u8`); example `usb_console` (LCD banner + echo)
+- UART console (`uart_console`) unchanged — header USB–UART still valid
+
+Tag: [v0.11.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag/v0.11.0)
 
 ## Out of scope
 
 - Onboard WS2812 (none on this PCB)
 - PIO-as-SPI LCD (pin remux off SPI1)
-- USB CDC ACM console (native USB stack)
 - XOSC dormant (clocks stop without SWCORE PD)
+- USB IRQ / TinyUSB stack (polling ACM only)
 - `klin init <board>` automation ([075](075-board-pack-init-host.md))
 
 ## Published
 
 ```sh
-klin get github/klin-lang/machine_rp@v0.9.0
-klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.10.0
+klin get github/klin-lang/machine_rp@v0.10.0
+klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.11.0
 ```
 
 ## Links

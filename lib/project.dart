@@ -310,6 +310,14 @@ _ImportTarget _resolveRemoteImportTarget(
   }
   final pkgDir = packageCacheDir(remote, cacheRoot: klinCacheDir);
   if (isPackageInstalled(pkgDir)) {
+    if (!packageCacheHasRequiredLinkUnits(pkgDir)) {
+      throw FileSystemException(
+        'remote package `${remote.path}` is incomplete '
+        '(missing @[link] C/ASM units); '
+        'run `klin get ${remote.path}` to repair the cache',
+        pkgDir,
+      );
+    }
     return _DirImport(Directory(pkgDir).absolute.path);
   }
   throw FileSystemException(

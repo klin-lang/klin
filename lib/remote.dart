@@ -955,6 +955,41 @@ bool cacheSatisfiesRemoteFetch({
   return have.startsWith(want) || want.startsWith(have);
 }
 
+final _linkAttrPathRe = RegExp(r'link\("([^"]+)"\)');
+
+/// Whether every `@[link("….c|.h|.s|.S")]` path named from package `.kl`
+/// sources is present in [pkgDir].
+///
+/// Older Klin installs copied only `.kl`; after a compiler upgrade the pin
+/// and commit can still match while freestanding units are missing — those
+/// installs must be re-fetched.
+bool packageCacheHasRequiredLinkUnits(String pkgDir) {
+  final dir = Directory(pkgDir);
+  if (!dir.existsSync()) return false;
+  for (final entity in dir.listSync(followLinks: false)) {
+    if (entity is! File) continue;
+    final name = entity.path.split(Platform.pathSeparator).last;
+    if (!name.endsWith('.kl') || name.endsWith('_test.kl')) continue;
+    final text = entity.readAsStringSync();
+    for (final m in _linkAttrPathRe.allMatches(text)) {
+      final raw = m.group(1)!;
+      if (raw.startsWith('-')) continue;
+      final base = raw.split(RegExp(r'[/\\]')).last;
+      if (!_isPackageNativeUnit(base)) continue;
+      final linked = File('$pkgDir${Platform.pathSeparator}$base');
+      if (!linked.existsSync()) return false;
+    }
+  }
+  return true;
+}
+
+bool _isPackageNativeUnit(String name) {
+  return name.endsWith('.c') ||
+      name.endsWith('.h') ||
+      name.endsWith('.s') ||
+      name.endsWith('.S');
+}
+
 /// Fetch [remote] at [gitRef] into the package cache.
 ///
 /// Returns `(pkgDir, commitSha)`. [pin] is written to `.pin` (klin.mod version);
@@ -978,14 +1013,16 @@ Future<(String pkgDir, String commit)> fetchRemote(
     }
     final commit = readCommit(pkgDir);
     if (cacheSatisfiesRemoteFetch(
-      cachedPin: existing,
-      pinValue: pinValue,
-      cachedCommit: commit,
-      gitRef: gitRef,
-    )) {
+          cachedPin: existing,
+          pinValue: pinValue,
+          cachedCommit: commit,
+          gitRef: gitRef,
+        ) &&
+        packageCacheHasRequiredLinkUnits(pkgDir)) {
       return (pkgDir, commit!);
     }
-    // Missing `.commit`, or pin matches but SHA ≠ locked gitRef — re-fetch.
+    // Missing `.commit`, pin matches but SHA ≠ locked gitRef, or install from
+    // an older Klin that omitted `@[link]` `.c`/`.h`/`.s` — re-fetch.
   }
 
   final tmp = Directory.systemTemp.createTempSync('klin_get_');
@@ -999,8 +1036,7 @@ Future<(String pkgDir, String commit)> fetchRemote(
     for (final entity in Directory(sourceDir).listSync(followLinks: false)) {
       if (entity is! File) continue;
       final name = entity.path.split(Platform.pathSeparator).last;
-      if (!name.endsWith('.kl')) continue;
-      if (name.endsWith('_test.kl')) continue;
+      if (!_isPackageSourceFile(name)) continue;
       entity.copySync('${staging.path}${Platform.pathSeparator}$name');
     }
     if (!isPackageInstalled(staging.path)) {
@@ -1131,6 +1167,14 @@ bool _hasKlSources(String dir) {
     if (name.endsWith('.kl') && !name.endsWith('_test.kl')) return true;
   }
   return false;
+}
+
+/// Package install copies Klin sources plus freestanding C/ASM units that
+/// `@[link]` may reference (e.g. `usb_cdc_rp.c`).
+bool _isPackageSourceFile(String name) {
+  if (name.endsWith('_test.kl')) return false;
+  if (name.endsWith('.kl')) return true;
+  return _isPackageNativeUnit(name);
 }
 
 /// Ensure [remote] is installed per [mod] / lock policy.
