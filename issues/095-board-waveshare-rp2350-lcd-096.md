@@ -9,7 +9,7 @@
 |---|---|
 | Change the Klin compiler? | **Small fix:** `emitC` struct typedef topo-order (same as `emitH`) so cross-module struct fields compile |
 | Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.7.0` |
-| Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.6.0` (`*_rp2350`) |
+| Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.7.0` (`*_rp2350`; includes **Pio**) |
 | Board extras | Pin map + ST7735S + font + ADC + UART0 + sprites + light-sleep + WS2812 + Hazard3 RISC-V twin + examples |
 
 ## Scope
@@ -61,7 +61,7 @@ Tag: [v0.7.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag
 ## Out of scope
 
 - Onboard WS2812 (none on this PCB)
-- PIO WS2812 / PIO·DMA LCD (belongs in `machine_rp` later)
+- PIO WS2812 / PIO·DMA LCD (chip PIO is in `machine_rp@v0.7.0`; board helpers later)
 - USB CDC ACM console (native USB stack)
 - POWMAN deep sleep / XOSC dormant resume
 - `klin init <board>` automation ([075](075-board-pack-init-host.md))
@@ -69,7 +69,7 @@ Tag: [v0.7.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag
 ## Published
 
 ```sh
-klin get github/klin-lang/machine_rp@v0.6.0
+klin get github/klin-lang/machine_rp@v0.7.0
 klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.7.0
 ```
 
