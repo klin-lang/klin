@@ -285,6 +285,7 @@ const allowedDeviceRepos = {
 /// MVP allowlist for CubeMX `.ioc` board pinouts (issue 074).
 const allowedBoardRepos = {
   'github/klin-lang/boards',
+  'github/klin-lang/nucleo_f411re',
 };
 
 /// Parsed `host/owner/repo/rel/path.{svd,ioc}` with optional `@ref`.
@@ -390,7 +391,7 @@ RemoteAsset parseRemoteAsset(String spec) {
   final allow = isSvd ? allowedDeviceRepos : allowedBoardRepos;
   final allowHint = isSvd
       ? 'github/tinygo-org/stm32-svd'
-      : 'github/klin-lang/boards';
+      : 'github/klin-lang/boards, github/klin-lang/nucleo_f411re';
   if (!allow.contains(repoKey)) {
     throw FormatException(
       'remote ${isSvd ? 'device' : 'board'} repo `$repoKey` is not on the '

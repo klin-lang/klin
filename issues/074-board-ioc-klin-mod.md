@@ -20,7 +20,7 @@ This issue = **board / pinout** via CubeMX **`.ioc`**.
 klin 1
 require  github/klin-lang/osa v0.1.0
 device   github/tinygo-org/stm32-svd/svd/stm32f411.svd main
-board    github/klin-lang/boards/nucleo_f411re.ioc v0.1.0
+board    github/klin-lang/nucleo_f411re/nucleo_f411re.ioc v0.1.2
 ```
 
 | Directive | Artifact | Code |
@@ -80,7 +80,9 @@ Resolution like SVD ([053](053-device-board-assets.md)): **local-first**.
 ## Implementation notes
 
 - `lib/ioc/` — parse / emit / expand
-- Allowlist: `github/klin-lang/boards` (remote seed when the repo exists)
+- Allowlist: `github/klin-lang/boards`,
+  [`github/klin-lang/nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re)
+  (board pack + `.ioc` seed — [096](096-board-nucleo-f411re.md))
 - Fixture: [`third_party/ioc/nucleo_f411re.ioc`](../third_party/ioc/nucleo_f411re.ioc)
 
 ## Do not

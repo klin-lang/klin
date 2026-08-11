@@ -30,7 +30,20 @@ make KLIN=/path/to/bin/klin.dart   # or installed `klin`
 
 Needs `arm-none-eabi-gcc` on `PATH`.
 
+## Optional board pack
+
+Pin helpers + more examples live outside Klin:
+
+```sh
+klin get github/klin-lang/nucleo_f411re@v0.1.2
+# require github/klin-lang/nucleo_f411re v0.1.2
+```
+
+See [096](../../issues/096-board-nucleo-f411re.md) /
+https://github.com/klin-lang/nucleo_f411re
+
 ## Links
 
-- Issue [075](../../issues/075-board-pack-init-host.md), [074](../../issues/074-board-ioc-klin-mod.md), [053](../../issues/053-device-board-assets.md)
+- Issue [075](../../issues/075-board-pack-init-host.md), [074](../../issues/074-board-ioc-klin-mod.md),
+  [096](../../issues/096-board-nucleo-f411re.md), [053](../../issues/053-device-board-assets.md)
 - In-repo sibling: [`examples/stm32/device_f411/`](../../examples/stm32/device_f411/)

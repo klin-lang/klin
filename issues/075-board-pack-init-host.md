@@ -167,7 +167,8 @@ lower priority.
 - Templates ship **in the Klin distribution** (`templates/<board>/`), not fetched
   from GitHub on every init (layer B in §1b). SVD / packages still via
   `klin get` + `klin.mod`.
-- Known boards: `nucleo-f411` (STM32 + `$device`), `pico` / `pico2`
+- Known boards: `nucleo-f411` (STM32 + `$device` + local `.ioc`; optional pack
+  [096](096-board-nucleo-f411re.md)), `pico` / `pico2`
   (`machine_rp` blink), `waveshare-rp2350-lcd-096` (backlight + board pack
   [095](095-board-waveshare-rp2350-lcd-096.md)).
 - Discovery mirrors stdlib: repo `templates/`, `$KLIN_TEMPLATES`, or
@@ -177,7 +178,8 @@ lower priority.
 - Docs: [docs/06-cli.md](../docs/06-cli.md). Sibling demos:
   [`examples/stm32/device_f411/`](../examples/stm32/device_f411/),
   [`machine_rp` examples](https://github.com/klin-lang/machine_rp/tree/main/examples),
-  [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096).
+  [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096),
+  [`nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re).
 
 ## Related
 
