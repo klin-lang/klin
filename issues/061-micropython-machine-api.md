@@ -135,6 +135,7 @@ Examples: [`pwm_f411`](https://github.com/klin-lang/machine_stm32/tree/main/exam
 [`pio_blink_pico`](https://github.com/klin-lang/machine_rp/tree/main/examples/pio_blink_pico),
 [`machine_esp/examples/pwm_c3`](https://github.com/klin-lang/machine_esp/tree/main/examples/pwm_c3),
 [`rc_c3`](https://github.com/klin-lang/machine_esp/tree/main/examples/rc_c3),
+[`blink_s3`](https://github.com/klin-lang/machine_esp/tree/main/examples/blink_s3) / [`pwm_s3`](https://github.com/klin-lang/machine_esp/tree/main/examples/pwm_s3) (S3 → [099](099-machine-esp-esp32-s3.md)),
 [`machine_stm8/examples/rc_pd4`](https://github.com/klin-lang/machine_stm8/tree/main/examples/rc_pd4).
 
 `machine_rp` `@v0.9.0`:
