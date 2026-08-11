@@ -1,6 +1,6 @@
 # 095 — Board pack: Waveshare RP2350-LCD-0.96
 
-**Status:** ✅ published `@v0.7.0`  
+**Status:** ✅ published `@v0.8.0`  
 **Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [010](010-bare-metal.md); board pack UX [075](075-board-pack-init-host.md)
 
 ## Verdict
@@ -8,9 +8,9 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **Small fix:** `emitC` struct typedef topo-order (same as `emitH`) so cross-module struct fields compile |
-| Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.7.0` |
-| Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.7.0` (`*_rp2350`; includes **Pio**) |
-| Board extras | Pin map + ST7735S + font + ADC + UART0 + sprites + light-sleep + WS2812 + Hazard3 RISC-V twin + examples |
+| Where does the code live? | External: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.8.0` |
+| Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.8.0` (`*_rp2350`; **Pio** + sideset/shift) |
+| Board extras | Pin map + ST7735S + font + ADC + UART0 + sprites + light-sleep + WS2812 (PIO) + Hazard3 RISC-V twin + examples |
 
 ## Scope
 
@@ -56,12 +56,18 @@
 - Toolchain: `riscv64-unknown-elf-gcc -march=rv32imac -mabi=ilp32` + `mem.S` stubs
 - Arm demos unchanged; `sleep_demo` stays Arm-only (SysTick)
 
-Tag: [v0.7.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag/v0.7.0)
+### `@v0.8.0`
+
+- External WS2812 on GP15 via **PIO0 SM0** (`machine_rp@v0.8.0` side-set program)
+- Same `ws2812_out` / `show` API; bit-bang kept as `ws2812_bb_*`
+- Example `ws2812_strip` unchanged at the call site
+
+Tag: [v0.8.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag/v0.8.0)
 
 ## Out of scope
 
 - Onboard WS2812 (none on this PCB)
-- PIO WS2812 / PIO·DMA LCD (chip PIO is in `machine_rp@v0.7.0`; board helpers later)
+- PIO·DMA LCD
 - USB CDC ACM console (native USB stack)
 - POWMAN deep sleep / XOSC dormant resume
 - `klin init <board>` automation ([075](075-board-pack-init-host.md))
@@ -69,8 +75,8 @@ Tag: [v0.7.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag
 ## Published
 
 ```sh
-klin get github/klin-lang/machine_rp@v0.7.0
-klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.7.0
+klin get github/klin-lang/machine_rp@v0.8.0
+klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.8.0
 ```
 
 ## Links
