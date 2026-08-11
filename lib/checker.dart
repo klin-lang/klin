@@ -2565,8 +2565,12 @@ final class Checker {
   static const _arithOps = {'+', '-', '*', '/', '%'};
   static const _bitOps = {'&', '|', '^'};
   static const _shiftOps = {'<<', '>>'};
+  static const _logicalOps = {'&&', '||'};
 
   KlinType _inferBinary(Expr left, String op, Expr right, SourcePos pos) {
+    if (_logicalOps.contains(op)) {
+      return _inferLogical(left, op, right, pos);
+    }
     if (_cmpOps.contains(op)) {
       return _inferComparison(left, op, right, pos);
     }
@@ -2605,6 +2609,25 @@ final class Checker {
     _materialize(left, concrete);
     _materialize(right, concrete);
     return concrete;
+  }
+
+  /// Logical `&&` / `||` — both sides `bool`; short-circuit via C emission (097).
+  KlinType _inferLogical(Expr left, String op, Expr right, SourcePos pos) {
+    final lt = _inferExpr(left);
+    final rt = _inferExpr(right);
+    if (lt is! PrimType || lt.kind != PrimKind.bool_) {
+      throw CheckError(
+        'operator `$op` requires type `bool`, got `${lt.displayName}`',
+        left.pos,
+      );
+    }
+    if (rt is! PrimType || rt.kind != PrimKind.bool_) {
+      throw CheckError(
+        'operator `$op` requires type `bool`, got `${rt.displayName}`',
+        right.pos,
+      );
+    }
+    return const PrimType(PrimKind.bool_);
   }
 
   /// Bitwise `&` / `|` / `^` — integers only (issue 078).
@@ -2747,10 +2770,9 @@ final class Checker {
       case UnaryExpr(:final operand, :final op):
         if (op != '&' && op != '*') _materialize(operand, type);
       case BinaryExpr(:final left, :final right, :final op):
-        if (_cmpOps.contains(op)) {
-          // Comparison operands have a numeric type; the node itself has bool.
-          // When materializing bool from above, do not descend: _inferComparison
-          // already assigned operand types.
+        if (_cmpOps.contains(op) || _logicalOps.contains(op)) {
+          // Comparison / logical nodes are bool; operands already typed.
+          // Do not push the outer bool into numeric comparison operands.
           break;
         }
         _materialize(left, type);

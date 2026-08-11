@@ -71,8 +71,10 @@ enum TokenKind {
   percent,
   percentEqual, // `%=`
   ampersand, // unary address / binary bitwise AND
+  ampAmp, // logical AND `&&`
   ampEqual, // `&=`
   pipe, // bitwise OR `|`
+  pipePipe, // logical OR `||`
   pipeEqual, // `|=`
   caret, // bitwise XOR `^`
   caretEqual, // `^=`

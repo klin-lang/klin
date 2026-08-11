@@ -20,7 +20,7 @@ This issue = **board / pinout** via CubeMX **`.ioc`**.
 klin 1
 require  github/klin-lang/osa v0.1.0
 device   github/tinygo-org/stm32-svd/svd/stm32f411.svd main
-board    github/klin-lang/nucleo_f411re/nucleo_f411re.ioc v0.1.2
+board    github/klin-lang/nucleo_f411re/nucleo_f411re.ioc v0.1.3
 ```
 
 | Directive | Artifact | Code |

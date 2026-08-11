@@ -561,6 +561,59 @@ fn main() {
     expect(c, contains('y = (y + 1);'));
   });
 
+  test('golden: logical ops && || (issue 097)', () async {
+    final result = await _compileAndRun('test/logical.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/logical.out').readAsString());
+
+    final source = File('test/logical.kl').readAsStringSync();
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'test/logical.kl');
+    expect(c, contains('(a && !(b))'));
+    expect(c, contains('(b || a)'));
+    expect(c, contains('(b && side_effect_false())'));
+    expect(c, contains('(a || side_effect_false())'));
+    // Precedence: `||` below `&&`.
+    expect(c, contains('(a || (b && false))'));
+  });
+
+  test('lexer: logical tokens && || (issue 097)', () {
+    final tokens = Lexer('a&&b||c&d|e').tokenize();
+    expect(
+      tokens.map((t) => t.kind).toList(),
+      [
+        TokenKind.ident,
+        TokenKind.ampAmp,
+        TokenKind.ident,
+        TokenKind.pipePipe,
+        TokenKind.ident,
+        TokenKind.ampersand,
+        TokenKind.ident,
+        TokenKind.pipe,
+        TokenKind.ident,
+        TokenKind.eof,
+      ],
+    );
+  });
+
+  test('error: logical op rejects int (issue 097)', () {
+    const source = 'fn main() { let x = 1 && true }';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError && e.toString().contains('requires type `bool`'))),
+    );
+  });
+
+  test('klin fmt: logical operators (issue 097)', () {
+    const ugly = 'fn main(){let x=true&&false||!true}';
+    final once = formatSource(ugly);
+    expect(once, contains('true && false || !true'));
+    expect(formatSource(once), once);
+  });
+
   test('golden: bitwise ops | & ^ ~ << >> (issue 078)', () async {
     final result = await _compileAndRun('test/bitwise.kl', tmp);
     expect(result.exitCode, 0, reason: result.stderr);

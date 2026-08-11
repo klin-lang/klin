@@ -97,7 +97,7 @@ building the core from scratch.
 | [086](086-machine-ch32v.md) | `machine_ch32v` CH32V003 QingKe Pin…Adc | ✅ `@v0.1.0` | 061, 062 |
 | [087](087-machine-gd32v.md) | `machine_gd32v` GD32VF103 Nuclei Pin…Adc | ✅ `@v0.2.0` | 061, 086 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
-| [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.2` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
+| [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
 | [064](064-if-cond-struct-literal-parse.md) | `if`/`while` condition ending in a name mistaken for a struct literal | ✅ | — |
 | [068](068-shared-type-decl.md) | Shared type annotation (`a, b: i32` like Go; both forms OK) | ✅ | 002, 004, 005 |
 | [069](069-eventemitter-signals.md) | Observer / EventEmitter / Signals (library; JS-signals explicitly) | 💭 | 013, 057 |
@@ -109,6 +109,7 @@ building the core from scratch.
 | [076](076-release-windows-arm.md) | Release: Windows/ARM targets + publishing + checksums | ✅ | 067 |
 | [077](077-string-template.md) | Runtime string substitution / templates (`{0}` positional + `{key}` KV) | 💭 | 007, 057, 016, 060 |
 | [078](078-bitwise-ops.md) | Bitwise operators (`\| & ^ ~ << >>`; integers only) | ✅ | 002, 019 |
+| [097](097-logical-ops.md) | Logical operators (`&&` / `\|\|`; bool only, short-circuit) | ✅ | 002, 003, 078 |
 | [079](079-associated-functions.md) | Associated/static functions on types (`Type.func`; constructors/parsers) | ✅ | 005, 072 |
 | [080](080-stdlib-str.md) | `stdlib/str` — `eq`/`len`/… (string compares without `==`) | ✅ | 012, 021 |
 | [083](083-stdlib-math.md) | `stdlib/math` — thin libm + typed `min_*`/`max_*`/`clamp_*` | ✅ | 012, 021 |

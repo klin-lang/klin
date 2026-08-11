@@ -156,6 +156,30 @@ Implemented in [078](../issues/078-bitwise-ops.md); example:
 
 ---
 
+## D9. Logical operators `&&` / `||` — DECIDED
+
+**Choice: C-style `&&` / `||` on `bool` only; short-circuit; Rust-like tier above equality.**
+
+```
+error-or { }  →  ||  →  &&  →  == !=  →  comparisons  →  |  →  ^  →  &  →  …
+```
+
+- Both operands and the result are **`bool`** (same rule as `if` conditions —
+  no numeric truthiness).
+- Emission is 1:1 to C `&&` / `||` (short-circuit comes from the C compiler).
+- Keyword `or` stays error-handling (`or { … }`, D2). No `and` / `or` aliases.
+- Conditional value selection is already [`pick`](18-pick.md) /
+  [085](../issues/085-pick.md) — not `? :`.
+
+Without a `&&` token, `a && b` used to lex as `&` `&` and parse as
+`a & (&b)` (bitwise AND of an address) — a silent trap. Lexing `&&` / `||`
+as single tokens closes that hole.
+
+Implemented in [097](../issues/097-logical-ops.md); example:
+[`examples/logical.kl`](../examples/logical.kl).
+
+---
+
 ## D7. To decide later
 
 - Closures — at all? Nelua does not have them outside top-level. A struct

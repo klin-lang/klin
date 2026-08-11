@@ -196,6 +196,15 @@ Decision: [docs/01-decisions.md](docs/01-decisions.md) D8; also
 [issues/078-bitwise-ops.md](issues/078-bitwise-ops.md),
 [`examples/bitwise.kl`](examples/bitwise.kl).
 
+### Logical operators
+
+`bool` only: `&&` / `||` (short-circuit, map 1:1 to C) and unary `!`.
+Precedence: `||` → `&&` → `==` / comparisons → bitwise (D9).
+Keyword `or` is error-handling (`or { … }`), not logical OR; value choice is
+[`pick`](docs/18-pick.md). See
+[issues/097-logical-ops.md](issues/097-logical-ops.md),
+[`examples/logical.kl`](examples/logical.kl).
+
 ### Compound assignment
 
 `+= -= *= /= %=` and bitwise `&= |= ^= <<= >>=` emit 1:1 as C `op=` (LHS once).

@@ -1,0 +1,20 @@
+// Logical operators (issue 097 / D9): `&&` / `||` on bool only.
+// Short-circuit maps 1:1 to C. Unary `!` already existed.
+// Value choice is `pick`, not `? :`. Keyword `or` is error-handling.
+
+fn main() {
+    let a = true
+    let b = false
+    if a && !b {
+        printf("and ok\n")
+    }
+    if b || a {
+        printf("or ok\n")
+    }
+    // Precedence: `||` below `&&` below comparisons.
+    if a || b && false {
+        printf("prec ok\n")
+    }
+    let n: i32 = pick a && !b { 1 } { 0 }
+    printf("pick=%d\n", n)
+}

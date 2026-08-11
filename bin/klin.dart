@@ -321,7 +321,7 @@ Future<void> _runGet(List<String> args, {required bool force}) async {
           'klin $cmd: no klin.mod requires/devices/boards; pass path[@ref] '
           '(e.g. github/klin-lang/osa@v0.1.0, '
           'github/tinygo-org/stm32-svd/svd/stm32f411.svd@main, or '
-          'github/klin-lang/nucleo_f411re/nucleo_f411re.ioc@v0.1.2)',
+          'github/klin-lang/nucleo_f411re/nucleo_f411re.ioc@v0.1.3)',
         );
         exit(2);
       }
