@@ -18,7 +18,7 @@ Do not duplicate SVD parser — reuse `svd2klin` / shared `lib/svd`.
 - Fluent rewrite → existing `PERIPH_REG_FIELD_{set,write,toggle}`
   (still `static inline` in C → no `bl` to accessors)
 - `.EnumName` as sole argument → literal from SVD (`write(.Output)` → `write(1)`)
-- Blink: [`examples/stm32/blink_f411/blink.kl`](../examples/stm32/blink_f411/blink.kl)
+- Blink: [`examples/stm32/blink_f411/main.kl`](../examples/stm32/blink_f411/main.kl)
 
 ## Auto-gen on compile (later)
 

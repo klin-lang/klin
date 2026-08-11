@@ -1,7 +1,8 @@
 # FreeRTOS blink — Klin vs C overhead (issue 028)
 
 Same FreeRTOS-Kernel, `FreeRTOSConfig.h`, `CFLAGS`, linker script.
-Klin: `blink.kl` → `blink.elf`. C twin: `blink_ref.c` → `blink_ref.elf`.
+Klin: `main.kl` → `main.elf`. C twin: `ref/blink_ref.c` → `blink_ref.elf`.
+(Snapshot paths below still say `blink.elf` — sizes from pre-layout rebuild.)
 
 Generated: 2026-08-04T15:12Z
 

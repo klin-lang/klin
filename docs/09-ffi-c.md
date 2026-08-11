@@ -99,7 +99,7 @@ fn systick_handler() {
 1. Open your **startup** (`.s` / `.S`) or vendor vector header and copy the
    handler symbol **character-for-character**.
 2. Put that string in `@[isr("…")]`.
-3. Link the same startup (`@[link("startup.s")]` or board Makefile / CRT).
+3. Link the same startup (`@[link("board/startup.s")]` or board Makefile / CRT).
 4. Confirm with `nm` / `objdump` that the symbol is defined (not only referenced).
 
 | Family (examples) | Typical symbol | Where to look |

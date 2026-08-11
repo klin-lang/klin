@@ -22,7 +22,7 @@ $rtos_task(heartbeat, 256, 1) {
     }
 }
 
-@[link("startup.s")]
+@[link("board/startup.s")]
 fn main() {
     start_blink()
     start_heartbeat()

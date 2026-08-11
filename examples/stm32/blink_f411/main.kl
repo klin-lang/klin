@@ -5,7 +5,7 @@ fn systick_handler() {
   GPIOA.ODR.ODR5.toggle()
 }
 
-@[link("startup.s")]
+@[link("board/startup.s")]
 fn main() {
   RCC.AHB1ENR.GPIOAEN.set(1)
   GPIOA.MODER.MODER5.write(.Output)

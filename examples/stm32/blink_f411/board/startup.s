@@ -4,7 +4,6 @@
 
 .global Reset_Handler
 .extern main
-.extern SysTick_Handler
 
 .section .isr_vector, "a", %progbits
 .word _estack
@@ -71,3 +70,5 @@ Default_Handler:
 .thumb_set DebugMon_Handler, Default_Handler
 .weak PendSV_Handler
 .thumb_set PendSV_Handler, Default_Handler
+.weak SysTick_Handler
+.thumb_set SysTick_Handler, Default_Handler

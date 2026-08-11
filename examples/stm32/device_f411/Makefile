@@ -1,27 +1,28 @@
-# := so a host CC from the environment (e.g. Homebrew/clang) does not win
+# Nucleo-F411RE blink — remote $device (issue 054 layout).
+include ../_common/f411.mk
+
 CC := arm-none-eabi-gcc
-CFLAGS := -mcpu=cortex-m4 -mthumb -ffreestanding -Os -ffunction-sections -fdata-sections
-LDFLAGS := -T linker.ld -Wl,--gc-sections -nostdlib
-KLIN := ../../../bin/klin.dart
+CFLAGS := $(CFLAGS_F411)
+LDFLAGS := $(LDFLAGS_F411)
+KLIN := $(KLIN_ROOT)
 KLIN_SRCS := $(KLIN) $(wildcard ../../../lib/*.dart) $(wildcard ../../../lib/svd/*.dart)
 REGS_H := stm32f411_regs.h
 REGS_KL := stm32f411_regs.kl
 
 .PHONY: all get clean
 
-all: blink.elf
+all: main.elf
 
 get:
 	dart run $(KLIN) get
 
-# @[link] paths land in out/blink.link (issue 022).
-LINK_OBJS := $(shell test -f out/blink.link && cat out/blink.link)
+LINK_OBJS := $(shell test -f out/main.link && cat out/main.link)
 
-out/blink.c out/blink.link $(REGS_H) $(REGS_KL): blink.kl klin.mod $(KLIN_SRCS)
-	dart run $(KLIN) --emit-c blink.kl
+out/main.c out/main.link $(REGS_H) $(REGS_KL): main.kl klin.mod board/startup.s $(KLIN_SRCS)
+	dart run $(KLIN) --emit-c main.kl
 
-blink.elf: linker.ld out/blink.c out/blink.link $(REGS_H) $(LINK_OBJS)
-	$(CC) $(CFLAGS) -I. $(LDFLAGS) $$(cat out/blink.link) out/blink.c -o $@
+main.elf: board/linker.ld out/main.c out/main.link $(REGS_H) $(LINK_OBJS)
+	$(CC) $(CFLAGS) -I. $(LDFLAGS) $$(cat out/main.link) out/main.c -o $@
 
 clean:
-	rm -rf out blink.elf $(REGS_H) $(REGS_KL)
+	rm -rf out main.elf $(REGS_H) $(REGS_KL)

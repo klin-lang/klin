@@ -1,3 +1,4 @@
 out/
+main.elf
 blink.elf
 blink_ref.elf

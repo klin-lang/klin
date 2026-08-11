@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Compare Klin blink.elf vs hand-written blink_ref.elf (issue 028).
+# Compare Klin main.elf vs hand-written blink_ref.elf (issue 028).
 # Requires both ELFs already built (make elf / make ref).
 set -euo pipefail
 cd "$(dirname "$0")"
 
-KLIN_ELF=${1:-blink.elf}
+KLIN_ELF=${1:-main.elf}
 REF_ELF=${2:-blink_ref.elf}
 OUT=${3:-overhead.md}
 
@@ -75,7 +75,7 @@ fi
   echo "# FreeRTOS blink — Klin vs C overhead (issue 028)"
   echo
   echo "Same FreeRTOS-Kernel, \`FreeRTOSConfig.h\`, \`CFLAGS\`, linker script."
-  echo "Klin: \`blink.kl\` → \`blink.elf\`. C twin: \`blink_ref.c\` → \`blink_ref.elf\`."
+  echo "Klin: \`main.kl\` → \`main.elf\`. C twin: \`ref/blink_ref.c\` → \`blink_ref.elf\`."
   echo
   echo "Generated: $(date -u +%Y-%m-%dT%H:%MZ)"
   echo
