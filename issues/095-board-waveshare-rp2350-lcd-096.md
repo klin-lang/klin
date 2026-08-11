@@ -95,7 +95,7 @@
 - **Oscillator dormant** without POWMAN SWCORE PD (RAM/PC survive; no reboot)
 - Timer path (stock PCB, no USER button): `dormant_clocks_prep_lposc_timer` → `powman_alarm_in_ms` → `rosc_enter_dormant` → `powman_alarm_disarm` → `dormant_clocks_restore_rosc`
 - GPIO path (header): `dormant_clocks_prep_xosc` + `dormant_wake_gpio_enable` + `xosc_enter_dormant`
-- Example: `xosc_dormant_demo` — LCD `DORM 0.13` / `AWAKE` + `N=`
+- Example: `xosc_dormant_demo` — stock **timer/ROSC** path above (name keeps roadmap “XOSC dormant”); LCD `DORM 0.13` / `AWAKE` + `N=`
 - Tier contrast: `sleep_demo` (clocks keep running) / dormant (oscillator stop) / `powman_demo` (SWCORE PD reboot)
 
 Tag: [v0.13.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/tag/v0.13.0)
