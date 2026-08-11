@@ -1,6 +1,6 @@
 # 075 — Board pack / `klin init` vs host (laptop): linker & startup
 
-**Status:** 🔨 MCU `klin init nucleo-f411` ✅ (host-init still 💭)  
+**Status:** 🔨 MCU `klin init` ✅ (`nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`; host-init still 💭)  
 **Depends on:** [010](010-bare-metal.md), [054](054-embedded-project-layout.md), [053](053-device-board-assets.md); optionally [074](074-board-ioc-klin-mod.md)
 
 ## Verdict in brief
@@ -158,19 +158,26 @@ lower priority.
       — laptop: no magic, no `linker.ld`/`startup.s`/Makefile (`klin run`)
 - [x] at least one board pack / Nucleo-F411 template without user editing ld
       — bundled `templates/nucleo-f411/` (`board/startup.s`, `board/linker.ld`, blink `main.kl`)
-- [x] `klin init nucleo-f411 [dir]` — scaffold from `templates/` (`lib/init.dart`, CLI)
+- [x] `klin init <board> [dir]` — scaffold from `templates/` (`lib/init.dart`, CLI)
+- [x] additional boards: `pico`, `pico2`, `waveshare-rp2350-lcd-096`
 - [ ] (optional, low priority) `klin init` host → `hello` + mod
 
 ## Implementation notes
 
 - Templates ship **in the Klin distribution** (`templates/<board>/`), not fetched
-  from GitHub on every init (layer B in §1b). SVD still via `klin get` + `klin.mod`.
+  from GitHub on every init (layer B in §1b). SVD / packages still via
+  `klin get` + `klin.mod`.
+- Known boards: `nucleo-f411` (STM32 + `$device`), `pico` / `pico2`
+  (`machine_rp` blink), `waveshare-rp2350-lcd-096` (backlight + board pack
+  [095](095-board-waveshare-rp2350-lcd-096.md)).
 - Discovery mirrors stdlib: repo `templates/`, `$KLIN_TEMPLATES`, or
   `templates/` / `share/klin/templates` beside the install (Homebrew `pkgshare`,
   release tarball). Formula + release workflow install the tree.
 - CLI refuses a non-empty destination. Default dir = `./<board>`.
-- Docs: [docs/06-cli.md](../docs/06-cli.md). Sibling demo:
-  [`examples/stm32/device_f411/`](../examples/stm32/device_f411/).
+- Docs: [docs/06-cli.md](../docs/06-cli.md). Sibling demos:
+  [`examples/stm32/device_f411/`](../examples/stm32/device_f411/),
+  [`machine_rp` examples](https://github.com/klin-lang/machine_rp/tree/main/examples),
+  [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096).
 
 ## Related
 

@@ -3,7 +3,12 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 /// Known MCU board scaffolds under `templates/<id>/` (issue 075 / 054).
-const knownInitBoards = <String>['nucleo-f411'];
+const knownInitBoards = <String>[
+  'nucleo-f411',
+  'pico',
+  'pico2',
+  'waveshare-rp2350-lcd-096',
+];
 
 /// Possible `templates/` locations under [roots] (repo layout + Homebrew
 /// `pkgshare` / release tarball next to the binary).

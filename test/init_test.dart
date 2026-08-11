@@ -109,6 +109,66 @@ void main() {
     expect(File(p.join(dest, 'main.kl')).existsSync(), isTrue);
   });
 
+  test('scaffold waveshare-rp2350-lcd-096', () {
+    final dest = p.join(tmp.path, 'ws_blink');
+    final created = scaffoldBoardInit(
+      boardId: 'waveshare-rp2350-lcd-096',
+      destDir: dest,
+      packageRoot: packageRoot,
+    );
+    expect(
+      created,
+      containsAll([
+        'main.kl',
+        'Makefile',
+        'klin.mod',
+        'board/startup.s',
+        'board/linker.ld',
+        'board/image_def.S',
+      ]),
+    );
+    final main = File(p.join(dest, 'main.kl')).readAsStringSync();
+    expect(main, contains('waveshare_rp2350_lcd_096'));
+    expect(main, contains('board/image_def.S'));
+    final mod = File(p.join(dest, 'klin.mod')).readAsStringSync();
+    expect(mod, contains('waveshare_rp2350_lcd_096'));
+    expect(mod, contains('machine_rp'));
+  });
+
+  test('scaffold pico and pico2', () {
+    final pico = scaffoldBoardInit(
+      boardId: 'pico',
+      destDir: p.join(tmp.path, 'pico_blink'),
+      packageRoot: packageRoot,
+    );
+    expect(pico, contains('board/boot2_w25q080.S'));
+    expect(
+      File(p.join(tmp.path, 'pico_blink', 'main.kl')).readAsStringSync(),
+      contains('pin_out(25)'),
+    );
+
+    final pico2 = scaffoldBoardInit(
+      boardId: 'pico2',
+      destDir: p.join(tmp.path, 'pico2_blink'),
+      packageRoot: packageRoot,
+    );
+    expect(pico2, contains('board/image_def.S'));
+    expect(
+      File(p.join(tmp.path, 'pico2_blink', 'main.kl')).readAsStringSync(),
+      contains('pin_out_rp2350'),
+    );
+  });
+
+  test('knownInitBoards matches templates/ directories', () {
+    for (final id in knownInitBoards) {
+      expect(
+        Directory(p.join(packageRoot, 'templates', id)).existsSync(),
+        isTrue,
+        reason: 'missing templates/$id',
+      );
+    }
+  });
+
   test('CLI init unknown board exits non-zero', () async {
     final result = await Process.run(
       'dart',

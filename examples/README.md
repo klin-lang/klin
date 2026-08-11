@@ -15,8 +15,10 @@ dart run bin/klin.dart test examples/                 # *_test.kl
 **Host (laptop):** ordinary `*.kl` and non-`stm32/` folders — **no** `linker.ld` /
 `startup.s` (`klin run` + system CRT/libc). Make + ld + startup only for
 bare-metal [`stm32/`](stm32/) ([075](../issues/075-board-pack-init-host.md)).
-New MCU tree: `klin init nucleo-f411 [dir]` copies `templates/nucleo-f411/`
+New MCU tree: `klin init <board> [dir]` copies `templates/<board>/`
 (`main.kl` + `board/` + Makefile), then `klin get && make`.
+Boards: `nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`
+([075](../issues/075-board-pack-init-host.md)).
 
 Style: [docs/05-fmt.md](../docs/05-fmt.md) (`klin fmt`). Sources with `$…` macros
 are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), not
