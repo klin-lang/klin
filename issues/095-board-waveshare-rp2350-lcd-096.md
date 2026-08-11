@@ -104,7 +104,15 @@ Tag: [v0.13.0](https://github.com/klin-lang/waveshare_rp2350_lcd_096/releases/ta
 
 - Onboard WS2812 (none on this PCB)
 - USB IRQ / TinyUSB stack (polling ACM only)
-- `klin init <board>` automation ([075](075-board-pack-init-host.md))
+
+## Scaffold
+
+```sh
+klin init waveshare-rp2350-lcd-096 my_board
+cd my_board && klin get && make
+```
+
+Bundled in Klin `templates/waveshare-rp2350-lcd-096/` ([075](075-board-pack-init-host.md)).
 
 ## Published
 
