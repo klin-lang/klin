@@ -58,10 +58,11 @@ jobs:
         run: |
           dart pub get
           dart compile exe bin/klin.dart -o "${{ matrix.bin }}"
-          mkdir -p dist/stdlib
+          mkdir -p dist/stdlib dist/templates
           cp -R stdlib/. dist/stdlib/
+          cp -R templates/. dist/templates/
           cp "${{ matrix.bin }}" dist/
-          tar -C dist -czf "${{ matrix.asset }}.${{ matrix.ext }}" "${{ matrix.bin }}" stdlib
+          tar -C dist -czf "${{ matrix.asset }}.${{ matrix.ext }}" "${{ matrix.bin }}" stdlib templates
           shasum -a 256 "${{ matrix.asset }}.${{ matrix.ext }}" | tee "${{ matrix.asset }}.sha256"
 
       # Windows: zip + Get-FileHash.
@@ -71,13 +72,14 @@ jobs:
         run: |
           dart pub get
           dart compile exe bin/klin.dart -o "${{ matrix.bin }}"
-          New-Item -ItemType Directory -Force -Path dist/stdlib | Out-Null
+          New-Item -ItemType Directory -Force -Path dist/stdlib, dist/templates | Out-Null
           Copy-Item -Recurse -Force stdlib/* dist/stdlib/
+          Copy-Item -Recurse -Force templates/* dist/templates/
           Copy-Item -Force "${{ matrix.bin }}" dist/
           # Compress from inside dist so the archive root has the binary and
-          # stdlib/ side by side (matching Unix `tar -C dist`).
+          # stdlib/ + templates/ side by side (matching Unix `tar -C dist`).
           Push-Location dist
-          Compress-Archive -Path "${{ matrix.bin }}", stdlib -DestinationPath "..\${{ matrix.asset }}.${{ matrix.ext }}" -Force
+          Compress-Archive -Path "${{ matrix.bin }}", stdlib, templates -DestinationPath "..\${{ matrix.asset }}.${{ matrix.ext }}" -Force
           Pop-Location
           $h = (Get-FileHash "${{ matrix.asset }}.${{ matrix.ext }}" -Algorithm SHA256).Hash.ToLower()
           # Write LF (no CRLF/BOM) so the sidecar matches Unix shasum -c format.

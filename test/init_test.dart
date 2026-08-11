@@ -118,4 +118,43 @@ void main() {
     expect(result.exitCode, isNot(0));
     expect(result.stderr.toString(), contains('unknown board'));
   });
+
+  test('templatesCandidatesForInstallRoot Homebrew + release layout', () {
+    final sep = Platform.pathSeparator;
+    final roots = ['/opt/klin', '/opt/homebrew/Cellar/klin/0.1.1'];
+    final paths = templatesCandidatesForInstallRoot(roots).toList();
+    expect(paths, contains('/opt/klin${sep}templates'));
+    expect(
+      paths,
+      contains('/opt/homebrew/Cellar/klin/0.1.1${sep}share${sep}klin${sep}templates'),
+    );
+  });
+
+  test('CLI init uses KLIN_TEMPLATES outside the repo', () {
+    expect(
+      findTemplatesRoot(packageRoot: packageRoot),
+      endsWith('${Platform.pathSeparator}templates'),
+    );
+
+    final fake = Directory(p.join(tmp.path, 'tpl'))..createSync();
+    final board = Directory(p.join(fake.path, 'nucleo-f411'))..createSync();
+    File(p.join(board.path, 'main.kl')).writeAsStringSync('// from env\n');
+
+    final dest = p.join(tmp.path, 'from_env');
+    final klinEntry = p.join(packageRoot, 'bin', 'klin.dart');
+    final result = Process.runSync(
+      'dart',
+      ['run', klinEntry, 'init', 'nucleo-f411', dest],
+      workingDirectory: tmp.path,
+      environment: {
+        ...Platform.environment,
+        'KLIN_TEMPLATES': fake.path,
+      },
+    );
+    expect(result.exitCode, 0, reason: '${result.stderr}\n${result.stdout}');
+    expect(
+      File(p.join(dest, 'main.kl')).readAsStringSync(),
+      contains('from env'),
+    );
+  });
 }

@@ -5,41 +5,93 @@ import 'package:path/path.dart' as p;
 /// Known MCU board scaffolds under `templates/<id>/` (issue 075 / 054).
 const knownInitBoards = <String>['nucleo-f411'];
 
-/// Package root containing `bin/`, `lib/`, `templates/`.
+/// Possible `templates/` locations under [roots] (repo layout + Homebrew
+/// `pkgshare` / release tarball next to the binary).
 ///
-/// Prefer walking up from [Directory.current] / the entry script until
-/// `pubspec.yaml` + `templates/` are found (works for `dart run` and tests).
-String klinPackageRoot({String? override}) {
-  if (override != null) return override;
-
-  final candidates = <String>[
-    if (Platform.script.scheme == 'file')
-      p.dirname(Platform.script.toFilePath()),
-    Directory.current.path,
-  ];
-  for (final start in candidates) {
-    var dir = p.normalize(start);
-    for (var i = 0; i < 10; i++) {
-      if (File(p.join(dir, 'pubspec.yaml')).existsSync() &&
-          Directory(p.join(dir, 'templates')).existsSync()) {
-        return dir;
-      }
-      final parent = p.dirname(dir);
-      if (parent == dir) break;
-      dir = parent;
+/// Visible for tests (mirrors [stdlibCandidatesForInstallRoot]).
+Iterable<String> templatesCandidatesForInstallRoot(
+  Iterable<String> roots,
+) sync* {
+  final sep = Platform.pathSeparator;
+  final seen = <String>{};
+  for (final root in roots) {
+    if (root.isEmpty) continue;
+    for (final rel in ['templates', 'share${sep}klin${sep}templates']) {
+      final path = '$root$sep$rel';
+      if (seen.add(path)) yield path;
     }
   }
+}
+
+Iterable<String> _installRootHints() sync* {
+  try {
+    final exeDir = File(Platform.resolvedExecutable).parent.path;
+    yield exeDir;
+    yield Directory(exeDir).parent.path; // Cellar/.../bin → formula prefix
+  } catch (_) {}
+  if (Platform.script.scheme == 'file') {
+    final scriptFile = File.fromUri(Platform.script);
+    yield scriptFile.parent.parent.path; // bin/klin.dart → repo root
+  }
+}
+
+/// Resolve the directory that contains per-board scaffolds (`templates/`).
+///
+/// Order: [packageRoot] override → `$KLIN_TEMPLATES` → repo walk (pubspec +
+/// `templates/`) → install layout next to binary / `share/klin/templates`.
+String findTemplatesRoot({String? packageRoot}) {
+  if (packageRoot != null) {
+    final dir = Directory(p.join(packageRoot, 'templates'));
+    if (dir.existsSync()) return dir.absolute.path;
+    throw StateError('templates/ missing under package root `$packageRoot`');
+  }
+
+  final env = Platform.environment['KLIN_TEMPLATES'];
+  if (env != null && env.isNotEmpty) {
+    final dir = Directory(env);
+    if (dir.existsSync()) return dir.absolute.path;
+    throw StateError('\$KLIN_TEMPLATES is set but missing: $env');
+  }
+
+  var dir = Directory.current.absolute;
+  for (var i = 0; i < 10; i++) {
+    final templates = Directory(p.join(dir.path, 'templates'));
+    final pubspec = File(p.join(dir.path, 'pubspec.yaml'));
+    if (templates.existsSync() && pubspec.existsSync()) {
+      return templates.absolute.path;
+    }
+    final parent = dir.parent;
+    if (parent.path == dir.path) break;
+    dir = parent;
+  }
+
+  for (final candidate in templatesCandidatesForInstallRoot(
+    _installRootHints(),
+  )) {
+    if (Directory(candidate).existsSync()) {
+      return Directory(candidate).absolute.path;
+    }
+  }
+
   throw StateError(
-    'cannot locate Klin package root (pubspec.yaml + templates/)',
+    'cannot locate Klin templates/ '
+    '(repo root, \$KLIN_TEMPLATES, or share/klin/templates next to install)',
   );
 }
 
-/// Absolute path to `templates/<boardId>/`, or null if missing / unknown.
+/// Absolute path to `templates/<boardId>/`, or null if [boardId] is unknown.
+///
+/// Throws [StateError] when the board is known but its template directory is
+/// missing under the resolved templates root.
 String? initTemplateDir(String boardId, {String? packageRoot}) {
   if (!knownInitBoards.contains(boardId)) return null;
-  final root = packageRoot ?? klinPackageRoot();
-  final dir = Directory(p.join(root, 'templates', boardId));
-  if (!dir.existsSync()) return null;
+  final templatesRoot = findTemplatesRoot(packageRoot: packageRoot);
+  final dir = Directory(p.join(templatesRoot, boardId));
+  if (!dir.existsSync()) {
+    throw StateError(
+      'init template missing for `$boardId` under $templatesRoot',
+    );
+  }
   return dir.absolute.path;
 }
 

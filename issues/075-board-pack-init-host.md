@@ -165,6 +165,9 @@ lower priority.
 
 - Templates ship **in the Klin distribution** (`templates/<board>/`), not fetched
   from GitHub on every init (layer B in §1b). SVD still via `klin get` + `klin.mod`.
+- Discovery mirrors stdlib: repo `templates/`, `$KLIN_TEMPLATES`, or
+  `templates/` / `share/klin/templates` beside the install (Homebrew `pkgshare`,
+  release tarball). Formula + release workflow install the tree.
 - CLI refuses a non-empty destination. Default dir = `./<board>`.
 - Docs: [docs/06-cli.md](../docs/06-cli.md). Sibling demo:
   [`examples/stm32/device_f411/`](../examples/stm32/device_f411/).

@@ -33,8 +33,9 @@ Entry: `dart run bin/klin.dart <subcommand|file.kl> …`
 
 One-time copy from bundled `templates/<board>/` (not a network fetch). After
 scaffold: `cd <dir> && klin get && make` (needs `arm-none-eabi-gcc`). Does **not**
-overwrite a non-empty destination. Templates live in the Klin repo — see
-[075](../issues/075-board-pack-init-host.md).
+overwrite a non-empty destination. Discovery (like stdlib): repo `templates/`,
+`$KLIN_TEMPLATES`, or `templates/` / `share/klin/templates` next to the install —
+see [075](../issues/075-board-pack-init-host.md).
 
 ## Language Server (`klin lsp`)
 
