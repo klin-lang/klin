@@ -92,11 +92,11 @@ building the core from scratch.
 | [058](058-source-file-split.md) | Split large compiler source files (tech debt) | 💭 | — |
 | [059](059-kstruct-macros.md) | `$kstruct` / `$kstruct_from` macros (richer klinstruct) | 💭 | 026, 052 |
 | [060](060-map-kv.md) | KV map (hash map) — language / stdlib / C | 💭 | 007, 057? |
-| [061](061-micropython-machine-api.md) | MicroPython-style `machine` API (PWM, UART, …) | ✅ (+ rp Pio `@v0.7.0` / ch32v `@v0.1.0` / gd32v `@v0.2.0`) | 010, 031? |
-| [062](062-targets-esp-rp.md) | MCU targets: ESP32 / RP2040 / RP2350 / STM8 / CH32V / GD32V | 🚧 (RP Pio ✅ `@v0.7.0`; ESP+STM8+CH32V+GD32V Pin…Adc ✅) | 010 |
+| [061](061-micropython-machine-api.md) | MicroPython-style `machine` API (PWM, UART, …) | ✅ (+ rp Pio `@v0.8.0` / ch32v `@v0.1.0` / gd32v `@v0.2.0`) | 010, 031? |
+| [062](062-targets-esp-rp.md) | MCU targets: ESP32 / RP2040 / RP2350 / STM8 / CH32V / GD32V | 🚧 (RP Pio ✅ `@v0.8.0`; ESP+STM8+CH32V+GD32V Pin…Adc ✅) | 010 |
 | [086](086-machine-ch32v.md) | `machine_ch32v` CH32V003 QingKe Pin…Adc | ✅ `@v0.1.0` | 061, 062 |
 | [087](087-machine-gd32v.md) | `machine_gd32v` GD32VF103 Nuclei Pin…Adc | ✅ `@v0.2.0` | 061, 086 |
-| [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.7.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
+| [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.8.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [064](064-if-cond-struct-literal-parse.md) | `if`/`while` condition ending in a name mistaken for a struct literal | ✅ | — |
 | [068](068-shared-type-decl.md) | Shared type annotation (`a, b: i32` like Go; both forms OK) | ✅ | 002, 004, 005 |
 | [069](069-eventemitter-signals.md) | Observer / EventEmitter / Signals (library; JS-signals explicitly) | 💭 | 013, 057 |
