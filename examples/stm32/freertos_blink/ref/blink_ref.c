@@ -1,4 +1,4 @@
-/* Hand-written C twin of blink.kl (issue 028 overhead check).
+/* Hand-written C twin of main.kl (issue 028 overhead check).
  * Same two tasks, same stacks/prios, same PA5 toggle MMIO as machine_stm32,
  * same vTaskDelay / xTaskCreate / vTaskStartScheduler — no Klin runtime.
  */

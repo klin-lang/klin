@@ -4784,7 +4784,7 @@ fn main() {
 
     final nm = await Process.run(
       'arm-none-eabi-nm',
-      ['blink.elf'],
+      ['main.elf'],
       workingDirectory: example,
     );
     expect(nm.exitCode, 0, reason: nm.stderr.toString());
@@ -4792,7 +4792,7 @@ fn main() {
 
     final objdump = await Process.run(
       'arm-none-eabi-objdump',
-      ['-d', 'blink.elf'],
+      ['-d', 'main.elf'],
       workingDirectory: example,
     );
     expect(objdump.exitCode, 0, reason: objdump.stderr.toString());

@@ -87,7 +87,7 @@ building the core from scratch.
 | [051](051-json-wrapper.md) | JSON wrapper + `$…` paths (low priority) | 💭 | 021, 026? |
 | [052](052-klinstruct.md) | `klinstruct` — pack/unpack like cstruct (low priority) | 💭 | 007, 020/047 |
 | [053](053-device-board-assets.md) | `$device` + Go-like SVD fetch (`device` in `klin.mod`) | ✅ (MVP; board → 074) | 027, 049 |
-| [054](054-embedded-project-layout.md) | Embedded project look / layout | 💭 | 023, 010 |
+| [054](054-embedded-project-layout.md) | Embedded project look / layout | ✅ | 023, 010 |
 | [056](056-destructuring.md) | Destructuring (`{}` / `[]` / multi-assign; no tuples) | ✅ (A+A′+B+C+D; bare `[]=` skipped) | 005, 007? |
 | [058](058-source-file-split.md) | Split large compiler source files (tech debt) | 💭 | — |
 | [059](059-kstruct-macros.md) | `$kstruct` / `$kstruct_from` macros (richer klinstruct) | 💭 | 026, 052 |

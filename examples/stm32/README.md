@@ -1,8 +1,17 @@
 # STM32 board examples
 
-Bare-metal demos under `stm32/<name>/` — host `klin run` is **not** enough;
-each folder has `startup.s`, `linker.ld`, and a Makefile for
-`arm-none-eabi-gcc`.
+Bare-metal demos under `stm32/<name>/` — host `klin run` is **not** enough.
+Convention ([054](../../issues/054-embedded-project-layout.md)):
+
+```text
+stm32/<demo>/
+  main.kl              # app (low noise)
+  board/               # startup.s, linker.ld — not in the demo root
+  Makefile             # thin; include ../_common/f411.mk
+  …                    # klin.mod, FreeRTOSConfig.h, ref/, …
+stm32/_board/nucleo-f411/   # canonical F411 pack (copied into each demo board/)
+stm32/_common/f411.mk       # shared CC / freestanding flags
+```
 
 ## What
 
@@ -14,7 +23,8 @@ each folder has `startup.s`, `linker.ld`, and a Makefile for
 
 ## Why
 
-Board packs keep startup/linker next to the app ([075](../../issues/075-board-pack-init-host.md)).
+Board packs keep startup/linker next to the app, under `board/`
+([075](../../issues/075-board-pack-init-host.md), [054](../../issues/054-embedded-project-layout.md)).
 Host CRT demos stay at `examples/*.kl` / non-`stm32/` folders.
 Fresh project: `klin init nucleo-f411` (bundled `templates/nucleo-f411/`).
 
@@ -26,6 +36,6 @@ Scaffold: `dart run bin/klin.dart init nucleo-f411 my_blink` then
 
 ## Links
 
-- [issues/075](../../issues/075-board-pack-init-host.md)
+- [issues/054](../../issues/054-embedded-project-layout.md), [075](../../issues/075-board-pack-init-host.md)
 - [docs/04-macros.md](../../docs/04-macros.md) (SVD / `$device`)
 - Catalog: [`../README.md`](../README.md)
