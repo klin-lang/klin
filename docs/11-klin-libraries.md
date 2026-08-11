@@ -102,7 +102,10 @@ $device("github/tinygo-org/stm32-svd/svd/stm32f411.svd", "RCC,GPIOA")
   `klin.mod` line `device path ref`, `klin.lock` (commit + sha256 of file).
 - MVP allowlist: `github/tinygo-org/stm32-svd`. Local path still works.
 - Example: [`examples/stm32/device_f411/`](../examples/stm32/device_f411/).
-- Board / CubeMX `.ioc` — outside MVP (separate issue after 053).
+- Board / CubeMX `.ioc` pinout ([074](../issues/074-board-ioc-klin-mod.md)):
+  `board path ref` in `klin.mod`, `$board("…")`, allowlist
+  `github/klin-lang/boards`. Local `board/*.ioc` is project truth — `get` /
+  `update` never overwrite it.
 
 ## Out of scope
 

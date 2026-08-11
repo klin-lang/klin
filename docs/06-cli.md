@@ -20,8 +20,8 @@ Entry: `dart run bin/klin.dart <subcommand|file.kl> …`
 | `lsp` | Language Server over **stdio** (diagnostics, format, hover, definition, completion, rename, semantic tokens, cross-file; [086](../issues/086-lsp.md)) |
 | `test [path…]` | Finds `*_test.kl`, runs `test_*` (like `go test`) |
 | `init <board> [dir]` | Copy MCU board scaffold (`main.kl`, `board/{startup.s,linker.ld,…}`, Makefile, `klin.mod`). Known: `nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`. Default `[dir]` = `./<board>`. Host `klin init` (no ld) is out of scope — [075](../issues/075-board-pack-init-host.md) |
-| `get [path[@ref]…]` | Fetch remote package **or** device SVD (`.svd`) into cache; writes `klin.mod` (`require` / `device`) + `klin.lock` ([049](../issues/049-remote-imports.md), [053](../issues/053-device-board-assets.md), [065](../issues/065-project-lockfile.md)) |
-| `update [path[@ref]…]` | Force re-fetch (no args = all `require`/`device` from `klin.mod`); refreshes lock |
+| `get [path[@ref]…]` | Fetch remote package, device SVD (`.svd`), or board `.ioc` into cache; writes `klin.mod` (`require` / `device` / `board`) + `klin.lock` ([049](../issues/049-remote-imports.md), [053](../issues/053-device-board-assets.md), [074](../issues/074-board-ioc-klin-mod.md), [065](../issues/065-project-lockfile.md)). Never overwrites project-local `board/*.ioc` |
+| `update [path[@ref]…]` | Force re-fetch (no args = all `require`/`device`/`board` from `klin.mod`); refreshes lock (cache only for `.ioc`) |
 | `outdated [path…]` | Report: pin from mod vs latest tag/ref on host ([066](../issues/066-klin-upgrade-outdated.md); **network**) |
 | `upgrade [path…]` | Bump outdated → latest + fetch ([066](../issues/066-klin-upgrade-outdated.md); **network**) |
 

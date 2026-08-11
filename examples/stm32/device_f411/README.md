@@ -1,28 +1,30 @@
-# Nucleo-F411RE blink — remote `$device`
+# Nucleo-F411RE blink — remote `$device` + local `$board`
 
 Same LED blink as [`../blink_f411/`](../blink_f411/), but the SVD comes from
-the Klin asset cache (not `third_party/svd/`).
+the Klin asset cache (not `third_party/svd/`). Pin labels come from a local
+CubeMX-style `.ioc` via `$board` ([074](../../../issues/074-board-ioc-klin-mod.md)).
 
 ## Layout ([054](../../../issues/054-embedded-project-layout.md))
 
 ```text
 .
   main.kl
-  board/            # startup.s, linker.ld
+  board/
+    startup.s, linker.ld
+    nucleo_f411re.ioc   # project truth (not overwritten by klin get)
   Makefile
   klin.mod / klin.lock
 ```
 
 ## What
 
-`klin.mod` pins a remote SVD; `main.kl` uses
-`$device("github/tinygo-org/stm32-svd/svd/stm32f411.svd", …)`. Makefile links
-with `arm-none-eabi-gcc` like the local-SVD sibling.
+`klin.mod` pins a remote SVD; `main.kl` uses `$device(…)` plus
+`$board("board/nucleo_f411re.ioc")` → `BoardPin.LD2` / `BoardPort.LD2`.
 
 ## Why
 
-Issue [053](../../../issues/053-device-board-assets.md): board examples can
-`klin get` device assets instead of vendoring large SVD trees in-repo.
+- [053](../../../issues/053-device-board-assets.md): `klin get` device assets
+- [074](../../../issues/074-board-ioc-klin-mod.md): pinout from `.ioc` without HAL
 
 ## How
 
@@ -46,5 +48,5 @@ device github/tinygo-org/stm32-svd/svd/stm32f411.svd main
 - Local SVD sibling: [`../blink_f411/`](../blink_f411/)
 - Scaffold: `klin init nucleo-f411`
 - [docs/04-macros.md](../../../docs/04-macros.md)
-- [issues/053](../../../issues/053-device-board-assets.md), [054](../../../issues/054-embedded-project-layout.md), [075](../../../issues/075-board-pack-init-host.md)
+- [issues/053](../../../issues/053-device-board-assets.md), [074](../../../issues/074-board-ioc-klin-mod.md), [054](../../../issues/054-embedded-project-layout.md)
 - Board index: [`../README.md`](../README.md)

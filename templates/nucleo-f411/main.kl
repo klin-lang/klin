@@ -1,6 +1,8 @@
 // Nucleo-F411RE PA5 blink — scaffold from `klin init nucleo-f411`.
 // Run `klin get` once (SVD → cache), then `make`.
+// `$board` reads local `board/nucleo_f411re.ioc` (issue 074).
 $device("github/tinygo-org/stm32-svd/svd/stm32f411.svd", "RCC,GPIOA,STK")
+$board("board/nucleo_f411re.ioc")
 
 @[isr("SysTick_Handler")]
 fn systick_handler() {
@@ -9,6 +11,10 @@ fn systick_handler() {
 
 @[link("board/startup.s")]
 fn main() {
+  let pin: i32 = cast(i32, BoardPin.LD2)
+  if pin != 5 {
+    return
+  }
   RCC.AHB1ENR.GPIOAEN.set(1)
   GPIOA.MODER.MODER5.write(.Output)
   STK.RVR.RELOAD.write(7_999_999)

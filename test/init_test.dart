@@ -44,13 +44,16 @@ void main() {
         'README.md',
         'board/startup.s',
         'board/linker.ld',
+        'board/nucleo_f411re.ioc',
       ]),
     );
 
     final main = File(p.join(dest, 'main.kl')).readAsStringSync();
     expect(main, contains(r'$device('));
+    expect(main, contains(r'$board('));
     expect(main, contains('board/startup.s'));
     expect(main, contains('GPIOA'));
+    expect(main, contains('BoardPin.LD2'));
 
     final mod = File(p.join(dest, 'klin.mod')).readAsStringSync();
     expect(mod, contains('device github/tinygo-org/stm32-svd'));

@@ -303,7 +303,7 @@ Future<void> _runInit(List<String> args) async {
   }
 }
 
-/// `klin get` / `klin update` — fetch packages + devices; write klin.mod + lock.
+/// `klin get` / `klin update` — packages, devices, boards; write mod + lock.
 Future<void> _runGet(List<String> args, {required bool force}) async {
   final cmd = force ? 'update' : 'get';
   try {
@@ -318,9 +318,10 @@ Future<void> _runGet(List<String> args, {required bool force}) async {
     if (args.isEmpty) {
       if (!modFile.existsSync() || mod.isEmpty) {
         stderr.writeln(
-          'klin $cmd: no klin.mod requires/devices; pass path[@ref] '
-          '(e.g. github/klin-lang/osa@v0.1.0 or '
-          'github/tinygo-org/stm32-svd/svd/stm32f411.svd@main)',
+          'klin $cmd: no klin.mod requires/devices/boards; pass path[@ref] '
+          '(e.g. github/klin-lang/osa@v0.1.0, '
+          'github/tinygo-org/stm32-svd/svd/stm32f411.svd@main, or '
+          'github/klin-lang/boards/nucleo_f411re.ioc@v0.1.0)',
         );
         exit(2);
       }
@@ -329,6 +330,9 @@ Future<void> _runGet(List<String> args, {required bool force}) async {
       }
       for (final path in mod.devices.keys.toList()..sort()) {
         specs.add('$path@${mod.devices[path]}');
+      }
+      for (final path in mod.boards.keys.toList()..sort()) {
+        specs.add('$path@${mod.boards[path]}');
       }
     } else {
       specs.addAll(args);
@@ -358,6 +362,34 @@ Future<void> _runGet(List<String> args, {required bool force}) async {
         );
         if (modFile.existsSync()) mod = loadKlinMod(modFile);
         if (lockFile.existsSync()) lock = loadKlinLock(lockFile);
+        stdout.writeln('${asset.path}@$ref → $filePath');
+        continue;
+      }
+
+      if (isRemoteBoardPath(spec)) {
+        final asset = parseRemoteAsset(spec);
+        final effective = force &&
+                asset.ref == null &&
+                mod.boards[asset.path] != null
+            ? RemoteAsset(
+                host: asset.host,
+                owner: asset.owner,
+                repo: asset.repo,
+                filePath: asset.filePath,
+                ref: mod.boards[asset.path],
+              )
+            : asset;
+        final (filePath, ref, _) = await ensureRemoteBoard(
+          asset: effective,
+          mod: mod,
+          modFile: modFile,
+          lock: lock,
+          lockFile: lockFile,
+          force: force,
+        );
+        if (modFile.existsSync()) mod = loadKlinMod(modFile);
+        if (lockFile.existsSync()) lock = loadKlinLock(lockFile);
+        // Cache only — never writes into a project-local board/*.ioc (074).
         stdout.writeln('${asset.path}@$ref → $filePath');
         continue;
       }

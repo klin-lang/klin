@@ -103,7 +103,7 @@ building the core from scratch.
 | [071](071-lambda.md) | Lambdas / `fn (…) => expr` (verdict: not now; after D7) | 💭 | fn-ptr, D7 |
 | [072](072-enums.md) | Enums (C23-style, optional base type; methods; explicit conversion; string/kv-enum out of MVP) | ✅ | 002, 005, 014 |
 | [073](073-mem-leak-detection.md) | Potential memory-leak detection (Valgrind/ASan, debug allocator, lint) | 💭 | 057, 008 |
-| [074](074-board-ioc-klin-mod.md) | `board` in `klin.mod` + narrow CubeMX `.ioc` (pinout) | 💭 | 053 |
+| [074](074-board-ioc-klin-mod.md) | `board` in `klin.mod` + narrow CubeMX `.ioc` (pinout) | ✅ MVP | 053 |
 | [075](075-board-pack-init-host.md) | Board pack / `klin init` vs host — linker & startup | 🔨 MCU init ✅ (multi-board; host 💭) | 010, 054, 053 |
 | [076](076-release-windows-arm.md) | Release: Windows/ARM targets + publishing + checksums | ✅ | 067 |
 | [077](077-string-template.md) | Runtime string substitution / templates (`{0}` positional + `{key}` KV) | 💭 | 007, 057, 016, 060 |

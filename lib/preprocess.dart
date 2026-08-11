@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'ioc/expand.dart';
 import 'remote.dart';
 import 'source_map.dart';
 import 'svd/fluent.dart';
@@ -215,6 +216,20 @@ final class _PpScanner {
             );
             svdDevice = expansion.device;
             emitSynthetic(expansion.klinSnippet, startOff);
+            continue;
+          }
+          if (name == 'board') {
+            final args = _parseArgList();
+            if (args.length != 1) {
+              _err('`\$board` expects 1 argument (path to `.ioc`)', start);
+            }
+            final snippet = expandBoardIoc(
+              boardArg: args[0],
+              sourcePath: path,
+              callPos: start,
+              klinCacheDir: klinCacheDir,
+            );
+            emitSynthetic(snippet, startOff);
             continue;
           }
           final def = macros[name];
