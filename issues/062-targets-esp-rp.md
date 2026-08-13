@@ -54,7 +54,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 12. **GD32VF103** Pin…Adc — ✅ (`machine_gd32v@v0.2.0`; [087](087-machine-gd32v.md))  
 13. **Wi‑Fi** (ESP-IDF STA) — ✅ [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.1.1` ([101](101-esp-wifi-idf.md); DHCP default, optional static; not in `machine_*`)  
 14. **Ethernet** (ESP-IDF; W5500 SPI first) — ✅ [`esp_eth`](https://github.com/klin-lang/esp_eth) `@v0.1.2` ([102](102-esp-eth-idf.md); RMII later, same package)  
-15. **BLE** (ESP-IDF NimBLE advertise + GATT + scan/connect + client + Just Works bond) — ✅ [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.5.0` ([106](106-esp-ble-idf.md); custom UUIDs / passkey / mesh later; not in `machine_*`)  
+15. **BLE** (ESP-IDF NimBLE advertise + GATT + scan/connect + client + bond + UUID16) — ✅ [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.6.0` ([106](106-esp-ble-idf.md); 128-bit tables / passkey / mesh later; not in `machine_*`)  
 16. **ESP32-P4** — later: `machine_esp` Pin… twins (`*_p4`) + [`esp_eth`](https://github.com/klin-lang/esp_eth) **RMII** backend (on-chip EMAC; preferred first RMII target vs classic ESP32); Wi‑Fi/BLE only via companion / other host, not on-die  
 17. **Later tracks** (USB OTG / camera / Pico LCD shields) — 💭 [103](103-later-tracks-ble-usb-camera-lcd.md) (one at a time; BLE done → [106](106-esp-ble-idf.md))  
 18. **Later network** (SoftAP / RMII / dual Wi‑Fi+ETH / sockets…) — 💭 [104](104-later-tracks-esp-network.md) (one at a time)  
