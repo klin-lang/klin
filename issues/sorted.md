@@ -104,6 +104,7 @@ building the core from scratch.
 | [101](101-esp-wifi-idf.md) | ESP Wi‑Fi thin IDF package (`esp_wifi` STA) | ✅ `@v0.1.1` ([repo](https://github.com/klin-lang/esp_wifi)) | 021, 024, 049, 061, 062, 099 |
 | [102](102-esp-eth-idf.md) | ESP Ethernet thin IDF package (`esp_eth` W5500) | ✅ `@v0.1.2` ([repo](https://github.com/klin-lang/esp_eth)) | 021, 024, 049, 061, 062, 101 |
 | [103](103-later-tracks-ble-usb-camera-lcd.md) | Later tracks: BLE / USB OTG / camera / Pico LCD shields | 💭 backlog (one track at a time) | 061, 062, 101, 102 |
+| [104](104-later-tracks-esp-network.md) | Later tracks: ESP network (SoftAP / RMII / dual Wi‑Fi+ETH / sockets…) | 💭 backlog (one track at a time) | 101, 102, 062 |
 | [064](064-if-cond-struct-literal-parse.md) | `if`/`while` condition ending in a name mistaken for a struct literal | ✅ | — |
 | [068](068-shared-type-decl.md) | Shared type annotation (`a, b: i32` like Go; both forms OK) | ✅ | 002, 004, 005 |
 | [069](069-eventemitter-signals.md) | Observer / EventEmitter / Signals (library; JS-signals explicitly) | 💭 | 013, 057 |
