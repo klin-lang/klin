@@ -44,7 +44,7 @@ Same idea as [`esp_eth`](https://github.com/klin-lang/esp_eth) ([102](102-esp-et
 ## Out of scope
 
 - SoftAP / scan / dual Wi‑Fi+ETH / sockets / HTTP / TLS — later → [104](104-later-tracks-esp-network.md)  
-- BLE — later track [103](103-later-tracks-ble-usb-camera-lcd.md)  
+- BLE — ✅ separate package [`esp_ble`](https://github.com/klin-lang/esp_ble) → [106](106-esp-ble-idf.md) (was track A in [103](103-later-tracks-ble-usb-camera-lcd.md))  
 - Freestanding (no IDF)  
 - Reconnect policy beyond the small, documented retry in `sta_idf.c` (max 5)
 

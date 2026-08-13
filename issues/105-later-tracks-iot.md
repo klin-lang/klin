@@ -11,7 +11,7 @@ This is a **maybe** queue: ship only when there is a concrete device + protocol 
 Do **not** fold MQTT / cloud SDKs into `machine_*` or into the current STA/W5500 tags.  
 Do **not** start here before thin **sockets** ([104](104-later-tracks-esp-network.md) N2) **and** **HTTP/TLS** ([104](104-later-tracks-esp-network.md) N3).
 
-Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (BLE / USB / camera / LCD), [104](104-later-tracks-esp-network.md) (SoftAP / RMII / sockets / HTTP/TLS…).
+Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (USB / camera / LCD), [106](106-esp-ble-idf.md) (BLE), [104](104-later-tracks-esp-network.md) (SoftAP / RMII / sockets / HTTP/TLS…).
 
 ## Prerequisites (not this issue)
 
@@ -43,7 +43,7 @@ Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (BLE / USB / cam
 - Implementation or picking a cloud vendor  
 - HTTP client / TLS packaging (→ [104](104-later-tracks-esp-network.md) N3)  
 - SoftAP provisioning UI (→ [104](104-later-tracks-esp-network.md) W1 first)  
-- BLE mesh as “IoT” (→ [103](103-later-tracks-ble-usb-camera-lcd.md))  
+- BLE mesh as “IoT” (→ [106](106-esp-ble-idf.md) / later GATT on that package; not this backlog)  
 - Changing the Klin compiler  
 
 ## Links
@@ -51,4 +51,5 @@ Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (BLE / USB / cam
 - Network later: [104](104-later-tracks-esp-network.md)  
 - Wi‑Fi / ETH MVP: [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md)  
 - Other later tracks: [103](103-later-tracks-ble-usb-camera-lcd.md)  
+- BLE: [106](106-esp-ble-idf.md)  
 - Targets: [062](062-targets-esp-rp.md)  

@@ -1,6 +1,6 @@
 # 062 — MCU targets beyond STM32: ESP32, RP2040, RP2350, STM8, CH32V, GD32V
 
-**Status:** 🚧 — RP / ESP / STM8 / CH32V / GD32V via external `machine_*` (Pin…Adc); Wi‑Fi [`esp_wifi`](https://github.com/klin-lang/esp_wifi) ✅; ETH [`esp_eth`](https://github.com/klin-lang/esp_eth) ✅ (W5500); **ESP32-P4** / classic / freestanding later
+**Status:** 🚧 — RP / ESP / STM8 / CH32V / GD32V via external `machine_*` (Pin…Adc); Wi‑Fi [`esp_wifi`](https://github.com/klin-lang/esp_wifi) ✅; ETH [`esp_eth`](https://github.com/klin-lang/esp_eth) ✅ (W5500); BLE [`esp_ble`](https://github.com/klin-lang/esp_ble) ✅; **ESP32-P4** / classic / freestanding later
 **Depends on:** [010](010-bare-metal.md); nice to have [022](022-asm-libraries.md), [027](027-svd-ergonomic-api.md), [031](031-hal-libraries.md), [053](053-device-board-assets.md), [054](054-embedded-project-layout.md)
 
 ## Context (conversation notes)
@@ -15,8 +15,8 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 |---|---|---|
 | **RP2040** | ✅ path exists | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.11.0` — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Pio**+**Dma**+**UsbCdc** (UsbCdc RP2350 first; Pio `out_pins`/TX DMA; no DAC). |
 | **RP2350** | ✅ Arm + RISC-V | Same APIs via `*_rp2350` twins (+ UsbCdc poll). Board: Waveshare LCD-0.96 → [095](095-board-waveshare-rp2350-lcd-096.md). |
-| **ESP32-C3** | ✅ Pin…Adc | [`machine_esp`](https://github.com/klin-lang/machine_esp) `@v0.7.0` — MMIO + LEDC; minimal **ESP-IDF** boot; no DAC; Wi‑Fi → [`esp_wifi`](https://github.com/klin-lang/esp_wifi) [101](101-esp-wifi-idf.md); ETH → [`esp_eth`](https://github.com/klin-lang/esp_eth) W5500 SPI [102](102-esp-eth-idf.md) (no on-chip EMAC; not in `machine_esp`). |
-| **ESP32-S3** | ✅ Pin…Adc+Rmt (`*_s3`) | Same package `@v0.5.0`/`@v0.6.0`/`@v0.7.0` — twin factories + `rmt_tx_s3` ([099](099-machine-esp-esp32-s3.md)); board Waveshare S3-Pico → [100](100-board-waveshare-esp32-s3-pico.md); Xtensa via IDF; Wi‑Fi → [101](101-esp-wifi-idf.md); ETH → [`esp_eth`](https://github.com/klin-lang/esp_eth) W5500 [102](102-esp-eth-idf.md) (no on-chip EMAC; not in `machine_esp`). |
+| **ESP32-C3** | ✅ Pin…Adc | [`machine_esp`](https://github.com/klin-lang/machine_esp) `@v0.7.0` — MMIO + LEDC; minimal **ESP-IDF** boot; no DAC; Wi‑Fi → [`esp_wifi`](https://github.com/klin-lang/esp_wifi) [101](101-esp-wifi-idf.md); ETH → [`esp_eth`](https://github.com/klin-lang/esp_eth) W5500 SPI [102](102-esp-eth-idf.md); BLE → [`esp_ble`](https://github.com/klin-lang/esp_ble) [106](106-esp-ble-idf.md) (no on-chip EMAC; not in `machine_esp`). |
+| **ESP32-S3** | ✅ Pin…Adc+Rmt (`*_s3`) | Same package `@v0.5.0`/`@v0.6.0`/`@v0.7.0` — twin factories + `rmt_tx_s3` ([099](099-machine-esp-esp32-s3.md)); board Waveshare S3-Pico → [100](100-board-waveshare-esp32-s3-pico.md); Xtensa via IDF; Wi‑Fi → [101](101-esp-wifi-idf.md); ETH → [`esp_eth`](https://github.com/klin-lang/esp_eth) W5500 [102](102-esp-eth-idf.md); BLE → [`esp_ble`](https://github.com/klin-lang/esp_ble) [106](106-esp-ble-idf.md) (no on-chip EMAC; not in `machine_esp`). |
 | **ESP32-P4** | Later | Dual **RISC-V** HP; **on-chip EMAC** (RMII) → natural next [`esp_eth`](https://github.com/klin-lang/esp_eth) backend [102](102-esp-eth-idf.md); **no** on-die Wi‑Fi/BLE (companion chip / host — not `esp_wifi` on P4 alone). `machine_esp` twins (`*_p4`) when started — **not** a copy of C3/S3 MMIO maps. |
 | **STM8S** | ✅ Pin…Adc (emit-c) | [`machine_stm8`](https://github.com/klin-lang/machine_stm8) `@v0.2.0` — no DAC; SDCC link later. |
 | **CH32V003** | ✅ Pin…Adc | [`machine_ch32v`](https://github.com/klin-lang/machine_ch32v) `@v0.1.0` — QingKe RV32EC ([086](086-machine-ch32v.md)). |
@@ -54,11 +54,12 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 12. **GD32VF103** Pin…Adc — ✅ (`machine_gd32v@v0.2.0`; [087](087-machine-gd32v.md))  
 13. **Wi‑Fi** (ESP-IDF STA) — ✅ [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.1.1` ([101](101-esp-wifi-idf.md); DHCP default, optional static; not in `machine_*`)  
 14. **Ethernet** (ESP-IDF; W5500 SPI first) — ✅ [`esp_eth`](https://github.com/klin-lang/esp_eth) `@v0.1.2` ([102](102-esp-eth-idf.md); RMII later, same package)  
-15. **ESP32-P4** — later: `machine_esp` Pin… twins (`*_p4`) + [`esp_eth`](https://github.com/klin-lang/esp_eth) **RMII** backend (on-chip EMAC; preferred first RMII target vs classic ESP32); Wi‑Fi/BLE only via companion / other host, not on-die  
-16. **Later tracks** (BLE / USB OTG / camera / Pico LCD shields) — 💭 [103](103-later-tracks-ble-usb-camera-lcd.md) (one at a time)  
-17. **Later network** (SoftAP / RMII / dual Wi‑Fi+ETH / sockets…) — 💭 [104](104-later-tracks-esp-network.md) (one at a time)  
-18. **Later IoT** (MQTT / OTA…) — 💭 maybe [105](105-later-tracks-iot.md) (after sockets + HTTP/TLS in [104](104-later-tracks-esp-network.md))  
-19. Classic ESP32 / C6 / freestanding ESP / SDCC STM8 — later  
+15. **BLE** (ESP-IDF NimBLE peripheral advertise) — ✅ [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.1.0` ([106](106-esp-ble-idf.md); GATT / central later; not in `machine_*`)  
+16. **ESP32-P4** — later: `machine_esp` Pin… twins (`*_p4`) + [`esp_eth`](https://github.com/klin-lang/esp_eth) **RMII** backend (on-chip EMAC; preferred first RMII target vs classic ESP32); Wi‑Fi/BLE only via companion / other host, not on-die  
+17. **Later tracks** (USB OTG / camera / Pico LCD shields) — 💭 [103](103-later-tracks-ble-usb-camera-lcd.md) (one at a time; BLE done → [106](106-esp-ble-idf.md))  
+18. **Later network** (SoftAP / RMII / dual Wi‑Fi+ETH / sockets…) — 💭 [104](104-later-tracks-esp-network.md) (one at a time)  
+19. **Later IoT** (MQTT / OTA…) — 💭 maybe [105](105-later-tracks-iot.md) (after sockets + HTTP/TLS in [104](104-later-tracks-esp-network.md))  
+20. Classic ESP32 / C6 / freestanding ESP / SDCC STM8 — later  
 
 ## Out of scope
 
@@ -72,6 +73,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 - ESP package: https://github.com/klin-lang/machine_esp  
 - ESP Wi‑Fi (IDF, not `machine_*`): https://github.com/klin-lang/esp_wifi ([101](101-esp-wifi-idf.md))  
 - ESP Ethernet (IDF, not `machine_*`): https://github.com/klin-lang/esp_eth ([102](102-esp-eth-idf.md))  
+- ESP BLE (IDF NimBLE, not `machine_*`): https://github.com/klin-lang/esp_ble ([106](106-esp-ble-idf.md))  
 - Later ESP/Pico tracks: [103](103-later-tracks-ble-usb-camera-lcd.md)  
 - Later ESP network tracks: [104](104-later-tracks-esp-network.md)  
 - Later IoT tracks (maybe): [105](105-later-tracks-iot.md)  
