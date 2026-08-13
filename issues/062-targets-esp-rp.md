@@ -57,7 +57,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 15. **ESP32-P4** — later: `machine_esp` Pin… twins (`*_p4`) + [`esp_eth`](https://github.com/klin-lang/esp_eth) **RMII** backend (on-chip EMAC; preferred first RMII target vs classic ESP32); Wi‑Fi/BLE only via companion / other host, not on-die  
 16. **Later tracks** (BLE / USB OTG / camera / Pico LCD shields) — 💭 [103](103-later-tracks-ble-usb-camera-lcd.md) (one at a time)  
 17. **Later network** (SoftAP / RMII / dual Wi‑Fi+ETH / sockets…) — 💭 [104](104-later-tracks-esp-network.md) (one at a time)  
-18. **Later IoT** (MQTT / HTTP client / OTA…) — 💭 maybe [105](105-later-tracks-iot.md) (after sockets/TLS)  
+18. **Later IoT** (MQTT / OTA…) — 💭 maybe [105](105-later-tracks-iot.md) (after sockets + HTTP/TLS in [104](104-later-tracks-esp-network.md))  
 19. Classic ESP32 / C6 / freestanding ESP / SDCC STM8 — later  
 
 ## Out of scope
