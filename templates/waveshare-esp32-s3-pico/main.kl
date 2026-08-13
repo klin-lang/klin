@@ -1,0 +1,22 @@
+// Waveshare ESP32-S3-Pico — blink Pico silkscreen D10 (GPIO35).
+// Scaffold from `klin init waveshare-esp32-s3-pico`.
+// Run `klin get` once, then `make emit` / `make build` (needs ESP-IDF).
+// Onboard WS2812 is GPIO21 — use board.rgb_out() after this blink works.
+import "github/klin-lang/machine_esp" machine
+import "github/klin-lang/waveshare_esp32_s3_pico" board
+
+@[cexport, codename("klin_app_main")]
+fn app_main_klin() {
+  let led = machine.pin_out_s3(board.d10())
+  while true {
+    led.toggle()
+    let mut i: i32 = 0
+    while i < 2000000 {
+      i = i + 1
+    }
+  }
+}
+
+fn main() {
+  app_main_klin()
+}

@@ -8,6 +8,7 @@ const knownInitBoards = <String>[
   'pico',
   'pico2',
   'waveshare-rp2350-lcd-096',
+  'waveshare-esp32-s3-pico',
 ];
 
 /// Possible `templates/` locations under [roots] (repo layout + Homebrew

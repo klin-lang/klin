@@ -1,6 +1,6 @@
 # 075 — Board pack / `klin init` vs host (laptop): linker & startup
 
-**Status:** 🔨 MCU `klin init` ✅ (`nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`; host-init still 💭)  
+**Status:** 🔨 MCU `klin init` ✅ (`nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`, `waveshare-esp32-s3-pico`; host-init still 💭)  
 **Depends on:** [010](010-bare-metal.md), [054](054-embedded-project-layout.md), [053](053-device-board-assets.md); optionally [074](074-board-ioc-klin-mod.md)
 
 ## Verdict in brief
@@ -159,7 +159,8 @@ lower priority.
 - [x] at least one board pack / Nucleo-F411 template without user editing ld
       — bundled `templates/nucleo-f411/` (`board/startup.s`, `board/linker.ld`, blink `main.kl`)
 - [x] `klin init <board> [dir]` — scaffold from `templates/` (`lib/init.dart`, CLI)
-- [x] additional boards: `pico`, `pico2`, `waveshare-rp2350-lcd-096`
+- [x] additional boards: `pico`, `pico2`, `waveshare-rp2350-lcd-096`,
+      `waveshare-esp32-s3-pico` (ESP-IDF scaffold; no freestanding ld/startup)
 - [ ] (optional, low priority) `klin init` host → `hello` + mod
 
 ## Implementation notes
@@ -170,7 +171,11 @@ lower priority.
 - Known boards: `nucleo-f411` (STM32 + `$device` + local `.ioc`; optional pack
   [096](096-board-nucleo-f411re.md)), `pico` / `pico2`
   (`machine_rp` blink), `waveshare-rp2350-lcd-096` (backlight + board pack
-  [095](095-board-waveshare-rp2350-lcd-096.md)).
+  [095](095-board-waveshare-rp2350-lcd-096.md)), `waveshare-esp32-s3-pico`
+  (ESP-IDF + D10 blink + board pack [100](100-board-waveshare-esp32-s3-pico.md)).
+- ESP scaffolds use **IDF** (`main/app_main.c`, `sdkconfig.defaults`, `idf.py`)
+  instead of `board/startup.s` + `linker.ld` — still layer B (one-time copy);
+  packages via `klin get`.
 - Discovery mirrors stdlib: repo `templates/`, `$KLIN_TEMPLATES`, or
   `templates/` / `share/klin/templates` beside the install (Homebrew `pkgshare`,
   release tarball). Formula + release workflow install the tree.
@@ -181,7 +186,9 @@ lower priority.
   [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096),
   [`nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re),
   [`adafruit_rp2040_can_feather`](https://github.com/klin-lang/adafruit_rp2040_can_feather)
-  ([098](098-board-adafruit-rp2040-can-feather.md)).
+  ([098](098-board-adafruit-rp2040-can-feather.md)),
+  [`waveshare_esp32_s3_pico`](https://github.com/klin-lang/waveshare_esp32_s3_pico)
+  ([100](100-board-waveshare-esp32-s3-pico.md)).
 
 ## Related
 

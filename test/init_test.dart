@@ -138,6 +138,41 @@ void main() {
     expect(mod, contains('machine_rp'));
   });
 
+  test('scaffold waveshare-esp32-s3-pico (ESP-IDF)', () {
+    final dest = p.join(tmp.path, 's3_pico_blink');
+    final created = scaffoldBoardInit(
+      boardId: 'waveshare-esp32-s3-pico',
+      destDir: dest,
+      packageRoot: packageRoot,
+    );
+    expect(
+      created,
+      containsAll([
+        'main.kl',
+        'Makefile',
+        'klin.mod',
+        'README.md',
+        'CMakeLists.txt',
+        'sdkconfig.defaults',
+        'main/app_main.c',
+        'main/CMakeLists.txt',
+      ]),
+    );
+    expect(created, isNot(contains('board/startup.s')));
+    final main = File(p.join(dest, 'main.kl')).readAsStringSync();
+    expect(main, contains('waveshare_esp32_s3_pico'));
+    expect(main, contains('pin_out_s3'));
+    expect(main, contains('klin_app_main'));
+    final mod = File(p.join(dest, 'klin.mod')).readAsStringSync();
+    expect(mod, contains('waveshare_esp32_s3_pico'));
+    expect(mod, contains('machine_esp'));
+    final makefile = File(p.join(dest, 'Makefile')).readAsStringSync();
+    expect(makefile, contains('idf.py'));
+    expect(makefile, contains('esp32s3'));
+    final sdk = File(p.join(dest, 'sdkconfig.defaults')).readAsStringSync();
+    expect(sdk, contains('esp32s3'));
+  });
+
   test('scaffold pico and pico2', () {
     final pico = scaffoldBoardInit(
       boardId: 'pico',

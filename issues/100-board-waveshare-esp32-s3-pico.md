@@ -25,7 +25,10 @@
   - `adc` — A1 (CH6) → PWM D10
   - `pwm` — D10 LEDC fade
 
-**Out of scope:** Wi‑Fi / BLE, `klin init` ESP template, freestanding (no IDF).
+**Out of scope:** Wi‑Fi / BLE, freestanding (no IDF).
+
+**Scaffold:** `klin init waveshare-esp32-s3-pico` — ESP-IDF blink (D10) via
+bundled `templates/waveshare-esp32-s3-pico/` ([075](075-board-pack-init-host.md)).
 
 ## Usage
 
