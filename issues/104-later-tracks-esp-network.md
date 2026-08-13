@@ -30,7 +30,7 @@ Sibling backlog (non-network): [103](103-later-tracks-ble-usb-camera-lcd.md) (BL
 
 | # | Track | Likely home | Notes |
 |---|---|---|---|
-| E1 | **RMII internal EMAC** | `esp_eth` | Classic **ESP32** / preferred first: **ESP32-P4** + PHY (LAN8720 / IP101 / …). See [062](062-targets-esp-rp.md) P4 row. Pins / PHY args explicit. |
+| E1 | **RMII internal EMAC** | `esp_eth` | SoCs with on-chip EMAC: classic **ESP32**; prefer **ESP32-P4** when that port is on the desk (targets [062](062-targets-esp-rp.md) — P4 may still be “Later” there). PHY e.g. LAN8720 / IP101; pins / PHY args explicit. |
 | E2 | **Other SPI MAC+PHY** | `esp_eth` | **DM9051**, **KSZ8851SNL** (IDF-native); same pattern as `w5500_start`. |
 | E3 | **ENC28J60** | `esp_eth` (low priority) | IDF-discouraged for new designs; only if hardware on the desk. |
 | E4 | **CH390 / esp-eth-drivers** | later | Outside core IDF; optional after E2. |
@@ -57,7 +57,7 @@ Parked; do not ship “for completeness”:
 2. Prefer additive tags on existing repos (`esp_wifi` / `esp_eth`) for SoftAP / RMII / SPI backends.  
 3. Sockets / HTTP / TLS = **new** packages (like `esp_wifi` vs `machine_esp`).  
 4. Prime rule: no hidden allocation / control flow / cost.  
-5. ESP32-P4 `machine_esp` twins stay under [062](062-targets-esp-rp.md) — RMII backend can land in `esp_eth` when a P4 board is on the desk.
+5. Classic ESP32 / P4 `machine_*` ports stay under [062](062-targets-esp-rp.md) — RMII in `esp_eth` can land when that silicon is on the desk (does not require a finished `machine_esp` P4 port).
 
 ## Out of scope (this issue)
 
@@ -70,4 +70,4 @@ Parked; do not ship “for completeness”:
 - Wi‑Fi: [101](101-esp-wifi-idf.md) / https://github.com/klin-lang/esp_wifi  
 - Ethernet: [102](102-esp-eth-idf.md) / https://github.com/klin-lang/esp_eth  
 - Other later tracks: [103](103-later-tracks-ble-usb-camera-lcd.md)  
-- Targets (incl. P4): [062](062-targets-esp-rp.md)  
+- Targets: [062](062-targets-esp-rp.md)  
