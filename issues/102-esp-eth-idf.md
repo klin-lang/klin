@@ -113,6 +113,7 @@ klin get github/klin-lang/esp_eth@v0.1.2
 - Repo: https://github.com/klin-lang/esp_eth  
 - Tag: [v0.1.2](https://github.com/klin-lang/esp_eth/releases/tag/v0.1.2)  
 - Wi‑Fi sibling: [101](101-esp-wifi-idf.md) / [`esp_wifi`](https://github.com/klin-lang/esp_wifi)  
+- BLE sibling: [106](106-esp-ble-idf.md) / [`esp_ble`](https://github.com/klin-lang/esp_ble)  
 - Network later backlog: [104](104-later-tracks-esp-network.md)  
 - Chip MMIO: [099](099-machine-esp-esp32-s3.md) / [`machine_esp`](https://github.com/klin-lang/machine_esp)  
 - Catalog: [061](061-micropython-machine-api.md), targets [062](062-targets-esp-rp.md)  
