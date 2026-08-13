@@ -33,7 +33,8 @@ Board pack [100](100-board-waveshare-esp32-s3-pico.md) stays pins/WS2812/buses �
 
 - Fixed primary service **0xFFF0**, characteristic **0xFFF1** (read / write / notify)  
 - Registered in `init` (before host sync)  
-- `gatt_set(*u8, len)` / `gatt_get(*mut u8, max_len)` / `gatt_len` — caller copies; max **20** bytes  
+- `gatt_set(*u8, len)` / `gatt_get(*mut u8, max_len)` / `gatt_len` / `gatt_value_max()` — caller copies; max **20** bytes  
+- `gatt_svc_uuid16()` / `gatt_chr_uuid16()` — fixed MVP UUIDs (`0xFFF0` / `0xFFF1`)  
 - `gatt_notify()` — notify if a central subscribed  
 - `gatt_written()` — poll flag (cleared on read); **no** Klin callbacks  
 - Adv data includes service UUID when the payload fits  

@@ -44,7 +44,7 @@ Work top-down or pick by hardware on the desk. Each row = own issue + package/bo
 - Priority vs language core  
 - Merging camera into `machine_esp` or folding USB OTG into board packs  
 - ESP network package later tags (→ [104](104-later-tracks-esp-network.md))
-- Re-implementing BLE advertise (→ [106](106-esp-ble-idf.md))
+- Re-implementing BLE advertise / GATT MVP (→ [106](106-esp-ble-idf.md))
 ## Links
 
 - Targets: [062](062-targets-esp-rp.md)  
