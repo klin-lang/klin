@@ -2,7 +2,7 @@
 
 **Status:** ✅ decided (external package; not Klin stdlib)
 **Depends on:** [010](010-bare-metal.md); nice to have [031](031-hal-libraries.md), [027](027-svd-ergonomic-api.md), [053](053-device-board-assets.md)
-**Packages:** [`machine_stm32`](https://github.com/klin-lang/machine_stm32) (`Pin`…`Adc` `@v0.5.0`), [`machine_rp`](https://github.com/klin-lang/machine_rp) (`Pin`…`Adc`+**Pio**+**Dma**+**UsbCdc** `@v0.11.0`), [`machine_esp`](https://github.com/klin-lang/machine_esp) (C3 + **S3** `*_s3` Pin…Adc `@v0.6.0`; [099](099-machine-esp-esp32-s3.md)), [`machine_stm8`](https://github.com/klin-lang/machine_stm8) (`Pin`…`Adc` `@v0.2.0`), [`machine_avr`](https://github.com/klin-lang/machine_avr) (`Pin` 328P+2560; `Pwm`…`Adc` **328P** `@v0.2.0`), [`machine_xmega`](https://github.com/klin-lang/machine_xmega) (`Pin`…`Dac` `@v0.2.0`), [`machine_pic16`](https://github.com/klin-lang/machine_pic16) (`Pin`…`Dac` `@v0.2.0`), [`machine_ch32v`](https://github.com/klin-lang/machine_ch32v) (`Pin`…`Adc` `@v0.1.0`; [086](086-machine-ch32v.md)), [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v) (`Pin`…`Adc` `@v0.2.0`; [087](087-machine-gd32v.md))
+**Packages:** [`machine_stm32`](https://github.com/klin-lang/machine_stm32) (`Pin`…`Adc` `@v0.5.0`), [`machine_rp`](https://github.com/klin-lang/machine_rp) (`Pin`…`Adc`+**Pio**+**Dma**+**UsbCdc** `@v0.11.0`), [`machine_esp`](https://github.com/klin-lang/machine_esp) (C3 + **S3** `*_s3` Pin…Adc+**Rmt** `@v0.7.0`; [099](099-machine-esp-esp32-s3.md)), [`machine_stm8`](https://github.com/klin-lang/machine_stm8) (`Pin`…`Adc` `@v0.2.0`), [`machine_avr`](https://github.com/klin-lang/machine_avr) (`Pin` 328P+2560; `Pwm`…`Adc` **328P** `@v0.2.0`), [`machine_xmega`](https://github.com/klin-lang/machine_xmega) (`Pin`…`Dac` `@v0.2.0`), [`machine_pic16`](https://github.com/klin-lang/machine_pic16) (`Pin`…`Dac` `@v0.2.0`), [`machine_ch32v`](https://github.com/klin-lang/machine_ch32v) (`Pin`…`Adc` `@v0.1.0`; [086](086-machine-ch32v.md)), [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v) (`Pin`…`Adc` `@v0.2.0`; [087](087-machine-gd32v.md))
 
 ## Verdict
 
@@ -12,7 +12,7 @@
 | Where does the code live? | External repos (not `stdlib/`): **`machine_stm32`**, **`machine_rp`**, **`machine_esp`**, **`machine_stm8`**, **`machine_xmega`**, **`machine_avr`**, **`machine_pic16`**, **`machine_ch32v`**, **`machine_gd32v`** |
 | STM32? | **Yes** — [`machine_stm32`](https://github.com/klin-lang/machine_stm32) (`Pin` + `Pwm` + `Rc` + `Uart` + `I2c` + `Spi` + `Adc` `@v0.5.0`; F411/F401-class — **no HW DAC**); board [`nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re) `@v0.1.3` → [096](096-board-nucleo-f411re.md) |
 | RP2040 / RP2350? | **`machine_rp`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Pio**+**Dma**+**UsbCdc** ✅ `@v0.11.0` (**no HW DAC**; UsbCdc RP2350 poll; Pio `out_pins`/TX DMA); ([062](062-targets-esp-rp.md)); boards [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) `@v0.13.0` → [095](095-board-waveshare-rp2350-lcd-096.md), [`adafruit_rp2040_can_feather`](https://github.com/klin-lang/adafruit_rp2040_can_feather) `@v0.1.0` (MCP25625 SPI CAN) → [098](098-board-adafruit-rp2040-can-feather.md) |
-| ESP32-C3 / **S3**? | **`machine_esp`** — C3 `pin_out`…`adc_out` ✅; S3 twin `*_s3` Pin…Adc ✅ `@v0.6.0` ([099](099-machine-esp-esp32-s3.md); **no HW DAC** API); board [`waveshare_esp32_s3_pico`](https://github.com/klin-lang/waveshare_esp32_s3_pico) `@v0.2.0` → [100](100-board-waveshare-esp32-s3-pico.md); minimal ESP-IDF boot; Wi‑Fi / freestanding / classic ESP32 / C6 later ([062](062-targets-esp-rp.md)) |
+| ESP32-C3 / **S3**? | **`machine_esp`** — C3 `pin_out`…`adc_out` ✅; S3 twin `*_s3` Pin…Adc+**Rmt** ✅ `@v0.7.0` ([099](099-machine-esp-esp32-s3.md); **no HW DAC** API); board [`waveshare_esp32_s3_pico`](https://github.com/klin-lang/waveshare_esp32_s3_pico) `@v0.3.0` (WS2812 via RMT) → [100](100-board-waveshare-esp32-s3-pico.md); minimal ESP-IDF boot; Wi‑Fi / freestanding / classic ESP32 / C6 later ([062](062-targets-esp-rp.md)) |
 | STM8? | **`machine_stm8`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc ✅ `@v0.2.0` (STM8S103/S003; **no DAC**); ([062](062-targets-esp-rp.md)) |
 | ATxmega? | **`machine_xmega`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Dac** ✅ `@v0.2.0` (ATxmega128A1U-class; DACB) |
 | megaAVR (Arduino Uno/Mega)? | **`machine_avr`** — Pin ✅ 328P+2560; **Pwm…Adc** ✅ **328P only** `@v0.2.0` (**no DAC**; 2560 bus factories later) |
@@ -136,7 +136,7 @@ Examples: [`pwm_f411`](https://github.com/klin-lang/machine_stm32/tree/main/exam
 [`machine_esp/examples/pwm_c3`](https://github.com/klin-lang/machine_esp/tree/main/examples/pwm_c3),
 [`rc_c3`](https://github.com/klin-lang/machine_esp/tree/main/examples/rc_c3),
 [`blink_s3`](https://github.com/klin-lang/machine_esp/tree/main/examples/blink_s3) / [`pwm_s3`](https://github.com/klin-lang/machine_esp/tree/main/examples/pwm_s3) (S3 → [099](099-machine-esp-esp32-s3.md)),
-[`waveshare_esp32_s3_pico/examples/blink`](https://github.com/klin-lang/waveshare_esp32_s3_pico/tree/main/examples/blink) / [`uart`](https://github.com/klin-lang/waveshare_esp32_s3_pico/tree/main/examples/uart) / [`i2c`](https://github.com/klin-lang/waveshare_esp32_s3_pico/tree/main/examples/i2c) / [`spi`](https://github.com/klin-lang/waveshare_esp32_s3_pico/tree/main/examples/spi) / [`adc`](https://github.com/klin-lang/waveshare_esp32_s3_pico/tree/main/examples/adc) / [`pwm`](https://github.com/klin-lang/waveshare_esp32_s3_pico/tree/main/examples/pwm) ([100](100-board-waveshare-esp32-s3-pico.md)),
+[`waveshare_esp32_s3_pico/examples/blink`](https://github.com/klin-lang/waveshare_esp32_s3_pico/tree/main/examples/blink) / [`rgb`](https://github.com/klin-lang/waveshare_esp32_s3_pico/tree/main/examples/rgb) / [`uart`](https://github.com/klin-lang/waveshare_esp32_s3_pico/tree/main/examples/uart) / [`i2c`](https://github.com/klin-lang/waveshare_esp32_s3_pico/tree/main/examples/i2c) / [`spi`](https://github.com/klin-lang/waveshare_esp32_s3_pico/tree/main/examples/spi) / [`adc`](https://github.com/klin-lang/waveshare_esp32_s3_pico/tree/main/examples/adc) / [`pwm`](https://github.com/klin-lang/waveshare_esp32_s3_pico/tree/main/examples/pwm) ([100](100-board-waveshare-esp32-s3-pico.md)),
 [`machine_stm8/examples/rc_pd4`](https://github.com/klin-lang/machine_stm8/tree/main/examples/rc_pd4).
 
 `machine_rp` `@v0.9.0`:
@@ -158,7 +158,7 @@ s.write_dma(d, buf, machine.dma_dreq_spi0_tx())
 // RP2350: *_rp2350 twins (+ dma_out_rp2350 / dma_dreq_spi*_tx_rp2350)
 ```
 
-`machine_esp` `@v0.6.0` (C3 factories; S3 twins — [099](099-machine-esp-esp32-s3.md)):
+`machine_esp` `@v0.7.0` (C3 factories; S3 twins + Rmt — [099](099-machine-esp-esp32-s3.md)):
 
 ```klin
 let led = machine.pwm_out(8, 0, 0, 80000000)
@@ -171,6 +171,7 @@ let led_s3 = machine.pin_out_s3(2)
 let pwm_s3 = machine.pwm_out_s3(2, 0, 0, 80000000)
 let u_s3 = machine.uart_out_s3(0, 17, 18, 80000000, 115200)
 let adc_s3 = machine.adc_out_s3(1, 0) // CH0 → GPIO1
+let rmt_s3 = machine.rmt_tx_s3(21, 0, 80000000) // WS2812-style; tick = APB/8
 ```
 
 `machine_stm8` `@v0.2.0` (UART1 PD5/PD6; ADC 10-bit — `read_u12` name kept for parity):
@@ -236,8 +237,9 @@ dac.write_u12(2048)
 2. **PWM** / **Rc** (LEDC) — ✅ `@v0.2.0` / `@v0.3.0`  
 3. **Uart** / **I2c** / **Spi** / **Adc** (C3) — ✅ `@v0.4.0`  
 4. **ESP32-S3** twin factories Pin…Adc (`*_s3`) — ✅ `@v0.5.0` / `@v0.6.0` ([099](099-machine-esp-esp32-s3.md))  
-5. Board Waveshare ESP32-S3-Pico — ✅ `@v0.2.0` (blink/rgb + uart/i2c/spi/adc/pwm) ([100](100-board-waveshare-esp32-s3-pico.md))  
-6. No DAC / no PIO API; freestanding / Wi‑Fi / classic ESP32 / C6 later  
+5. **Rmt** TX S3 (`rmt_tx_s3`) — ✅ `@v0.7.0` (board WS2812 RMT → [100](100-board-waveshare-esp32-s3-pico.md))  
+6. Board Waveshare ESP32-S3-Pico — ✅ `@v0.3.0` (RMT rgb + uart/i2c/spi/adc/pwm) ([100](100-board-waveshare-esp32-s3-pico.md))  
+7. No DAC / no PIO API; freestanding / Wi‑Fi / classic ESP32 / C6 later  
 
 **`machine_stm8`**
 

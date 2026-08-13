@@ -1,6 +1,6 @@
 # 099 — `machine_esp` ESP32-S3 (Pin…Adc twin factories)
 
-**Status:** ✅ published `@v0.5.0` (Pin) / `@v0.6.0` (Pin…Adc)  
+**Status:** ✅ published `@v0.5.0` (Pin) / `@v0.6.0` (Pin…Adc) / `@v0.7.0` (Rmt TX)  
 **Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md)
 
 ## Verdict
@@ -11,7 +11,7 @@
 | Where does the code live? | External: [`klin-lang/machine_esp`](https://github.com/klin-lang/machine_esp) |
 | Pattern | Twin factories like `machine_rp` `*_rp2350` — **no** shared `#ifdef` mega-driver |
 | C3 | Unchanged: `pin_out` / `pwm_out` / … |
-| S3 | Explicit: `pin_out_s3` / `pin_in_s3` / `pwm_out_s3` / `rc_out_s3` / `uart_out_s3` / `i2c_out_s3` / `spi_out_s3` / `adc_out_s3` |
+| S3 | Explicit: `pin_out_s3` / `pin_in_s3` / `pwm_out_s3` / `rc_out_s3` / `uart_out_s3` / `i2c_out_s3` / `spi_out_s3` / `adc_out_s3` / `rmt_tx_s3` |
 
 ## What changed vs C3 (MMIO, not ISA)
 
@@ -32,13 +32,14 @@ Xtensa vs RISC-V is handled by **ESP-IDF**, not Klin.
 |---|---|
 | [`@v0.5.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.5.0) | `pin_out_s3` / `pin_in_s3` + `examples/blink_s3` (default GPIO2) |
 | [`@v0.6.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.6.0) | Pwm/Rc/Uart/I2c/Spi/Adc `*_s3` + examples `*_s3` |
+| [`@v0.7.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.7.0) | `rmt_tx_s3` (TX ch 0..=3, `put`/`start`/`wait_done`; no DMA/carrier) |
 
 ## Out of scope (this port)
 
 - Wi‑Fi / BLE / `esp_wifi`
 - Freestanding (no IDF)
 - Classic ESP32 / C6
-- Waveshare ESP32-S3-Pico board pack — ✅ [100](100-board-waveshare-esp32-s3-pico.md) `@v0.2.0`
+- Waveshare ESP32-S3-Pico board pack — ✅ [100](100-board-waveshare-esp32-s3-pico.md) `@v0.3.0`
 - `klin init` ESP template ([075](075-board-pack-init-host.md) later)
 
 ## Usage
@@ -50,14 +51,15 @@ let led = machine.pin_out_s3(2)
 let pwm = machine.pwm_out_s3(2, 0, 0, 80000000)
 let u = machine.uart_out_s3(0, 17, 18, 80000000, 115200)
 let adc = machine.adc_out_s3(1, 0) // CH0 → GPIO1
+let rmt = machine.rmt_tx_s3(21, 0, 80000000) // tick = APB/8
 ```
 
 ```sh
-klin get github/klin-lang/machine_esp@v0.6.0
+klin get github/klin-lang/machine_esp@v0.7.0
 ```
 
 ## Links
 
 - Repo: https://github.com/klin-lang/machine_esp  
-- PR: https://github.com/klin-lang/machine_esp/pull/6  
+- PR: https://github.com/klin-lang/machine_esp/pull/6 (Pin…Adc), [#7](https://github.com/klin-lang/machine_esp/pull/7) (Rmt)  
 - Catalog: [061](061-micropython-machine-api.md), targets [062](062-targets-esp-rp.md)
