@@ -43,7 +43,7 @@ Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (USB / camera / 
 - Implementation or picking a cloud vendor  
 - HTTP client / TLS packaging (→ [104](104-later-tracks-esp-network.md) N3)  
 - SoftAP provisioning UI (→ [104](104-later-tracks-esp-network.md) W1 first)  
-- BLE mesh as “IoT” (→ [106](106-esp-ble-idf.md) / later GATT on that package; not this backlog)  
+- BLE mesh as “IoT” (→ [106](106-esp-ble-idf.md) / bonding+mesh later on that package; not this backlog)  
 - Changing the Klin compiler  
 
 ## Links

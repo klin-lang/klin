@@ -15,7 +15,7 @@ Do **not** expand the scope of whichever step is “current” in [sorted](sorte
 |---|---|
 | Wi‑Fi STA (IDF) | [`esp_wifi`](https://github.com/klin-lang/esp_wifi) → [101](101-esp-wifi-idf.md) ✅ |
 | Ethernet (IDF; W5500 first, RMII later) | [`esp_eth`](https://github.com/klin-lang/esp_eth) → [102](102-esp-eth-idf.md) ✅ (RMII / other chips → [104](104-later-tracks-esp-network.md)) |
-| BLE peripheral + central scan (IDF NimBLE) | [`esp_ble`](https://github.com/klin-lang/esp_ble) → [106](106-esp-ble-idf.md) ✅ `@v0.3.0` (GATT client / bonding later on that package) |
+| BLE peripheral + central + GATT client (IDF NimBLE) | [`esp_ble`](https://github.com/klin-lang/esp_ble) → [106](106-esp-ble-idf.md) ✅ `@v0.4.0` (bonding / custom UUIDs later on that package) |
 | USB CDC poll (RP2350) | `machine_rp` → [095](095-board-waveshare-rp2350-lcd-096.md) ✅ (different from USB **OTG**) |
 
 ## Queue (piecemeal)
@@ -24,7 +24,7 @@ Work top-down or pick by hardware on the desk. Each row = own issue + package/bo
 
 | # | Track | Likely home | Notes |
 |---|---|---|---|
-| A | **BLE** | ✅ shipped → [106](106-esp-ble-idf.md) / [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.3.0` | Advertise + GATT + scan/connect done; GATT client / bonding / custom UUID tables stay on that package (not here). |
+| A | **BLE** | ✅ shipped → [106](106-esp-ble-idf.md) / [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.4.0` | Advertise + GATT server/client + scan/connect done; bonding / custom UUID tables stay on that package (not here). |
 | B | **USB OTG** | ESP: thin IDF / TinyUSB client package; RP: extend beyond CDC if needed | S3 has USB OTG; distinct from RP `UsbCdc` poll ACM. Host vs device = explicit APIs. |
 | C | **Camera** | Separate IDF package (DVP / CSI / `esp_camera`-class) | S3-class; buffers and DMA **caller-visible**; not board-pack MMIO toys. |
 | D | **LCD shields (Pico form-factor)** | Board packs + thin display helpers (SPI/I80/PIO as today on [095](095-board-waveshare-rp2350-lcd-096.md)) | Pico-sized shields on RP Pico / Waveshare S3-Pico pinout; pin maps in board pack, not `machine_*`. |
