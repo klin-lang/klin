@@ -321,7 +321,7 @@ Source: `machine` documentation (ports differ in completeness).
 
 - `time` / `utime` — sleep, ticks  
 - `network` — Wi‑Fi/Ethernet (ESP etc.) — Klin: [`esp_wifi`](https://github.com/klin-lang/esp_wifi) STA → [101](101-esp-wifi-idf.md); [`esp_eth`](https://github.com/klin-lang/esp_eth) W5500 → [102](102-esp-eth-idf.md)  
-- `bluetooth` — Klin: [`esp_ble`](https://github.com/klin-lang/esp_ble) NimBLE advertise + GATT + scan → [106](106-esp-ble-idf.md)  
+- `bluetooth` — Klin: [`esp_ble`](https://github.com/klin-lang/esp_ble) NimBLE advertise + GATT server/client + scan → [106](106-esp-ble-idf.md)  
 
 - `esp*`, `rp2`, `stm` — port-specific  
 - `uos` / VFS — files on flash/SD  
