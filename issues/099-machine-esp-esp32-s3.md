@@ -40,7 +40,7 @@ Xtensa vs RISC-V is handled by **ESP-IDF**, not Klin.
 - Freestanding (no IDF)
 - Classic ESP32 / C6
 - Waveshare ESP32-S3-Pico board pack — ✅ [100](100-board-waveshare-esp32-s3-pico.md) `@v0.3.0`
-- `klin init` ESP template ([075](075-board-pack-init-host.md) later)
+- `klin init waveshare-esp32-s3-pico` — ✅ ([075](075-board-pack-init-host.md); pack [100](100-board-waveshare-esp32-s3-pico.md))
 
 ## Usage
 
