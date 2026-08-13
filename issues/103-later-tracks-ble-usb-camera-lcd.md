@@ -14,7 +14,7 @@ Do **not** expand the scope of whichever step is “current” in [sorted](sorte
 | Track | Where |
 |---|---|
 | Wi‑Fi STA (IDF) | [`esp_wifi`](https://github.com/klin-lang/esp_wifi) → [101](101-esp-wifi-idf.md) ✅ |
-| Ethernet (IDF; W5500 first, RMII later) | [`esp_eth`](https://github.com/klin-lang/esp_eth) → [102](102-esp-eth-idf.md) |
+| Ethernet (IDF; W5500 first, RMII later) | [`esp_eth`](https://github.com/klin-lang/esp_eth) → [102](102-esp-eth-idf.md) ✅ (RMII / other chips → [104](104-later-tracks-esp-network.md)) |
 | USB CDC poll (RP2350) | `machine_rp` → [095](095-board-waveshare-rp2350-lcd-096.md) ✅ (different from USB **OTG**) |
 
 ## Queue (piecemeal)
@@ -34,13 +34,15 @@ Work top-down or pick by hardware on the desk. Each row = own issue + package/bo
 2. External repo preferred (compiler unchanged).  
 3. Prime rule: no hidden allocation / control flow / cost.  
 4. Board pack = pins + glue examples; chip stacks (BLE / camera / USB device class) = own packages.  
-5. Freestanding ESP / classic ESP32 / C6 stay under [062](062-targets-esp-rp.md) — not duplicated here.
+5. Freestanding ESP / classic ESP32 / C6 stay under [062](062-targets-esp-rp.md) — not duplicated here.  
+6. SoftAP / RMII / dual Wi‑Fi+ETH / sockets stay under [104](104-later-tracks-esp-network.md) — not duplicated here.
 
 ## Out of scope (this issue)
 
 - Implementation or package scaffolding  
 - Priority vs language core  
-- Merging BLE into `esp_wifi` or camera into `machine_esp`
+- Merging BLE into `esp_wifi` or camera into `machine_esp`  
+- ESP network package later tags (→ [104](104-later-tracks-esp-network.md))
 
 ## Links
 
@@ -48,4 +50,5 @@ Work top-down or pick by hardware on the desk. Each row = own issue + package/bo
 - `machine` catalog: [061](061-micropython-machine-api.md)  
 - S3 MMIO: [099](099-machine-esp-esp32-s3.md)  
 - S3-Pico board: [100](100-board-waveshare-esp32-s3-pico.md)  
-- Network: [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md)  
+- Network MVP: [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md)  
+- Network later: [104](104-later-tracks-esp-network.md)  
