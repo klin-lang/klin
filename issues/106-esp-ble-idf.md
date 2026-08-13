@@ -1,6 +1,6 @@
 # 106 — ESP BLE as a separate IDF package (`esp_ble`)
 
-**Status:** ✅ published `@v0.5.0` (advertise + GATT + scan/connect + client + Just Works bonding)  
+**Status:** ✅ published `@v0.6.0` (advertise + GATT + scan/connect + client + bond + custom UUID16)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [101](101-esp-wifi-idf.md)
 
 ## Verdict
@@ -8,7 +8,7 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: [`klin-lang/esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.5.0` |
+| Where does the code live? | External: [`klin-lang/esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.6.0` |
 | Engine | **ESP-IDF** v5.x **NimBLE** (`nimble_port` / GAP / GATTS / GATTC / SM store) — not MMIO |
 | Relation to `machine_esp` | **Separate.** Same class as [`esp_wifi`](https://github.com/klin-lang/esp_wifi) ([101](101-esp-wifi-idf.md)) / [`esp_eth`](https://github.com/klin-lang/esp_eth) ([102](102-esp-eth-idf.md)): IDF radio stack, not `machine_*`. |
 | µPython analogy | Outside `machine` — closer to `bluetooth` / BLE peripheral APIs ([061](061-micropython-machine-api.md)). |
@@ -60,11 +60,20 @@ Board pack [100](100-board-waveshare-esp32-s3-pico.md) stays pins/WS2812/buses �
 - Example: `examples/bond_s3/`  
 - **Not** included: passkey / numeric comparison UI, privacy RPA policy  
 
+### `@v0.6.0` — custom UUID16
+
+- `gatt_uuid16(svc, chr)` — own 16-bit service/characteristic (default remains **0xFFF0** / **0xFFF1**)  
+- Must be called **before** `init` (after init → invalid state)  
+- Affects peripheral GATT DB, advertising UUID list, and `gattc_discover`  
+- `gatt_svc_uuid16()` / `gatt_chr_uuid16()` return the active values  
+- Example: `examples/uuid_s3/`  
+- **Not** included: 128-bit UUID tables / multiple services  
+
 Implementation: `@[link("nimble_idf.c")]` + `@[cimport]`. Smoke: `examples/smoke/`.
 
 ## Out of scope
 
-- Custom / multiple services or 128-bit UUID tables  
+- Multiple services or 128-bit UUID tables  
 - Passkey / MITM display-keyboard pairing / LE privacy policies  
 - BLE mesh  
 - Coexistence policy beyond IDF defaults (Wi‑Fi + BLE together)  
@@ -75,50 +84,38 @@ Implementation: `@[link("nimble_idf.c")]` + `@[cimport]`. Smoke: `examples/smoke
 
 - No Klin GC / hidden heap — names and payloads are buffers you pass in.  
 - Scan overflow drops new addresses (fixed table).  
-- Client discover targets the same fixed UUIDs as the server MVP.  
+- `gatt_uuid16` before `init`; client discover uses the configured 16-bit pair.  
 - Bonding keys are an **IDF NVS / ble_store** contract (not Klin heap).  
 - NimBLE host task / controller buffers are **IDF contracts**.  
 - Errors are `i32` (0 = OK).
 
-## Usage (bond after connect)
+## Usage (custom UUID16)
 
 ```klin
 import "github/klin-lang/esp_ble" ble
 
 @[cexport, codename("klin_app_main")]
 fn app() {
-  let mut e = ble.init()
+  let mut e = ble.gatt_uuid16(0xA001, 0xA002)
   if e != ble.err_ok() {
     return
   }
-  e = ble.bond_enable()
+  e = ble.init()
   if e != ble.err_ok() {
     return
   }
-  e = ble.advertise("klin-bond")
-  if e != ble.err_ok() {
-    return
-  }
-  e = ble.wait_connected(120000)
-  if e != ble.err_ok() {
-    return
-  }
-  e = ble.bond_start()
-  if e != ble.err_ok() {
-    return
-  }
-  e = ble.wait_bonded(60000)
+  e = ble.advertise("klin-uuid")
 }
 ```
 
 ```sh
-klin get github/klin-lang/esp_ble@v0.5.0
+klin get github/klin-lang/esp_ble@v0.6.0
 ```
 
 ## Links
 
 - Repo: https://github.com/klin-lang/esp_ble  
-- Tag: [v0.5.0](https://github.com/klin-lang/esp_ble/releases/tag/v0.5.0)  
+- Tag: [v0.6.0](https://github.com/klin-lang/esp_ble/releases/tag/v0.6.0)  
 - Wi‑Fi sibling: [101](101-esp-wifi-idf.md) / [`esp_wifi`](https://github.com/klin-lang/esp_wifi)  
 - Ethernet sibling: [102](102-esp-eth-idf.md) / [`esp_eth`](https://github.com/klin-lang/esp_eth)  
 - Remaining later tracks: [103](103-later-tracks-ble-usb-camera-lcd.md)  
