@@ -1,6 +1,6 @@
 # 062 — MCU targets beyond STM32: ESP32, RP2040, RP2350, STM8, CH32V, GD32V
 
-**Status:** 🚧 — RP / ESP / STM8 / CH32V / GD32V via external `machine_*` (Pin…Adc); Wi‑Fi via [`esp_wifi`](https://github.com/klin-lang/esp_wifi) ✅; freestanding ESP / SDCC link open
+**Status:** 🚧 — RP / ESP / STM8 / CH32V / GD32V via external `machine_*` (Pin…Adc); Wi‑Fi [`esp_wifi`](https://github.com/klin-lang/esp_wifi) ✅; ETH [`esp_eth`](https://github.com/klin-lang/esp_eth) ✅ (W5500); freestanding ESP / SDCC link open
 **Depends on:** [010](010-bare-metal.md); nice to have [022](022-asm-libraries.md), [027](027-svd-ergonomic-api.md), [031](031-hal-libraries.md), [053](053-device-board-assets.md), [054](054-embedded-project-layout.md)
 
 ## Context (conversation notes)
@@ -52,7 +52,8 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 11. **CH32V003** Pin…Adc — ✅ (`machine_ch32v@v0.1.0`; [086](086-machine-ch32v.md))  
 12. **GD32VF103** Pin…Adc — ✅ (`machine_gd32v@v0.2.0`; [087](087-machine-gd32v.md))  
 13. **Wi‑Fi** (ESP-IDF STA) — ✅ [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.1.0` ([101](101-esp-wifi-idf.md); not in `machine_*`)  
-14. Freestanding ESP / SDCC STM8 — later  
+14. **Ethernet** (ESP-IDF; W5500 SPI first) — ✅ [`esp_eth`](https://github.com/klin-lang/esp_eth) `@v0.1.0` ([102](102-esp-eth-idf.md); RMII later, same package)  
+15. Freestanding ESP / SDCC STM8 — later  
 
 ## Out of scope
 
@@ -65,6 +66,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 - RP package: https://github.com/klin-lang/machine_rp  
 - ESP package: https://github.com/klin-lang/machine_esp  
 - ESP Wi‑Fi (IDF, not `machine_*`): https://github.com/klin-lang/esp_wifi ([101](101-esp-wifi-idf.md))  
+- ESP Ethernet (IDF, not `machine_*`): https://github.com/klin-lang/esp_eth ([102](102-esp-eth-idf.md))  
 
 - STM8 package: https://github.com/klin-lang/machine_stm8  
 - CH32V package: https://github.com/klin-lang/machine_ch32v ([086](086-machine-ch32v.md))  
