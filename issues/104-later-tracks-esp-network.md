@@ -6,8 +6,8 @@
 ## Verdict
 
 Parked follow-ups after the thin STA / W5500 MVP.  
-**DHCP (dynamic IP) stays the default** on both packages; static IP is already an opt-in where published.  
-Do **not** expand [101](101-esp-wifi-idf.md) / [102](102-esp-eth-idf.md) “current tag” scope with these — pick one row, ship a small additive tag or sibling package, then the next.
+**DHCP (dynamic IP) stays the default** on both packages; optional static IP is additive on newer package tags (see package READMEs / releases — Klin issue text in [101](101-esp-wifi-idf.md) / [102](102-esp-eth-idf.md) may lag).  
+Do **not** expand the “current tag” scope of those issues with the rows below — pick one, ship a small additive tag or sibling package, then the next.
 
 Sibling backlog (non-network): [103](103-later-tracks-ble-usb-camera-lcd.md) (BLE / USB OTG / camera / Pico LCD).
 
@@ -15,8 +15,8 @@ Sibling backlog (non-network): [103](103-later-tracks-ble-usb-camera-lcd.md) (BL
 
 | Track | Where |
 |---|---|
-| Wi‑Fi STA + DHCP default + optional static / hostname / assoc | [`esp_wifi`](https://github.com/klin-lang/esp_wifi) → [101](101-esp-wifi-idf.md) |
-| ETH W5500 SPI + DHCP default + optional static / hostname / link | [`esp_eth`](https://github.com/klin-lang/esp_eth) → [102](102-esp-eth-idf.md) |
+| Wi‑Fi STA (IDF; DHCP default) | [`esp_wifi`](https://github.com/klin-lang/esp_wifi) → [101](101-esp-wifi-idf.md) |
+| ETH W5500 SPI (IDF; DHCP default) | [`esp_eth`](https://github.com/klin-lang/esp_eth) → [102](102-esp-eth-idf.md) |
 
 ## Queue — Wi‑Fi (`esp_wifi` or sibling)
 
