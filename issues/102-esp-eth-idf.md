@@ -30,7 +30,7 @@
 
 ## Out of scope (this tag)
 
-- RMII internal EMAC (classic ESP32 / P4 + LAN8720…) — later, same package  
+- RMII internal EMAC (classic ESP32 / **ESP32-P4** + LAN8720…) — later, same package; **P4 preferred first RMII target** (on-chip EMAC; see targets [062](062-targets-esp-rp.md))  
 - Other SPI chips (DM9051, KSZ8851, ENC28J60) — later  
 - LwIP sockets / HTTP / TLS  
 - Freestanding (no IDF)  
