@@ -52,3 +52,4 @@ Work top-down or pick by hardware on the desk. Each row = own issue + package/bo
 - S3-Pico board: [100](100-board-waveshare-esp32-s3-pico.md)  
 - Network MVP: [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md)  
 - Network later: [104](104-later-tracks-esp-network.md)  
+- IoT later (maybe): [105](105-later-tracks-iot.md)  

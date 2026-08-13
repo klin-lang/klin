@@ -63,6 +63,7 @@ Parked; do not ship “for completeness”:
 
 - Implementation  
 - BLE (→ [103](103-later-tracks-ble-usb-camera-lcd.md))  
+- IoT protocols / MQTT / OTA (→ [105](105-later-tracks-iot.md); after sockets/TLS here)  
 - Changing the Klin compiler  
 
 ## Links
@@ -70,4 +71,5 @@ Parked; do not ship “for completeness”:
 - Wi‑Fi: [101](101-esp-wifi-idf.md) / https://github.com/klin-lang/esp_wifi  
 - Ethernet: [102](102-esp-eth-idf.md) / https://github.com/klin-lang/esp_eth  
 - Other later tracks: [103](103-later-tracks-ble-usb-camera-lcd.md)  
+- IoT later (maybe): [105](105-later-tracks-iot.md)  
 - Targets: [062](062-targets-esp-rp.md)  
