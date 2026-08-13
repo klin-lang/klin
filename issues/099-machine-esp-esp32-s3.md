@@ -36,7 +36,7 @@ Xtensa vs RISC-V is handled by **ESP-IDF**, not Klin.
 
 ## Out of scope (this port)
 
-- Wi‑Fi / BLE / `esp_wifi`
+- Wi‑Fi / BLE / `esp_wifi` in this package — Wi‑Fi → separate [`esp_wifi`](https://github.com/klin-lang/esp_wifi) ([101](101-esp-wifi-idf.md)); BLE later
 - Freestanding (no IDF)
 - Classic ESP32 / C6
 - Waveshare ESP32-S3-Pico board pack — ✅ [100](100-board-waveshare-esp32-s3-pico.md) `@v0.3.0`
