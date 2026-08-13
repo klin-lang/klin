@@ -25,7 +25,9 @@
   - `adc` — A1 (CH6) → PWM D10
   - `pwm` — D10 LEDC fade
 
-**Out of scope:** Wi‑Fi / BLE, freestanding (no IDF).
+**Out of scope:** BLE, freestanding (no IDF). Chip Wi‑Fi (silicon radio) →
+separate [`esp_wifi`](https://github.com/klin-lang/esp_wifi) ([101](101-esp-wifi-idf.md));
+this pack has **no** radio API.
 
 **Scaffold:** `klin init waveshare-esp32-s3-pico` — ESP-IDF blink (D10) via
 bundled `templates/waveshare-esp32-s3-pico/` ([075](075-board-pack-init-host.md)).
