@@ -30,9 +30,7 @@
 
 ## Out of scope (this tag)
 
-- RMII internal EMAC (classic ESP32 / P4 + LAN8720…) — later, same package  
-- Other SPI chips (DM9051, KSZ8851, ENC28J60) — later  
-- LwIP sockets / HTTP / TLS  
+- RMII / other SPI chips / sockets / HTTP / TLS / dual Wi‑Fi+ETH — later → [104](104-later-tracks-esp-network.md) (same `esp_eth` package for RMII + SPI backends)  
 - Freestanding (no IDF)  
 - Folding into `machine_esp` or board pack APIs
 
@@ -75,5 +73,6 @@ klin get github/klin-lang/esp_eth@v0.1.0
 - Repo: https://github.com/klin-lang/esp_eth  
 - Tag: [v0.1.0](https://github.com/klin-lang/esp_eth/releases/tag/v0.1.0)  
 - Wi‑Fi sibling: [101](101-esp-wifi-idf.md) / [`esp_wifi`](https://github.com/klin-lang/esp_wifi)  
+- Network later backlog: [104](104-later-tracks-esp-network.md)  
 - Chip MMIO: [099](099-machine-esp-esp32-s3.md) / [`machine_esp`](https://github.com/klin-lang/machine_esp)  
 - Catalog: [061](061-micropython-machine-api.md), targets [062](062-targets-esp-rp.md)  

@@ -30,9 +30,8 @@ Board pack [100](100-board-waveshare-esp32-s3-pico.md) stays pins/WS2812/buses �
 
 ## Out of scope
 
-- SoftAP  
+- SoftAP / scan / dual Wi‑Fi+ETH / sockets / HTTP / TLS — later → [104](104-later-tracks-esp-network.md)  
 - BLE — later track [103](103-later-tracks-ble-usb-camera-lcd.md)  
-- LwIP sockets / HTTP / TLS  
 - Freestanding (no IDF)  
 - Reconnect policy beyond the small, documented retry in `sta_idf.c` (max 5)
 
@@ -74,6 +73,7 @@ klin get github/klin-lang/esp_wifi@v0.1.0
 - Repo: https://github.com/klin-lang/esp_wifi  
 - Tag: [v0.1.0](https://github.com/klin-lang/esp_wifi/releases/tag/v0.1.0)  
 - Ethernet sibling: [102](102-esp-eth-idf.md) / [`esp_eth`](https://github.com/klin-lang/esp_eth)  
+- Network later backlog: [104](104-later-tracks-esp-network.md)  
 - Chip MMIO: [099](099-machine-esp-esp32-s3.md) / [`machine_esp`](https://github.com/klin-lang/machine_esp)  
 - Board (no radio API): [100](100-board-waveshare-esp32-s3-pico.md)  
 - Catalog: [061](061-micropython-machine-api.md), targets [062](062-targets-esp-rp.md)  
