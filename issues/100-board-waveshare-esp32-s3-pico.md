@@ -47,3 +47,4 @@ klin get github/klin-lang/machine_esp@v0.6.0
 
 - Chip port: [099](099-machine-esp-esp32-s3.md)  
 - Sibling packs: [095](095-board-waveshare-rp2350-lcd-096.md), [098](098-board-adafruit-rp2040-can-feather.md)
+
