@@ -260,7 +260,7 @@ dac.write_u12(2048)
 1. **Pin** + blink ATmega328P (Arduino Uno D13 = PB5) — ✅ `@v0.1.0` (`blink_uno`)  
 2. **Pin** + blink ATmega2560 (Arduino Mega D13 = PB7) — ✅ `@v0.1.0` (`blink_mega`, `pin_out_2560`)  
 3. **Pwm** / **Rc** / **Uart** / **I2c** / **Spi** / **Adc** — ✅ `@v0.2.0` (**328P MMIO**; no DAC; no PIO)  
-4. ATmega2560 bus factories / tinyAVR / AVR Dx — later  
+4. ATmega2560 bus factories / **ATmega32U4 (Leonardo)** / tinyAVR / AVR Dx — later → Arduino backlog [107](107-later-tracks-arduino-boards.md)  
 
 
 **`machine_pic16`**
