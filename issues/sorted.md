@@ -93,7 +93,7 @@ building the core from scratch.
 | [059](059-kstruct-macros.md) | `$kstruct` / `$kstruct_from` macros (richer klinstruct) | 💭 | 026, 052 |
 | [060](060-map-kv.md) | KV map (hash map) — language / stdlib / C | 💭 | 007, 057? |
 | [061](061-micropython-machine-api.md) | MicroPython-style `machine` API (PWM, UART, …) | ✅ (+ rp Pio+Dma+UsbCdc `@v0.11.0` / ch32v `@v0.1.0` / gd32v `@v0.2.0`) | 010, 031? |
-| [062](062-targets-esp-rp.md) | MCU targets: ESP32 / RP2040 / RP2350 / STM8 / CH32V / GD32V | 🚧 (RP Pio+Dma+UsbCdc ✅ `@v0.11.0`; ESP C3+S3+STM8+CH32V+GD32V Pin…Adc ✅) | 010 |
+| [062](062-targets-esp-rp.md) | MCU targets: ESP32 / RP2040 / RP2350 / STM8 / CH32V / GD32V | 🚧 (RP Pio+Dma+UsbCdc ✅ `@v0.11.0`; ESP C3+S3+STM8+CH32V+GD32V Pin…Adc ✅; **P4** later + RMII) | 010 |
 | [086](086-machine-ch32v.md) | `machine_ch32v` CH32V003 QingKe Pin…Adc | ✅ `@v0.1.0` | 061, 062 |
 | [087](087-machine-gd32v.md) | `machine_gd32v` GD32VF103 Nuclei Pin…Adc | ✅ `@v0.2.0` | 061, 086 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
@@ -102,7 +102,7 @@ building the core from scratch.
 | [099](099-machine-esp-esp32-s3.md) | `machine_esp` ESP32-S3 Pin…Adc+Rmt (`*_s3`) | ✅ `@v0.5.0`/`@v0.6.0`/`@v0.7.0` ([repo](https://github.com/klin-lang/machine_esp)) | 061, 062 |
 | [100](100-board-waveshare-esp32-s3-pico.md) | Board pack Waveshare ESP32-S3-Pico | ✅ `@v0.3.0` ([repo](https://github.com/klin-lang/waveshare_esp32_s3_pico)) | 061, 062, 099 |
 | [101](101-esp-wifi-idf.md) | ESP Wi‑Fi thin IDF package (`esp_wifi` STA) | ✅ `@v0.1.1` ([repo](https://github.com/klin-lang/esp_wifi)) | 021, 024, 049, 061, 062, 099 |
-| [102](102-esp-eth-idf.md) | ESP Ethernet thin IDF package (`esp_eth` W5500) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_eth)) | 021, 024, 049, 061, 062, 101 |
+| [102](102-esp-eth-idf.md) | ESP Ethernet thin IDF package (`esp_eth` W5500) | ✅ `@v0.1.2` ([repo](https://github.com/klin-lang/esp_eth)) | 021, 024, 049, 061, 062, 101 |
 | [103](103-later-tracks-ble-usb-camera-lcd.md) | Later tracks: BLE / USB OTG / camera / Pico LCD shields | 💭 backlog (one track at a time) | 061, 062, 101, 102 |
 | [104](104-later-tracks-esp-network.md) | Later tracks: ESP network (SoftAP / RMII / dual Wi‑Fi+ETH / sockets…) | 💭 backlog (one track at a time) | 101, 102, 062 |
 | [064](064-if-cond-struct-literal-parse.md) | `if`/`while` condition ending in a name mistaken for a struct literal | ✅ | — |

@@ -38,7 +38,7 @@ Xtensa vs RISC-V is handled by **ESP-IDF**, not Klin.
 
 - Wi‑Fi / BLE / `esp_wifi` in this package — Wi‑Fi → separate [`esp_wifi`](https://github.com/klin-lang/esp_wifi) ([101](101-esp-wifi-idf.md)); BLE / USB OTG / camera → [103](103-later-tracks-ble-usb-camera-lcd.md)
 - Freestanding (no IDF)
-- Classic ESP32 / C6
+- Classic ESP32 / C6 / **ESP32-P4** — roadmap [062](062-targets-esp-rp.md) (P4 = own `*_p4` twins + RMII via [102](102-esp-eth-idf.md); not this S3 port)
 - Waveshare ESP32-S3-Pico board pack — ✅ [100](100-board-waveshare-esp32-s3-pico.md) `@v0.3.0`
 - `klin init waveshare-esp32-s3-pico` — ✅ ([075](075-board-pack-init-host.md); pack [100](100-board-waveshare-esp32-s3-pico.md))
 
