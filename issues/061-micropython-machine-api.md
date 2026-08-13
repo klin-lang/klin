@@ -236,7 +236,8 @@ dac.write_u12(2048)
 2. **PWM** / **Rc** (LEDC) — ✅ `@v0.2.0` / `@v0.3.0`  
 3. **Uart** / **I2c** / **Spi** / **Adc** (C3) — ✅ `@v0.4.0`  
 4. **ESP32-S3** twin factories Pin…Adc (`*_s3`) — ✅ `@v0.5.0` / `@v0.6.0` ([099](099-machine-esp-esp32-s3.md))  
-5. No DAC / no PIO API; freestanding / Wi‑Fi / classic ESP32 / C6 later  
+5. Board Waveshare ESP32-S3-Pico — ✅ `@v0.1.0` ([100](100-board-waveshare-esp32-s3-pico.md))  
+6. No DAC / no PIO API; freestanding / Wi‑Fi / classic ESP32 / C6 later  
 
 **`machine_stm8`**
 
