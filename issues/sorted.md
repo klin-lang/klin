@@ -106,7 +106,7 @@ building the core from scratch.
 | [103](103-later-tracks-ble-usb-camera-lcd.md) | Later tracks: USB OTG / camera / Pico LCD shields (BLE → [106](106-esp-ble-idf.md)) | 💭 backlog (one track at a time) | 061, 062, 101, 102, 106 |
 | [104](104-later-tracks-esp-network.md) | Later tracks: ESP network (SoftAP / RMII / dual Wi‑Fi+ETH / sockets…) | 💭 backlog (one track at a time) | 101, 102, 062 |
 | [105](105-later-tracks-iot.md) | Later tracks: IoT (MQTT / OTA…) | 💭 maybe backlog (after sockets + HTTP/TLS) | 104, 101, 102 |
-| [106](106-esp-ble-idf.md) | ESP BLE thin IDF package (`esp_ble` NimBLE advertise) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_ble)) | 021, 024, 049, 061, 062, 101, 103 |
+| [106](106-esp-ble-idf.md) | ESP BLE thin IDF package (`esp_ble` NimBLE advertise) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_ble)) | 021, 024, 049, 061, 062, 101 |
 | [064](064-if-cond-struct-literal-parse.md) | `if`/`while` condition ending in a name mistaken for a struct literal | ✅ | — |
 | [068](068-shared-type-decl.md) | Shared type annotation (`a, b: i32` like Go; both forms OK) | ✅ | 002, 004, 005 |
 | [069](069-eventemitter-signals.md) | Observer / EventEmitter / Signals (library; JS-signals explicitly) | 💭 | 013, 057 |
