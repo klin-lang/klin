@@ -15,7 +15,7 @@
 | ESP32-C3 / **S3**? | **`machine_esp`** — C3 `pin_out`…`adc_out` ✅; S3 twin `*_s3` Pin…Adc+**Rmt** ✅ `@v0.7.0` ([099](099-machine-esp-esp32-s3.md); **no HW DAC** API); board [`waveshare_esp32_s3_pico`](https://github.com/klin-lang/waveshare_esp32_s3_pico) `@v0.3.0` (WS2812 via RMT) → [100](100-board-waveshare-esp32-s3-pico.md); minimal ESP-IDF boot; **Wi‑Fi** → separate [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.1.1` ([101](101-esp-wifi-idf.md), not in `machine_*`); **ETH** → [`esp_eth`](https://github.com/klin-lang/esp_eth) `@v0.1.2` [102](102-esp-eth-idf.md); **BLE** → [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.1.0` [106](106-esp-ble-idf.md); freestanding / classic / C6 / **P4** later ([062](062-targets-esp-rp.md)) |
 | STM8? | **`machine_stm8`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc ✅ `@v0.2.0` (STM8S103/S003; **no DAC**); ([062](062-targets-esp-rp.md)) |
 | ATxmega? | **`machine_xmega`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Dac** ✅ `@v0.2.0` (ATxmega128A1U-class; DACB) |
-| megaAVR (Arduino Uno/Mega)? | **`machine_avr`** — Pin ✅ 328P+2560; **Pwm…Adc** ✅ **328P only** `@v0.2.0` (**no DAC**; 2560 bus factories later) |
+| megaAVR (Arduino Uno/Mega)? | **`machine_avr`** — Pin ✅ 328P+2560; **Pwm…Adc** ✅ **328P only** `@v0.2.0` (**no DAC**; 2560 bus factories later). Other Arduino SKUs (Leonardo / Uno R4 / Due / Giga / Portenta) → [107](107-later-tracks-arduino-boards.md). |
 | PIC16? | **`machine_pic16`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Dac** ✅ `@v0.2.0` (PIC16F18855; PPS explicit; DAC1 5-bit HW) |
 | CH32V003 (QingKe RISC-V)? | **`machine_ch32v`** — Pin…Adc ✅ `@v0.1.0` ([086](086-machine-ch32v.md)); **10-bit** ADC |
 | GD32VF103 (Nuclei RISC-V)? | **`machine_gd32v`** — Pin…Adc ✅ `@v0.2.0` ([087](087-machine-gd32v.md)); **12-bit** ADC |
@@ -260,7 +260,7 @@ dac.write_u12(2048)
 1. **Pin** + blink ATmega328P (Arduino Uno D13 = PB5) — ✅ `@v0.1.0` (`blink_uno`)  
 2. **Pin** + blink ATmega2560 (Arduino Mega D13 = PB7) — ✅ `@v0.1.0` (`blink_mega`, `pin_out_2560`)  
 3. **Pwm** / **Rc** / **Uart** / **I2c** / **Spi** / **Adc** — ✅ `@v0.2.0` (**328P MMIO**; no DAC; no PIO)  
-4. ATmega2560 bus factories / tinyAVR / AVR Dx — later  
+4. ATmega2560 bus factories / **ATmega32U4 (Leonardo)** / tinyAVR / AVR Dx — later → Arduino backlog [107](107-later-tracks-arduino-boards.md)  
 
 
 **`machine_pic16`**

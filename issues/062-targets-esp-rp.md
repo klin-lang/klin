@@ -59,7 +59,8 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 17. **Later tracks** (USB OTG / camera / Pico LCD shields) — 💭 [103](103-later-tracks-ble-usb-camera-lcd.md) (one at a time; BLE done → [106](106-esp-ble-idf.md))  
 18. **Later network** (SoftAP / RMII / dual Wi‑Fi+ETH / sockets…) — 💭 [104](104-later-tracks-esp-network.md) (one at a time)  
 19. **Later IoT** (MQTT / OTA…) — 💭 maybe [105](105-later-tracks-iot.md) (after sockets + HTTP/TLS in [104](104-later-tracks-esp-network.md))  
-20. Classic ESP32 / C6 / freestanding ESP / SDCC STM8 — later  
+20. **Later Arduino boards** (Leonardo / Uno R4 / Due / Giga / Portenta) — 💭 [107](107-later-tracks-arduino-boards.md) (one silicon family at a time; FAQ [docs/arduino.md](../docs/arduino.md))  
+21. Classic ESP32 / C6 / freestanding ESP / SDCC STM8 — later  
 
 ## Out of scope
 
@@ -77,6 +78,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 - Later ESP/Pico tracks: [103](103-later-tracks-ble-usb-camera-lcd.md)  
 - Later ESP network tracks: [104](104-later-tracks-esp-network.md)  
 - Later IoT tracks (maybe): [105](105-later-tracks-iot.md)  
+- Later Arduino boards: [107](107-later-tracks-arduino-boards.md) / [docs/arduino.md](../docs/arduino.md)  
 
 - STM8 package: https://github.com/klin-lang/machine_stm8  
 - CH32V package: https://github.com/klin-lang/machine_ch32v ([086](086-machine-ch32v.md))  
