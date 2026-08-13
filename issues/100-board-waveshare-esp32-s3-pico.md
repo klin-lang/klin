@@ -42,7 +42,8 @@ klin get github/klin-lang/machine_esp@v0.6.0
 
 - Repo: https://github.com/klin-lang/waveshare_esp32_s3_pico  
 - Tag: [v0.1.1](https://github.com/klin-lang/waveshare_esp32_s3_pico/releases/tag/v0.1.1)  
-- Product / wiki: [Waveshare ESP32-S3-Pico](https://www.waveshare.com/wiki/ESP32-S3-Pico) /
-  [Botland](https://botland.com.pl/moduly-wifi-i-bt-esp32/23396-esp32-s3-pico-plytka-rozwojowa-zgodna-z-raspberry-pi-pico-waveshare-23803.html)  
+- Wiki: [Waveshare ESP32-S3-Pico](https://www.waveshare.com/wiki/ESP32-S3-Pico)  
+- Shop (PL): [Botland 23396 — ESP32-S3-Pico](https://botland.com.pl/moduly-wifi-i-bt-esp32/23396-esp32-s3-pico-plytka-rozwojowa-zgodna-z-raspberry-pi-pico-waveshare-23803.html)  
+
 - Chip port: [099](099-machine-esp-esp32-s3.md)  
 - Sibling packs: [095](095-board-waveshare-rp2350-lcd-096.md), [098](098-board-adafruit-rp2040-can-feather.md)
