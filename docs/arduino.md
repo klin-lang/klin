@@ -31,7 +31,7 @@ klin get github/klin-lang/machine_avr@v0.2.0
 
 | Board (examples) | Chip | Klin path |
 |---|---|---|
-| **Nano ESP32** / ESP32 Dev Module–class | ESP32 / C3 / S3 | [`machine_esp`](https://github.com/klin-lang/machine_esp) ✅ (+ wifi / eth / ble) |
+| **Nano ESP32** / S3– or C3–class modules | ESP32-C3 / ESP32-S3 | [`machine_esp`](https://github.com/klin-lang/machine_esp) ✅ (+ wifi / eth / ble). Classic ESP32 (Xtensa dual) still later ([062](../issues/062-targets-esp-rp.md)). |
 | **Nano RP2040 Connect** / Pico-class Arduino | RP2040 / RP2350 | [`machine_rp`](https://github.com/klin-lang/machine_rp) ✅ |
 | **Uno R4** Minima / WiFi | Renesas RA4M1 (+ ESP32-S3 on WiFi) | Later → [107](../issues/107-later-tracks-arduino-boards.md) (new RA port) |
 | **Giga R1** WiFi | STM32H747 (+ Murata 1DX) | Later → [107](../issues/107-later-tracks-arduino-boards.md) (H7 ≠ F411) |
