@@ -1,6 +1,6 @@
 # 101 — ESP Wi‑Fi as a separate IDF package (`esp_wifi`)
 
-**Status:** ✅ published `@v0.1.0`  
+**Status:** ✅ published `@v0.1.1` (STA + static IP / assoc)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [099](099-machine-esp-esp32-s3.md)
 
 ## Verdict
@@ -8,7 +8,7 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: [`klin-lang/esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.1.0` |
+| Where does the code live? | External: [`klin-lang/esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.1.1` |
 | Engine | **ESP-IDF** v5.x (`esp_wifi` / netif / event loop / NVS) — not MMIO |
 | Relation to `machine_esp` | **Separate.** Radio is in silicon; `machine_*` MVP stays Pin…Adc(+Rmt). Same split as µPython `machine` vs `network` ([061](061-micropython-machine-api.md)). |
 
@@ -18,31 +18,45 @@
 
 Board pack [100](100-board-waveshare-esp32-s3-pico.md) stays pins/WS2812/buses — **no** radio API there either.
 
-## Scope (`@v0.1.0`)
+## IP mode (dynamic vs static)
+
+| Mode | Behavior |
+|---|---|
+| **DHCP (dynamic)** | **Default** — no extra call; `sta_wait_ip` waits for GOT_IP |
+| **Static** | Opt-in via `sta_set_static_ip` (+ optional `sta_set_hostname`) — disables DHCP on the STA netif only |
+| **Wi‑Fi + ETH together** | Two separate packages / netifs; **no** dual failover API yet (not this issue) |
+
+Same idea as [`esp_eth`](https://github.com/klin-lang/esp_eth) ([102](102-esp-eth-idf.md)).
+
+## Scope (`@v0.1.1`)
 
 - `sta_init` — NVS + netif + default event loop + `esp_wifi_init` + STA mode  
+- `sta_set_static_ip` / `ipv4` / `sta_set_hostname` — optional; prefer before `sta_connect`  
 - `sta_connect(ssid, pass)` — fill `wifi_config_t`, start, connect  
-- `sta_wait_ip(timeout_ms)` — explicit wait on GOT_IP (`-1` = forever)  
-- `sta_ip_u32` / `sta_log_ip` — IPv4 after wait  
+- `sta_wait_connected` / `sta_connected` — assoc (`WIFI_EVENT_STA_CONNECTED`)  
+- `sta_wait_ip(timeout_ms)` — GOT_IP (`-1` = forever); DHCP or static  
+- `sta_ip_u32` / `sta_gateway_u32` / `sta_netmask_u32` / `sta_log_ip` / `sta_log_ip_info`  
 - `sta_disconnect` / `sta_stop`  
 - Implementation: `@[link("sta_idf.c")]` + `@[cimport]` (no IDF header parser)  
-- Example: `examples/sta_connect/` (ESP32-S3, `idf.py`)
+- Example: `examples/sta_connect/` (ESP32-S3, `idf.py`)  
+- Changelog: `@v0.1.0` STA+DHCP → `@v0.1.1` static IP / hostname / gw+mask / assoc wait
 
 ## Out of scope
 
 - SoftAP  
-- BLE  
+- BLE — later track [103](103-later-tracks-ble-usb-camera-lcd.md)  
 - LwIP sockets / HTTP / TLS  
+- Dual Wi‑Fi + Ethernet bonding / failover  
 - Freestanding (no IDF)  
 - Reconnect policy beyond the small, documented retry in `sta_idf.c` (max 5)
 
 ## Contract (prime rule)
 
 - No Klin GC / hidden heap — SSID/pass are C strings you pass in.  
-- IDF heap / NVS / default event loop are **IDF contracts**, documented in the package README.  
+- IDF heap / NVS / default event loop / DHCP-or-static are **IDF contracts**, documented in the package README.  
 - Errors are `i32` (`esp_err_t`); check them.
 
-## Usage
+## Usage (DHCP — default)
 
 ```klin
 import "github/klin-lang/esp_wifi" wifi
@@ -57,22 +71,55 @@ fn app() {
   if e != wifi.err_ok() {
     return
   }
+  e = wifi.sta_wait_connected(15000)
+  if e != wifi.err_ok() {
+    return
+  }
   e = wifi.sta_wait_ip(20000)
   if e != wifi.err_ok() {
     return
   }
-  wifi.sta_log_ip()
+  wifi.sta_log_ip_info()
+}
+```
+
+## Usage (static IP)
+
+```klin
+import "github/klin-lang/esp_wifi" wifi
+
+@[cexport, codename("klin_app_main")]
+fn app() {
+  let _h = wifi.sta_set_hostname("klin-wifi")
+  let _s = wifi.sta_set_static_ip(
+    wifi.ipv4(192, 168, 1, 50),
+    wifi.ipv4(192, 168, 1, 1),
+    wifi.ipv4(255, 255, 255, 0)
+  )
+  let mut e = wifi.sta_init()
+  if e != wifi.err_ok() {
+    return
+  }
+  e = wifi.sta_connect("myssid", "mypass")
+  if e != wifi.err_ok() {
+    return
+  }
+  e = wifi.sta_wait_ip(5000)
+  if e != wifi.err_ok() {
+    return
+  }
+  wifi.sta_log_ip_info()
 }
 ```
 
 ```sh
-klin get github/klin-lang/esp_wifi@v0.1.0
+klin get github/klin-lang/esp_wifi@v0.1.1
 ```
 
 ## Links
 
 - Repo: https://github.com/klin-lang/esp_wifi  
-- Tag: [v0.1.0](https://github.com/klin-lang/esp_wifi/releases/tag/v0.1.0)  
+- Tag: [v0.1.1](https://github.com/klin-lang/esp_wifi/releases/tag/v0.1.1)  
 - Ethernet sibling: [102](102-esp-eth-idf.md) / [`esp_eth`](https://github.com/klin-lang/esp_eth)  
 - Chip MMIO: [099](099-machine-esp-esp32-s3.md) / [`machine_esp`](https://github.com/klin-lang/machine_esp)  
 - Board (no radio API): [100](100-board-waveshare-esp32-s3-pico.md)  

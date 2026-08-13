@@ -101,8 +101,9 @@ building the core from scratch.
 | [098](098-board-adafruit-rp2040-can-feather.md) | Board pack Adafruit RP2040 CAN Feather (MCP25625) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/adafruit_rp2040_can_feather)) | 061, 062, 075 |
 | [099](099-machine-esp-esp32-s3.md) | `machine_esp` ESP32-S3 Pin…Adc+Rmt (`*_s3`) | ✅ `@v0.5.0`/`@v0.6.0`/`@v0.7.0` ([repo](https://github.com/klin-lang/machine_esp)) | 061, 062 |
 | [100](100-board-waveshare-esp32-s3-pico.md) | Board pack Waveshare ESP32-S3-Pico | ✅ `@v0.3.0` ([repo](https://github.com/klin-lang/waveshare_esp32_s3_pico)) | 061, 062, 099 |
-| [101](101-esp-wifi-idf.md) | ESP Wi‑Fi thin IDF package (`esp_wifi` STA) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_wifi)) | 021, 024, 049, 061, 062, 099 |
-| [102](102-esp-eth-idf.md) | ESP Ethernet thin IDF package (`esp_eth` W5500) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_eth)) | 021, 024, 049, 061, 062, 101 |
+| [101](101-esp-wifi-idf.md) | ESP Wi‑Fi thin IDF package (`esp_wifi` STA) | ✅ `@v0.1.1` ([repo](https://github.com/klin-lang/esp_wifi)) | 021, 024, 049, 061, 062, 099 |
+| [102](102-esp-eth-idf.md) | ESP Ethernet thin IDF package (`esp_eth` W5500) | ✅ `@v0.1.2` ([repo](https://github.com/klin-lang/esp_eth)) | 021, 024, 049, 061, 062, 101 |
+| [103](103-later-tracks-ble-usb-camera-lcd.md) | Later tracks: BLE / USB OTG / camera / Pico LCD shields | 💭 backlog (one track at a time) | 061, 062, 101, 102 |
 | [064](064-if-cond-struct-literal-parse.md) | `if`/`while` condition ending in a name mistaken for a struct literal | ✅ | — |
 | [068](068-shared-type-decl.md) | Shared type annotation (`a, b: i32` like Go; both forms OK) | ✅ | 002, 004, 005 |
 | [069](069-eventemitter-signals.md) | Observer / EventEmitter / Signals (library; JS-signals explicitly) | 💭 | 013, 057 |
