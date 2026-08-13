@@ -31,7 +31,7 @@ Board pack [100](100-board-waveshare-esp32-s3-pico.md) stays pins/WS2812/buses â
 ## Out of scope
 
 - SoftAP  
-- BLE  
+- BLE â€” later track [103](103-later-tracks-ble-usb-camera-lcd.md)  
 - LwIP sockets / HTTP / TLS  
 - Freestanding (no IDF)  
 - Reconnect policy beyond the small, documented retry in `sta_idf.c` (max 5)

@@ -52,7 +52,8 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 11. **CH32V003** Pin…Adc — ✅ (`machine_ch32v@v0.1.0`; [086](086-machine-ch32v.md))  
 12. **GD32VF103** Pin…Adc — ✅ (`machine_gd32v@v0.2.0`; [087](087-machine-gd32v.md))  
 13. **Wi‑Fi** (ESP-IDF STA) — ✅ [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.1.0` ([101](101-esp-wifi-idf.md); not in `machine_*`)  
-14. Freestanding ESP / SDCC STM8 — later  
+14. **Later tracks** (BLE / USB OTG / camera / Pico LCD shields) — 💭 [103](103-later-tracks-ble-usb-camera-lcd.md) (one at a time)  
+15. Freestanding ESP / SDCC STM8 — later  
 
 ## Out of scope
 
@@ -65,6 +66,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 - RP package: https://github.com/klin-lang/machine_rp  
 - ESP package: https://github.com/klin-lang/machine_esp  
 - ESP Wi‑Fi (IDF, not `machine_*`): https://github.com/klin-lang/esp_wifi ([101](101-esp-wifi-idf.md))  
+- Later ESP/Pico tracks: [103](103-later-tracks-ble-usb-camera-lcd.md)  
 
 - STM8 package: https://github.com/klin-lang/machine_stm8  
 - CH32V package: https://github.com/klin-lang/machine_ch32v ([086](086-machine-ch32v.md))  
