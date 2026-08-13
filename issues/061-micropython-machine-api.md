@@ -318,7 +318,7 @@ Source: `machine` documentation (ports differ in completeness).
 ### Outside `machine`, but “ready” on embedded
 
 - `time` / `utime` — sleep, ticks  
-- `network` — Wi‑Fi/Ethernet (ESP etc.) — Klin: [`esp_wifi`](https://github.com/klin-lang/esp_wifi) STA → [101](101-esp-wifi-idf.md)  
+- `network` — Wi‑Fi/Ethernet (ESP etc.) — Klin: [`esp_wifi`](https://github.com/klin-lang/esp_wifi) STA → [101](101-esp-wifi-idf.md); [`esp_eth`](https://github.com/klin-lang/esp_eth) W5500 → [102](102-esp-eth-idf.md)  
 
 - `bluetooth`, `esp*`, `rp2`, `stm` — port-specific  
 - `uos` / VFS — files on flash/SD  

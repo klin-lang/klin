@@ -1,7 +1,7 @@
 # 103 — Later tracks: BLE / USB OTG / camera / Pico LCD shields
 
 **Status:** 💭 backlog (do **one track at a time**; not the current step)  
-**Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md) when landed
+**Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md)
 
 ## Verdict
 
