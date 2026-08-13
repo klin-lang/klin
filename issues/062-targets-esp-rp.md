@@ -16,7 +16,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 | **RP2040** | ✅ path exists | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.11.0` — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Pio**+**Dma**+**UsbCdc** (UsbCdc RP2350 first; Pio `out_pins`/TX DMA; no DAC). |
 | **RP2350** | ✅ Arm + RISC-V | Same APIs via `*_rp2350` twins (+ UsbCdc poll). Board: Waveshare LCD-0.96 → [095](095-board-waveshare-rp2350-lcd-096.md). |
 | **ESP32-C3** | ✅ Pin…Adc | [`machine_esp`](https://github.com/klin-lang/machine_esp) `@v0.6.0` — MMIO + LEDC; minimal **ESP-IDF** boot; no DAC; no Wi‑Fi in MVP. |
-| **ESP32-S3** | ✅ Pin…Adc (`*_s3`) | Same package `@v0.5.0`/`@v0.6.0` — twin factories ([099](099-machine-esp-esp32-s3.md)); Xtensa via IDF; no Wi‑Fi in MVP. |
+| **ESP32-S3** | ✅ Pin…Adc (`*_s3`) | Same package `@v0.5.0`/`@v0.6.0` — twin factories ([099](099-machine-esp-esp32-s3.md)); board Waveshare S3-Pico → [100](100-board-waveshare-esp32-s3-pico.md); Xtensa via IDF; no Wi‑Fi in MVP. |
 | **STM8S** | ✅ Pin…Adc (emit-c) | [`machine_stm8`](https://github.com/klin-lang/machine_stm8) `@v0.2.0` — no DAC; SDCC link later. |
 | **CH32V003** | ✅ Pin…Adc | [`machine_ch32v`](https://github.com/klin-lang/machine_ch32v) `@v0.1.0` — QingKe RV32EC ([086](086-machine-ch32v.md)). |
 | **GD32VF103** | ✅ Pin…Adc | [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v) `@v0.2.0` — Nuclei N205 ([087](087-machine-gd32v.md)). |
@@ -31,7 +31,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 
 ## What is not out of the box
 
-- generic board pack / Klin-tree `examples/rp2040/…` (lives in [`machine_rp`](https://github.com/klin-lang/machine_rp); Waveshare RP2350-LCD-0.96 → [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) [095](095-board-waveshare-rp2350-lcd-096.md); Adafruit RP2040 CAN Feather → [`adafruit_rp2040_can_feather`](https://github.com/klin-lang/adafruit_rp2040_can_feather) [098](098-board-adafruit-rp2040-can-feather.md))
+- generic board pack / Klin-tree `examples/rp2040/…` (lives in [`machine_rp`](https://github.com/klin-lang/machine_rp); Waveshare RP2350-LCD-0.96 → [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) [095](095-board-waveshare-rp2350-lcd-096.md); Adafruit RP2040 CAN Feather → [`adafruit_rp2040_can_feather`](https://github.com/klin-lang/adafruit_rp2040_can_feather) [098](098-board-adafruit-rp2040-can-feather.md); Waveshare ESP32-S3-Pico → [`waveshare_esp32_s3_pico`](https://github.com/klin-lang/waveshare_esp32_s3_pico) [100](100-board-waveshare-esp32-s3-pico.md))
 - automatic ESP-IDF or pico-sdk in Klin CLI (example ships its own `idf.py` flow)
 - freestanding ESP image (no IDF)
 - Classic Xtensa ESP32 / C6 ports (S3 Pin…Adc ✅ → [099](099-machine-esp-esp32-s3.md))
