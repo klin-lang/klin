@@ -19,7 +19,7 @@ Catalog: [061](../issues/061-micropython-machine-api.md)
 | **Uno** / Uno clones / **Nano** / Pro Mini / many “328P” boards | ATmega328P | Pin…Adc + Pwm / Uart / I2c / Spi ✅ |
 | **Mega** 2560 | ATmega2560 | Pin ✅; Pwm…Adc factories later |
 | **Leonardo** / Micro / Pro Micro | ATmega32U4 | Later → [107](../issues/107-later-tracks-arduino-boards.md) (extend `machine_avr`) |
-| **Nano Every** | ATmega4809 | Later (not 328P) |
+| **Nano Every** | ATmega4809 (megaAVR 0-series) | Later (not 328P) |
 
 Examples: `blink_uno` (D13 = PB5), `blink_mega` (D13 = PB7).
 
@@ -29,19 +29,30 @@ klin get github/klin-lang/machine_avr@v0.2.0
 
 ## Arduino boards that are not megaAVR
 
+These keep the Arduino **name / form factor**, but need another package:
+
 | Board (examples) | Chip | Klin path |
 |---|---|---|
-| **Nano ESP32** / S3– or C3–class modules | ESP32-C3 / ESP32-S3 | [`machine_esp`](https://github.com/klin-lang/machine_esp) ✅ (+ wifi / eth / ble). Classic ESP32 (Xtensa dual) still later ([062](../issues/062-targets-esp-rp.md)). |
-| **Nano RP2040 Connect** / Pico-class Arduino | RP2040 / RP2350 | [`machine_rp`](https://github.com/klin-lang/machine_rp) ✅ |
+| **Nano ESP32** / S3– or C3–class modules | ESP32-C3 / ESP32-S3 | [`machine_esp`](https://github.com/klin-lang/machine_esp) ✅ (+ [`esp_wifi`](https://github.com/klin-lang/esp_wifi) / [`esp_eth`](https://github.com/klin-lang/esp_eth) / [`esp_ble`](https://github.com/klin-lang/esp_ble)). Classic ESP32 (Xtensa dual) still later ([062](../issues/062-targets-esp-rp.md)). |
+| **Nano RP2040 Connect** / Pico-class Arduino | RP2040 | [`machine_rp`](https://github.com/klin-lang/machine_rp) ✅ |
+| Pico 2 / RP2350 Arduino-shaped | RP2350 | [`machine_rp`](https://github.com/klin-lang/machine_rp) ✅ (`*_rp2350`) |
 | **Uno R4** Minima / WiFi | Renesas RA4M1 (+ ESP32-S3 on WiFi) | Later → [107](../issues/107-later-tracks-arduino-boards.md) (new RA port) |
 | **Giga R1** WiFi | STM32H747 (+ Murata 1DX) | Later → [107](../issues/107-later-tracks-arduino-boards.md) (H7 ≠ F411) |
 | **Due** | SAM3X8E (Cortex-M3) | Later → [107](../issues/107-later-tracks-arduino-boards.md) |
 | **Portenta** H7 / C33 | STM32H747 / RA6M5 (+ radio) | Later → [107](../issues/107-later-tracks-arduino-boards.md) |
+| **MKR** / Nicla / Opta | SAMD / STM32 / etc. | Later (open a row in [107](../issues/107-later-tracks-arduino-boards.md) when needed) |
+
+Board packs Klin already has that are *Arduino-adjacent* (same chips, other brands):
+
+- Waveshare ESP32-S3-Pico → [`waveshare_esp32_s3_pico`](https://github.com/klin-lang/waveshare_esp32_s3_pico) [100](../issues/100-board-waveshare-esp32-s3-pico.md)
+- Adafruit RP2040 CAN Feather → [`adafruit_rp2040_can_feather`](https://github.com/klin-lang/adafruit_rp2040_can_feather) [098](../issues/098-board-adafruit-rp2040-can-feather.md)
+- Nucleo-F411RE (STM32, not Arduino brand) → [`nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re) [096](../issues/096-board-nucleo-f411re.md)
 
 ## Out of scope (for now)
 
 - Arduino libraries (`.ino`, Wiring, `Servo.h`, …) as a Klin layer  
-- Full Pin…Adc on every Arduino SKU day one — see queue in [107](../issues/107-later-tracks-arduino-boards.md)
+- Full Pin…Adc on every Arduino SKU day one — see queue in [107](../issues/107-later-tracks-arduino-boards.md)  
+- ATmega2560 / 32U4 / 4809 full Pin…Adc parity with 328P  
 
 ## Links
 
