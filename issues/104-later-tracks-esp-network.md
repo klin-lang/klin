@@ -62,7 +62,7 @@ Parked; do not ship “for completeness”:
 ## Out of scope (this issue)
 
 - Implementation  
-- BLE (→ [106](106-esp-ble-idf.md); remaining tracks in [103](103-later-tracks-ble-usb-camera-lcd.md))  
+- BLE (→ [106](106-esp-ble-idf.md); A–D context in [103](103-later-tracks-ble-usb-camera-lcd.md))  
 - IoT protocols / MQTT / OTA (→ [105](105-later-tracks-iot.md); after sockets/TLS here)  
 - Changing the Klin compiler  
 
