@@ -49,5 +49,5 @@ klin init gd32vw553h-eval my_blink
 - Nuclei board: [GD32VW553H Evaluation Kit](https://doc.nucleisys.com/nuclei_sdk/design/board/gd32vw553h_eval.html)  
 - Header: [`gd32vw553h_eval.h`](https://github.com/Nuclei-Software/nuclei-sdk/blob/master/SoC/gd32vw55x/Board/gd32vw553h_eval/Include/gd32vw553h_eval.h)  
 - Chip: [117](117-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
-- Radio sibling: [126](126-gd32v-wifi-sdk.md) / [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi)  
+- Radio sibling: [126](126-gd32v-wifi-sdk.md) / [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [`@v0.2.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.2.0)  
 - `klin init`: [075](075-board-pack-init-host.md)
