@@ -52,7 +52,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 10. **PIO-as-SPI** helpers — ✅ (`machine_rp@v0.11.0`; board LCD remux → [095](095-board-waveshare-rp2350-lcd-096.md))  
 11. **CH32V003** Pin…Adc — ✅ (`machine_ch32v@v0.1.0`; [086](086-machine-ch32v.md))  
 12. **GD32VF103** Pin…Adc — ✅ (`machine_gd32v@v0.2.0`; [087](087-machine-gd32v.md))  
-13. **Wi‑Fi** (ESP-IDF STA + SoftAP) — ✅ [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.2.0` ([101](101-esp-wifi-idf.md); SoftAP → [104](104-later-tracks-esp-network.md) W1; DHCP default, optional static; not in `machine_*`)  
+13. **Wi‑Fi** (ESP-IDF STA + SoftAP + scan) — ✅ [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.3.0` ([101](101-esp-wifi-idf.md); SoftAP/scan → [104](104-later-tracks-esp-network.md) W1/W2; DHCP default, optional static; not in `machine_*`)  
 14. **Ethernet** (ESP-IDF; W5500 SPI first) — ✅ [`esp_eth`](https://github.com/klin-lang/esp_eth) `@v0.1.2` ([102](102-esp-eth-idf.md); RMII later, same package)  
 15. **BLE** (ESP-IDF NimBLE GAP/GATT + bond + UUID16/128 + privacy + Mesh OnOff) — ✅ [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.10.0` ([106](106-esp-ble-idf.md); not in `machine_*`)  
 16. **USB OTG** (ESP-IDF TinyUSB device CDC) — ✅ [`esp_usb`](https://github.com/klin-lang/esp_usb) `@v0.1.0` ([108](108-esp-usb-idf.md); not in `machine_*`; host / other classes later)  
@@ -60,7 +60,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 18. **Pico LCD shield** (Waveshare Pico-LCD-1.14 ST7789) — ✅ [`waveshare_pico_lcd_114`](https://github.com/klin-lang/waveshare_pico_lcd_114) `@v0.1.0` ([110](110-board-waveshare-pico-lcd-114.md); board pack, not `machine_*`)  
 19. **ESP32-P4** — later: `machine_esp` Pin… twins (`*_p4`) + [`esp_eth`](https://github.com/klin-lang/esp_eth) **RMII** backend (on-chip EMAC; preferred first RMII target vs classic ESP32); Wi‑Fi/BLE only via companion / other host, not on-die; USB OTG can use [`esp_usb`](https://github.com/klin-lang/esp_usb) when P4 board work starts  
 20. **Later tags** (USB host classes; camera CSI/stream; LCD font/S3 SPI / other shield sizes) — see [103](103-later-tracks-ble-usb-camera-lcd.md) / [108](108-esp-usb-idf.md) / [109](109-esp-camera-idf.md) / [110](110-board-waveshare-pico-lcd-114.md)  
-21. **Later network** (scan / RSSI / RMII / dual Wi‑Fi+ETH / sockets…) — 🔨 SoftAP ✅; rest 💭 [104](104-later-tracks-esp-network.md) (one at a time)  
+21. **Later network** (RSSI / RMII / dual Wi‑Fi+ETH / sockets…) — 🔨 SoftAP+scan ✅; rest 💭 [104](104-later-tracks-esp-network.md) (one at a time)  
 22. **Later IoT** (MQTT / OTA…) — 💭 maybe [105](105-later-tracks-iot.md) (after sockets + HTTP/TLS in [104](104-later-tracks-esp-network.md))  
 23. **Later Arduino boards** (Leonardo / Uno R4 / Due / Giga / Portenta) — 💭 [107](107-later-tracks-arduino-boards.md) (one silicon family at a time; FAQ [docs/arduino.md](../docs/arduino.md))  
 24. Classic ESP32 / C6 / freestanding ESP / SDCC STM8 — later  
