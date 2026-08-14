@@ -1,6 +1,8 @@
 # 070 — ORM-like / typed repo over SQLite (host)
 
-**Status:** 💭 under consideration (low priority — non-blocking)
+**Status:** ❌ not doing — depends on [050](050-sqlite-wrapper.md);
+host ORM is the opposite of the C-wedge thesis
+([125](125-drop-host-json-sqlite.md))
 **Depends on:** [050](050-sqlite-wrapper.md) (thin FFI), [021](021-c-libraries.md);
   optionally [026](026-preprocessor.md) / [057](057-allocator.md)
 

@@ -1,7 +1,12 @@
 # 018 — Generators / `yield`
 
-**Status:** 💭 to consider
+**Status:** ❌ not doing — no JS-style `yield` in the core
+([125](125-drop-host-json-sqlite.md))
 **Depends on:** 004 (functions), possibly closures / state (D7); not on main queue
+
+`async` / `.await` already desugar to a state machine ([029](029-async-event-loop.md)).
+A second suspend keyword is hidden control flow. An iterator is a
+struct with `next()` — write it; do not add `yield`.
 
 ## Context
 

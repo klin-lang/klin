@@ -61,7 +61,7 @@ Expand → `struct` + `pack`/`unpack` calling atoms. C emission monomorphic.
 | B0 | ✅ MVP | `klinstruct/atoms*.kl`, `atoms_host.c`, `Cursor` |
 | B1 | `klinstruct/*.kl` or macro in package | After A1–A3: `$kstruct` definition (or docs + examples only if builtin in `klin`) |
 | B2 | tests + `fixtures/` | Golden hex vs cstruct for generated `pack`/`unpack` |
-| B3 | later | Length-prefix, `sN`; `j*` from [051](051-json-wrapper.md) |
+| B3 | later | Length-prefix, `sN` (`j*` / JSON was [051](051-json-wrapper.md) — ❌ not doing) |
 
 ### C. Shared model artifact (optional, “like SVD” path)
 
