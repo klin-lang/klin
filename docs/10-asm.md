@@ -1,7 +1,7 @@
-# ASM units (issue 022)
+# ASM units and `asm("…")` (issue 022)
 
-Raw `.s` / `.S` attached via existing `@[link]` — **no** ASM DSL
-in Klin.
+Raw `.s` / `.S` attached via existing `@[link]`, plus a GNU
+`asm("…")` **string** in `.kl`. Neither is an ASM language in Klin.
 
 ## `.s` vs `.S`
 
@@ -38,7 +38,23 @@ Example: [`examples/asm_add/`](../examples/asm_add/).
 writes the `@[link]` list to `out/<base>.link`; Makefile links those files
 alongside emitted `.c` (e.g. `startup.s` from STM32 blink).
 
+## `asm("…")` in `.kl`
+
+A statement, not an assembler. The string is copied into GNU
+`asm volatile("…");` in the emitted `.c`. No operand / clobber
+syntax in Klin — one string the C compiler accepts as basic `asm`.
+
+```klin
+fn wfi() {
+    asm("wfi")
+}
+```
+
+This is not an ASM DSL ([022](../issues/022-asm-libraries.md) still
+holds: no assembler in the grammar). Whole functions stay in `.s` / `.S`.
+
 ## Out of scope
 
-ABI per target, mangling without `codename`, assembler in `.kl`, CLI only for ASM.
+ABI per target, mangling without `codename`, an ASM language in `.kl`,
+extended GNU operands as Klin syntax, CLI only for ASM.
 C FFI in general: [09-ffi-c.md](09-ffi-c.md).

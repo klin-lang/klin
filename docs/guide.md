@@ -249,7 +249,20 @@ fn sqrt(x: f64): f64
 ```
 
 The other direction: `@[cexport, codename("klin_add")]` plus
-`--emit-h`. Details: [09-ffi-c.md](09-ffi-c.md).
+`--emit-h`. There is no `c("…")` snippet — C stays in `.c` / headers
+you declare. Details: [09-ffi-c.md](09-ffi-c.md).
+
+A one-instruction GNU insert exists for ASM:
+
+```klin
+fn wait() {
+    asm("wfi")
+}
+```
+
+That becomes `asm volatile("wfi");` in the `.c`. Whole `.s` / `.S`
+files use `@[link]` ([10-asm.md](10-asm.md),
+[`examples/asm_add/`](../examples/asm_add/)).
 
 ## 11. What next
 
@@ -266,6 +279,7 @@ You can write host Klin now. Next, still without `issues/`:
 | `$fn` macros | [04-macros.md](04-macros.md) |
 | Interpolation | [07-interpolation.md](07-interpolation.md) |
 | Host stdlib | [../stdlib/README.md](../stdlib/README.md) |
+| C FFI / ASM units / `asm("…")` | [09-ffi-c.md](09-ffi-c.md), [10-asm.md](10-asm.md) |
 | Why these choices | [00-idea.md](00-idea.md), [01-decisions.md](01-decisions.md) |
 
 Inspect generated C at any time:

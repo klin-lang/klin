@@ -4,7 +4,10 @@ Runnable Klin demos (not golden tests — those live in `test/`).
 Path (no `issues/`): [docs/guide.md](../docs/guide.md) →
 [docs/device.md](../docs/device.md) → [docs/embedded.md](../docs/embedded.md).
 Enums / `Type.fn` / destructuring: [docs/syntax.md](../docs/syntax.md).
-Why Klin exists: [docs/00-idea.md](../docs/00-idea.md).
+C FFI / ASM: [`ffi_add/`](ffi_add/), [`cexport_add/`](cexport_add/),
+[`asm_add/`](asm_add/) — [docs/09-ffi-c.md](../docs/09-ffi-c.md),
+[docs/10-asm.md](../docs/10-asm.md). Why Klin exists:
+[docs/00-idea.md](../docs/00-idea.md).
 
 Each **folder** has its own `README.md` with **What / Why / How / Links**.
 Single-file `*.kl` demos are documented only in the tables below.
