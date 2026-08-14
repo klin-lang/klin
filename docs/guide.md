@@ -1,7 +1,8 @@
 # Write a Klin program
 
-A short path from `hello` to methods, errors, and C — not a language
-spec. Feature notes live in this folder; the map is [README.md](README.md).
+A short path from `hello` to control flow, modules, errors, and C — not
+a language spec. Feature notes live in this folder; the map is
+[README.md](README.md).
 
 Run everything below with a host C compiler on `PATH`:
 
@@ -76,7 +77,41 @@ Parameters and fields may share a type: `fn add(a, b: i32)`,
 
 Runnable: [`examples/vec2.kl`](../examples/vec2.kl).
 
-## 4. Errors are values
+## 4. Control flow
+
+```klin
+fn main() {
+    for i in 1..<6 {
+        if i % 2 == 0 {
+            printf("even %d\n", i)
+        } else if i == 1 {
+            puts("one")
+        } else {
+            printf("%d\n", i)
+        }
+    }
+
+    for j = 0; j < 3; j = j + 1 {
+        if j == 1 { continue }
+        printf("j=%d\n", j)
+        if j == 2 { break }
+    }
+}
+```
+
+- `if` / `else if` / `else` — the condition is `bool` only (`if n` is an
+  error; write `if n != 0`)
+- `for i in 1..<6` — exclusive range; `i` is always `mut`
+- `for i = 0; i < n; i = i + 1` — C-style, no parens; init introduces
+  `mut i`
+- `while cond { … }` — there is no V-style `for cond`
+- `break` / `continue` work in both loops
+- `match` / `pick` are later: [15-match.md](15-match.md),
+  [18-pick.md](18-pick.md)
+
+Runnable: [`test/fizzbuzz.kl`](../test/fizzbuzz.kl).
+
+## 5. Errors are values
 
 ```klin
 fn level(x: i32): !i32 {
@@ -97,10 +132,33 @@ fn main() {
 - `!T` is a tagged struct in C (flag + value)
 - `expr!` propagates: `if (r.is_err) return r;`
 - `or { … }` handles locally; `err` is in scope
+- Keyword `or` is **error-handling**, not logical OR (`||`)
 - Ignoring a `!T` is a compile error
 - No exceptions, no `null`
 
-## 5. Pointers, arrays, slices
+## 6. `defer`
+
+```klin
+import mem
+
+fn main() {
+    let mut a = mem.heap()
+    let mut buf = a.alloc_bytes(8) or { mem.empty_u8() }
+    defer a.free_bytes(buf)
+    buf[0] = 1
+}
+```
+
+`defer` registers a statement that runs when the **current block**
+exits — `return`, `break`, `continue`, or falling off the end. Several
+`defer`s in one scope run **last-in, first-out**.
+
+Emission is a shared epilogue plus `goto cleanup`. There is no hidden
+destructor: the statement you wrote is what runs.
+
+Runnable: [`examples/mem_heap.kl`](../examples/mem_heap.kl).
+
+## 7. Pointers, arrays, slices
 
 ```klin
 fn sum(xs: []i32): i32 {
@@ -125,7 +183,62 @@ fn main() {
 - No hidden allocation. Heap is `import mem` and an explicit
   `Allocator` ([14-allocator.md](14-allocator.md))
 
-## 6. Talk to C
+## 8. Modules and `import`
+
+```klin
+module app
+import geom
+import util calc          // local alias (issue 048)
+import mem                // stdlib
+```
+
+Use imported names with a qualifier: `geom.Vec2{ x: 3, y: 4 }`,
+`calc.add(2, 3)`, `mem.heap()`.
+
+- `module name` — this file (or directory package) belongs to `name`
+- `import name` — bring `name` in; symbols stay `name.Symbol`
+- `import path alias` — same module, shorter qualifier
+- `pub` — visible after import; without `pub` the symbol is private
+  (`static` in the generated C)
+- The whole program is still **one** `.c`
+
+Search paths (`lib/`, `-I`, `KLIN_PATH`, remote `klin get`):
+[11-klin-libraries.md](11-klin-libraries.md). Details:
+[12-modules.md](12-modules.md).
+
+Runnable: [`examples/modules/app.kl`](../examples/modules/app.kl).
+
+## 9. Operator precedence
+
+Tightest at the top. Assignment is a statement, not an operator here.
+
+| | Operators | Notes |
+|---|---|---|
+| postfix | `()` `.` `[]` `!` | `!` after a value is error propagate (`expr!`) |
+| unary | `-` `!` `~` `*` `&` | `*` / `&` vs multiply / bitwise AND: by position |
+| mul | `*` `/` `%` | |
+| add | `+` `-` | |
+| shift | `<<` `>>` | integers only |
+| bit-and | `&` | tighter than comparisons (Rust, **not** C) |
+| bit-xor | `^` | |
+| bit-or | `\|` | |
+| cmp | `<` `>` `<=` `>=` | |
+| eq | `==` `!=` | |
+| and | `&&` | `bool` only, short-circuit |
+| or | `\|\|` | `bool` only, short-circuit |
+| error-or | `or { }` | loosest; D2 error handling, not `\|\|` |
+
+So `flags & mask == bit` means `(flags & mask) == bit`. In C the same
+tokens mean `flags & (mask == bit)`. Emission still parenthesizes so
+the `.c` keeps Klin’s order ([01-decisions.md](01-decisions.md) D8 / D9).
+
+`&&` / `||` do not accept integers. `or` without `{ }` is a parse
+error.
+
+Runnable: [`examples/bitwise.kl`](../examples/bitwise.kl),
+[`examples/logical.kl`](../examples/logical.kl).
+
+## 10. Talk to C
 
 ```klin
 @[cinclude("<math.h>")]
@@ -138,12 +251,12 @@ fn sqrt(x: f64): f64
 The other direction: `@[cexport, codename("klin_add")]` plus
 `--emit-h`. Details: [09-ffi-c.md](09-ffi-c.md).
 
-## 7. What next
+## 11. What next
 
 | Topic | Where |
 |---|---|
 | `match` / `pick` | [15-match.md](15-match.md), [18-pick.md](18-pick.md) |
-| Modules / packages | [12-modules.md](12-modules.md), [11-klin-libraries.md](11-klin-libraries.md) |
+| Packages / search paths | [11-klin-libraries.md](11-klin-libraries.md), [12-modules.md](12-modules.md) |
 | `$fn` macros | [04-macros.md](04-macros.md) |
 | SVD / `$device` (MCU registers) | [device.md](device.md) |
 | Interpolation | [07-interpolation.md](07-interpolation.md) |

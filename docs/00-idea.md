@@ -150,6 +150,6 @@ not the one that sounds best in the README.
 
 - Decisions (memory, errors, generics): [01-decisions.md](01-decisions.md)
 - Compiler rules: [02-architecture.md](02-architecture.md)
-- Short tutorial: [guide.md](guide.md)
+- Short tutorial: [guide.md](guide.md) (`if` / `defer` / `import` / precedence)
 - SVD / `$device`: [device.md](device.md)
 - Doc map: [README.md](README.md)

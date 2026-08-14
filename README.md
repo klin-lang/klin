@@ -110,7 +110,7 @@ CLI: [docs/06-cli.md](docs/06-cli.md). Debug (`#line`, `-g`):
 
 ## Learn the language
 
-1. [docs/guide.md](docs/guide.md) — hello → structs → `!T` → C
+1. [docs/guide.md](docs/guide.md) — hello → `if` / `defer` / `import` → C
 2. [`examples/`](examples/README.md) — host demos and board sketches
 3. [`stdlib/`](stdlib/README.md) — optional `io`, `str`, `math`, `mem`, …
 
