@@ -26,7 +26,8 @@ stm32/_common/f411.mk       # shared CC / freestanding flags
 Board packs keep startup/linker next to the app, under `board/`
 ([075](../../issues/075-board-pack-init-host.md), [054](../../issues/054-embedded-project-layout.md)).
 Host CRT demos stay at `examples/*.kl` / non-`stm32/` folders.
-Fresh project: `klin init nucleo-f411` (bundled `templates/nucleo-f411/`).
+Fresh project: [docs/embedded.md](../../docs/embedded.md) —
+`klin init nucleo-f411` (or `pico`, ESP, …).
 
 ## How
 
@@ -37,5 +38,6 @@ Scaffold: `dart run bin/klin.dart init nucleo-f411 my_blink` then
 ## Links
 
 - [issues/054](../../issues/054-embedded-project-layout.md), [075](../../issues/075-board-pack-init-host.md)
+- [docs/embedded.md](../../docs/embedded.md) (`klin init`)
 - [docs/device.md](../../docs/device.md) (SVD / `$device` / fluent MMIO)
 - Catalog: [`../README.md`](../README.md)

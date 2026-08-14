@@ -261,7 +261,7 @@ The other direction: `@[cexport, codename("klin_add")]` plus
 | SVD / `$device` (MCU registers) | [device.md](device.md) |
 | Interpolation | [07-interpolation.md](07-interpolation.md) |
 | Host stdlib | [../stdlib/README.md](../stdlib/README.md) |
-| MCU / `klin init` | [../examples/README.md](../examples/README.md), [../templates/](../templates/) |
+| MCU / `klin init` | [embedded.md](embedded.md) |
 | Why these choices | [00-idea.md](00-idea.md), [01-decisions.md](01-decisions.md) |
 
 Inspect generated C at any time:

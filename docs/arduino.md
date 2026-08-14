@@ -6,6 +6,8 @@ usual toolchain for that chip (`avr-gcc`, ESP-IDF, pico-sdk, …).
 
 Rule of thumb: find the **SoC** on the silkscreen / product page, then pick the
 matching `machine_*` (or board pack). There is no single `arduino` package.
+Bundled `klin init` boards (Pico, Nucleo, ESP32-S3, …):
+[embedded.md](embedded.md).
 
 Backlog for boards not yet supported: [107](../issues/107-later-tracks-arduino-boards.md).
 
