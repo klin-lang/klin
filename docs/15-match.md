@@ -1,7 +1,8 @@
 # `match` — pattern matching with default break
 
 Issue: [014](../issues/014-match.md) (MVP), [084](../issues/084-match-when-rel.md)
-(`when` guards + relational patterns).
+(`when` guards + relational patterns),
+[129](../issues/129-enum-match-exhaustive.md) (exhaustive enum `match`).
 
 ## Syntax
 
@@ -65,13 +66,19 @@ pattern when <bool expr> { … }
   struct, pointer → checker error.
 - Relational and range patterns are **not** allowed on enum subjects
   (only value groups + `when` + `else`).
+- **Enum subjects are exhaustive.** Every variant must appear in an
+  unguarded value group, or the last arm must be `else`. A `when` guard
+  does not cover that variant (the guard can fail). A runtime value
+  (`other` of the same enum) does not cover a name. Integers stay open:
+  statement `else` is optional (no match does nothing); expression
+  `else` is still required.
+- `else` on an enum is the hatch for a leftover discriminant after
+  `cast` (`cast(Color, 99)`).
 - An arm is a block, not `case`: `break` / `continue` in an arm refer to the
   enclosing loop, `return` returns from the function (and runs `defer`).
-- In a statement `else` is optional — no match does nothing. In an expression `else` is **required** (there is no “otherwise"
-  value).
 - Expression type: common type of arms (unification like array literals);
-  `match` counts as returning on all paths only when
-  it has `else` and every arm returns.
+  `match` counts as returning on all paths when every arm returns and
+  the arms cover the subject (`else`, or every enum variant).
 
 ## Emission
 
@@ -114,14 +121,14 @@ overarching principle satisfied.
 - no `|` as alternative — use `,`
 - no matching on strings and structs (`str` is not yet a value
   type)
-- no exhaustiveness checking (beyond required `else` in expression) and
-  dead-arm warnings
+- no dead-arm warnings (a second `Color.Red` is still accepted)
 - `match` as expression only in `let` / assignment; in call argument
   → checker error with hint
 - subject in header does not accept bare struct literal
   (`match Point{…}.x` — use parentheses: `match (Point{…}).x`), because `{`
   opens the arm block
 
-Example: [`examples/match.kl`](../examples/match.kl).
+Example: [`examples/match.kl`](../examples/match.kl),
+[`examples/enums.kl`](../examples/enums.kl).
 Tests: `test/match_stmt.kl`, `test/match_expr.kl`, `test/match_when.kl`,
-`test/match_rel.kl`, `test/fmt_match.kl`.
+`test/match_rel.kl`, `test/fmt_match.kl`, `test/enum_match_exh.kl`.

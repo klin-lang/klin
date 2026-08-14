@@ -41,6 +41,7 @@ on Nucleo, the SVD). Compile / `make` stay offline after that.
 | `waveshare-rp2350-lcd-096` | RP2350 | `arm-none-eabi-gcc` | LCD backlight via board pack |
 | `waveshare-esp32-s3-pico` | ESP32-S3 | ESP-IDF v5.x | D10 LED via `machine_esp` + IDF |
 | `gd32vw553h-eval` | GD32VW553 | `riscv64-unknown-elf-gcc` | LED1 (PA4) via `machine_gd32v` + board pack |
+| `gd32vw553h-start` | GD32VW553 | `riscv64-unknown-elf-gcc` | RGB red (PB0) via `machine_gd32v` + board pack |
 
 Unknown id → error. Templates ship **in the Klin install**
 (`templates/`, `$KLIN_TEMPLATES`, or `share/klin/templates` next to
@@ -120,6 +121,13 @@ not this scaffold.
 ```sh
 klin init gd32vw553h-eval my_vw553
 cd my_vw553 && klin get && make emit
+```
+
+**GD32VW553 START** — same recipe; log UART is UART2 PA6/PA7 (not EVAL COM0).
+
+```sh
+klin init gd32vw553h-start my_start
+cd my_start && klin get && make emit
 ```
 
 ## What you do not do

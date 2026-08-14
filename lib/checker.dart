@@ -1221,7 +1221,7 @@ final class Checker {
         stmt.sourceType = sourceType;
         stmt.fieldTypes = fieldTypes;
 
-      case MatchStmt(:final subject, :final arms):
+      case MatchStmt(:final subject, :final arms, :final pos):
         _checkMatchSubject(subject);
         final subjectType = subject.resolvedType!;
         _checkMatchArmsOrder(arms.map((a) => a.pattern).toList());
@@ -1233,6 +1233,15 @@ final class Checker {
           if (when != null) {
             _expectBoolCond(when);
           }
+        }
+        _checkMatchExhaustive(
+          subjectType,
+          arms.map((a) => a.pattern).toList(),
+          arms.map((a) => a.when).toList(),
+          pos,
+          isExpr: false,
+        );
+        for (final arm in arms) {
           _checkBlock(arm.body);
         }
 
@@ -2210,9 +2219,13 @@ final class Checker {
         IfStmt(:final thenBlock, :final elseBranch) => elseBranch != null &&
             _returnsOnAllPaths(thenBlock) &&
             _stmtReturns(elseBranch),
-        MatchStmt(:final arms) => arms.isNotEmpty &&
-            arms.last.pattern is ElsePattern &&
-            arms.every((arm) => _returnsOnAllPaths(arm.body)),
+        MatchStmt(:final subject, :final arms) =>
+          _matchCoversAll(
+            subject.resolvedType,
+            arms.map((a) => a.pattern).toList(),
+            arms.map((a) => a.when).toList(),
+          ) &&
+              arms.every((arm) => _returnsOnAllPaths(arm.body)),
         _ => false,
       };
 
@@ -3047,6 +3060,82 @@ final class Checker {
     }
   }
 
+  /// `else` covers every leftover. An unguarded `Enum.Variant` covers that
+  /// name. `when` does not — the guard can fail. Integers are not closed.
+  void _checkMatchExhaustive(
+    KlinType subjectType,
+    List<MatchPattern> patterns,
+    List<Expr?> whens,
+    SourcePos pos, {
+    required bool isExpr,
+  }) {
+    if (_matchCoversAll(subjectType, patterns, whens)) return;
+    if (subjectType is EnumType) {
+      final missing = _uncoveredEnumVariants(subjectType, patterns, whens);
+      final listed = missing.map((n) => '`$n`').join(', ');
+      throw CheckError(
+        '`match` on enum `${subjectType.displayName}` is not exhaustive '
+        '(missing $listed)',
+        pos,
+      );
+    }
+    if (isExpr) {
+      throw CheckError(
+        '`match` as an expression requires an `else` arm as the last arm',
+        pos,
+      );
+    }
+  }
+
+  bool _matchCoversAll(
+    KlinType? subjectType,
+    List<MatchPattern> patterns,
+    List<Expr?> whens,
+  ) {
+    if (patterns.isEmpty) return false;
+    if (patterns.last is ElsePattern) return true;
+    if (subjectType is! EnumType) return false;
+    return _uncoveredEnumVariants(subjectType, patterns, whens).isEmpty;
+  }
+
+  /// Variant names not proven by an unguarded `Enum.Variant` literal.
+  List<String> _uncoveredEnumVariants(
+    EnumType subjectType,
+    List<MatchPattern> patterns,
+    List<Expr?> whens,
+  ) {
+    final decl = _enums[_key(subjectType.moduleName, subjectType.name)];
+    if (decl == null) return const [];
+    final covered = <String>{};
+    for (var i = 0; i < patterns.length; i++) {
+      if (whens[i] != null) continue;
+      final pattern = patterns[i];
+      if (pattern is! LitPattern) continue;
+      for (final value in pattern.values) {
+        final name = _enumVariantCoveredBy(value, subjectType);
+        if (name != null) covered.add(name);
+      }
+    }
+    return [
+      for (final variant in decl.variants)
+        if (!covered.contains(variant.name)) variant.name,
+    ];
+  }
+
+  /// `Color.Red` / `mod.Color.Red` after [_checkMatchPattern] filled
+  /// [FieldExpr.enumConstCName]. Runtime values do not count.
+  String? _enumVariantCoveredBy(Expr value, EnumType subjectType) {
+    final expr = _unwrapGroups(value);
+    if (expr is! FieldExpr || expr.enumConstCName == null) return null;
+    final type = expr.resolvedType;
+    if (type is! EnumType) return null;
+    if (type.moduleName != subjectType.moduleName ||
+        type.name != subjectType.name) {
+      return null;
+    }
+    return expr.name;
+  }
+
   KlinType _inferMatchExpr(
     Expr subject,
     List<MatchExprArm> arms,
@@ -3055,12 +3144,6 @@ final class Checker {
     if (!_allowMatchExpr) {
       throw CheckError(
         '`match` as an expression is only allowed as a `let` initializer or an assignment right-hand side',
-        pos,
-      );
-    }
-    if (arms.isEmpty || arms.last.pattern is! ElsePattern) {
-      throw CheckError(
-        '`match` as an expression requires an `else` arm as the last arm',
         pos,
       );
     }
@@ -3082,6 +3165,15 @@ final class Checker {
         if (when != null) {
           _expectBoolCond(when);
         }
+      }
+      _checkMatchExhaustive(
+        subjectType,
+        arms.map((a) => a.pattern).toList(),
+        arms.map((a) => a.when).toList(),
+        pos,
+        isExpr: true,
+      );
+      for (final arm in arms) {
         final bodyType = _inferExpr(arm.body);
         resultType = resultType == null
             ? bodyType

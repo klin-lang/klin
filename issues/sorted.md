@@ -97,8 +97,9 @@ building the core from scratch.
 | [086](086-machine-ch32v.md) | `machine_ch32v` CH32V003 QingKe Pin…Adc | ✅ `@v0.1.0` | 061, 062 |
 | [087](087-machine-gd32v.md) | `machine_gd32v` GD32VF103 Nuclei Pin…Adc | ✅ `@v0.2.0` | 061, 086 |
 | [117](117-machine-gd32v-gd32vw553.md) | `machine_gd32v` GD32VW553 Pin…Adc twins (`*_vw553`) | ✅ `@v0.8.0` | 061, 062, 087 |
-| [126](126-gd32v-wifi-sdk.md) | `gd32v_wifi` GD32VW553 STA + SoftAP + scan (GigaDevice SDK, not `machine_*`) | 🔨 STA+SoftAP+scan `@v0.3.0` | 021, 024, 049, 061, 062, 117 |
+| [126](126-gd32v-wifi-sdk.md) | `gd32v_wifi` GD32VW553 STA + SoftAP + scan + link + static (GigaDevice SDK, not `machine_*`) | 🔨 STA+SoftAP+scan+link+static `@v0.4.0` | 021, 024, 049, 061, 062, 117 |
 | [127](127-board-gd32vw553h-eval.md) | Board pack GD32VW553H-EVAL (pins + `klin init`) | 🔨 `@v0.1.0` ([repo](https://github.com/klin-lang/gd32vw553h_eval)) | 061, 062, 075, 117 |
+| [129](129-board-gd32vw553h-start.md) | Board pack GD32VW553 START (UART2 + RGB V4 + `klin init`) | 🔨 `@v0.1.0` ([repo](https://github.com/klin-lang/gd32vw553h_start)) | 061, 062, 075, 117 |
 | [130](130-gd32v-ble-sdk.md) | `gd32v_ble` GD32VW553 advertise (GigaDevice AN152, not `machine_*`) | 🔨 advertise `@v0.1.0` | 021, 024, 049, 061, 062, 117, 126 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
@@ -156,6 +157,9 @@ building the core from scratch.
 | [126](126-enum-index.md) | Enum as `[N]T` index (`table[Slot.B]`) | ✅ | 072, 007 |
 | [127](127-docs-generics-fn.md) | Map: generics are `$fn`, not `[T]` in the compiler | ✅ | 116, 026, 034 |
 | [128](128-fmt-comments.md) | `klin fmt` keeps `//` comments | ✅ | 033 |
+| [129](129-enum-match-exhaustive.md) | Exhaustive `match` on enum (checker) | ✅ | 072, 014 |
+| [130](130-winget-scoop-windows.md) | Windows package channels: WinGet + Scoop (wrap Release `.zip`) | 💭 | 076, 067 |
+| [131](131-linux-install-docs.md) | Linux install docs (tarball) + no apt/snap note | 💭 | 076, 067 |
 
 ---
 
