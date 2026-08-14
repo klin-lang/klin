@@ -1038,6 +1038,12 @@ fn main() {
     expect(c, contains('(Status)(5)'));
   });
 
+  test('golden: exhaustive enum match without else (issue 129)', () async {
+    final result = await _compileAndRun('test/enum_match_exh.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/enum_match_exh.out').readAsString());
+  });
+
   test('golden: enum as array index (issue 126)', () async {
     final result = await _compileAndRun('test/enum_index.kl', tmp);
     expect(result.exitCode, 0, reason: result.stderr);
@@ -1206,6 +1212,118 @@ fn main() {
         ),
       ),
     );
+  });
+
+  test('error: enum match statement is not exhaustive (issue 129)', () {
+    const source = '''
+enum Color { Red, Green, Blue }
+fn main() {
+    let c: Color = Color.Red
+    match c {
+        Color.Red { }
+        Color.Green { }
+    }
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(
+        predicate((e) =>
+            e is CheckError &&
+            e.toString().contains('not exhaustive') &&
+            e.toString().contains('`Blue`')),
+      ),
+    );
+  });
+
+  test('error: enum match expression is not exhaustive (issue 129)', () {
+    const source = '''
+enum Color { Red, Green, Blue }
+fn main() {
+    let c: Color = Color.Red
+    let n = match c {
+        Color.Red { 1 }
+        Color.Green { 2 }
+    }
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(
+        predicate((e) =>
+            e is CheckError &&
+            e.toString().contains('not exhaustive') &&
+            e.toString().contains('`Blue`')),
+      ),
+    );
+  });
+
+  test('error: when guard does not cover an enum variant (issue 129)', () {
+    const source = '''
+enum Color { Red, Green }
+fn main() {
+    let c: Color = Color.Red
+    match c {
+        Color.Red when 1 == 1 { }
+        Color.Green { }
+    }
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(
+        predicate((e) =>
+            e is CheckError &&
+            e.toString().contains('not exhaustive') &&
+            e.toString().contains('`Red`')),
+      ),
+    );
+  });
+
+  test('error: runtime enum value does not cover a variant (issue 129)', () {
+    const source = '''
+enum Color { Red, Green }
+fn main() {
+    let c: Color = Color.Red
+    let other: Color = Color.Green
+    match c {
+        other { }
+    }
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(
+        predicate((e) =>
+            e is CheckError &&
+            e.toString().contains('not exhaustive') &&
+            e.toString().contains('`Red`') &&
+            e.toString().contains('`Green`')),
+      ),
+    );
+  });
+
+  test('enum match with else stays non-exhaustive-ok (issue 129)', () {
+    const source = '''
+enum Color { Red, Green, Blue }
+fn main() {
+    let c: Color = Color.Red
+    match c {
+        Color.Red { }
+        else { }
+    }
+    let n = match c {
+        Color.Green { 1 }
+        else { 0 }
+    }
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
   });
 
   test('error: match expression only in let/assign position', () {

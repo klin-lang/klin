@@ -18,8 +18,9 @@
 Example: `examples/enums.kl`. Goldens: `test/enum_basic.kl`.
 
 **Beyond this MVP** (still “under consideration”, sections below): string-enum, kv-enum,
-exhaustive `match`, bitflags (require [078](078-bitwise-ops.md)).
+bitflags (require [078](078-bitwise-ops.md)).
 Enum as `[N]T` index → [126](126-enum-index.md) ✅.
+Exhaustive `match` on enum → [129](129-enum-match-exhaustive.md) ✅.
 
 ## Goal
 
@@ -132,8 +133,7 @@ value(): T` + `match` already covers it without a new feature.
 - Algebraic enums with data (Rust/Swift `enum` with payload) — large, separate
   topic (requires tagged union in emission); here only “C-like" enum.
 - Automatic `to_string`/reflection without explicit method.
-- Exhaustive `match` on enum — consider separately (valuable,
-  but checker/`match` extension).
+- Exhaustive `match` on enum — [129](129-enum-match-exhaustive.md) ✅.
 - Bitflags/`enum` as flags (`|`/`&`) — possibly later; requires bitwise
   operators ([078](078-bitwise-ops.md)), which the language lacks today.
 

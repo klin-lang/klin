@@ -6,7 +6,7 @@ fn (c: Color) name(): str {
     match c {
         Color.Red { return "red" }
         Color.Green { return "green" }
-        else { return "blue" }
+        Color.Blue { return "blue" }
     }
 }
 
