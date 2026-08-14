@@ -5,6 +5,20 @@
 **Depends on:** [007](007-pointers-arrays-slices.md); heap:
 [057](057-allocator.md)
 
+## What “read, don’t search” is
+
+Wanted: load an object **as a field**, not look up a key.
+That is a **fixed layout**, not a hash map.
+
+| Keys known when? | Mechanism | Cost |
+|---|---|---|
+| Compile time (fields, registers, closed set) | `obj.field`, `table[Enum.x]`, kv-enum ([072](072-enums.md)) | one load / index — `objdump` matches C |
+| Runtime (`str` from UART, id from packet) | you **must** search: `$fn` map, `bsearch`, or C uthash | hash + probe, or log n |
+
+A hash map always searches. `m[k] = v` / `m[k]` is not “just read.”
+On MCU it is often slower than a struct (branches, cache). Do not
+use 060 for the first row.
+
 ## Struck: `map[K]V` in the language
 
 Go/V builtin (`m[k] = v` grows the heap). C has no such type.
