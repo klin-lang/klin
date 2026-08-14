@@ -32,7 +32,7 @@
 
 ## Out of scope (this tag)
 
-- RMII / other SPI chips — later → [104](104-later-tracks-esp-network.md) (same `esp_eth` package for RMII + SPI backends; **P4 preferred first RMII** host — Pin port started [114](114-machine-esp-esp32-p4.md); RMII is still this package)  
+- RMII / other SPI chips — later → [104](104-later-tracks-esp-network.md) (same `esp_eth` package for RMII + SPI backends; **P4 preferred first RMII** host — Pin…Spi ✅ [114](114-machine-esp-esp32-p4.md); RMII is still this package)  
 - Dual Wi‑Fi+ETH prefer/failover ✅ [113](113-esp-netif-dual-idf.md); sockets ✅ [111](111-esp-sockets-idf.md); HTTP ✅ [112](112-esp-http-idf.md)  
 - Freestanding (no IDF)  
 - Folding into `machine_esp` or board pack APIs
