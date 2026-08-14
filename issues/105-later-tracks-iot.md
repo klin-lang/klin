@@ -9,16 +9,16 @@ Park **IoT-shaped** work above the thin network MVP (`esp_wifi` / `esp_eth`).
 This is a **maybe** queue: ship only when there is a concrete device + protocol need — not “IoT platform” scope creep.
 
 Do **not** fold MQTT / cloud SDKs into `machine_*` or into the current STA/W5500 tags.  
-Do **not** start here before thin **sockets** ([104](104-later-tracks-esp-network.md) N2) **and** **HTTP/TLS** ([104](104-later-tracks-esp-network.md) N3).
+Do **not** start here before **HTTP/TLS** ([104](104-later-tracks-esp-network.md) N3). Sockets MVP ✅ [`esp_sockets`](https://github.com/klin-lang/esp_sockets) → [111](111-esp-sockets-idf.md).
 
-Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP done; later tags), [106](106-esp-ble-idf.md) (BLE), [108](108-esp-usb-idf.md) (USB OTG), [109](109-esp-camera-idf.md) (camera), [110](110-board-waveshare-pico-lcd-114.md) (Pico LCD), [104](104-later-tracks-esp-network.md) (Wi‑Fi W1–W3 ✅; RMII / sockets / HTTP/TLS…).
+Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP done; later tags), [106](106-esp-ble-idf.md) (BLE), [108](108-esp-usb-idf.md) (USB OTG), [109](109-esp-camera-idf.md) (camera), [110](110-board-waveshare-pico-lcd-114.md) (Pico LCD), [104](104-later-tracks-esp-network.md) (Wi‑Fi W1–W3 ✅; sockets ✅; RMII / HTTP/TLS…).
 
 ## Prerequisites (not this issue)
 
 | Need | Where |
 |---|---|
 | Link + IP (DHCP/static) | [101](101-esp-wifi-idf.md) / [102](102-esp-eth-idf.md) ✅ |
-| TCP/UDP sockets | [104](104-later-tracks-esp-network.md) **N2** — later |
+| TCP/UDP sockets | [111](111-esp-sockets-idf.md) / [104](104-later-tracks-esp-network.md) **N2** ✅ `@v0.1.0` |
 | HTTP / TLS | [104](104-later-tracks-esp-network.md) **N3** — later (stays in 104; not re-queued here) |
 
 ## Queue (piecemeal, optional)
