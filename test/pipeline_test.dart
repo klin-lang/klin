@@ -3701,7 +3701,7 @@ fn main() {
     expect(
       () => Lexer(r"fn main() { let x = '\q' }").tokenize(),
       throwsA(predicate(
-          (e) => e is LexError && e.toString().contains('ucieczki'))),
+          (e) => e is LexError && e.toString().contains('escape sequence'))),
     );
   });
 

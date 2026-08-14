@@ -22,21 +22,21 @@ doc/api/
 .flutter-plugins
 .flutter-plugins-dependencies
 
-# Wyjście kompilatora Klin — wyłącznie do out/
+# Klin compiler output — only under out/
 /out/
 examples/**/out/
-# Rejestry wygenerowane z SVD przez Makefile przykładu.
+# Registers generated from SVD by an example Makefile.
 examples/**/stm32f411_regs.h
 examples/**/stm32f411_regs.kl
-# Artefakty przykładu FFI.
+# FFI example artifacts.
 examples/ffi_add/*.o
 examples/ffi_add/*.a
 examples/ffi_add/libadd.a
 
-# Cache go-task (checksumy sources/generates)
+# go-task cache (sources/generates checksums)
 .task/
 
-# Narzędzia / IDE / system
+# Tools / IDE / OS
 .idea/
 *.iml
 .vscode/

@@ -469,7 +469,7 @@ final class AwaitStmt extends Stmt {
 final class IfStmt extends Stmt {
   final Expr cond;
   final Block thenBlock;
-  final Stmt? elseBranch; // BlockStmt lub IfStmt
+  final Stmt? elseBranch; // BlockStmt or IfStmt
   final SourcePos pos;
 
   IfStmt({

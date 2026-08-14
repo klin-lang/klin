@@ -955,7 +955,7 @@ final class Checker {
           resolved = annotated;
         } else {
           throw CheckError(
-            'zmienna `$name` wymaga typu lub inicjalizatora',
+            'variable `$name` requires a type or initializer',
             pos,
           );
         }
@@ -1640,7 +1640,7 @@ final class Checker {
     final signature = _functions[_key(module, callee)];
     if (signature == null) {
       if (moduleName != null) {
-        throw CheckError('nieznana funkcja `$moduleName.$callee`', pos);
+        throw CheckError('unknown function `$moduleName.$callee`', pos);
       }
       final elsewhere = _allFunctions
           .where((func) =>
@@ -2102,7 +2102,7 @@ final class Checker {
     if (base is NameExpr) {
       final symbol = _scope.lookup(base.name);
       if (symbol == null) {
-        throw CheckError('nieznana zmienna `${base.name}`', pos);
+        throw CheckError('unknown variable `${base.name}`', pos);
       }
       if (!symbol.isMut) {
         throw CheckError(immutableVarMessage, pos);
@@ -2198,7 +2198,7 @@ final class Checker {
             return fnType.type;
           }
           throw CheckError(
-              'nieznana zmienna `${nameExpr.name}`', nameExpr.pos);
+              'unknown variable `${nameExpr.name}`', nameExpr.pos);
         }(),
       FieldExpr fieldExpr => () {
           final object = fieldExpr.object;

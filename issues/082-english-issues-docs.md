@@ -28,7 +28,8 @@ Make all design and roadmap documentation English and use the conventional
 ## Out of scope
 
 - Bilingual PL+EN mirror
-- Translating compiler/runtime code (already EN per 025)
+- Translating compiler/runtime code (already EN per 025; leftover
+  diagnostics swept in [115](115-english-leftover-pl.md))
 
 ## Criteria
 

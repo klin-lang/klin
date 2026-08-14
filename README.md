@@ -280,7 +280,7 @@ Everything lowers to plain reads/writes, so it disappears in C. No tuples. See
 dart test   # compiler / golden tests
 ```
 
-Design docs and roadmap (Polish):
+Design docs and roadmap:
 
 - [Roadmap](issues/sorted.md)
 - [Design notes](docs/)

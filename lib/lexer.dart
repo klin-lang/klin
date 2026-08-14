@@ -353,7 +353,7 @@ final class Lexer {
             // Literal `$` in an interpolated string (see [kInterpEscapedDollar]).
             buf.write('\u{E000}');
           default:
-            throw LexError('nieznana sekwencja ucieczki `\\$esc`', start);
+            throw LexError('unknown escape sequence `\\$esc`', start);
         }
       } else {
         buf.write(_advance());
@@ -388,7 +388,7 @@ final class Lexer {
         case "'":
           buf.write(esc);
         default:
-          throw LexError('nieznana sekwencja ucieczki `\\$esc`', start);
+          throw LexError('unknown escape sequence `\\$esc`', start);
       }
     } else {
       final ch = _advance();
