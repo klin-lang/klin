@@ -13,8 +13,9 @@ Allocator: [14-allocator.md](14-allocator.md).
 Separate `slice_alloc`, because emit does not remove unused `pub`: if `*_alloc`
 lived in `slice.kl`, every `import slice` would pull in `klin_mem_*` / `malloc`.
 
-Monomorphic names via `$fn` (`_i32`, `_u8`, `_i64`, `_f64`) — no generics
-in grammar. Operations split into two templates: general `slice_ops`
+Generics here are `$fn`, not `[T]` in the compiler
+([04-macros.md](04-macros.md)): `$slice_ops(i32)` becomes `each_i32`.
+Operations split into two templates: general `slice_ops`
 (arithmetic-free — works for any type) and numeric `slice_num_ops`
 (`+`/`*`/`<`/`==` — instances only for numeric types).
 
@@ -105,5 +106,5 @@ Golden: `test/slice_alloc_ops.kl`.
 
 - Bare `xs.map(f)` / hidden `malloc`
 - `using` / autofree of result
-- Closures (D7), generics in core (034)
+- Closures (D7); `[T]` in the compiler ([034](../issues/034-generic-types.md) — `$fn` is the generic)
 - Methods on `[]T` as receiver

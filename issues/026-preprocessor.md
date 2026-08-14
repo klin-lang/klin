@@ -5,8 +5,10 @@
 
 ## Goal
 
-Implementation of decision D3 ([docs/01-decisions.md](../docs/01-decisions.md)): compile-time
-macros, **not** generics in grammar.
+Implementation of decision D3 ([docs/01-decisions.md](../docs/01-decisions.md)):
+compile-time macros. This **is** Klin’s generic — `$fn` expands to
+plain `fn` before parse. Not `[T]` in the checker. User page:
+[docs/04-macros.md](../docs/04-macros.md). Grammar sugar → [034](034-generic-types.md).
 
 ## MVP
 

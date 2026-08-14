@@ -22,7 +22,7 @@ User libraries / directory packages: [docs/11-klin-libraries.md](../docs/11-klin
 | [`testing`](testing.kl) | `assert` / `assert_eq_i32` for `klin test` |
 | [`time`](time.kl) | Wall / monotonic clocks, `Duration`, format, UTC calendar `add_*` |
 | [`mem`](mem.kl) | Explicit host heap `Allocator` (`malloc`/`free`) |
-| [`slice`](slice.kl) | Zero-alloc `each` / `map_into` / `filter_into` / … (fn-ptr; `$fn` per `T`) |
+| [`slice`](slice.kl) | Zero-alloc `each_i32` / `map_into_u8` / … (`$fn` generic → plain `fn`; [docs/04-macros.md](../docs/04-macros.md)) |
 | [`slice_alloc`](slice_alloc.kl) | `map_alloc_*` / `filter_alloc_*` with explicit `Allocator` (pulls `mem`) |
 
 ## `io`

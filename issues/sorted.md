@@ -152,6 +152,7 @@ building the core from scratch.
 | [124](124-docs-c-asm.md) | Map: C FFI + ASM units / `asm("…")` (not a C/ASM language) | ✅ | 116, 021, 022 |
 | [125](125-drop-host-json-sqlite.md) | Drop JSON / SQLite; strike ORM, `yield`, map (hidden resize) | ✅ | 050, 051, 070, 018, 060 |
 | [126](126-enum-index.md) | Enum as `[N]T` index (`table[Slot.B]`) | ✅ | 072, 007 |
+| [127](127-docs-generics-fn.md) | Map: generics are `$fn`, not `[T]` in the compiler | ✅ | 116, 026, 034 |
 
 ---
 

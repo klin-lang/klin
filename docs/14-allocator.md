@@ -47,9 +47,9 @@ Caller always: `defer mem.free_i32(&a, out)` (or `free_u8` / `free_bytes`).
 ## Do not promise in MVP / later
 
 D1 sketch `a.alloc(u8, n)` requires a **type argument** in a method call.
-Klin does not have that in the grammar (D3 = `$fn` / monomorphization, not generics —
-[034](../issues/034-generic-types.md)). **Do not promise** `a.alloc(u8, n)`
-as public API until there is sugar or generics.
+Klin’s generic is `$fn` (expand before parse), not `[T]` in the compiler
+([04-macros.md](04-macros.md), [034](../issues/034-generic-types.md)).
+**Do not promise** `a.alloc(T, n)` as public API.
 
 Today instead:
 
