@@ -4513,7 +4513,7 @@ fn test_color() {
     for (final flag in ['--version', '-v']) {
       final proc = await Process.run('dart', ['run', 'bin/klin.dart', flag]);
       expect(proc.exitCode, 0, reason: '$flag: ${proc.stderr}');
-      expect(proc.stdout.toString().trim(), 'klin 0.1.2');
+      expect(proc.stdout.toString().trim(), 'klin 0.1.3');
     }
   });
 
