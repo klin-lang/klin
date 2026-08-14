@@ -65,7 +65,6 @@ building the core from scratch.
 
 | # | Task | Status | Depends on |
 |---|---|---|---|
-| [018](018-generators-yield.md) | ~~Generators / `yield`~~ | ❌ struck | — |
 | [028](028-freertos.md) | FreeRTOS (`klin_freertos` ✅ `@v0.4.0`; blink + objdump vs C ✅) | ✅ | 024, 010, 021, 030 |
 | [029](029-async-event-loop.md) | Event loop / async·await (lib `@v0.4.0` + `flag_wait` ✅; `$event_loop` ✅; async MVP ✅; IDE → [087](087-intellij-plugin.md)) | 🔨 | 028?, 049? |
 | [030](030-isr-decorators.md) | Interrupts via decorators (`@[isr("…")]` MVP ✅) | ✅ | 010 |
@@ -83,7 +82,6 @@ building the core from scratch.
 | [066](066-klin-upgrade-outdated.md) | `klin upgrade` / outdated (newer deps) | ✅ | 049 |
 | [067](067-homebrew.md) | Homebrew: `brew install klin` (formula + tap + v0.1.0) | ✅ | — |
 | [050](050-sqlite-wrapper.md) | SQLite wrapper (FFI) | ❌ not doing | 021 |
-| [070](070-host-orm-sqlite.md) | ~~ORM-like / typed repo over SQLite~~ | ❌ struck | — |
 | [051](051-json-wrapper.md) | JSON wrapper + `$…` paths | ❌ not doing | 021, 026? |
 | [052](052-klinstruct.md) | `klinstruct` — pack/unpack like cstruct (low priority) | 💭 | 007, 020/047 |
 | [053](053-device-board-assets.md) | `$device` + Go-like SVD fetch (`device` in `klin.mod`) | ✅ (MVP; board → 074) | 027, 049 |
@@ -153,7 +151,7 @@ building the core from scratch.
 | [122](122-docs-hello-to-board.md) | Path: hello → register → small project (no `issues/`) | ✅ | 116, 117, 118, 119 |
 | [123](123-docs-rtos-lib.md) | Map: FreeRTOS is C + `klin_freertos`, not the language | ✅ | 116, 024, 028 |
 | [124](124-docs-c-asm.md) | Map: C FFI + ASM units / `asm("…")` (not a C/ASM language) | ✅ | 116, 021, 022 |
-| [125](125-drop-host-json-sqlite.md) | Drop JSON / SQLite; strike ORM, `yield`, map (hidden resize) | ✅ | 050, 051, 070, 018, 060 |
+| [125](125-drop-host-json-sqlite.md) | Drop JSON / SQLite; strike map (hidden resize) | ✅ | 050, 051, 060 |
 | [126](126-enum-index.md) | Enum as `[N]T` index (`table[Slot.B]`) | ✅ | 072, 007 |
 | [127](127-docs-generics-fn.md) | Map: generics are `$fn`, not `[T]` in the compiler | ✅ | 116, 026, 034 |
 | [128](128-fmt-comments.md) | `klin fmt` keeps `//` comments | ✅ | 033 |

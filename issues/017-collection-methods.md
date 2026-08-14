@@ -95,7 +95,7 @@ Template split: general (non-arithmetic) in `$fn slice_ops`, numeric
 (`+`/`*`/`<`/`==`) in `$fn slice_num_ops` — so the general template also works for
 non-numeric types.
 
-Outside MVP: `flatMap`, `groupBy`, lazy iterators (018), sort with
+Outside MVP: `flatMap`, `groupBy`, lazy iterators (struct + `next()`), sort with
 closure comparator.
 
 ## Layer 2 (`*_alloc`) — ✅

@@ -14,7 +14,7 @@ messages, PR titles and bodies. No bilingual PL+EN mirror
 language; the tree stays English.
 
 - **What is the language** (read before proposing grammar): @docs/language.md
-  — `$fn` **is** the generic; do not add `[T]`, `map`, `yield`, `Result[T,E]`
+  — `$fn` **is** the generic; do not add `[T]`, `map`, `Result[T,E]`
 - Landing / why: @README.md, @docs/00-idea.md
 - Language tutorial: @docs/guide.md
 - Design decisions: @docs/01-decisions.md

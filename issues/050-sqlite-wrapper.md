@@ -23,5 +23,4 @@ SQLite allocation = explicit C contract, not hidden Klin magic.
 ## Out of scope
 
 - rewriting SQLite in Klin
-- ~~ORM / typed repo~~ → [070](070-host-orm-sqlite.md) (❌ struck, not “later”)
 - priority relative to language core / embedded LED / basic FFI
