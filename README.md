@@ -74,6 +74,7 @@ STM32 was the **first** freestanding demo (an LED, no libc). It is not
 the only target. Walkthrough: [docs/embedded.md](docs/embedded.md)
 (`klin init pico` / Nucleo / ESP). Board trees:
 [`templates/`](templates/), [`examples/stm32/`](examples/stm32/).
+Typed registers from SVD: [docs/device.md](docs/device.md).
 
 You get methods, modules, `!T` errors, immutability by default, and
 typed MMIO from SVD — with no runtime and no GC.

@@ -145,6 +145,7 @@ The other direction: `@[cexport, codename("klin_add")]` plus
 | `match` / `pick` | [15-match.md](15-match.md), [18-pick.md](18-pick.md) |
 | Modules / packages | [12-modules.md](12-modules.md), [11-klin-libraries.md](11-klin-libraries.md) |
 | `$fn` macros | [04-macros.md](04-macros.md) |
+| SVD / `$device` (MCU registers) | [device.md](device.md) |
 | Interpolation | [07-interpolation.md](07-interpolation.md) |
 | Host stdlib | [../stdlib/README.md](../stdlib/README.md) |
 | MCU / `klin init` | [embedded.md](embedded.md) |

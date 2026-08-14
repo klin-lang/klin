@@ -84,8 +84,7 @@ of `boot2_*.S`. Arm core only.
 
 **Nucleo-F411RE** — same `get` + `make`, Cortex-M4 flags. `main.kl` uses
 `$device` + `$board` (typed registers, not `machine_*`). Registers:
-[device.md](device.md) when that page is in your tree, otherwise the
-`$device` section in [04-macros.md](04-macros.md).
+[device.md](device.md).
 
 ```sh
 klin init nucleo-f411 my_nucleo
@@ -128,7 +127,7 @@ unless you are changing the IDF entry.
 | | |
 |---|---|
 | Language (host) | [guide.md](guide.md) |
-| Registers / `$device` | [device.md](device.md) · [04-macros.md](04-macros.md) |
+| Registers / `$device` | [device.md](device.md) |
 | Per-board README | [`templates/`](../templates/) |
 | Older in-tree STM32 sketches | [`examples/stm32/`](../examples/stm32/) |
 | Why packs exist | [075](../issues/075-board-pack-init-host.md), [054](../issues/054-embedded-project-layout.md) |

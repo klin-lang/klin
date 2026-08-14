@@ -26,7 +26,8 @@
 
 - Combining with CH32V sources
 - Full Nuclei SDK vendoring inside Klin
-- Wi‑Fi GD32VW55x (later, separate if ever)
+- GD32VW553 twins — [117](117-machine-gd32v-gd32vw553.md) (same package; Pin first)  
+- Wi‑Fi / BLE on VW553 — later sibling packages, not this file
 
 ## Links
 

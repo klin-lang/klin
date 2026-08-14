@@ -54,6 +54,7 @@ What you get that C does not:
 - no `null`; errors as values (`!T` + `or { }`)
 - immutability by default; mutation visible in the signature
 - typed register access from SVD, where the chip has an SVD
+  ([device.md](device.md))
 
 What you keep from C:
 
@@ -151,4 +152,5 @@ not the one that sounds best in the README.
 - Compiler rules: [02-architecture.md](02-architecture.md)
 - Short tutorial: [guide.md](guide.md)
 - Board walkthrough: [embedded.md](embedded.md)
+- SVD / `$device`: [device.md](device.md)
 - Doc map: [README.md](README.md)
