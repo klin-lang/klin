@@ -80,7 +80,7 @@ let adc2 = machine.adc2_out_p4(49, 0)
 ```
 
 `uart_out_p4` accepts instance **0..=4**. I2C0 only. SPI2 only. Soft SPI CS via a separate `Pin`.
-LP UART: **`uart_out_lp_p4`** — one instance, LP GPIO 0..15, sclk **XTAL_D2** (pass `20000000`). Returns **`UartLp`** (FIFO bits ≠ HP `Uart`). Do not also call `uart_out_p4` / `pin_out_lp_p4` on the same pads.
+LP UART: **`uart_out_lp_p4`** — one instance, LP GPIO 0..15, sclk **XTAL_D2** (pass `20000000`). Returns **`UartLp`** (FIFO bits ≠ HP `Uart`). Do not also call `uart_out_p4` / `pin_out_p4` / `pin_out_lp_p4` on the same pads.
 `rmt_tx_p4` is TX channels **0..=3** only (no DMA / carrier).
 ADC oneshot is LP_ADC — call **`read_u12_p4`**, not `read_u12`. ADC2: `adc2_out_p4`.
 SAR regi2c: **`adc_cal_init_p4`** (DREF=4) — call explicitly; not inside `adc_out_p4`. No eFuse curve-fit.
