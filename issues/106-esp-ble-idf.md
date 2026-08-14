@@ -116,7 +116,7 @@ Implementation: `@[link("nimble_idf.c")]` + `@[cimport, cheader]`. Smoke: `examp
 
 - Coexistence policy beyond IDF defaults (Wi‑Fi + BLE together)  
 - Freestanding (no IDF)  
-- USB OTG / camera / Pico LCD shields — USB device CDC ✅ [108](108-esp-usb-idf.md); camera / LCD still [103](103-later-tracks-ble-usb-camera-lcd.md)
+- USB OTG / camera / Pico LCD shields — USB device CDC ✅ [108](108-esp-usb-idf.md); camera JPEG ✅ [109](109-esp-camera-idf.md); LCD still [103](103-later-tracks-ble-usb-camera-lcd.md)
 
 ## Contract (prime rule)
 
