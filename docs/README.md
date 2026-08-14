@@ -3,14 +3,24 @@
 How to read this tree. `note/` was renamed to `docs/` (issue 082) — do
 not recreate it.
 
+Landing and [00-idea.md](00-idea.md) explain **why** Klin. To go from
+`hello` to a register to a small project **without** opening
+`issues/`:
+
+1. [guide.md](guide.md) — write Klin (`hello` → `if` / `defer` / `!T` → C)
+2. [device.md](device.md) — typed register (`$device`, fluent MMIO)
+3. [embedded.md](embedded.md) — small firmware project (`klin init` → `get` → `make`)
+
+`issues/` is the roadmap, not this path.
+
 ## Start here
 
 | If you want… | Read |
 |---|---|
 | What Klin is, why C, who it is for | [../README.md](../README.md) (landing) then [00-idea.md](00-idea.md) |
 | To write a small program | [guide.md](guide.md) (`if` / `defer` / `import` / precedence) |
-| Blink on a board (`klin init`) | [embedded.md](embedded.md) |
 | Typed MCU registers (SVD) | [device.md](device.md) |
+| Blink on a board (`klin init`) | [embedded.md](embedded.md) |
 | Runnable demos | [../examples/README.md](../examples/README.md) |
 | Event loop | **Library** ([`eventloop`](https://github.com/klin-lang/eventloop)); `async` / `.await` are language sugar over it |
 | RTOS / FreeRTOS | **Library** ([`klin_freertos`](https://github.com/klin-lang/klin_freertos)); kernel stays C |

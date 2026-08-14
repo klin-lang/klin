@@ -131,6 +131,9 @@ templates — not this page.
 | Remote `$device` + `$board` | [`examples/stm32/device_f411/`](../examples/stm32/device_f411/) |
 | Scaffold | `klin init nucleo-f411` → [`templates/nucleo-f411/`](../templates/nucleo-f411/) |
 
+Then a small project: [embedded.md](embedded.md) (`klin init`).
+Path: [guide.md](guide.md) → here → that page.
+
 Issues (design, not the user page): [011](../issues/011-svd.md),
 [027](../issues/027-svd-ergonomic-api.md),
 [053](../issues/053-device-board-assets.md).

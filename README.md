@@ -109,13 +109,17 @@ klin test examples/
 CLI: [docs/06-cli.md](docs/06-cli.md). Debug (`#line`, `-g`):
 [docs/19-debug.md](docs/19-debug.md).
 
-## Learn the language
+## From hello to a board
 
-1. [docs/guide.md](docs/guide.md) — hello → `if` / `defer` / `import` → C
-2. [`examples/`](examples/README.md) — host demos and board sketches
-3. [`stdlib/`](stdlib/README.md) — optional `io`, `str`, `math`, `mem`, …
+Why Klin: [docs/00-idea.md](docs/00-idea.md). How, without opening
+`issues/`:
 
-That is the tutorial. This README is not one.
+1. [docs/guide.md](docs/guide.md) — write Klin (`hello` → `if` / `defer` → C)
+2. [docs/device.md](docs/device.md) — typed register from SVD
+3. [docs/embedded.md](docs/embedded.md) — `klin init` → `get` → `make`
+
+Then [`examples/`](examples/README.md) and [`stdlib/`](stdlib/README.md).
+This README is not a tutorial. Map: [docs/README.md](docs/README.md).
 
 ## Toolchain (short)
 
