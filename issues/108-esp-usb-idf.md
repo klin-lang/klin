@@ -1,7 +1,7 @@
 # 108 — ESP USB OTG as a separate IDF package (`esp_usb`)
 
 **Status:** ✅ published `@v0.1.0` (device CDC-ACM)  
-**Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [103](103-later-tracks-ble-usb-camera-lcd.md)
+**Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md)
 
 ## Verdict
 

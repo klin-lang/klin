@@ -108,7 +108,7 @@ building the core from scratch.
 | [105](105-later-tracks-iot.md) | Later tracks: IoT (MQTT / OTA…) | 💭 maybe backlog (after sockets + HTTP/TLS) | 104, 101, 102 |
 | [106](106-esp-ble-idf.md) | ESP BLE thin IDF package (`esp_ble` GATT + bond + UUID16/128 + privacy + Mesh OnOff) | ✅ `@v0.10.0` ([repo](https://github.com/klin-lang/esp_ble)) | 021, 024, 049, 061, 062, 101 |
 | [107](107-later-tracks-arduino-boards.md) | Later tracks: Arduino boards (Leonardo / Uno R4 / Due / Giga / Portenta) | 💭 backlog (one family at a time) | 061, 062, 075 |
-| [108](108-esp-usb-idf.md) | ESP USB OTG thin IDF package (`esp_usb` TinyUSB device CDC) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_usb)) | 021, 024, 049, 061, 062, 103 |
+| [108](108-esp-usb-idf.md) | ESP USB OTG thin IDF package (`esp_usb` TinyUSB device CDC) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_usb)) | 021, 024, 049, 061, 062 |
 | [064](064-if-cond-struct-literal-parse.md) | `if`/`while` condition ending in a name mistaken for a struct literal | ✅ | — |
 | [068](068-shared-type-decl.md) | Shared type annotation (`a, b: i32` like Go; both forms OK) | ✅ | 002, 004, 005 |
 | [069](069-eventemitter-signals.md) | Observer / EventEmitter / Signals (library; JS-signals explicitly) | 💭 | 013, 057 |
