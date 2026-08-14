@@ -1,7 +1,7 @@
 # 105 — Later tracks: IoT protocols / cloud edge
 
-**Status:** 💭 backlog (**maybe** — not committed; do **one track at a time** if started)  
-**Depends on:** [104](104-later-tracks-esp-network.md) (sockets **and** HTTP/TLS first), [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md)
+**Status:** 💭 backlog ready (sockets + HTTP/TLS shipped; MQTT/OTA next — one at a time)  
+**Depends on:** [104](104-later-tracks-esp-network.md), [111](111-esp-sockets-idf.md), [112](112-esp-http-idf.md), [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md)
 
 ## Verdict
 
@@ -9,9 +9,9 @@ Park **IoT-shaped** work above the thin network MVP (`esp_wifi` / `esp_eth`).
 This is a **maybe** queue: ship only when there is a concrete device + protocol need — not “IoT platform” scope creep.
 
 Do **not** fold MQTT / cloud SDKs into `machine_*` or into the current STA/W5500 tags.  
-Do **not** start here before **HTTP/TLS** ([104](104-later-tracks-esp-network.md) N3). Sockets MVP ✅ [`esp_sockets`](https://github.com/klin-lang/esp_sockets) → [111](111-esp-sockets-idf.md).
+Sockets ✅ [111](111-esp-sockets-idf.md); HTTP/TLS ✅ [112](112-esp-http-idf.md). IoT tracks (MQTT/OTA) may start.
 
-Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP done; later tags), [106](106-esp-ble-idf.md) (BLE), [108](108-esp-usb-idf.md) (USB OTG), [109](109-esp-camera-idf.md) (camera), [110](110-board-waveshare-pico-lcd-114.md) (Pico LCD), [104](104-later-tracks-esp-network.md) (Wi‑Fi W1–W3 ✅; sockets ✅; RMII / HTTP/TLS…).
+Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP done; later tags), [106](106-esp-ble-idf.md) (BLE), [108](108-esp-usb-idf.md) (USB OTG), [109](109-esp-camera-idf.md) (camera), [110](110-board-waveshare-pico-lcd-114.md) (Pico LCD), [104](104-later-tracks-esp-network.md) (Wi‑Fi W1–W3 ✅; sockets ✅; HTTP/TLS ✅; RMII…).
 
 ## Prerequisites (not this issue)
 
@@ -19,7 +19,7 @@ Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP done;
 |---|---|
 | Link + IP (DHCP/static) | [101](101-esp-wifi-idf.md) / [102](102-esp-eth-idf.md) ✅ |
 | TCP/UDP sockets | [111](111-esp-sockets-idf.md) / [104](104-later-tracks-esp-network.md) **N2** ✅ `@v0.1.0` |
-| HTTP / TLS | [104](104-later-tracks-esp-network.md) **N3** — later (stays in 104; not re-queued here) |
+| HTTP / TLS | [112](112-esp-http-idf.md) / [104](104-later-tracks-esp-network.md) **N3** ✅ `@v0.1.0` |
 
 ## Queue (piecemeal, optional)
 
@@ -41,7 +41,7 @@ Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP done;
 ## Out of scope (this issue)
 
 - Implementation or picking a cloud vendor  
-- HTTP client / TLS packaging (→ [104](104-later-tracks-esp-network.md) N3)  
+- HTTP client / TLS packaging — ✅ [112](112-esp-http-idf.md)  
 - SoftAP provisioning UI (→ SoftAP API ✅ [104](104-later-tracks-esp-network.md) W1; UI/app later)  
 - BLE mesh as “IoT” (→ [106](106-esp-ble-idf.md) / mesh later on that package; not this backlog)  
 - Changing the Klin compiler  
