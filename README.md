@@ -37,6 +37,8 @@ dart run bin/klin.dart --version   # → klin 0.1.1
 Use `dart run bin/klin.dart …` while developing. Details:
 [docs/06-cli.md](docs/06-cli.md), [docs/make.md](docs/make.md).
 Debug with gdb/lldb (`#line`): [docs/19-debug.md](docs/19-debug.md).
+Host `cc` flags: `-g` / `--debug`, `-O0`…`-O3` / `-Os` / `-Oz` / `--opt LEVEL`
+([docs/06-cli.md](docs/06-cli.md), [docs/19-debug.md](docs/19-debug.md)).
 
 ### Homebrew
 
@@ -94,6 +96,8 @@ dart run bin/klin.dart --emit-pp examples/point_macro.kl
 | `--emit-pp` | Write preprocessor output (`.pp.kl`) |
 | `-I` | Klin source search dirs (`import` → `name.kl`; [docs/11-klin-libraries.md](docs/11-klin-libraries.md)) |
 | `-l` / `-L` | Host linker libs / search paths ([docs/09-ffi-c.md](docs/09-ffi-c.md)) |
+| `-g` / `--debug` | Host `cc -g` (debug symbols; [docs/19-debug.md](docs/19-debug.md)) |
+| `-O…` / `--opt` | Host `cc -O…` (`0`…`3` / `s` / `z`; [docs/06-cli.md](docs/06-cli.md)) |
 
 CLI summary: [docs/06-cli.md](docs/06-cli.md).
 Homebrew details: [docs/17-homebrew.md](docs/17-homebrew.md).

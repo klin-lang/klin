@@ -70,6 +70,7 @@ Future<KlinTestFileResult> runKlinTestFile(
   List<String> klinPathDirs = const [],
   List<String> cliLibs = const [],
   List<String> cliLibDirs = const [],
+  String? opt,
 }) async {
   final absEntry = File(entryPath).absolute.path;
   final stem = _basenameWithoutExt(absEntry);
@@ -113,6 +114,7 @@ Future<KlinTestFileResult> runKlinTestFile(
     sourceDir: sourceDir,
     cliLibs: cliLibs,
     cliLibDirs: cliLibDirs,
+    opt: opt,
   );
   final compile = await Process.run(cc, ccArgs);
   if (compile.exitCode != 0) {
