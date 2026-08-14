@@ -1,7 +1,7 @@
 # 110 — Board pack: Waveshare Pico-LCD-1.14 (Pico form-factor shield)
 
 **Status:** ✅ published `@v0.1.0` (ST7789 fill / rects / backlight)  
-**Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [075](075-board-pack-init-host.md), [095](095-board-waveshare-rp2350-lcd-096.md)
+**Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [075](075-board-pack-init-host.md)
 
 ## Verdict
 
@@ -9,8 +9,8 @@
 |---|---|
 | Change the Klin compiler? | **No** |
 | Where does the code live? | External: [`klin-lang/waveshare_pico_lcd_114`](https://github.com/klin-lang/waveshare_pico_lcd_114) `@v0.1.0` |
-| Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.11.0` (`lcd_out` / `lcd_out_rp2350`) |
-| Board extras | Pico GP pin map + ST7789 **240×135** SPI helpers + KEY/joystick pin constants |
+| Chip API | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.11.0` (SPI / DMA / Pin) |
+| Board extras | `lcd_out` / `lcd_out_rp2350` + Pico GP pin map + ST7789 **240×135** helpers + KEY/joystick pin constants |
 | Relation to [095](095-board-waveshare-rp2350-lcd-096.md) | **Distinct.** 095 = integrated ST7735S 160×80 on RP2350-LCD-0.96. This pack = **removable Pico-header shield**. |
 
 Track D from [103](103-later-tracks-ble-usb-camera-lcd.md).
@@ -75,7 +75,7 @@ klin get github/klin-lang/machine_rp@v0.11.0
 - Repo: https://github.com/klin-lang/waveshare_pico_lcd_114  
 - Tag: [v0.1.0](https://github.com/klin-lang/waveshare_pico_lcd_114/releases/tag/v0.1.0)  
 - Wiki: [Pico-LCD-1.14](https://www.waveshare.com/wiki/Pico-LCD-1.14)  
-- Parent backlog: [103](103-later-tracks-ble-usb-camera-lcd.md) (track D)  
+- Parent track: [103](103-later-tracks-ble-usb-camera-lcd.md) (track D MVP)  
 - Sibling integrated LCD: [095](095-board-waveshare-rp2350-lcd-096.md)  
 - S3-Pico host (pins only, no LCD yet): [100](100-board-waveshare-esp32-s3-pico.md)  
 - Chip: [`machine_rp`](https://github.com/klin-lang/machine_rp)  

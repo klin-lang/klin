@@ -110,7 +110,7 @@ building the core from scratch.
 | [107](107-later-tracks-arduino-boards.md) | Later tracks: Arduino boards (Leonardo / Uno R4 / Due / Giga / Portenta) | 💭 backlog (one family at a time) | 061, 062, 075 |
 | [108](108-esp-usb-idf.md) | ESP USB OTG thin IDF package (`esp_usb` TinyUSB device CDC) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_usb)) | 021, 024, 049, 061, 062 |
 | [109](109-esp-camera-idf.md) | ESP camera thin IDF package (`esp_camera` DVP JPEG) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_camera)) | 021, 024, 049, 061, 062 |
-| [110](110-board-waveshare-pico-lcd-114.md) | Board pack Waveshare Pico-LCD-1.14 (ST7789 shield) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/waveshare_pico_lcd_114)) | 061, 062, 075, 095 |
+| [110](110-board-waveshare-pico-lcd-114.md) | Board pack Waveshare Pico-LCD-1.14 (ST7789 shield) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/waveshare_pico_lcd_114)) | 061, 062, 075 |
 | [064](064-if-cond-struct-literal-parse.md) | `if`/`while` condition ending in a name mistaken for a struct literal | ✅ | — |
 | [068](068-shared-type-decl.md) | Shared type annotation (`a, b: i32` like Go; both forms OK) | ✅ | 002, 004, 005 |
 | [069](069-eventemitter-signals.md) | Observer / EventEmitter / Signals (library; JS-signals explicitly) | 💭 | 013, 057 |

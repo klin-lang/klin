@@ -9,7 +9,7 @@ Parked follow-ups after the thin STA / W5500 MVP.
 **DHCP (dynamic IP) stays the default** on both packages; optional static IP is additive on newer package tags (see package READMEs / releases — Klin issue text in [101](101-esp-wifi-idf.md) / [102](102-esp-eth-idf.md) may lag).  
 Do **not** expand the “current tag” scope of those issues with the rows below — pick one, ship a small additive tag or sibling package, then the next.
 
-Sibling backlog (non-network): [103](103-later-tracks-ble-usb-camera-lcd.md) (USB OTG / camera / Pico LCD); BLE MVP → [106](106-esp-ble-idf.md).
+Sibling (non-network): [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP done; later tags); BLE → [106](106-esp-ble-idf.md); USB → [108](108-esp-usb-idf.md); camera → [109](109-esp-camera-idf.md); Pico LCD → [110](110-board-waveshare-pico-lcd-114.md).
 
 ## Done (context)
 
