@@ -19,6 +19,7 @@
 | PIC16? | **`machine_pic16`** — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Dac** ✅ `@v0.2.0` (PIC16F18855; PPS explicit; DAC1 5-bit HW) |
 | CH32V003 (QingKe RISC-V)? | **`machine_ch32v`** — Pin…Adc ✅ `@v0.1.0` ([086](086-machine-ch32v.md)); **10-bit** ADC |
 | GD32VF103 (Nuclei RISC-V)? | **`machine_gd32v`** — Pin…Adc ✅ `@v0.2.0` ([087](087-machine-gd32v.md)); **12-bit** ADC |
+| GD32VW553 (Nuclei N307 + Wi‑Fi 6 / BLE)? | Same **`machine_gd32v`** — Pin twins `*_vw553` 🔨 [117](117-machine-gd32v-gd32vw553.md). Radio later, not `machine_*`. |
 | Other PIC? | Separate ports if/when needed — not one library for all MCUs |
 | DAC? | Only where the silicon has it — **yes** on ATxmega (DACB) and PIC16F18855 (DAC1); **not** on F411/F401, RP2040/2350, ESP32-C3/S3/P4 (no `Dac` API), STM8S, megaAVR 328P/2560, CH32V003, GD32VF103. F407-class / classic ESP32 later if needed. |
 | PIO? | Only RP2040/RP2350 silicon — **yes** in [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.8.0`+ (sideset/shift/frac); **not** on stm32/esp/stm8/avr/xmega/pic16/ch32v/gd32v (no fake PIO). |
