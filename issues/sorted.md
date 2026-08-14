@@ -93,7 +93,7 @@ building the core from scratch.
 | [059](059-kstruct-macros.md) | `$kstruct` / `$kstruct_from` macros (richer klinstruct) | 💭 | 026, 052 |
 | [060](060-map-kv.md) | KV map (hash map) — language / stdlib / C | 💭 | 007, 057? |
 | [061](061-micropython-machine-api.md) | MicroPython-style `machine` API (PWM, UART, …) | ✅ (+ rp Pio+Dma+UsbCdc `@v0.11.0` / ch32v `@v0.1.0` / gd32v `@v0.2.0`) | 010, 031? |
-| [062](062-targets-esp-rp.md) | MCU targets: ESP32 / RP2040 / RP2350 / STM8 / CH32V / GD32V | 🚧 (RP Pio+Dma+UsbCdc ✅ `@v0.11.0`; ESP C3+S3+STM8+CH32V+GD32V Pin…Adc ✅; **P4 Pin** ✅ `@v0.8.0`; RMII later) | 010 |
+| [062](062-targets-esp-rp.md) | MCU targets: ESP32 / RP2040 / RP2350 / STM8 / CH32V / GD32V | 🚧 (RP Pio+Dma+UsbCdc ✅ `@v0.11.0`; ESP C3+S3+STM8+CH32V+GD32V Pin…Adc ✅; **P4 Pin…Spi** ✅ `@v0.9.0`; RMII later) | 010 |
 | [086](086-machine-ch32v.md) | `machine_ch32v` CH32V003 QingKe Pin…Adc | ✅ `@v0.1.0` | 061, 062 |
 | [087](087-machine-gd32v.md) | `machine_gd32v` GD32VF103 Nuclei Pin…Adc | ✅ `@v0.2.0` | 061, 086 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
@@ -114,7 +114,7 @@ building the core from scratch.
 | [111](111-esp-sockets-idf.md) | ESP LwIP sockets thin IDF package (`esp_sockets` TCP/UDP) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_sockets)) | 021, 024, 049, 101, 102, 104 |
 | [112](112-esp-http-idf.md) | ESP HTTP(+TLS) thin IDF package (`esp_http` GET/POST) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_http)) | 021, 024, 049, 101, 102, 104, 111 |
 | [113](113-esp-netif-dual-idf.md) | ESP dual Wi‑Fi+ETH glue (`esp_netif_dual` prefer/failover) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_netif_dual)) | 021, 024, 049, 101, 102, 104 |
-| [114](114-machine-esp-esp32-p4.md) | `machine_esp` ESP32-P4 Pin (`*_p4`) | ✅ `@v0.8.0` ([repo](https://github.com/klin-lang/machine_esp)) | 061, 062 |
+| [114](114-machine-esp-esp32-p4.md) | `machine_esp` ESP32-P4 Pin…Spi (`*_p4`) | ✅ `@v0.8.0`/`@v0.9.0` ([repo](https://github.com/klin-lang/machine_esp)) | 061, 062 |
 | [064](064-if-cond-struct-literal-parse.md) | `if`/`while` condition ending in a name mistaken for a struct literal | ✅ | — |
 | [068](068-shared-type-decl.md) | Shared type annotation (`a, b: i32` like Go; both forms OK) | ✅ | 002, 004, 005 |
 | [069](069-eventemitter-signals.md) | Observer / EventEmitter / Signals (library; JS-signals explicitly) | 💭 | 013, 057 |
