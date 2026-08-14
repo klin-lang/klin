@@ -5,6 +5,9 @@ Klin is a systems language compiled to C. The compiler is written in Dart
 Language tutorial: `docs/guide.md`. Doc map: `docs/README.md`. CLI:
 `docs/06-cli.md`, `Taskfile.yml`. Project rules: `CLAUDE.md`.
 
+Committed text in this repo and `klin-lang/*` packages is **English only**
+(docs, issues, comments, commits, PRs). See `CLAUDE.md`.
+
 ## Cursor Cloud specific instructions
 
 Single Dart package — there is no separate frontend/backend to start; the

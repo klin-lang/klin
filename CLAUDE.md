@@ -6,6 +6,13 @@ then uses gcc, clang, or tcc. The compiler is written in Dart.
 The project context, decisions, architecture, and roadmap are English design
 documents. Map: @docs/README.md.
 
+**Language:** everything committed in Klin repos (`klin` and `klin-lang/*`)
+is English — `docs/`, `issues/`, README, comments, diagnostics, commit
+messages, PR titles and bodies. No bilingual PL+EN mirror
+([025](issues/025-english-project.md), [082](issues/082-english-issues-docs.md),
+[115](issues/115-english-leftover-pl.md)). Chat with a human may use another
+language; the tree stays English.
+
 - Landing / why: @README.md, @docs/00-idea.md
 - Language tutorial: @docs/guide.md
 - Design decisions: @docs/01-decisions.md
