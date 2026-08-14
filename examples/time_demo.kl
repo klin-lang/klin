@@ -1,5 +1,5 @@
 /// Host `time` demo: wall Instant, Duration span, format into a stack buffer.
-/// Monotonic clock is separate (`time.mono`). See note/08-time.md.
+/// Monotonic clock is separate (`time.mono`). See docs/08-time.md.
 import time
 
 fn main() {

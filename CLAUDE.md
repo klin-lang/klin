@@ -4,9 +4,10 @@ A systems language compiled to C. The backend produces one readable `.c` file,
 then uses gcc, clang, or tcc. The compiler is written in Dart.
 
 The project context, decisions, architecture, and roadmap are English design
-documents:
+documents. Map: @docs/README.md.
 
-- Context: @docs/00-idea.md
+- Landing / why: @README.md, @docs/00-idea.md
+- Language tutorial: @docs/guide.md
 - Design decisions: @docs/01-decisions.md
 - Architecture and rules: @docs/02-architecture.md
 - Roadmap: @issues/sorted.md

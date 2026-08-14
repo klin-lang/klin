@@ -1,5 +1,8 @@
 # Design decisions
 
+This is the decision log (D1–D9), not an introduction. Start with
+[00-idea.md](00-idea.md). To write Klin: [guide.md](guide.md).
+
 The first three must be made **before the first line of the parser** — they permeate
 the symbol table, checker, and codegen. Changing them later means rewriting.
 

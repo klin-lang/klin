@@ -1,7 +1,7 @@
 // Same as point.kl, built with a compile-time $fn macro.
 // Run: dart run bin/klin.dart run examples/point_macro.kl
 // Peek: dart run bin/klin.dart --emit-pp examples/point_macro.kl
-// See: note/04-macros.md
+// See: docs/04-macros.md
 
 $fn point(name: name, T: type) {
   struct $name {

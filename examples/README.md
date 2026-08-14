@@ -1,6 +1,8 @@
 # Examples
 
 Runnable Klin demos (not golden tests — those live in `test/`).
+Language tutorial: [docs/guide.md](../docs/guide.md). Why Klin exists:
+[docs/00-idea.md](../docs/00-idea.md).
 
 Each **folder** has its own `README.md` with **What / Why / How / Links**.
 Single-file `*.kl` demos are documented only in the tables below.
@@ -12,13 +14,14 @@ dart run bin/klin.dart fmt -w examples/hello.kl       # write in place
 dart run bin/klin.dart test examples/                 # *_test.kl
 ```
 
-**Host (laptop):** ordinary `*.kl` and non-`stm32/` folders — **no** `linker.ld` /
-`startup.s` (`klin run` + system CRT/libc). Make + ld + startup only for
-bare-metal [`stm32/`](stm32/) ([075](../issues/075-board-pack-init-host.md)).
-New MCU tree: `klin init <board> [dir]` copies `templates/<board>/`
-(`main.kl` + `board/` + Makefile), then `klin get && make`.
-Boards: `nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`
-([075](../issues/075-board-pack-init-host.md)).
+**Host (laptop):** ordinary `*.kl` and non-board folders — **no** `linker.ld` /
+`startup.s` (`klin run` + system CRT/libc).
+
+**MCU:** `klin init <board> [dir]` copies `templates/<board>/` (`main.kl` +
+`board/` + Makefile), then `klin get && make`. Boards include Nucleo-F411,
+Pico / Pico2, Waveshare RP2350-LCD, ESP32-S3-Pico, … — STM32 is one
+family, not the only one. Older in-tree sketches:
+[`stm32/`](stm32/) ([075](../issues/075-board-pack-init-host.md)).
 
 Style: [docs/05-fmt.md](../docs/05-fmt.md) (`klin fmt`). Sources with `$…` macros
 are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), not
