@@ -200,7 +200,7 @@ void main() {
     expect(mod, contains('gd32vw553h_eval'));
     expect(mod, contains('machine_gd32v'));
     final makefile = File(p.join(dest, 'Makefile')).readAsStringSync();
-    expect(makefile, contains('riscv64-unknown-elf-gcc'));
+    expect(makefile, contains('CC := riscv64-unknown-elf-gcc'));
     expect(makefile, contains('board/linker.ld'));
   });
 

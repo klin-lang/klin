@@ -3,7 +3,8 @@
 #   make get emit KLIN=/path/to/klin/bin/klin.dart
 #   make elf  KLIN=…   # needs riscv*-unknown-elf-gcc (rv32imac / ilp32)
 
-CC ?= riscv64-unknown-elf-gcc
+# := so a host CC from the environment does not win
+CC := riscv64-unknown-elf-gcc
 CFLAGS := -march=rv32imac -mabi=ilp32 -ffreestanding -Os -ffunction-sections -fdata-sections
 LDFLAGS := -T board/linker.ld -Wl,--gc-sections -nostdlib
 
