@@ -4,6 +4,7 @@
 `sleep_ms`/`spawn` + `$event_loop` + `flag_wait`); phase 4 **async/await MVP in
 core** ✅; phase 3 RTOS examples ✅; IDE → [087](087-intellij-plugin.md) (board blink → [028](028-freertos.md) ✅)
 **Depends on:** D1/D3 decisions; probably 018, 026, 028; remote lib → 049
+**User map:** [docs/README.md](../docs/README.md) — async is a library, not a language runtime.
 
 ## Question
 

@@ -12,6 +12,7 @@ not recreate it.
 | Blink on a board (`klin init`) | [embedded.md](embedded.md) |
 | Typed MCU registers (SVD) | [device.md](device.md) |
 | Runnable demos | [../examples/README.md](../examples/README.md) |
+| Async / event loop | **Library**, not the language — [`eventloop`](https://github.com/klin-lang/eventloop) |
 | CLI / install details | [06-cli.md](06-cli.md), [17-homebrew.md](17-homebrew.md), [make.md](make.md) |
 | What to build next | [../issues/sorted.md](../issues/sorted.md) — roadmap, not a manual |
 
@@ -47,6 +48,12 @@ These are feature write-ups. The tutorial is [guide.md](guide.md).
 destructuring: [syntax.md](syntax.md). Bitwise / logical operators:
 [01-decisions.md](01-decisions.md) D8 / D9. Do not treat `issues/` as
 the user guide.
+
+`async` / event loop is a **library**
+([`eventloop`](https://github.com/klin-lang/eventloop)), not a language
+runtime — no hidden scheduler. Optional `async` / `.await` is sugar over
+that explicit executor ([029](../issues/029-async-event-loop.md),
+[`examples/remote_eventloop/`](../examples/remote_eventloop/)).
 
 ## Tooling
 
