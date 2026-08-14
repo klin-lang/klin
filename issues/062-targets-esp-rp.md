@@ -21,7 +21,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 | **STM8S** | ✅ Pin…Adc (emit-c) | [`machine_stm8`](https://github.com/klin-lang/machine_stm8) `@v0.2.0` — no DAC; SDCC link later. |
 | **CH32V003** | ✅ Pin…Adc | [`machine_ch32v`](https://github.com/klin-lang/machine_ch32v) `@v0.1.0` — QingKe RV32EC ([086](086-machine-ch32v.md)). |
 | **GD32VF103** | ✅ Pin…Adc | [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v) `@v0.2.0` — Nuclei N205 ([087](087-machine-gd32v.md)). |
-| **GD32VW553** | ✅ Pin…Adc; 🔨 Wi‑Fi STA+SoftAP | Same package [`@v0.8.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.8.0) — `pin_out_vw553`…`adc_out_vw553` ([117](117-machine-gd32v-gd32vw553.md)); board [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) [`@v0.1.0`](https://github.com/klin-lang/gd32vw553h_eval/releases/tag/v0.1.0) [127](127-board-gd32vw553h-eval.md); Wi‑Fi → [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [`@v0.2.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.2.0) [126](126-gd32v-wifi-sdk.md) (GigaDevice `wifi_management`, **not** ESP-IDF). Nuclei N307; F4-style GPIO. BLE later. |
+| **GD32VW553** | ✅ Pin…Adc; 🔨 Wi‑Fi STA+SoftAP+scan | Same package [`@v0.8.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.8.0) — `pin_out_vw553`…`adc_out_vw553` ([117](117-machine-gd32v-gd32vw553.md)); board [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) [`@v0.1.0`](https://github.com/klin-lang/gd32vw553h_eval/releases/tag/v0.1.0) [127](127-board-gd32vw553h-eval.md); Wi‑Fi → [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [`@v0.3.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.3.0) [126](126-gd32v-wifi-sdk.md) (GigaDevice `wifi_management`, **not** ESP-IDF). Nuclei N307; F4-style GPIO. BLE later. |
 | **ESP32** (classic / other) | Later | Classic = **Xtensa**; C6 etc. separate from C3/S3/P4. |
 
 ## What already carries to these MCUs
@@ -54,7 +54,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 11. **CH32V003** Pin…Adc — ✅ (`machine_ch32v@v0.1.0`; [086](086-machine-ch32v.md))  
 12. **GD32VF103** Pin…Adc — ✅ (`machine_gd32v@v0.2.0`; [087](087-machine-gd32v.md))  
 12b. **GD32VW553** Pin…Adc twins — ✅ `pin_out_vw553`…`adc_out_vw553` `machine_gd32v@v0.8.0` ([117](117-machine-gd32v-gd32vw553.md))  
-12c. **GD32VW553 Wi‑Fi** STA + SoftAP — 🔨 [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.2.0` ([126](126-gd32v-wifi-sdk.md); GigaDevice SDK, not `esp_wifi`; scan/BLE later)  
+12c. **GD32VW553 Wi‑Fi** STA + SoftAP + scan — 🔨 [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.3.0` ([126](126-gd32v-wifi-sdk.md); GigaDevice SDK, not `esp_wifi`; assoc RSSI/BLE later)  
 12d. **GD32VW553H-EVAL** board pack — 🔨 [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) `@v0.1.0` ([127](127-board-gd32vw553h-eval.md); `klin init gd32vw553h-eval`; not START)  
 13. **Wi‑Fi** (ESP-IDF STA + SoftAP + scan + link) — ✅ [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.4.0` ([101](101-esp-wifi-idf.md); W1–W3 → [104](104-later-tracks-esp-network.md); DHCP default, optional static; not in `machine_*`)  
 14. **Ethernet** (ESP-IDF; W5500 SPI + RMII EMAC) — ✅ [`esp_eth`](https://github.com/klin-lang/esp_eth) `@v0.2.0` ([102](102-esp-eth-idf.md); other SPI chips later)  
