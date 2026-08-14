@@ -3,11 +3,11 @@
 Scaffold from `klin init gd32vw553h-eval`. Layout:
 [054](../../issues/054-embedded-project-layout.md) /
 [075](../../issues/075-board-pack-init-host.md). Board pack:
-[127](../../issues/127-board-gd32vw553h-eval.md).
+[138](../../issues/138-board-gd32vw553h-eval.md).
 
 Freestanding `board/startup.S` + `board/linker.ld` (Nuclei N307). Wi‑Fi is
 a separate package — [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi)
-[126](../../issues/126-gd32v-wifi-sdk.md).
+[137](../../issues/137-gd32v-wifi-sdk.md).
 
 ## Layout
 
@@ -38,6 +38,6 @@ Not the START kit (SDK default UART2 PA6/PA7). EVAL COM0 is USART0 PB15/PA8.
 
 ## Links
 
-- Issue [127](../../issues/127-board-gd32vw553h-eval.md), [075](../../issues/075-board-pack-init-host.md), [117](../../issues/117-machine-gd32v-gd32vw553.md)
+- Issue [138](../../issues/138-board-gd32vw553h-eval.md), [075](../../issues/075-board-pack-init-host.md), [136](../../issues/136-machine-gd32v-gd32vw553.md)
 - Pack: https://github.com/klin-lang/gd32vw553h_eval
 - Chip: https://github.com/klin-lang/machine_gd32v

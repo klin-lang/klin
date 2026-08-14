@@ -1,7 +1,8 @@
-# 129 — Board pack: GD32VW553 START
+# 139 — Board pack: GD32VW553 START
 
 **Status:** 🔨 published [`@v0.1.0`](https://github.com/klin-lang/gd32vw553h_start/releases/tag/v0.1.0)  
-**Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [075](075-board-pack-init-host.md), [117](117-machine-gd32v-gd32vw553.md)
+**Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [075](075-board-pack-init-host.md), [136](136-machine-gd32v-gd32vw553.md)
+**Formerly:** `129` (renumbered to resolve duplicate issue numbers).
 
 ## Verdict
 
@@ -18,7 +19,7 @@
 - Examples: `blink` (red), `uart_log` (UART2 / GDLINK VCP)
 - Covers H-START and K-START for this map (same UART2 + V4 RGB). Older V3.0 RGB PB11/12/13 is **not** mapped.
 
-**Out of scope:** EVAL pack (→ [127](127-board-gd32vw553h-eval.md)), Wi‑Fi API (→ [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [126](126-gd32v-wifi-sdk.md)), BLE, user key (AN154 SW1 is NRST only), V3.0 LED map, vendoring the wireless SDK.
+**Out of scope:** EVAL pack (→ [138](138-board-gd32vw553h-eval.md)), Wi‑Fi API (→ [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [137](137-gd32v-wifi-sdk.md)), BLE, user key (AN154 SW1 is NRST only), V3.0 LED map, vendoring the wireless SDK.
 
 **Scaffold:** `klin init gd32vw553h-start` — freestanding RGB-red blink via
 bundled `templates/gd32vw553h-start/` ([075](075-board-pack-init-host.md)).
@@ -52,7 +53,7 @@ klin init gd32vw553h-start my_blink
 - Tag: [v0.1.0](https://github.com/klin-lang/gd32vw553h_start/releases/tag/v0.1.0)  
 - AN154 GD32VW553 Quick Development Guide (GigaDevice)  
 - SDK UART: [`uart.h`](https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK/blob/main/MSDK/plf/src/uart/uart.h)  
-- Chip: [117](117-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
-- EVAL sibling: [127](127-board-gd32vw553h-eval.md) / [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval)  
-- Radio sibling: [126](126-gd32v-wifi-sdk.md) / [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi)  
+- Chip: [136](136-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
+- EVAL sibling: [138](138-board-gd32vw553h-eval.md) / [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval)  
+- Radio sibling: [137](137-gd32v-wifi-sdk.md) / [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi)  
 - `klin init`: [075](075-board-pack-init-host.md)
