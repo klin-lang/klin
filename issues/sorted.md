@@ -97,7 +97,7 @@ building the core from scratch.
 | [086](086-machine-ch32v.md) | `machine_ch32v` CH32V003 QingKe Pin…Adc | ✅ `@v0.1.0` | 061, 062 |
 | [087](087-machine-gd32v.md) | `machine_gd32v` GD32VF103 Nuclei Pin…Adc | ✅ `@v0.2.0` | 061, 086 |
 | [117](117-machine-gd32v-gd32vw553.md) | `machine_gd32v` GD32VW553 Pin…Adc twins (`*_vw553`) | ✅ `@v0.8.0` | 061, 062, 087 |
-| [126](126-gd32v-wifi-sdk.md) | `gd32v_wifi` GD32VW553 STA + SoftAP (GigaDevice SDK, not `machine_*`) | 🔨 STA+SoftAP `@v0.2.0` | 021, 024, 049, 061, 062, 117 |
+| [126](126-gd32v-wifi-sdk.md) | `gd32v_wifi` GD32VW553 STA + SoftAP + scan (GigaDevice SDK, not `machine_*`) | 🔨 STA+SoftAP+scan `@v0.3.0` | 021, 024, 049, 061, 062, 117 |
 | [127](127-board-gd32vw553h-eval.md) | Board pack GD32VW553H-EVAL (pins + `klin init`) | 🔨 `@v0.1.0` ([repo](https://github.com/klin-lang/gd32vw553h_eval)) | 061, 062, 075, 117 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
