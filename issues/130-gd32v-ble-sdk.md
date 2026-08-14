@@ -9,7 +9,7 @@
 |---|---|
 | Change the Klin compiler? | **No** |
 | Where does the code live? | External: [`klin-lang/gd32v_ble`](https://github.com/klin-lang/gd32v_ble) `@v0.1.0` |
-| Engine | **GigaDevice VW55x BLE SDK** (`ble_init` / `app_adp_set_name` / `app_adv_create`, AN152) — not MMIO, **not** ESP-IDF NimBLE |
+| Engine | **GigaDevice VW55x BLE SDK** (AN152 stack + `MSDK/ble/app` managers) — not MMIO, **not** ESP-IDF NimBLE |
 | Relation to `machine_gd32v` | **Separate.** Pin…Adc twins stay MMIO ([117](117-machine-gd32v-gd32vw553.md)). Same split as [`esp_ble`](https://github.com/klin-lang/esp_ble) vs `machine_esp` ([106](106-esp-ble-idf.md)). |
 | Relation to `gd32v_wifi` | Sibling radio package ([126](126-gd32v-wifi-sdk.md)). Not the same Klin module. |
 
@@ -21,10 +21,15 @@ Do **not** vendor the full SDK. The example expects
 [`GD32VW55x_WiFi_BLE_SDK`](https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK)
 on the include/link path (AN152). Do **not** use [`esp_ble`](https://github.com/klin-lang/esp_ble) on VW553 (wrong engine).
 
+Klin C glue calls the SDK **app** managers (`ble_init` / `app_adp_set_name` /
+`app_adv_create` in `MSDK/ble/app/`), which wrap the AN152 stack exports
+(`ble_adv_create` / `ble_adv_stop` in `MSDK/blesw/src/export/`).
+`BLE_GAP_ADV_PROP_UNDIR_CONN` is GigaDevice `ble_gap.h`, not NimBLE.
+
 ## Scope (`@v0.1.0` — advertise)
 
 - `init` — `ble_init(true)` + `ble_wait_ready` (once)  
-- `advertise(name)` — `app_adp_set_name` + `app_adv_create` legacy undirected connectable (`BLE_GAP_ADV_PROP_UNDIR_CONN`)  
+- `advertise(name)` — `app_adp_set_name` + `app_adv_create` (wraps `ble_adv_create`) legacy undirected connectable (`BLE_GAP_ADV_PROP_UNDIR_CONN` in GigaDevice `ble_gap.h`)  
 - `wait_connected(timeout_ms)` — host stub succeeds after `advertise`; on-device polls a flag (`-1` = forever). GAP connect event hook later  
 - `connected` / `advertising` — `i32` 1/0  
 - `stop_advertise` / `stop` — `app_adv_stop` / `ble_deinit`  
