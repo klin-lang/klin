@@ -173,6 +173,37 @@ void main() {
     expect(sdk, contains('esp32s3'));
   });
 
+  test('scaffold gd32vw553h-eval', () {
+    final dest = p.join(tmp.path, 'vw553_blink');
+    final created = scaffoldBoardInit(
+      boardId: 'gd32vw553h-eval',
+      destDir: dest,
+      packageRoot: packageRoot,
+    );
+    expect(
+      created,
+      containsAll([
+        'main.kl',
+        'Makefile',
+        'klin.mod',
+        'README.md',
+        'board/startup.S',
+        'board/linker.ld',
+      ]),
+    );
+    final main = File(p.join(dest, 'main.kl')).readAsStringSync();
+    expect(main, contains('gd32vw553h_eval'));
+    expect(main, contains('pin_out_vw553'));
+    expect(main, contains('led1_port'));
+    expect(main, contains('board/startup.S'));
+    final mod = File(p.join(dest, 'klin.mod')).readAsStringSync();
+    expect(mod, contains('gd32vw553h_eval'));
+    expect(mod, contains('machine_gd32v'));
+    final makefile = File(p.join(dest, 'Makefile')).readAsStringSync();
+    expect(makefile, contains('riscv64-unknown-elf-gcc'));
+    expect(makefile, contains('board/linker.ld'));
+  });
+
   test('scaffold pico and pico2', () {
     final pico = scaffoldBoardInit(
       boardId: 'pico',

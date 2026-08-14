@@ -1,6 +1,6 @@
 # 075 — Board pack / `klin init` vs host (laptop): linker & startup
 
-**Status:** 🔨 MCU `klin init` ✅ (`nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`, `waveshare-esp32-s3-pico`; host-init still 💭)  
+**Status:** 🔨 MCU `klin init` ✅ (`nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`, `waveshare-esp32-s3-pico`, `gd32vw553h-eval`; host-init still 💭)  
 **Depends on:** [010](010-bare-metal.md), [054](054-embedded-project-layout.md), [053](053-device-board-assets.md); optionally [074](074-board-ioc-klin-mod.md)
 
 ## Verdict in brief
@@ -160,7 +160,8 @@ lower priority.
       — bundled `templates/nucleo-f411/` (`board/startup.s`, `board/linker.ld`, blink `main.kl`)
 - [x] `klin init <board> [dir]` — scaffold from `templates/` (`lib/init.dart`, CLI)
 - [x] additional boards: `pico`, `pico2`, `waveshare-rp2350-lcd-096`,
-      `waveshare-esp32-s3-pico` (ESP-IDF scaffold; no freestanding ld/startup)
+      `waveshare-esp32-s3-pico` (ESP-IDF scaffold; no freestanding ld/startup),
+      `gd32vw553h-eval` (RISC-V freestanding + board pack [127](127-board-gd32vw553h-eval.md))
 - [ ] (optional, low priority) `klin init` host → `hello` + mod
 
 ## Implementation notes
@@ -172,7 +173,8 @@ lower priority.
   [096](096-board-nucleo-f411re.md)), `pico` / `pico2`
   (`machine_rp` blink), `waveshare-rp2350-lcd-096` (backlight + board pack
   [095](095-board-waveshare-rp2350-lcd-096.md)), `waveshare-esp32-s3-pico`
-  (ESP-IDF + D10 blink + board pack [100](100-board-waveshare-esp32-s3-pico.md)).
+  (ESP-IDF + D10 blink + board pack [100](100-board-waveshare-esp32-s3-pico.md)),
+  `gd32vw553h-eval` (VW553 LED1 + board pack [127](127-board-gd32vw553h-eval.md)).
 - ESP scaffolds use **IDF** (`main/app_main.c`, `sdkconfig.defaults`, `idf.py`)
   instead of `board/startup.s` + `linker.ld` — still layer B (one-time copy);
   packages via `klin get`.
@@ -188,7 +190,9 @@ lower priority.
   [`adafruit_rp2040_can_feather`](https://github.com/klin-lang/adafruit_rp2040_can_feather)
   ([098](098-board-adafruit-rp2040-can-feather.md)),
   [`waveshare_esp32_s3_pico`](https://github.com/klin-lang/waveshare_esp32_s3_pico)
-  ([100](100-board-waveshare-esp32-s3-pico.md)).
+  ([100](100-board-waveshare-esp32-s3-pico.md)),
+  [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval)
+  ([127](127-board-gd32vw553h-eval.md)).
 
 ## Related
 
