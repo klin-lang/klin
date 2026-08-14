@@ -1,59 +1,34 @@
 # 060 — KV map (hash map)
 
-**Status:** 💭 under consideration (low priority — non-blocking)
-**Depends on:** [007](007-pointers-arrays-slices.md); with heap: [057](057-allocator.md); nice to have [021](021-c-libraries.md)
+**Status:** `map[K]V` in the grammar ❌ struck; stdlib / `$fn` 💭
+([125](125-drop-host-json-sqlite.md))
+**Depends on:** [007](007-pointers-arrays-slices.md); heap:
+[057](057-allocator.md)
 
-## Context (conversation notes)
+## Struck: `map[K]V` in the language
 
-### C
+Go/V builtin (`m[k] = v` grows the heap). C has no such type.
+Hidden resize, key ownership, and a runtime map break the prime
+rule. Do not add `map[K]V` to the grammar. Do not reopen as
+“small builtin.”
 
-- **No** built-in KV maps in the language or libc.
-- Key lookup: own hash table / tree, or `qsort`+`bsearch` on
-  sorted array, or a library (e.g. uthash, khash).
-- `enum` in C is named **integer** constants (not “enum on arbitrary type”).
-  Only **C23** has `enum E : uint8_t` (underlying type still integer).
+## Still open: map as `$fn` / stdlib (like `slice`)
 
-### Implementation difficulty
+Same honesty as [017](017-collection-methods.md):
 
-- **MVP** (e.g. `string`/`int` → pointer, open addressing / chaining): feasible
-  in short time.
-- **“Production” map**: hashes, resize, delete, key ownership, OOM,
-  custom allocator — gets hard here.
-- Bare-metal without `malloc`: usually fixed capacity / arena; general heap map
-  often does not fit MCU.
+- layer 1 — fixed capacity / caller buffer (bare-metal OK)
+- layer 2 — explicit `Allocator` (`put` / grow visible)
+- names like `map_i32` until [034](034-generic-types.md) has 2–3
+  hard `$fn` places (this would be one)
 
-### uthash / khash
+FFI to uthash/khash is an app choice (`@[cimport]`), not a Klin
+package on the backlog ([050](050-sqlite-wrapper.md) is ❌).
 
-Both **small** (header-only, ~1k lines or less) — not GLib. Runtime: overhead
-per element + (usually) dynamic resize. OK on host; on bare-metal still need to be
-explicit about allocation.
-
-### Go / V
-
-Both have **built-in** `map[K]V` in language/runtime (V heavily like Go). C does not have that
-level — hence separate headers or own code.
-
-## What it means for Klin
-
-Overarching rule: **no hidden allocation / cost**. If a map ever
-appears:
-
-- not as magic builtin with hidden heap grow on `m[k] = v`,
-- or explicit `Allocator` ([057](057-allocator.md)) + API in style of
-  [017](017-collection-methods.md) (`map_*` / `put` with visible cost),
-- or thin FFI wrapper on C (uthash/khash/`-l…`) like [050](050-sqlite-wrapper.md),
-- or on embedded: array + `bsearch` / compile-time / ideal hash — without general
-  hash map in stdlib.
-
-## Sketch (later — not now)
-
-1. Decision: language vs `stdlib/map` vs FFI example only.
-2. MVP keys: `i32` / `u32` / `str`? (string ownership).
-3. Host first; bare-metal = fixed / arena or out of scope.
-4. Golden tests + `objdump` vs hand-written C on grow/lookup.
+Embedded without a general heap map: array + `bsearch` / perfect
+hash.
 
 ## Out of scope
 
-- implementation in this issue (roadmap placeholder only)
-- ordered map / tree as MVP requirement
-- priority relative to core / embedded LED / current issues
+- `map[K]V` syntax / hidden grow
+- ordered map / tree as MVP
+- implementation in this issue (placeholder for the `$fn` track)
