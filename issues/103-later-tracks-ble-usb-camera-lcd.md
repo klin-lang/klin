@@ -14,7 +14,7 @@ Do **not** expand the scope of whichever step is “current” in [sorted](sorte
 | Track | Where |
 |---|---|
 | Wi‑Fi STA (IDF) | [`esp_wifi`](https://github.com/klin-lang/esp_wifi) → [101](101-esp-wifi-idf.md) ✅ |
-| Ethernet (IDF; W5500 first, RMII later) | [`esp_eth`](https://github.com/klin-lang/esp_eth) → [102](102-esp-eth-idf.md) ✅ (RMII / other chips → [104](104-later-tracks-esp-network.md)) |
+| Ethernet (IDF; W5500 + RMII) | [`esp_eth`](https://github.com/klin-lang/esp_eth) → [102](102-esp-eth-idf.md) ✅ `@v0.2.0` (other SPI chips → [104](104-later-tracks-esp-network.md) E2) |
 | BLE peripheral + central + GATT + bond + UUID16/128 + privacy + Mesh OnOff (IDF NimBLE) | [`esp_ble`](https://github.com/klin-lang/esp_ble) → [106](106-esp-ble-idf.md) ✅ `@v0.10.0` |
 | USB OTG device CDC-ACM (IDF TinyUSB) | [`esp_usb`](https://github.com/klin-lang/esp_usb) → [108](108-esp-usb-idf.md) ✅ `@v0.1.0` (host / other classes later) |
 | Camera DVP JPEG (IDF esp32-camera) | [`esp_camera`](https://github.com/klin-lang/esp_camera) → [109](109-esp-camera-idf.md) ✅ `@v0.1.0` (CSI / RGB stream later) |
