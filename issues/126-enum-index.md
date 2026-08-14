@@ -20,7 +20,9 @@ Integer indexes were already any integer prim (`i8`…`u64`,
 
 - [x] Checker: enum index + fit / slice errors
 - [x] Golden [`test/enum_index.kl`](../test/enum_index.kl)
-- [x] [`docs/syntax.md`](../docs/syntax.md), [`examples/enums.kl`](../examples/enums.kl)
+- [x] [`docs/syntax.md`](../docs/syntax.md), map, guide What next
+- [x] [`examples/enums.kl`](../examples/enums.kl),
+  [`examples/sorted_lookup.kl`](../examples/sorted_lookup.kl)
 
 ## Out of scope
 

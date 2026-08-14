@@ -24,18 +24,29 @@ fn (c: Color) name(): str {
 - `==` / `!=` only with the **same** enum; no `<` / `>`
 - `match` patterns are `Enum.Variant`; `match` is not exhaustive
 - Number conversion is explicit: `cast(i32, s)`, `cast(Status, 5)`
-- Array index: `codes[Slot.B]` when every variant fits `[0, N)` —
-  same load as `codes[cast(i32, Slot.B)]`. Not a map. Slices still
-  want an integer (`i8`…`u64`, `usize` / `isize`, or `int`)
 - Receiver methods work like on structs
 - Emission is a `typedef` plus integer constants (portable; not C23
   `enum E : T`)
 
+An enum can index a **fixed** array when every variant fits `[0, N)`.
+Same load as `codes[cast(i32, Slot.B)]` — not a map.
+
+```klin
+enum Slot { A, B, C }
+let codes: [3]i32 = [10, 20, 30]
+printf("%d\n", codes[Slot.B])   // 20
+```
+
+`enum Slot { A, B = 5 }` on `[3]i32` is a checker error. Slices (`[]T`)
+still want an integer. Integer indexes were already any integer prim
+(`i8`…`u64`, `usize` / `isize`, `int`) — not only `i32`.
+
 Not in the language: payload / algebraic variants, string-enums,
 auto `to_string`.
 
-Runnable: [`examples/enums.kl`](../examples/enums.kl).
-Issue: [072](../issues/072-enums.md).
+Runnable: [`examples/enums.kl`](../examples/enums.kl),
+[`examples/sorted_lookup.kl`](../examples/sorted_lookup.kl).
+Issues: [072](../issues/072-enums.md), [126](../issues/126-enum-index.md).
 
 ## Associated functions (`Type.fn`)
 
