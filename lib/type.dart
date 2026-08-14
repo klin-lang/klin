@@ -285,6 +285,21 @@ final class UntypedFloat extends KlinType {
   int get hashCode => 2;
 }
 
+/// `error(n)` before its `!T` ok-type is known (match-arm unify, issue 132).
+/// Never survives a finished check / `_defaultConcrete`.
+final class BareErrorType extends KlinType {
+  const BareErrorType();
+
+  @override
+  String get displayName => 'error';
+
+  @override
+  bool operator ==(Object other) => other is BareErrorType;
+
+  @override
+  int get hashCode => 17;
+}
+
 /// C string (`const char*`). Literals and `str` parameters for thin FFI / stdlib.
 final class StrType extends KlinType {
   const StrType();

@@ -29,7 +29,7 @@ These compile. They are not “missing.”
 | `if` / `while` / `for` / `return` / `break` / `continue` | [guide.md](guide.md) |
 | `match` / `pick` | no fallthrough; `pick` → C `?:` |
 | `defer` | jump to cleanup |
-| `!T`, `or { }`, `!`, `error(n)` | D2 — not `Result[T,E]`, not exceptions |
+| `!T`, `or { }`, `!`, `error(n)` | D2 — value (`match` arm or `fn` return); not `Result[T,E]` |
 | `$fn` … `$name(args)` | **this is the generic** ([04-macros.md](04-macros.md)) |
 | `module` / `import` / `pub` | [12-modules.md](12-modules.md) |
 | `fn(T…): Ret` | function pointer; **no capture** |

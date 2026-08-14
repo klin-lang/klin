@@ -126,6 +126,13 @@ fn main() {
         99
     }
     printf("%d %d\n", a, b)
+
+    // Local match can also yield !T (issue 132) — no helper required:
+    let s = match 1 {
+        1 { "ok" }
+        else { error(1) }
+    } or { "??" }
+    printf("%s\n", s)
 }
 ```
 
@@ -133,6 +140,7 @@ fn main() {
 - `expr!` propagates: `if (r.is_err) return r;`
 - `or { … }` handles locally; `err` is in scope
 - Keyword `or` is **error-handling**, not logical OR (`||`)
+- `error(n)` builds a `!T` value (function return **or** `match` arm)
 - Ignoring a `!T` is a compile error
 - No exceptions, no `null`
 

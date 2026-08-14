@@ -98,6 +98,9 @@ String emitC(Program program, String sourcePath) {
     for (final param in func.params) {
       _collectResultTypes(param.resolvedType, resultTypes);
     }
+    if (func.body != null) {
+      _collectResultTypesFromBlock(func.body!, resultTypes);
+    }
   }
   for (final type in resultTypes) {
     final ok = _cType(type.ok);

@@ -1,0 +1,32 @@
+enum Color { Red, Green, Blue }
+
+fn main() {
+    let c: Color = Color.Green
+    let s = match c {
+        Color.Red { "red" }
+        Color.Green { "green" }
+        Color.Blue { "blue" }
+        else { error(1) }
+    } or {
+        printf("bad: %d\n", err)
+        "??"
+    }
+    printf("%s\n", s)
+
+    let bad: Color = cast(Color, 99)
+    let t = match bad {
+        Color.Red { "red" }
+        Color.Green { "green" }
+        Color.Blue { "blue" }
+        else { error(7) }
+    } or {
+        printf("leftover: %d\n", err)
+        "??"
+    }
+    printf("%s\n", t)
+
+    // Annotated bare error (no match) still builds a !T value.
+    let e: !i32 = error(3)
+    let n = e or { 0 }
+    printf("%d\n", n)
+}

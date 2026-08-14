@@ -63,6 +63,14 @@ void _emitValueAssignment(
     buf.writeln('$pad}');
     return;
   }
+  // Success value assigned into a `!T` slot (match arm / annotated let).
+  if (targetType is ResultType && value.resolvedType is! ResultType) {
+    buf.writeln(
+      '$pad$target = (${_cType(targetType)}){ .is_err = false, '
+      '.u.ok = ${_emitExpr(value, ctx)} };',
+    );
+    return;
+  }
   buf.writeln('$pad$target = ${_emitExpr(value, ctx)};');
 }
 
