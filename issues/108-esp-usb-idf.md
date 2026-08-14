@@ -46,7 +46,7 @@ Track B from [103](103-later-tracks-ble-usb-camera-lcd.md).
 - Folding USB into `machine_esp` or board packs  
 - Freestanding (no IDF / no TinyUSB)  
 - RP `UsbCdc` changes (stay in `machine_rp`)  
-- Camera / Pico LCD shields — still [103](103-later-tracks-ble-usb-camera-lcd.md)
+- Camera / Pico LCD shields — camera DVP JPEG ✅ [109](109-esp-camera-idf.md); LCD still [103](103-later-tracks-ble-usb-camera-lcd.md)
 
 ## Contract (prime rule)
 
