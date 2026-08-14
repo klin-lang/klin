@@ -49,11 +49,12 @@ Short form (Homebrew auto-taps `klin-lang/klin`):
 
 ```sh
 brew tap dart-lang/dart
+brew trust --formula dart-lang/dart/dart   # Homebrew 6+ tap trust
 brew install klin-lang/klin/klin
 klin --version
 ```
 
-Or step by step: `brew tap klin-lang/klin` then `brew install klin`.
+Or step by step: `brew tap klin-lang/klin`, `brew trust --formula klin-lang/klin/klin`, then `brew install klin`.
 Latest `main`: `brew install --HEAD klin-lang/klin/klin` (or `--HEAD klin` after tap).
 Upgrade: `brew upgrade klin`.
 

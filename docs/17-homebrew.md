@@ -15,19 +15,28 @@
 
 Requires [Dart tap](https://github.com/dart-lang/homebrew-dart) to build from source.
 
-Short form — Homebrew adds the tap automatically:
+Homebrew **6+** [tap trust](https://docs.brew.sh/Tap-Trust): third-party taps
+are not loaded until you trust a formula (or the whole tap). Prefer
+`brew trust --formula …` over `brew trust <tap>`. Klin’s build dep is
+`dart-lang/dart/dart` — without trusting it, `brew install` fails with
+“Refusing to load formula … from untrusted tap”.
+
+Short form — Homebrew adds the Klin tap automatically:
 
 ```sh
 brew tap dart-lang/dart
+brew trust --formula dart-lang/dart/dart
 brew install klin-lang/klin/klin
 klin --version
 ```
 
-Equivalent explicit taps:
+Equivalent explicit taps (short name `klin` also needs trust):
 
 ```sh
 brew tap dart-lang/dart
+brew trust --formula dart-lang/dart/dart
 brew tap klin-lang/klin
+brew trust --formula klin-lang/klin/klin
 brew install klin
 ```
 
