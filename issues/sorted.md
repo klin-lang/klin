@@ -83,7 +83,7 @@ building the core from scratch.
 | [066](066-klin-upgrade-outdated.md) | `klin upgrade` / outdated (newer deps) | ✅ | 049 |
 | [067](067-homebrew.md) | Homebrew: `brew install klin` (formula + tap + v0.1.0) | ✅ | — |
 | [050](050-sqlite-wrapper.md) | SQLite wrapper (FFI) | ❌ not doing | 021 |
-| [070](070-host-orm-sqlite.md) | ORM-like / typed repo over SQLite (host) | ❌ not doing | 050, 021 |
+| [070](070-host-orm-sqlite.md) | ~~ORM-like / typed repo over SQLite~~ | ❌ struck | — |
 | [051](051-json-wrapper.md) | JSON wrapper + `$…` paths | ❌ not doing | 021, 026? |
 | [052](052-klinstruct.md) | `klinstruct` — pack/unpack like cstruct (low priority) | 💭 | 007, 020/047 |
 | [053](053-device-board-assets.md) | `$device` + Go-like SVD fetch (`device` in `klin.mod`) | ✅ (MVP; board → 074) | 027, 049 |
@@ -149,7 +149,7 @@ building the core from scratch.
 | [122](122-docs-hello-to-board.md) | Path: hello → register → small project (no `issues/`) | ✅ | 116, 117, 118, 119 |
 | [123](123-docs-rtos-lib.md) | Map: FreeRTOS is C + `klin_freertos`, not the language | ✅ | 116, 024, 028 |
 | [124](124-docs-c-asm.md) | Map: C FFI + ASM units / `asm("…")` (not a C/ASM language) | ✅ | 116, 021, 022 |
-| [125](125-drop-host-json-sqlite.md) | Drop host JSON / SQLite / ORM; no `yield` keyword | ✅ | 050, 051, 070, 018 |
+| [125](125-drop-host-json-sqlite.md) | Drop host JSON / SQLite; strike ORM; no `yield` keyword | ✅ | 050, 051, 070, 018 |
 
 ---
 
