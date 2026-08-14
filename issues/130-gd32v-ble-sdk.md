@@ -33,7 +33,7 @@ in `MSDK/blesw/src/export/ble_gatts.h`) — same pattern as SDK
 
 - `init` — `ble_init(true)` + `ble_wait_ready` (once)  
 - `advertise(name)` — `app_adp_set_name` + `app_adv_create` (wraps `ble_adv_create`) legacy undirected connectable (`BLE_GAP_ADV_PROP_UNDIR_CONN` in GigaDevice `ble_gap.h`)  
-- `wait_connected(timeout_ms)` — host stub succeeds after `advertise`; on-device polls a flag (`-1` = forever)  
+- `wait_connected(timeout_ms)` — host stub succeeds after `advertise`; on-device polls a flag (`-1` = forever). GATTS connect hook arrives in `@v0.2.0` (this tag's `wait_connected` never saw a connect on-device)  
 - `connected` / `advertising` — `i32` 1/0  
 - `stop_advertise` / `stop` — `app_adv_stop` / `ble_deinit`  
 - `err_ok` / `version()` → `1`  
@@ -49,7 +49,7 @@ Same Klin names as [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.2.0`:
 - `gatt_set` / `gatt_get` / `gatt_len` / `gatt_value_max()` — caller copies; max **20** bytes; `gatt_set` does **not** notify  
 - `gatt_notify` — `ble_gatts_ntf_ind_send` if connected **and** CCCD notify enabled; else no-op  
 - `gatt_written` — poll-and-clear (`bool`); no Klin callbacks  
-- `gatt_svc_uuid16()` / `gatt_chr_uuid16()` — `0xFFF0` / `0xFFF1`  
+- `gatt_svc_uuid16()` / `gatt_chr_uuid16()` — fixed compile-time `0xFFF0` / `0xFFF1` (same helpers as `esp_ble@v0.2.0`; custom UUID later, like `esp_ble@v0.6.0`)  
 - `init` also calls `ble_gatts_svc_add` (AN152 §3.3)  
 - `wait_connected` on-device: flag set by GATTS `BLE_SRV_EVT_CONN_STATE_CHANGE_IND`  
 - `version()` → `2`  
