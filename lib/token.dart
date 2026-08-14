@@ -119,3 +119,15 @@ final class Token {
   @override
   String toString() => 'Token(${kind.name}, "$lexeme", $pos)';
 }
+
+/// A `//` comment collected by the lexer (not a token — the parser never sees it).
+final class SourceComment {
+  /// Text including the leading `//`, without the newline.
+  final String text;
+  final SourcePos pos;
+
+  /// True when non-whitespace code precedes the comment on the same line.
+  final bool trailing;
+
+  const SourceComment(this.text, this.pos, {required this.trailing});
+}

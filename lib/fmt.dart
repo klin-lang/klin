@@ -1,152 +1,322 @@
 import 'ast.dart';
 import 'lexer.dart';
 import 'parser.dart';
+import 'token.dart';
 
 /// Canonical Klin style (issue 033): 4 spaces, K&R braces, Go-like spacing.
 ///
-/// Comments are dropped (lexer skips them) — follow-up for comment-preserving fmt.
+/// `//` comments are collected by the lexer and replayed next to the
+/// following declaration / statement (or as a same-line trailer).
 /// Sources with `$…` macros must be formatted after preprocess, or not at all.
 const indentUnit = '    ';
 
 /// Formats a Klin source unit. Throws [LexError] / [ParseError] on invalid input.
 String formatSource(String source) {
-  final unit = Parser(Lexer(source).tokenize()).parseUnit();
-  return formatUnit(unit);
+  final lexer = Lexer(source);
+  final tokens = lexer.tokenize();
+  final unit = Parser(tokens).parseUnit();
+  return formatUnit(unit, comments: lexer.comments, tokens: tokens);
 }
 
-String formatUnit(ModuleUnit unit) {
-  final buf = StringBuffer();
+String formatUnit(
+  ModuleUnit unit, {
+  List<SourceComment> comments = const [],
+  List<Token> tokens = const [],
+}) {
+  final out = _FmtOut(comments, tokens);
   var first = true;
 
   void blankBefore() {
-    if (!first) buf.writeln();
+    if (!first) out.buf.writeln();
     first = false;
   }
 
+  out.writeLeading(out.firstContentLine(), '');
+
   if (unit.declaredName != null) {
-    buf.writeln('module ${unit.declaredName}');
+    out.buf.write('module ${unit.declaredName}');
+    var moduleLine = 1;
+    for (final t in tokens) {
+      if (t.kind == TokenKind.module) {
+        moduleLine = t.pos.line;
+        break;
+      }
+    }
+    out.endLine(moduleLine);
     first = false;
   }
   for (final imp in unit.imports) {
+    out.writeLeading(imp.pos.line, '');
     final spec = imp.isPath ? '"${imp.spec}"' : imp.spec;
     final alias = imp.alias == null ? '' : ' ${imp.alias}';
-    buf.writeln('import $spec$alias');
+    out.buf.write('import $spec$alias');
+    out.endLine(imp.pos.line);
     first = false;
   }
   if (unit.declaredName != null || unit.imports.isNotEmpty) {
-    buf.writeln();
+    out.buf.writeln();
     first = true; // next decl starts a new "group" without extra blank before first
   }
 
   for (final decl in unit.decls) {
     blankBefore();
+    out.writeLeading(_declLine(decl), '');
     switch (decl) {
       case StructDecl():
-        _writeStruct(buf, decl, 0);
+        _writeStruct(out, decl, 0);
       case EnumDecl():
-        _writeEnum(buf, decl, 0);
+        _writeEnum(out, decl, 0);
       case FuncDecl():
-        _writeFunc(buf, decl, 0);
+        _writeFunc(out, decl, 0);
       default:
         throw StateError('unknown top-level declaration ${decl.runtimeType}');
     }
   }
-  if (!buf.toString().endsWith('\n')) buf.writeln();
-  return buf.toString();
+  out.writeRest();
+  if (!out.buf.toString().endsWith('\n')) out.buf.writeln();
+  return out.buf.toString();
 }
 
-void _writeAttrs(StringBuffer buf, List<Attr> attrs, int indent) {
-  final pad = indentUnit * indent;
-  for (final attr in attrs) {
-    buf.write(pad);
-    if (attr.arg != null) {
-      buf.writeln('@[${attr.name}("${_escapeString(attr.arg!)}")]');
-    } else {
-      buf.writeln('@[${attr.name}]');
+int _declLine(Object decl) {
+  switch (decl) {
+    case FuncDecl(:final attrs, :final pos):
+      return attrs.isNotEmpty ? attrs.first.pos.line : pos.line;
+    case StructDecl(:final attrs, :final pos):
+      return attrs.isNotEmpty ? attrs.first.pos.line : pos.line;
+    case EnumDecl(:final attrs, :final pos):
+      return attrs.isNotEmpty ? attrs.first.pos.line : pos.line;
+    default:
+      return 1;
+  }
+}
+
+/// Replays lexer comments while pretty-printing the AST.
+final class _FmtOut {
+  final StringBuffer buf = StringBuffer();
+  final List<SourceComment> _comments;
+  final List<Token> tokens;
+  int _ci = 0;
+
+  _FmtOut(this._comments, this.tokens);
+
+  void writeLeading(int beforeLine, String pad) {
+    while (_ci < _comments.length) {
+      final c = _comments[_ci];
+      if (c.pos.line >= beforeLine) break;
+      buf.write(pad);
+      buf.writeln(c.text);
+      _ci++;
     }
   }
-}
 
-void _writeStruct(StringBuffer buf, StructDecl decl, int indent) {
-  _writeAttrs(buf, decl.attrs, indent);
-  final pad = indentUnit * indent;
-  buf.write(pad);
-  if (decl.isPub) buf.write('pub ');
-  buf.writeln('struct ${decl.name} {');
-  for (final field in decl.fields) {
-    buf.writeln('$pad$indentUnit${field.name}: ${field.typeName}');
+  void endLine(int line, {bool takeTrailing = true}) {
+    if (takeTrailing && _ci < _comments.length) {
+      final c = _comments[_ci];
+      if (c.trailing && c.pos.line == line) {
+        buf.write(' ');
+        buf.write(c.text);
+        _ci++;
+      }
+    }
+    buf.writeln();
   }
-  buf.writeln('$pad}');
+
+  void writeRest() {
+    if (_ci >= _comments.length) return;
+    final soFar = buf.toString();
+    if (soFar.isNotEmpty && !soFar.endsWith('\n')) buf.writeln();
+    if (soFar.isNotEmpty && !soFar.endsWith('\n\n')) buf.writeln();
+    while (_ci < _comments.length) {
+      buf.writeln(_comments[_ci++].text);
+    }
+  }
+
+  int firstContentLine() {
+    for (final t in tokens) {
+      switch (t.kind) {
+        case TokenKind.module:
+        case TokenKind.import:
+        case TokenKind.fn:
+        case TokenKind.struct:
+        case TokenKind.enum_:
+        case TokenKind.pub:
+        case TokenKind.atSign:
+        case TokenKind.async_:
+          return t.pos.line;
+        default:
+          break;
+      }
+    }
+    return 1;
+  }
+
+  int? rBraceLine(SourcePos open) {
+    var depth = 0;
+    var seen = false;
+    for (final t in tokens) {
+      if (!seen) {
+        if (t.kind == TokenKind.lBrace &&
+            t.pos.line == open.line &&
+            t.pos.col == open.col) {
+          seen = true;
+          depth = 1;
+        }
+        continue;
+      }
+      if (t.kind == TokenKind.lBrace) depth++;
+      if (t.kind == TokenKind.rBrace) {
+        depth--;
+        if (depth == 0) return t.pos.line;
+      }
+    }
+    return null;
+  }
+
+  int? firstRBraceAfter(SourcePos after) {
+    var depth = 0;
+    var seen = false;
+    for (final t in tokens) {
+      final before = t.pos.line < after.line ||
+          (t.pos.line == after.line && t.pos.col < after.col);
+      if (before) continue;
+      if (t.kind == TokenKind.lBrace) {
+        if (!seen) {
+          seen = true;
+          depth = 1;
+          continue;
+        }
+        depth++;
+      } else if (t.kind == TokenKind.rBrace && seen) {
+        depth--;
+        if (depth == 0) return t.pos.line;
+      }
+    }
+    return null;
+  }
 }
 
-void _writeEnum(StringBuffer buf, EnumDecl decl, int indent) {
-  _writeAttrs(buf, decl.attrs, indent);
+void _writeAttrs(_FmtOut out, List<Attr> attrs, int indent) {
   final pad = indentUnit * indent;
-  buf.write(pad);
-  if (decl.isPub) buf.write('pub ');
-  buf.write('enum ${decl.name}');
-  if (decl.baseTypeName != null) buf.write(': ${decl.baseTypeName}');
-  buf.writeln(' {');
-  for (final variant in decl.variants) {
+  for (final attr in attrs) {
+    out.writeLeading(attr.pos.line, pad);
+    out.buf.write(pad);
+    if (attr.arg != null) {
+      out.buf.write('@[${attr.name}("${_escapeString(attr.arg!)}")]');
+    } else {
+      out.buf.write('@[${attr.name}]');
+    }
+    out.endLine(attr.pos.line);
+  }
+}
+
+void _writeStruct(_FmtOut out, StructDecl decl, int indent) {
+  _writeAttrs(out, decl.attrs, indent);
+  final pad = indentUnit * indent;
+  out.buf.write(pad);
+  if (decl.isPub) out.buf.write('pub ');
+  out.buf.write('struct ${decl.name} {');
+  final fieldsShareHeader =
+      decl.fields.any((f) => f.pos.line == decl.pos.line);
+  out.endLine(decl.pos.line, takeTrailing: !fieldsShareHeader);
+  final fieldPad = '$pad$indentUnit';
+  for (var i = 0; i < decl.fields.length; i++) {
+    final field = decl.fields[i];
+    out.writeLeading(field.pos.line, fieldPad);
+    out.buf.write('$fieldPad${field.name}: ${field.typeName}');
+    final lastOnLine = i == decl.fields.length - 1 ||
+        decl.fields[i + 1].pos.line != field.pos.line;
+    out.endLine(field.pos.line, takeTrailing: lastOnLine);
+  }
+  final close = out.firstRBraceAfter(decl.pos);
+  if (close != null) out.writeLeading(close, fieldPad);
+  out.buf.writeln('$pad}');
+}
+
+void _writeEnum(_FmtOut out, EnumDecl decl, int indent) {
+  _writeAttrs(out, decl.attrs, indent);
+  final pad = indentUnit * indent;
+  out.buf.write(pad);
+  if (decl.isPub) out.buf.write('pub ');
+  out.buf.write('enum ${decl.name}');
+  if (decl.baseTypeName != null) out.buf.write(': ${decl.baseTypeName}');
+  out.buf.write(' {');
+  final variantsShareHeader =
+      decl.variants.any((v) => v.pos.line == decl.pos.line);
+  out.endLine(decl.pos.line, takeTrailing: !variantsShareHeader);
+  final fieldPad = '$pad$indentUnit';
+  for (var i = 0; i < decl.variants.length; i++) {
+    final variant = decl.variants[i];
+    out.writeLeading(variant.pos.line, fieldPad);
     final value = variant.value;
     final suffix = value is IntLit ? ' = ${value.lexeme}' : '';
-    buf.writeln('$pad$indentUnit${variant.name}$suffix');
+    out.buf.write('$fieldPad${variant.name}$suffix');
+    final lastOnLine = i == decl.variants.length - 1 ||
+        decl.variants[i + 1].pos.line != variant.pos.line;
+    out.endLine(variant.pos.line, takeTrailing: lastOnLine);
   }
-  buf.writeln('$pad}');
+  final close = out.firstRBraceAfter(decl.pos);
+  if (close != null) out.writeLeading(close, fieldPad);
+  out.buf.writeln('$pad}');
 }
 
-void _writeFunc(StringBuffer buf, FuncDecl decl, int indent) {
-  _writeAttrs(buf, decl.attrs, indent);
+void _writeFunc(_FmtOut out, FuncDecl decl, int indent) {
+  _writeAttrs(out, decl.attrs, indent);
   final pad = indentUnit * indent;
-  buf.write(pad);
-  if (decl.isPub) buf.write('pub ');
-  if (decl.isAsync) buf.write('async ');
-  buf.write('fn ');
+  out.buf.write(pad);
+  if (decl.isPub) out.buf.write('pub ');
+  if (decl.isAsync) out.buf.write('async ');
+  out.buf.write('fn ');
   final recv = decl.receiver;
   if (recv != null) {
-    buf.write('(');
-    if (recv.isMut) buf.write('mut ');
-    buf.write('${recv.name}: ${recv.typeName}) ');
+    out.buf.write('(');
+    if (recv.isMut) out.buf.write('mut ');
+    out.buf.write('${recv.name}: ${recv.typeName}) ');
   }
-  if (decl.associatedType != null) buf.write('${decl.associatedType}.');
-  buf.write(decl.name);
-  buf.write('(');
-  buf.write(
+  if (decl.associatedType != null) out.buf.write('${decl.associatedType}.');
+  out.buf.write(decl.name);
+  out.buf.write('(');
+  out.buf.write(
     decl.params.map((p) => '${p.name}: ${p.typeName}').join(', '),
   );
-  buf.write(')');
+  out.buf.write(')');
   if (decl.returnTypeName != null) {
-    buf.write(': ${decl.returnTypeName}');
+    out.buf.write(': ${decl.returnTypeName}');
   }
   final body = decl.body;
   if (body == null) {
-    buf.writeln();
+    out.endLine(decl.pos.line);
     return;
   }
-  buf.write(' ');
-  _writeBlock(buf, body, indent, leadingNewline: false);
+  out.buf.write(' ');
+  _writeBlock(out, body, indent, leadingNewline: false);
 }
 
 void _writeBlock(
-  StringBuffer buf,
+  _FmtOut out,
   Block block,
   int indent, {
   required bool leadingNewline,
 }) {
   final pad = indentUnit * indent;
-  if (leadingNewline) buf.write(pad);
-  buf.writeln('{');
+  if (leadingNewline) out.buf.write(pad);
+  out.buf.write('{');
+  out.endLine(block.pos.line);
   for (final stmt in block.stmts) {
-    _writeStmt(buf, stmt, indent + 1);
+    _writeStmt(out, stmt, indent + 1);
   }
-  buf.writeln('$pad}');
+  final close = out.rBraceLine(block.pos);
+  if (close != null) out.writeLeading(close, '$pad$indentUnit');
+  out.buf.writeln('$pad}');
 }
 
-void _writeStmt(StringBuffer buf, Stmt stmt, int indent) {
+void _writeStmt(_FmtOut out, Stmt stmt, int indent, {bool inline = false}) {
   final pad = indentUnit * indent;
+  if (!inline) out.writeLeading(stmt.pos.line, pad);
   switch (stmt) {
     case AsmStmt(:final code):
-      buf.writeln('${pad}asm("${_escapeString(code)}")');
+      if (!inline) out.buf.write(pad);
+      out.buf.write('asm("${_escapeString(code)}")');
+      out.endLine(stmt.pos.line);
     case LetStmt(
         :final isMut,
         :final name,
@@ -154,53 +324,55 @@ void _writeStmt(StringBuffer buf, Stmt stmt, int indent) {
         :final init,
         :final shortDecl
       ):
-      buf.write(pad);
+      if (!inline) out.buf.write(pad);
       if (shortDecl) {
-        buf.write('$name := ');
-        buf.write(_expr(init!, indent));
-        buf.writeln();
+        out.buf.write('$name := ');
+        out.buf.write(_expr(init!, indent));
+        out.endLine(stmt.pos.line);
         break;
       }
-      buf.write(isMut ? 'let mut ' : 'let ');
-      buf.write(name);
-      if (typeName != null) buf.write(': $typeName');
+      out.buf.write(isMut ? 'let mut ' : 'let ');
+      out.buf.write(name);
+      if (typeName != null) out.buf.write(': $typeName');
       if (init != null) {
-        buf.write(' = ');
-        buf.write(_expr(init, indent));
+        out.buf.write(' = ');
+        out.buf.write(_expr(init, indent));
       }
-      buf.writeln();
+      out.endLine(stmt.pos.line);
     case LetDestructureStmt(
         :final isMut,
         :final fields,
         :final binds,
         :final source
       ):
-      buf.write(pad);
-      buf.write(isMut ? 'let mut { ' : 'let { ');
+      if (!inline) out.buf.write(pad);
+      out.buf.write(isMut ? 'let mut { ' : 'let { ');
       final parts = <String>[];
       for (var i = 0; i < fields.length; i++) {
         parts.add(fields[i] == binds[i] ? fields[i] : '${fields[i]}: ${binds[i]}');
       }
-      buf.write(parts.join(', '));
-      buf.write(' } = ');
-      buf.write(_expr(source, indent));
-      buf.writeln();
+      out.buf.write(parts.join(', '));
+      out.buf.write(' } = ');
+      out.buf.write(_expr(source, indent));
+      out.endLine(stmt.pos.line);
     case LetArrayDestructureStmt(:final isMut, :final names, :final source):
-      buf.write(pad);
-      buf.write(isMut ? 'let mut [' : 'let [');
-      buf.write(names.map((n) => n ?? '_').join(', '));
-      buf.write('] = ');
-      buf.write(_expr(source, indent));
-      buf.writeln();
+      if (!inline) out.buf.write(pad);
+      out.buf.write(isMut ? 'let mut [' : 'let [');
+      out.buf.write(names.map((n) => n ?? '_').join(', '));
+      out.buf.write('] = ');
+      out.buf.write(_expr(source, indent));
+      out.endLine(stmt.pos.line);
     case AssignStmt(:final target, :final value, :final compoundOp):
       final op = compoundOp == null ? '=' : '$compoundOp=';
-      buf.writeln(
-        '$pad${_expr(target, indent)} $op ${_expr(value, indent)}',
-      );
+      if (!inline) out.buf.write(pad);
+      out.buf.write('${_expr(target, indent)} $op ${_expr(value, indent)}');
+      out.endLine(stmt.pos.line);
     case MultiAssignStmt(:final targets, :final values):
       final lhs = targets.map((t) => _expr(t, indent)).join(', ');
       final rhs = values.map((v) => _expr(v, indent)).join(', ');
-      buf.writeln('$pad$lhs = $rhs');
+      if (!inline) out.buf.write(pad);
+      out.buf.write('$lhs = $rhs');
+      out.endLine(stmt.pos.line);
     case StructAssignStmt(:final fields, :final targets, :final source):
       final parts = <String>[];
       for (var i = 0; i < fields.length; i++) {
@@ -208,24 +380,34 @@ void _writeStmt(StringBuffer buf, Stmt stmt, int indent) {
         final plain = target is NameExpr && target.name == fields[i];
         parts.add(plain ? fields[i] : '${fields[i]}: ${_expr(target, indent)}');
       }
-      buf.writeln('$pad{ ${parts.join(', ')} } = ${_expr(source, indent)}');
+      if (!inline) out.buf.write(pad);
+      out.buf.write('{ ${parts.join(', ')} } = ${_expr(source, indent)}');
+      out.endLine(stmt.pos.line);
     case CallStmt(:final moduleName, :final callee, :final args):
       final name = moduleName == null ? callee : '$moduleName.$callee';
-      buf.writeln('$pad$name(${_argList(args, indent)})');
+      if (!inline) out.buf.write(pad);
+      out.buf.write('$name(${_argList(args, indent)})');
+      out.endLine(stmt.pos.line);
     case MethodCallStmt(:final call):
-      buf.writeln('$pad${_expr(call, indent)}');
+      if (!inline) out.buf.write(pad);
+      out.buf.write(_expr(call, indent));
+      out.endLine(stmt.pos.line);
     case AwaitStmt(:final expr):
-      buf.writeln('$pad${_expr(expr, indent)}');
+      if (!inline) out.buf.write(pad);
+      out.buf.write(_expr(expr, indent));
+      out.endLine(stmt.pos.line);
     case IfStmt():
-      _writeIf(buf, stmt, indent, chained: false);
+      _writeIf(out, stmt, indent, chained: false);
     case WhileStmt(:final cond, :final body):
-      buf.write('${pad}while ${_expr(cond, indent)} ');
-      _writeBlock(buf, body, indent, leadingNewline: false);
+      if (!inline) out.buf.write(pad);
+      out.buf.write('while ${_expr(cond, indent)} ');
+      _writeBlock(out, body, indent, leadingNewline: false);
     case ForRangeStmt(:final name, :final start, :final endExclusive, :final body):
-      buf.write(
-        '${pad}for $name in ${_expr(start, indent)}..<${_expr(endExclusive, indent)} ',
+      if (!inline) out.buf.write(pad);
+      out.buf.write(
+        'for $name in ${_expr(start, indent)}..<${_expr(endExclusive, indent)} ',
       );
-      _writeBlock(buf, body, indent, leadingNewline: false);
+      _writeBlock(out, body, indent, leadingNewline: false);
     case ForCStmt(
         :final initName,
         :final initExpr,
@@ -234,53 +416,68 @@ void _writeStmt(StringBuffer buf, Stmt stmt, int indent) {
         :final postExpr,
         :final body
       ):
-      buf.write('${pad}for ');
+      if (!inline) out.buf.write(pad);
+      out.buf.write('for ');
       if (initName != null && initExpr != null) {
-        buf.write('$initName = ${_expr(initExpr, indent)}');
+        out.buf.write('$initName = ${_expr(initExpr, indent)}');
       }
-      buf.write('; ');
-      if (cond != null) buf.write(_expr(cond, indent));
-      buf.write('; ');
+      out.buf.write('; ');
+      if (cond != null) out.buf.write(_expr(cond, indent));
+      out.buf.write('; ');
       if (postName != null && postExpr != null) {
-        buf.write('$postName = ${_expr(postExpr, indent)}');
+        out.buf.write('$postName = ${_expr(postExpr, indent)}');
       }
-      buf.write(' ');
-      _writeBlock(buf, body, indent, leadingNewline: false);
+      out.buf.write(' ');
+      _writeBlock(out, body, indent, leadingNewline: false);
     case ReturnStmt(:final value):
+      if (!inline) out.buf.write(pad);
       if (value == null) {
-        buf.writeln('${pad}return');
+        out.buf.write('return');
       } else {
-        buf.writeln('${pad}return ${_expr(value, indent)}');
+        out.buf.write('return ${_expr(value, indent)}');
       }
+      out.endLine(stmt.pos.line);
     case BreakStmt():
-      buf.writeln('${pad}break');
+      if (!inline) out.buf.write(pad);
+      out.buf.write('break');
+      out.endLine(stmt.pos.line);
     case ContinueStmt():
-      buf.writeln('${pad}continue');
+      if (!inline) out.buf.write(pad);
+      out.buf.write('continue');
+      out.endLine(stmt.pos.line);
     case DeferStmt(:final body):
-      buf.write('${pad}defer ');
+      if (!inline) out.buf.write(pad);
+      out.buf.write('defer ');
       if (body is BlockStmt) {
-        _writeBlock(buf, body.block, indent, leadingNewline: false);
+        _writeBlock(out, body.block, indent, leadingNewline: false);
       } else {
-        // Single deferred statement on the same line when possible.
-        final inner = StringBuffer();
-        _writeStmt(inner, body, 0);
-        buf.write(inner.toString().trimRight());
-        buf.writeln();
+        _writeStmt(out, body, 0, inline: true);
       }
     case BlockStmt(:final block):
-      _writeBlock(buf, block, indent, leadingNewline: true);
+      _writeBlock(out, block, indent, leadingNewline: true);
     case MatchStmt(:final subject, :final arms):
-      buf.write('${pad}match ${_expr(subject, indent)} {\n');
+      if (!inline) out.buf.write(pad);
+      out.buf.write('match ${_expr(subject, indent)} {');
+      out.endLine(stmt.pos.line);
       for (final arm in arms) {
-        buf.writeln(
-          '$pad$indentUnit${_armPatternText(arm.pattern, arm.when, indent)} {',
+        final armPad = '$pad$indentUnit';
+        out.writeLeading(arm.pattern.pos.line, armPad);
+        out.buf.write(
+          '$armPad${_armPatternText(arm.pattern, arm.when, indent)} {',
         );
+        out.endLine(arm.pattern.pos.line);
         for (final s in arm.body.stmts) {
-          _writeStmt(buf, s, indent + 2);
+          _writeStmt(out, s, indent + 2);
         }
-        buf.writeln('$pad$indentUnit}');
+        final armClose = out.rBraceLine(arm.body.pos);
+        if (armClose != null) {
+          out.writeLeading(armClose, '$armPad$indentUnit');
+        }
+        out.buf.writeln('$armPad}');
       }
-      buf.writeln('$pad}');
+      final matchClose = out.firstRBraceAfter(stmt.pos);
+      if (matchClose != null) out.writeLeading(matchClose, '$pad$indentUnit');
+      out.buf.writeln('$pad}');
   }
 }
 
@@ -302,27 +499,33 @@ String _patternText(MatchPattern pattern, int indent) {
   };
 }
 
-void _writeIf(StringBuffer buf, IfStmt stmt, int indent, {required bool chained}) {
+void _writeIf(_FmtOut out, IfStmt stmt, int indent, {required bool chained}) {
   final pad = indentUnit * indent;
-  if (!chained) buf.write(pad);
-  buf.write('if ${_expr(stmt.cond, indent)} {\n');
+  if (!chained) out.buf.write(pad);
+  out.buf.write('if ${_expr(stmt.cond, indent)} {');
+  out.endLine(stmt.pos.line);
   for (final s in stmt.thenBlock.stmts) {
-    _writeStmt(buf, s, indent + 1);
+    _writeStmt(out, s, indent + 1);
   }
+  final thenClose = out.rBraceLine(stmt.thenBlock.pos);
+  if (thenClose != null) out.writeLeading(thenClose, '$pad$indentUnit');
   final elseBranch = stmt.elseBranch;
   if (elseBranch == null) {
-    buf.writeln('$pad}');
+    out.buf.writeln('$pad}');
     return;
   }
-  buf.write('$pad} else ');
+  out.buf.write('$pad} else ');
   if (elseBranch is IfStmt) {
-    _writeIf(buf, elseBranch, indent, chained: true);
+    _writeIf(out, elseBranch, indent, chained: true);
   } else if (elseBranch is BlockStmt) {
-    buf.writeln('{');
+    out.buf.write('{');
+    out.endLine(elseBranch.pos.line);
     for (final s in elseBranch.block.stmts) {
-      _writeStmt(buf, s, indent + 1);
+      _writeStmt(out, s, indent + 1);
     }
-    buf.writeln('$pad}');
+    final elseClose = out.rBraceLine(elseBranch.block.pos);
+    if (elseClose != null) out.writeLeading(elseClose, '$pad$indentUnit');
+    out.buf.writeln('$pad}');
   } else {
     throw StateError('unexpected else branch ${elseBranch.runtimeType}');
   }
@@ -426,9 +629,11 @@ String _formatOrBlock(OrBlock block, int indent) {
     return '{ ${_expr(block.value, indent)} }';
   }
   final buf = StringBuffer('{\n');
+  final innerFmt = _FmtOut(const [], const []);
   for (final stmt in block.stmts) {
-    _writeStmt(buf, stmt, indent + 1);
+    _writeStmt(innerFmt, stmt, indent + 1);
   }
+  buf.write(innerFmt.buf.toString());
   buf.writeln('$inner${_expr(block.value, indent + 1)}');
   buf.write('$pad}');
   return buf.toString();

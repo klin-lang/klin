@@ -20,8 +20,7 @@ about tabs, braces, and line breaks.
 ## Outside MVP (later)
 
 - Formatting **macro bodies** / `--emit-pp` result (dedent + `fmt`)
-- Preserving comments (`//`)
-- LSP / editor `formatDocument` → [086](086-lsp.md)
+- LSP / editor `formatDocument` → [086](086-lsp.md) (uses `formatSource`; comments follow)
 - `klin fmt ./...` recursively
 
 ## Criteria
@@ -29,3 +28,4 @@ about tabs, braces, and line breaks.
 - [x] `klin fmt` on examples without `$` gives repeatable result
 - [x] style document in `docs/05-fmt.md`
 - [x] golden ugly → formatted
+- [x] `//` comments preserved ([128](128-fmt-comments.md))

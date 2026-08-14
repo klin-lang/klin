@@ -23,6 +23,9 @@ final class Lexer {
   int _line = 1;
   int _col = 1;
 
+  /// `//` comments in source order. Not in the token stream.
+  final List<SourceComment> comments = [];
+
   Lexer(this.source);
 
   List<Token> tokenize() {
@@ -414,13 +417,37 @@ final class Lexer {
       } else if (c == '\n') {
         _advance();
       } else if (c == '/' && _i + 1 < source.length && source[_i + 1] == '/') {
-        while (!_atEnd && _peek != '\n') {
-          _advance();
-        }
+        _collectComment();
       } else {
         break;
       }
     }
+  }
+
+  void _collectComment() {
+    final pos = SourcePos(_line, _col);
+    final trailing = _commentIsTrailing();
+    final start = _i;
+    while (!_atEnd && _peek != '\n') {
+      _advance();
+    }
+    var text = source.substring(start, _i);
+    if (text.endsWith('\r')) {
+      text = text.substring(0, text.length - 1);
+    }
+    comments.add(SourceComment(text, pos, trailing: trailing));
+  }
+
+  /// True when this `//` has non-whitespace code to its left on the same line.
+  bool _commentIsTrailing() {
+    var j = _i - 1;
+    while (j >= 0) {
+      final c = source[j];
+      if (c == '\n') return false;
+      if (c != ' ' && c != '\t' && c != '\r') return true;
+      j--;
+    }
+    return false;
   }
 
   bool get _atEnd => _i >= source.length;
