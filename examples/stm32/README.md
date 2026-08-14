@@ -37,5 +37,5 @@ Scaffold: `dart run bin/klin.dart init nucleo-f411 my_blink` then
 ## Links
 
 - [issues/054](../../issues/054-embedded-project-layout.md), [075](../../issues/075-board-pack-init-host.md)
-- [docs/04-macros.md](../../docs/04-macros.md) (SVD / `$device`)
+- [docs/device.md](../../docs/device.md) (SVD / `$device` / fluent MMIO)
 - Catalog: [`../README.md`](../README.md)

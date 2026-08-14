@@ -88,46 +88,13 @@ $lib_helper(x)   // if mylib defines $fn lib_helper …
 Ident imports (`import slice`) do not re-export `$fn`; those packages expand
 macros inside their own files (as today).
 
-## Built-in: `$device` / `$peripherals_from_svd` (027, 053)
+## Built-in: `$device` / `$board`
 
-```klin
-// locally (027) or remote with cache (053):
-$device("github/tinygo-org/stm32-svd/svd/stm32f411.svd", "RCC,GPIOA,STK")
-// alias: $peripherals_from_svd("…", "…")
+User page (SVD, fluent MMIO, fetch, pinout): [device.md](device.md).
 
-fn main() {
-  RCC.AHB1ENR.GPIOAEN.set(1)
-  GPIOA.MODER.MODER5.write(.Output)
-  GPIOA.ODR.ODR5.toggle()
-}
-```
-
-Expand → `@[cinclude("…_regs.h")]` + `RCC_AHB1ENR_GPIOAEN_set(1)` etc.
-(reuses emitter from 011; zero-cost `static inline`).
-
-Examples:
-- local: [`examples/stm32/blink_f411/`](../examples/stm32/blink_f411/)
-- remote + `klin.mod`: [`examples/stm32/device_f411/`](../examples/stm32/device_f411/)
-  (`klin get` in example dir → cache + `klin.lock`)
-
-MVP allowlist: `github/tinygo-org/stm32-svd`.
-
-### `$board("path.ioc")` — CubeMX pinout (issue 074)
-
-Narrow expand: labeled GPIOs → `BoardPort` / `BoardPin` enums (not HAL, not
-clocks, not generated `main`). Local project `board/*.ioc` wins over cache;
-`klin get` of a remote `.ioc` fills `$KLIN_CACHE/asset/` only and **does not**
-overwrite a local file.
-
-```klin
-$board("board/nucleo_f411re.ioc")
-// BoardPin.LD2 == 5, BoardPort.LD2 == 0 (PA5)
-```
-
-Example: [`examples/stm32/device_f411/`](../examples/stm32/device_f411/).
-Remote allowlist: `github/klin-lang/boards`,
-[`github/klin-lang/nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re)
-([096](../issues/096-board-nucleo-f411re.md)).
+`$device` / `$peripherals_from_svd` and `$board` are preprocessor
+builtins in the same `$` family as `$fn`. They expand **before** parse
+and are not valid Klin until `--emit-pp`.
 
 ## What this is not
 
