@@ -65,9 +65,9 @@ building the core from scratch.
 
 | # | Task | Status | Depends on |
 |---|---|---|---|
-| [018](018-generators-yield.md) | Generators / `yield` | 💭 | 004+ |
+| [018](018-generators-yield.md) | ~~Generators / `yield`~~ | ❌ struck | — |
 | [028](028-freertos.md) | FreeRTOS (`klin_freertos` ✅ `@v0.4.0`; blink + objdump vs C ✅) | ✅ | 024, 010, 021, 030 |
-| [029](029-async-event-loop.md) | Event loop / async·await (lib `@v0.4.0` + `flag_wait` ✅; `$event_loop` ✅; async MVP ✅; IDE → [087](087-intellij-plugin.md)) | 🔨 | 018?, 028?, 049? |
+| [029](029-async-event-loop.md) | Event loop / async·await (lib `@v0.4.0` + `flag_wait` ✅; `$event_loop` ✅; async MVP ✅; IDE → [087](087-intellij-plugin.md)) | 🔨 | 028?, 049? |
 | [030](030-isr-decorators.md) | Interrupts via decorators (`@[isr("…")]` MVP ✅) | ✅ | 010 |
 | [031](031-hal-libraries.md) | HAL libraries (Cube / LL) | 💭 | 010, 021 |
 | [034](034-generic-types.md) | Generics in the grammar — not now (D3/`$fn`; maybe sugar later) | 💭 | 026 |
@@ -82,16 +82,16 @@ building the core from scratch.
 | [065](065-project-lockfile.md) | `klin.lock` / checksums (like go.sum) | ✅ | 049 |
 | [066](066-klin-upgrade-outdated.md) | `klin upgrade` / outdated (newer deps) | ✅ | 049 |
 | [067](067-homebrew.md) | Homebrew: `brew install klin` (formula + tap + v0.1.0) | ✅ | — |
-| [050](050-sqlite-wrapper.md) | SQLite wrapper (FFI, low priority) | 💭 | 021 |
-| [070](070-host-orm-sqlite.md) | ORM-like / typed repo over SQLite (host, low priority) | 💭 | 050, 021 |
-| [051](051-json-wrapper.md) | JSON wrapper + `$…` paths (low priority) | 💭 | 021, 026? |
+| [050](050-sqlite-wrapper.md) | SQLite wrapper (FFI) | ❌ not doing | 021 |
+| [070](070-host-orm-sqlite.md) | ~~ORM-like / typed repo over SQLite~~ | ❌ struck | — |
+| [051](051-json-wrapper.md) | JSON wrapper + `$…` paths | ❌ not doing | 021, 026? |
 | [052](052-klinstruct.md) | `klinstruct` — pack/unpack like cstruct (low priority) | 💭 | 007, 020/047 |
 | [053](053-device-board-assets.md) | `$device` + Go-like SVD fetch (`device` in `klin.mod`) | ✅ (MVP; board → 074) | 027, 049 |
 | [054](054-embedded-project-layout.md) | Embedded project look / layout | ✅ | 023, 010 |
 | [056](056-destructuring.md) | Destructuring (`{}` / `[]` / multi-assign; no tuples) | ✅ (A+A′+B+C+D; bare `[]=` skipped) | 005, 007? |
 | [058](058-source-file-split.md) | Split large compiler source files (tech debt) | 💭 | — |
 | [059](059-kstruct-macros.md) | `$kstruct` / `$kstruct_from` macros (richer klinstruct) | 💭 | 026, 052 |
-| [060](060-map-kv.md) | KV map (hash map) — language / stdlib / C | 💭 | 007, 057? |
+| [060](060-map-kv.md) | ~~KV map (hash map)~~ | ❌ struck (hidden resize) | — |
 | [061](061-micropython-machine-api.md) | MicroPython-style `machine` API (PWM, UART, …) | ✅ (+ rp Pio+Dma+UsbCdc `@v0.11.0` / ch32v `@v0.1.0` / gd32v `@v0.2.0`) | 010, 031? |
 | [062](062-targets-esp-rp.md) | MCU targets: ESP32 / RP2040 / RP2350 / STM8 / CH32V / GD32V | 🚧 (RP Pio+Dma+UsbCdc ✅ `@v0.11.0`; ESP C3+S3+STM8+CH32V+GD32V Pin…Adc ✅; **P4 Pin…Adc+Rmt+LP GPIO+regi2c+LP UART** ✅ `@v0.15.0`; RMII ✅ `esp_eth@v0.2.0`) | 010 |
 | [086](086-machine-ch32v.md) | `machine_ch32v` CH32V003 QingKe Pin…Adc | ✅ `@v0.1.0` | 061, 062 |
@@ -149,6 +149,7 @@ building the core from scratch.
 | [122](122-docs-hello-to-board.md) | Path: hello → register → small project (no `issues/`) | ✅ | 116, 117, 118, 119 |
 | [123](123-docs-rtos-lib.md) | Map: FreeRTOS is C + `klin_freertos`, not the language | ✅ | 116, 024, 028 |
 | [124](124-docs-c-asm.md) | Map: C FFI + ASM units / `asm("…")` (not a C/ASM language) | ✅ | 116, 021, 022 |
+| [125](125-drop-host-json-sqlite.md) | Drop JSON / SQLite; strike ORM, `yield`, map (hidden resize) | ✅ | 050, 051, 070, 018, 060 |
 
 ---
 

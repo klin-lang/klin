@@ -118,10 +118,9 @@ integer discriminant). Variants to consider:
 - **string-enum** (TS style) — special case of kv-enum with `str` value
   (see section above).
 
-Relation to [060](060-map-kv.md) (KV map): kvenum is a **static, closed**
-set (known at compile-time), so constant array fits better than hash map;
-map-KV stays for dynamic data. Implementation via `$fn` (monomorphization)
-like the rest.
+Relation to [060](060-map-kv.md): the hash map is ❌ struck (hidden
+resize). Kvenum is the static, closed table — constant array, not a
+map. Implementation via `$fn` if we do it at all.
 
 Status: **under consideration** — as syntax extension of `enum` (per-variant values),
 or as separate construct; and whether at all, since `fn (c: E)

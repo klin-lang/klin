@@ -1,7 +1,11 @@
 # 051 — JSON wrapper in a Klin module (+ `$…` paths)
 
-**Status:** 💭 under consideration (low priority — non-blocking)
+**Status:** ❌ not doing — host app stack, not Klin
+([125](125-drop-host-json-sqlite.md))
 **Depends on:** [021](021-c-libraries.md); nice to have [020](020-klin-libraries.md) / [047](047-directory-modules.md); `$` paths → [026](026-preprocessor.md)
+
+Anyone who wants JSON `@[cimport]`s a C parser. This repo will not
+ship `import json` or `$json_path` as planned work.
 
 ## Context
 
@@ -33,5 +37,5 @@ in the expand beyond what the C lib does.
 ## Out of scope
 
 - native `json` type / dynamic maps in the language
-- ORM / schema codegen from JSON Schema (separate decision)
+- ~~ORM / schema codegen from JSON Schema~~ — [070](070-host-orm-sqlite.md) (❌ struck)
 - priority relative to core / embedded / basic FFI

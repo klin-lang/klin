@@ -1,0 +1,41 @@
+/// Closed KV without a map ([060](../issues/060-map-kv.md)): enum index
+/// (one load) or a sorted `[N]T` + binary search you own. No hidden resize.
+/// Host dynamic strings: `@[cimport]` uthash in *your* program — not here.
+
+enum Slot {
+    A
+    B
+    C
+}
+
+struct Pair {
+    key: i32
+    val: i32
+}
+
+fn lookup(table: [4]Pair, key: i32): i32 {
+    let mut lo = 0
+    let mut hi = 4
+    while lo < hi {
+        let mid = lo + (hi - lo) / 2
+        let k = table[mid].key
+        if k == key {
+            return table[mid].val
+        }
+        if k < key {
+            lo = mid + 1
+        } else {
+            hi = mid
+        }
+    }
+    return -1
+}
+
+fn main() {
+    // Compile-time key: one load (`objdump` ≈ C array index).
+    let codes: [3]i32 = [10, 20, 30]
+    printf("slot=%d\n", codes[cast(i32, Slot.B)])
+    // Runtime key, fixed N: bsearch you own. Capacity is the type.
+    let table: [4]Pair = [Pair{ key: 1, val: 10 }, Pair{ key: 3, val: 30 }, Pair{ key: 5, val: 50 }, Pair{ key: 9, val: 90 }]
+    printf("five=%d miss=%d\n", lookup(table, 5), lookup(table, 4))
+}

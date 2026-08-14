@@ -1,7 +1,7 @@
 # 077 — String substitution / runtime templates (`format` / `template`)
 
 **Status:** 💭 under consideration (low priority — non-blocking)
-**Depends on:** [007](007-pointers-arrays-slices.md) (slice/buffers), [057](057-allocator.md) (heap explicit); contrast [016](016-string-interpolation.md); KV like [060](060-map-kv.md); placement/API like [017](017-collection-methods.md), [012](012-stdlib-io.md)
+**Depends on:** [007](007-pointers-arrays-slices.md) (slice/buffers), [057](057-allocator.md) (heap explicit); contrast [016](016-string-interpolation.md); placement/API like [017](017-collection-methods.md), [012](012-stdlib-io.md). KV map ([060](060-map-kv.md)) is ❌ struck (hidden resize) — templates stay a linear pair list.
 
 ## Idea (from discussion)
 
@@ -45,7 +45,7 @@ with magic heap, only:
 ### B. Dictionary `{key}`
 
 - KV pair list: `[]KV` where `struct KV { key: str; val: str }` (simple,
-  linear search) — not full map from [060](060-map-kv.md).
+  linear search). Hash map ([060](060-map-kv.md)) is ❌ struck.
 - Key not found → decision: error (`!`) or empty/“leave braces”
   (TBD; MVP: error).
 
@@ -76,7 +76,7 @@ fn render_pos_alloc(a: Allocator, tmpl: str, args: []str): !str { /* + defer */ 
 ## Out of scope
 
 - implementation in this issue (roadmap placeholder),
-- full KV map / hash ([060](060-map-kv.md)) — MVP is linear pair list,
+- full KV map / hash ([060](060-map-kv.md) ❌ hidden resize) — linear pair list only,
 - mixed typed arguments (`{0:%.2f}`) as MVP requirement — strings first,
 - format specifiers in braces (`{0:...}`) — rather 016 extension,
 - localization / pluralization / ICU MessageFormat.

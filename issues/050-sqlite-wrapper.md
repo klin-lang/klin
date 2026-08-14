@@ -1,7 +1,11 @@
 # 050 — SQLite wrapper in a Klin module
 
-**Status:** 💭 under consideration (low priority — non-blocking)
+**Status:** ❌ not doing — host app stack, not Klin
+([125](125-drop-host-json-sqlite.md))
 **Depends on:** [021](021-c-libraries.md); nice to have [020](020-klin-libraries.md) / [047](047-directory-modules.md)
+
+Anyone who wants SQLite `@[cimport]`s `sqlite3`. This repo will not
+ship `import sqlite` as planned work.
 
 ## Context
 
@@ -19,5 +23,5 @@ SQLite allocation = explicit C contract, not hidden Klin magic.
 ## Out of scope
 
 - rewriting SQLite in Klin
-- ORM / typed repo / query builder → [070](070-host-orm-sqlite.md) (host, low priority)
+- ~~ORM / typed repo~~ → [070](070-host-orm-sqlite.md) (❌ struck, not “later”)
 - priority relative to language core / embedded LED / basic FFI
