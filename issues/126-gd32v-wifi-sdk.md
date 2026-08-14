@@ -11,7 +11,7 @@
 | Where does the code live? | External: [`klin-lang/gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.3.0` |
 | Engine | **GigaDevice VW55x Wi‑Fi BLE SDK** (`wifi_management` / `wifi_net_ip` / lwIP / OSAL) — not MMIO, **not** ESP-IDF |
 | Relation to `machine_gd32v` | **Separate.** [117](117-machine-gd32v-gd32vw553.md) Pin…Adc twins stay MMIO. Same split as [`esp_wifi`](https://github.com/klin-lang/esp_wifi) vs `machine_esp` ([101](101-esp-wifi-idf.md)). |
-| BLE | Later sibling package (`gd32v_ble`), not this file — same split as [106](106-esp-ble-idf.md) |
+| BLE | Sibling [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [130](130-gd32v-ble-sdk.md) (advertise `@v0.1.0`) — same split as [106](106-esp-ble-idf.md) |
 
 ## Why not `machine_gd32v.Wifi`?
 
@@ -68,7 +68,7 @@ Changelog: `@v0.1.0` STA+DHCP → `@v0.2.0` SoftAP → `@v0.3.0` scan
 
 - Associated-AP RSSI / channel / auth (`sta_rssi` later) / APSTA / roaming / WPS / EAP-TLS  
 - Static IPv4 (`wifi_set_vif_ip`) / `ap_set_ip` / `ap_station_num`  
-- BLE — later `gd32v_ble` (AN152), not this package  
+- BLE — [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [130](130-gd32v-ble-sdk.md) (AN152), not this package  
 - Sockets / HTTP / MQTT  
 - Board pack / `klin init` — [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) [127](127-board-gd32vw553h-eval.md) (no radio API there)  
 - Vendoring `GD32VW55x_WiFi_BLE_SDK`  
