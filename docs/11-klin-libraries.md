@@ -91,23 +91,9 @@ import "github/klin-lang/osa"
 
 `outdated` / `upgrade` → [066](../issues/066-klin-upgrade-outdated.md) ✅.
 
-## Device SVD (`$device`) — issue 053
+## Device SVD (`$device`)
 
-```klin
-$device("github/tinygo-org/stm32-svd/svd/stm32f411.svd", "RCC,GPIOA")
-```
-
-- This is **not** `import` — vendor artifact (SVD), not a Klin module.
-- `klin get …/file.svd@ref` → `$KLIN_CACHE/asset/host/owner/repo/…`,
-  `klin.mod` line `device path ref`, `klin.lock` (commit + sha256 of file).
-- MVP allowlist: `github/tinygo-org/stm32-svd`. Local path still works.
-- Example: [`examples/stm32/device_f411/`](../examples/stm32/device_f411/).
-- Board / CubeMX `.ioc` pinout ([074](../issues/074-board-ioc-klin-mod.md)):
-  `board path ref` in `klin.mod`, `$board("…")`, allowlist
-  `github/klin-lang/boards` and
-  [`nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re) `@v0.1.3`
-  ([096](../issues/096-board-nucleo-f411re.md)). Local `board/*.ioc` is project
-  truth — `get` / `update` never overwrite it.
+Not an `import` — vendor artifact. User page: [device.md](device.md).
 
 ## Out of scope
 

@@ -9,6 +9,7 @@ not recreate it.
 |---|---|
 | What Klin is, why C, who it is for | [../README.md](../README.md) (landing) then [00-idea.md](00-idea.md) |
 | To write a small program | [guide.md](guide.md) |
+| Typed MCU registers (SVD) | [device.md](device.md) |
 | Runnable demos | [../examples/README.md](../examples/README.md) |
 | CLI / install details | [06-cli.md](06-cli.md), [17-homebrew.md](17-homebrew.md), [make.md](make.md) |
 | What to build next | [../issues/sorted.md](../issues/sorted.md) — roadmap, not a manual |
@@ -29,6 +30,7 @@ These are feature write-ups. The tutorial is [guide.md](guide.md).
 | Doc | Topic |
 |---|---|
 | [04-macros.md](04-macros.md) | `$fn` preprocessor (D3) |
+| [device.md](device.md) | `$device` / fluent MMIO from SVD |
 | [07-interpolation.md](07-interpolation.md) | `"$name"` / `${expr}` → `printf` |
 | [12-modules.md](12-modules.md) | `module` / `import` / `pub` |
 | [13-fn-ptr.md](13-fn-ptr.md) | `fn(T…): Ret` (no capture) |
@@ -62,6 +64,7 @@ stdlib imports and use a board Makefile / `klin init`.
 
 | Doc | Topic |
 |---|---|
+| [device.md](device.md) | SVD → `$device` → zero-cost MMIO |
 | [make.md](make.md) | Task, `dart compile exe`, when Make appears |
 | [arduino.md](arduino.md) | Arduino-shaped boards (later track) |
 | [../examples/stm32/](../examples/stm32/) | First freestanding demos (Nucleo / FreeRTOS) |

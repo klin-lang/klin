@@ -73,6 +73,7 @@ already exists.
 STM32 was the **first** freestanding demo (an LED, no libc). It is not
 the only target. Board trees: [`templates/`](templates/),
 [`examples/stm32/`](examples/stm32/), `klin init <board>`.
+Typed registers from SVD: [docs/device.md](docs/device.md).
 
 You get methods, modules, `!T` errors, immutability by default, and
 typed MMIO from SVD — with no runtime and no GC.
