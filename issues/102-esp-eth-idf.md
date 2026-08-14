@@ -116,6 +116,8 @@ fn app() {
 
 ## Usage (static IP)
 
+Same helpers before **either** `w5500_start` or `rmii_start`:
+
 ```klin
 import "github/klin-lang/esp_eth" eth
 
@@ -127,10 +129,10 @@ fn app() {
     eth.ipv4(192, 168, 1, 1),
     eth.ipv4(255, 255, 255, 0)
   )
-  let mut e = eth.rmii_start(
-    31, 52, 51, 1, eth.phy_ip101(),
-    eth.clk_ext_in(), 50, -1,
-    49, 34, 35, 28, 29, 30
+  let mut e = eth.w5500_start(
+    eth.spi2_host(),
+    11, 13, 12, 14,
+    10, 9, 20, 10
   )
   if e != eth.err_ok() {
     return
