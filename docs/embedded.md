@@ -40,6 +40,7 @@ on Nucleo, the SVD). Compile / `make` stay offline after that.
 | `pico2` | RP2350 (Arm) | `arm-none-eabi-gcc` | GPIO25 LED via `machine_rp` (not Hazard3) |
 | `waveshare-rp2350-lcd-096` | RP2350 | `arm-none-eabi-gcc` | LCD backlight via board pack |
 | `waveshare-esp32-s3-pico` | ESP32-S3 | ESP-IDF v5.x | D10 LED via `machine_esp` + IDF |
+| `gd32vw553h-eval` | GD32VW553 | `riscv64-unknown-elf-gcc` | LED1 (PA4) via `machine_gd32v` + board pack |
 
 Unknown id → error. Templates ship **in the Klin install**
 (`templates/`, `$KLIN_TEMPLATES`, or `share/klin/templates` next to
@@ -110,6 +111,16 @@ make flash
 
 USB-C on that board is a CH343 UART. Edit `main.kl`; keep `main/app_main.c`
 unless you are changing the IDF entry.
+
+**GD32VW553H-EVAL** — same `get` + `make emit` recipe with a RISC-V
+freestanding `board/startup.S`. Optional `make elf` needs
+`riscv64-unknown-elf-gcc`. Wi‑Fi is [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi),
+not this scaffold.
+
+```sh
+klin init gd32vw553h-eval my_vw553
+cd my_vw553 && klin get && make emit
+```
 
 ## What you do not do
 

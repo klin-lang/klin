@@ -24,8 +24,8 @@ dart run bin/klin.dart test examples/                 # *_test.kl
 
 **MCU:** walkthrough [docs/embedded.md](../docs/embedded.md) —
 `klin init <board> [dir]`, then `klin get && make`. Boards: Nucleo-F411,
-Pico / Pico2, Waveshare RP2350-LCD, ESP32-S3-Pico. Older in-tree
-sketches: [`stm32/`](stm32/).
+Pico / Pico2, Waveshare RP2350-LCD, ESP32-S3-Pico, GD32VW553H-EVAL. Older
+in-tree sketches: [`stm32/`](stm32/).
 
 Style: [docs/05-fmt.md](../docs/05-fmt.md) (`klin fmt`). Sources with `$…` macros
 are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), not

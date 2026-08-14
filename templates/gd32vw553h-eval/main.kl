@@ -1,0 +1,16 @@
+// GD32VW553H-EVAL LED1 (PA4) blink — scaffold from `klin init gd32vw553h-eval`.
+// Run `klin get` once, then `make emit` / `make elf`.
+import "github/klin-lang/machine_gd32v" machine
+import "github/klin-lang/gd32vw553h_eval" board
+
+@[link("board/startup.S")]
+fn main() {
+    let led = machine.pin_out_vw553(cast(machine.Port, board.led1_port()), board.led1_pin())
+    while true {
+        led.toggle()
+        let mut i: i32 = 0
+        while i < 400000 {
+            i = i + 1
+        }
+    }
+}

@@ -107,11 +107,11 @@ stdlib imports and use a board Makefile / `klin init`.
 
 | Doc | Topic |
 |---|---|
-| [embedded.md](embedded.md) | `klin init` → `get` → `make` (Pico, STM32, ESP, …) |
+| [embedded.md](embedded.md) | `klin init` → `get` → `make` (Pico, STM32, ESP, VW553, …) |
 | [device.md](device.md) | SVD → `$device` → zero-cost MMIO |
 | [make.md](make.md) | Task, `dart compile exe`, when Make appears |
 | [arduino.md](arduino.md) | Arduino-shaped boards (later track) |
 | [../examples/stm32/](../examples/stm32/) | First freestanding demos (Nucleo / FreeRTOS) |
-| [../templates/](../templates/) | `klin init` board trees (STM32, Pico, ESP32, …) |
+| [../templates/](../templates/) | `klin init` board trees (STM32, Pico, ESP32, VW553, …) |
 
 STM32 is the **first** bare-metal proof, not the only target.
