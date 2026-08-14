@@ -3,11 +3,11 @@
 Scaffold from `klin init gd32vw553h-start`. Layout:
 [054](../../issues/054-embedded-project-layout.md) /
 [075](../../issues/075-board-pack-init-host.md). Board pack:
-[129](../../issues/129-board-gd32vw553h-start.md).
+[139](../../issues/139-board-gd32vw553h-start.md).
 
 Freestanding `board/startup.S` + `board/linker.ld` (Nuclei N307). Wi‑Fi is
 a separate package — [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi)
-[126](../../issues/126-gd32v-wifi-sdk.md).
+[137](../../issues/137-gd32v-wifi-sdk.md).
 
 ## Layout
 
@@ -38,6 +38,6 @@ Not EVAL (USART0 PB15/PA8, LEDs PA4/PA5/PA6). START log UART is UART2 PA6/PA7.
 
 ## Links
 
-- Issue [129](../../issues/129-board-gd32vw553h-start.md), [075](../../issues/075-board-pack-init-host.md), [117](../../issues/117-machine-gd32v-gd32vw553.md)
+- Issue [139](../../issues/139-board-gd32vw553h-start.md), [075](../../issues/075-board-pack-init-host.md), [136](../../issues/136-machine-gd32v-gd32vw553.md)
 - Pack: https://github.com/klin-lang/gd32vw553h_start
 - Chip: https://github.com/klin-lang/machine_gd32v

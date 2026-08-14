@@ -1,7 +1,8 @@
-# 117 — `machine_gd32v` GD32VW553 (Pin…Adc twins)
+# 136 — `machine_gd32v` GD32VW553 (Pin…Adc twins)
 
 **Status:** ✅ Pin…Adc [`@v0.8.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.8.0) (Pin [`@v0.3.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.3.0); Pwm+Rc [`@v0.4.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.4.0); Uart [`@v0.5.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.5.0); I2c [`@v0.6.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.6.0); Spi [`@v0.7.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.7.0); Adc [`@v0.8.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.8.0))
-**Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [087](087-machine-gd32v.md)
+**Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [135](135-machine-gd32v.md)
+**Formerly:** `117` (renumbered to resolve duplicate issue numbers).
 
 ## Verdict
 
@@ -10,7 +11,7 @@
 | Change the Klin compiler? | **No** |
 | Where does the code live? | Same package: [`klin-lang/machine_gd32v`](https://github.com/klin-lang/machine_gd32v) |
 | Pattern | Twin factories `*_vw553` — **no** shared `#ifdef` mega-driver |
-| VF103 | Unchanged: `pin_out` / `pwm_out` / `rc_out` / `uart_out` / `i2c_out` / `spi_out` / … ([087](087-machine-gd32v.md)) |
+| VF103 | Unchanged: `pin_out` / `pwm_out` / `rc_out` / `uart_out` / `i2c_out` / `spi_out` / … ([135](135-machine-gd32v.md)) |
 | VW553 | Explicit: `pin_out_vw553` / `pin_in_vw553` [`@v0.3.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.3.0); `pwm_out_vw553` / `rc_out_vw553` [`@v0.4.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.4.0); `uart_out_vw553` [`@v0.5.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.5.0); `i2c_out_vw553` → `I2cVw553` [`@v0.6.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.6.0); `spi_out_vw553` [`@v0.7.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.7.0); `adc_out_vw553` → `AdcVw553` [`@v0.8.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.8.0). |
 
 VW553 MMIO is **not** a copy of VF103. VF103 is Nuclei **N205** with F1-style
@@ -113,9 +114,9 @@ and register pointers differ. I2c is `I2cVw553` and Adc is `AdcVw553`
 
 ## Out of scope (this tag)
 
-- Wi‑Fi — [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [`@v0.4.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.4.0) [126](126-gd32v-wifi-sdk.md) (not this package; not `esp_wifi`)
-- BLE — [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [`@v0.4.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.4.0) [130](130-gd32v-ble-sdk.md) (not this package; not `esp_ble`)
-- Board pack / `klin init` — [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) [`@v0.1.0`](https://github.com/klin-lang/gd32vw553h_eval/releases/tag/v0.1.0) [127](127-board-gd32vw553h-eval.md), [`gd32vw553h_start`](https://github.com/klin-lang/gd32vw553h_start) [`@v0.1.0`](https://github.com/klin-lang/gd32vw553h_start/releases/tag/v0.1.0) [129](129-board-gd32vw553h-start.md) (not this package)
+- Wi‑Fi — [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [`@v0.4.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.4.0) [137](137-gd32v-wifi-sdk.md) (not this package; not `esp_wifi`)
+- BLE — [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [`@v0.4.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.4.0) [140](140-gd32v-ble-sdk.md) (not this package; not `esp_ble`)
+- Board pack / `klin init` — [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) [`@v0.1.0`](https://github.com/klin-lang/gd32vw553h_eval/releases/tag/v0.1.0) [138](138-board-gd32vw553h-eval.md), [`gd32vw553h_start`](https://github.com/klin-lang/gd32vw553h_start) [`@v0.1.0`](https://github.com/klin-lang/gd32vw553h_start/releases/tag/v0.1.0) [139](139-board-gd32vw553h-start.md) (not this package)
 - Full Nuclei / GigaDevice wireless SDK vendoring
 - Combining with CH32V sources
 
@@ -177,5 +178,5 @@ klin get github/klin-lang/machine_gd32v@v0.8.0
   [v0.6.0](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.6.0) (I2c),
   [v0.7.0](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.7.0) (Spi),
   [v0.8.0](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.8.0) (Adc)
-- VF103 MVP: [087](087-machine-gd32v.md)
+- VF103 MVP: [135](135-machine-gd32v.md)
 - Catalog: [061](061-micropython-machine-api.md), targets [062](062-targets-esp-rp.md)
