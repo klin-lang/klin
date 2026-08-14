@@ -253,16 +253,19 @@ The other direction: `@[cexport, codename("klin_add")]` plus
 
 ## 11. What next
 
+You can write host Klin now. Next, still without `issues/`:
+
+1. A register — [device.md](device.md)
+2. A small firmware project — [embedded.md](embedded.md)
+
 | Topic | Where |
 |---|---|
 | `match` / `pick` | [15-match.md](15-match.md), [18-pick.md](18-pick.md) |
 | Enums / `Type.fn` / destructuring | [syntax.md](syntax.md) |
 | Packages / search paths | [11-klin-libraries.md](11-klin-libraries.md), [12-modules.md](12-modules.md) |
 | `$fn` macros | [04-macros.md](04-macros.md) |
-| SVD / `$device` (MCU registers) | [device.md](device.md) |
 | Interpolation | [07-interpolation.md](07-interpolation.md) |
 | Host stdlib | [../stdlib/README.md](../stdlib/README.md) |
-| MCU / `klin init` | [embedded.md](embedded.md) |
 | Why these choices | [00-idea.md](00-idea.md), [01-decisions.md](01-decisions.md) |
 
 Inspect generated C at any time:

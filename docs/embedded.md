@@ -124,6 +124,8 @@ unless you are changing the IDF entry.
 
 ## Next
 
+Path: [guide.md](guide.md) → [device.md](device.md) → here.
+
 | | |
 |---|---|
 | Language (host) | [guide.md](guide.md) |
