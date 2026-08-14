@@ -1,6 +1,6 @@
 name: klin
 description: Klin language compiler targeting C.
-version: 0.1.2
+version: 0.1.3
 repository: https://github.com/klin-lang/klin
 
 environment:
