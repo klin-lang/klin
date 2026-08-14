@@ -26,7 +26,7 @@
 
 - Combining with CH32V sources
 - Full Nuclei SDK vendoring inside Klin
-- GD32VW553 twins — [117](117-machine-gd32v-gd32vw553.md) (same package; Pin+Pwm+Rc+Uart+I2c; Spi… later)  
+- GD32VW553 twins — [117](117-machine-gd32v-gd32vw553.md) (same package; Pin…Adc ✅ `@v0.8.0`)  
 - Wi‑Fi / BLE on VW553 — later sibling packages, not this file
 
 ## Links
