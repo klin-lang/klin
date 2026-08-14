@@ -1,6 +1,6 @@
 # 106 — ESP BLE as a separate IDF package (`esp_ble`)
 
-**Status:** ✅ published `@v0.9.0` (GATT + scan/client + bond + UUID16/128 + multi-svc + passkey + privacy/RPA)  
+**Status:** ✅ published `@v0.10.0` (GATT + client + bond + UUID16/128 + multi-svc + passkey + privacy + Mesh OnOff)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [101](101-esp-wifi-idf.md)
 
 ## Verdict
@@ -8,7 +8,7 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: [`klin-lang/esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.9.0` |
+| Where does the code live? | External: [`klin-lang/esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.10.0` |
 | Engine | **ESP-IDF** v5.x **NimBLE** (`nimble_port` / GAP / GATTS / GATTC / SM store) — not MMIO |
 | Relation to `machine_esp` | **Separate.** Same class as [`esp_wifi`](https://github.com/klin-lang/esp_wifi) ([101](101-esp-wifi-idf.md)) / [`esp_eth`](https://github.com/klin-lang/esp_eth) ([102](102-esp-eth-idf.md)): IDF radio stack, not `machine_*`. |
 | µPython analogy | Outside `machine` — closer to `bluetooth` / BLE peripheral APIs ([061](061-micropython-machine-api.md)). |
@@ -97,13 +97,23 @@ Board pack [100](100-board-waveshare-esp32-s3-pico.md) stays pins/WS2812/buses �
 - `privacy_enabled` / `own_addr_type` / `own_addr(*mut u8)` — query own address  
 - Bonding already distributes IRK (`bond_enable` / `bond_passkey`) for peer resolution  
 - Example: `examples/privacy_s3/`  
-- **Not** included: controller-only privacy knobs beyond host RPA, mesh  
+- **Not** included: controller-only privacy knobs beyond host RPA  
+
+### `@v0.10.0` — NimBLE Mesh node (Gen OnOff)
+
+- `mesh_enable` — after `init`; NimBLE Mesh composition: Config + Health + **Generic OnOff** server  
+- Requires IDF **`CONFIG_BT_NIMBLE_MESH`** (+ PB-ADV / PB-GATT / proxy as in `examples/mesh_s3/sdkconfig.defaults`)  
+- Without that Kconfig → `mesh_enable` returns not-supported  
+- Unprovisioned: starts **PB-ADV + PB-GATT**; OOB display number via `mesh_oob_number`  
+- `mesh_provisioned` / `mesh_primary_addr` / `mesh_onoff` / `mesh_onoff_set` / `mesh_onoff_changed` / `mesh_reset`  
+- Not the same path as `advertise` — mesh owns provisioning bearers  
+- Example: `examples/mesh_s3/`  
+- **Not** included: provisioner role, extra models (Level/vendor), friend/LPN knobs beyond IDF defaults  
 
 Implementation: `@[link("nimble_idf.c")]` + `@[cimport, cheader]`. Smoke: `examples/smoke/`.
 
 ## Out of scope
 
-- BLE mesh  
 - Coexistence policy beyond IDF defaults (Wi‑Fi + BLE together)  
 - Freestanding (no IDF)  
 - USB OTG / camera / Pico LCD shields — still [103](103-later-tracks-ble-usb-camera-lcd.md)
@@ -115,11 +125,12 @@ Implementation: `@[link("nimble_idf.c")]` + `@[cimport, cheader]`. Smoke: `examp
 - UUID table is frozen at `init`; `gatt_*` / `gatt_add_*` before `init` only.  
 - 128-bit UUIDs are explicit 16-byte LE buffers (no hidden allocation).  
 - `privacy_enable` only when radio is idle (not advertising / scanning / connected).  
+- Mesh needs explicit IDF Kconfig; mesh stack buffers are **IDF / NimBLE contracts**.  
 - Passkey is an explicit `i32` PIN; bonding keys are **IDF NVS / ble_store**.  
 - NimBLE host task / controller buffers are **IDF contracts**.  
 - Errors are `i32` (0 = OK).
 
-## Usage (privacy / RPA)
+## Usage (Mesh OnOff node)
 
 ```klin
 import "github/klin-lang/esp_ble" ble
@@ -130,22 +141,26 @@ fn app() {
   if e != ble.err_ok() {
     return
   }
-  e = ble.privacy_enable()
+  e = ble.mesh_enable()
   if e != ble.err_ok() {
     return
   }
-  e = ble.advertise("klin-rpa")
+  while true {
+    if ble.mesh_onoff_changed() {
+      let _o = ble.mesh_onoff()
+    }
+  }
 }
 ```
 
 ```sh
-klin get github/klin-lang/esp_ble@v0.9.0
+klin get github/klin-lang/esp_ble@v0.10.0
 ```
 
 ## Links
 
 - Repo: https://github.com/klin-lang/esp_ble  
-- Tag: [v0.9.0](https://github.com/klin-lang/esp_ble/releases/tag/v0.9.0)  
+- Tag: [v0.10.0](https://github.com/klin-lang/esp_ble/releases/tag/v0.10.0)  
 - Wi‑Fi sibling: [101](101-esp-wifi-idf.md) / [`esp_wifi`](https://github.com/klin-lang/esp_wifi)  
 - Ethernet sibling: [102](102-esp-eth-idf.md) / [`esp_eth`](https://github.com/klin-lang/esp_eth)  
 - Remaining later tracks: [103](103-later-tracks-ble-usb-camera-lcd.md)  
