@@ -35,8 +35,9 @@ One-time copy from bundled `templates/<board>/` (not a network fetch). After
 scaffold: `cd <dir> && klin get && make` (Arm/RP: `arm-none-eabi-gcc`; ESP:
 `make emit` then `idf.py` with `IDF_PATH`). Does **not** overwrite a non-empty
 destination. Discovery (like stdlib): repo `templates/`, `$KLIN_TEMPLATES`, or
-`templates/` / `share/klin/templates` next to the install — see
-[075](../issues/075-board-pack-init-host.md).
+`templates/` / `share/klin/templates` next to the install.
+Walkthrough (Pico, Nucleo, ESP — not STM32-only):
+[embedded.md](embedded.md). Design: [075](../issues/075-board-pack-init-host.md).
 
 ## Language Server (`klin lsp`)
 

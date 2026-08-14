@@ -9,6 +9,7 @@ not recreate it.
 |---|---|
 | What Klin is, why C, who it is for | [../README.md](../README.md) (landing) then [00-idea.md](00-idea.md) |
 | To write a small program | [guide.md](guide.md) |
+| Blink on a board (`klin init`) | [embedded.md](embedded.md) |
 | Runnable demos | [../examples/README.md](../examples/README.md) |
 | CLI / install details | [06-cli.md](06-cli.md), [17-homebrew.md](17-homebrew.md), [make.md](make.md) |
 | What to build next | [../issues/sorted.md](../issues/sorted.md) — roadmap, not a manual |
@@ -62,6 +63,7 @@ stdlib imports and use a board Makefile / `klin init`.
 
 | Doc | Topic |
 |---|---|
+| [embedded.md](embedded.md) | `klin init` → `get` → `make` (Pico, STM32, ESP, …) |
 | [make.md](make.md) | Task, `dart compile exe`, when Make appears |
 | [arduino.md](arduino.md) | Arduino-shaped boards (later track) |
 | [../examples/stm32/](../examples/stm32/) | First freestanding demos (Nucleo / FreeRTOS) |

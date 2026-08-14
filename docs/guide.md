@@ -147,7 +147,7 @@ The other direction: `@[cexport, codename("klin_add")]` plus
 | `$fn` macros | [04-macros.md](04-macros.md) |
 | Interpolation | [07-interpolation.md](07-interpolation.md) |
 | Host stdlib | [../stdlib/README.md](../stdlib/README.md) |
-| MCU / `klin init` | [../examples/README.md](../examples/README.md), [../templates/](../templates/) |
+| MCU / `klin init` | [embedded.md](embedded.md) |
 | Why these choices | [00-idea.md](00-idea.md), [01-decisions.md](01-decisions.md) |
 
 Inspect generated C at any time:

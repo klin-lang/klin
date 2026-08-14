@@ -140,6 +140,7 @@ building the core from scratch.
 | [094](094-lsp-semantic-tokens.md) | LSP semantic tokens (AST/checker coloring) | ✅ full MVP (range/delta 💭) | 086 |
 | [115](115-english-leftover-pl.md) | Leftover Polish after 025 / 082 (Taskfile, gitignore, diagnostics) | ✅ | 025, 082 |
 | [116](116-docs-reorg.md) | Docs map: landing README, idea, short guide (not STM32-only) | ✅ | 036, 082, 023 |
+| [118](118-docs-embedded.md) | User doc: `klin init` walkthrough (not STM32-only) | ✅ | 116, 075, 054 |
 
 ---
 
