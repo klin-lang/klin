@@ -1,6 +1,6 @@
 # 104 — Later tracks: ESP network (`esp_wifi` / `esp_eth` beyond MVP)
 
-**Status:** 🔨 W1–W3 Wi‑Fi ✅; N2 sockets ✅; N3 HTTP/TLS ✅; **N1 dual** ✅ [`esp_netif_dual`](https://github.com/klin-lang/esp_netif_dual) `@v0.1.0`; ETH backlog  
+**Status:** 🔨 W1–W3 Wi‑Fi ✅; N2 sockets ✅; N3 HTTP/TLS ✅; **N1 dual** ✅ [`esp_netif_dual`](https://github.com/klin-lang/esp_netif_dual) `@v0.1.0`; **E1 RMII** ✅ [`esp_eth`](https://github.com/klin-lang/esp_eth) `@v0.2.0`; ETH E2+ backlog  
 **Depends on:** [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md), [062](062-targets-esp-rp.md)
 
 ## Verdict
@@ -17,6 +17,7 @@ Sibling (non-network): [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP 
 |---|---|
 | Wi‑Fi STA (IDF; DHCP default) | [`esp_wifi`](https://github.com/klin-lang/esp_wifi) → [101](101-esp-wifi-idf.md) |
 | ETH W5500 SPI (IDF; DHCP default) | [`esp_eth`](https://github.com/klin-lang/esp_eth) → [102](102-esp-eth-idf.md) |
+| **E1 RMII EMAC** | [`esp_eth`](https://github.com/klin-lang/esp_eth) `@v0.2.0` — `rmii_start` (P4 first; LAN87xx / IP101; pins explicit) |
 | **W1 SoftAP** | [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.2.0` — `ap_init` / `ap_start(ssid,pass,channel)` / `ap_wait_started` / `ap_set_ip` / `ap_station_num`; SoftAP-only (no APSTA this tag) |
 | **W2 Scan** | [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.3.0` — `scan_start` / `scan_count` / `scan_ssid(caller buf)` / rssi/channel/authmode; max 16; needs `sta_init` |
 | **W3 RSSI / link** | [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.4.0` — `sta_rssi` / `sta_channel` / `sta_authmode` / `sta_ap_ssid` / `sta_log_link` after assoc |
@@ -32,13 +33,13 @@ Sibling (non-network): [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP 
 | W2 | **Scan** (SSID list) | `esp_wifi` | ✅ `@v0.3.0` — caller buffer for SSID; fixed C table max 16 |
 | W3 | **RSSI / link stats** | `esp_wifi` | ✅ `@v0.4.0` — thin `esp_wifi_sta_get_ap_info` after assoc |
 
-Wi‑Fi W1–W3 + N1 dual + N2 sockets + N3 HTTP/TLS done. **Next**: ETH **E1/E2** (hardware); IoT → [105](105-later-tracks-iot.md).
+Wi‑Fi W1–W3 + N1 dual + N2 sockets + N3 HTTP/TLS + ETH E1 RMII done. **Next**: ETH **E2** (other SPI chips); IoT → [105](105-later-tracks-iot.md).
 
 ## Queue — Ethernet (`esp_eth`, same package)
 
 | # | Track | Likely home | Notes |
 |---|---|---|---|
-| E1 | **RMII internal EMAC** | `esp_eth` | SoCs with on-chip EMAC: classic **ESP32**; prefer **ESP32-P4** (Pin…Adc+Rmt+LP GPIO+regi2c+LP UART ✅ `machine_esp@v0.15.0` [114](114-machine-esp-esp32-p4.md); RMII still this `esp_eth` track). PHY e.g. LAN8720 / IP101; pins / PHY args explicit. |
+| E1 | **RMII internal EMAC** | `esp_eth` | ✅ `@v0.2.0` — `rmii_start`; **ESP32-P4** first (`examples/rmii_p4/`); classic ESP32 same API (fixed pads). PHY LAN87xx / IP101; pins / PHY / clock explicit. |
 | E2 | **Other SPI MAC+PHY** | `esp_eth` | **DM9051**, **KSZ8851SNL** (IDF-native); same pattern as `w5500_start`. |
 | E3 | **ENC28J60** | `esp_eth` (low priority) | IDF-discouraged for new designs; only if hardware on the desk. |
 | E4 | **CH390 / esp-eth-drivers** | later | Outside core IDF; optional after E2. |

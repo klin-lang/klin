@@ -52,7 +52,7 @@ Dual RISC-V vs C3 RISC-V / S3 Xtensa is handled by **ESP-IDF**, not Klin.
 
 - eFuse / curve-fitting / IDF `adc_cali_*`  
 - LP GPIO hold / wakeup / LP I2C  
-- RMII Ethernet — [`esp_eth`](https://github.com/klin-lang/esp_eth) [104](104-later-tracks-esp-network.md) **E1** (P4 preferred first RMII host; does not require more `machine_esp` P4 APIs)  
+- RMII Ethernet — ✅ [`esp_eth`](https://github.com/klin-lang/esp_eth) [`@v0.2.0`](https://github.com/klin-lang/esp_eth/releases/tag/v0.2.0) [102](102-esp-eth-idf.md) / [104](104-later-tracks-esp-network.md) **E1** (not `machine_esp`; no extra P4 MMIO)  
 - On-die Wi‑Fi / BLE — **none** on P4 (companion / other host; not `esp_wifi` on P4 alone)  
 - Freestanding (no IDF)  
 - Board pack / `klin init` for a specific P4 module  
@@ -97,4 +97,4 @@ klin get github/klin-lang/machine_esp@v0.15.0
 - Tags: [v0.8.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.8.0), [v0.9.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.9.0), [v0.10.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.10.0), [v0.11.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.11.0), [v0.12.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.12.0), [v0.13.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.13.0), [v0.14.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.14.0), [v0.15.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.15.0)  
 - Catalog: [061](061-micropython-machine-api.md), targets [062](062-targets-esp-rp.md)  
 - S3 twin (same package): [099](099-machine-esp-esp32-s3.md)  
-- RMII later: [102](102-esp-eth-idf.md) / [104](104-later-tracks-esp-network.md)
+- RMII ETH: [102](102-esp-eth-idf.md) / [`esp_eth@v0.2.0`](https://github.com/klin-lang/esp_eth/releases/tag/v0.2.0)

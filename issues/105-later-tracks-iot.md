@@ -11,7 +11,7 @@ This is a **maybe** queue: ship only when there is a concrete device + protocol 
 Do **not** fold MQTT / cloud SDKs into `machine_*` or into the current STA/W5500 tags.  
 Sockets ✅ [111](111-esp-sockets-idf.md); HTTP/TLS ✅ [112](112-esp-http-idf.md). IoT tracks (MQTT/OTA) may start.
 
-Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP done; later tags), [106](106-esp-ble-idf.md) (BLE), [108](108-esp-usb-idf.md) (USB OTG), [109](109-esp-camera-idf.md) (camera), [110](110-board-waveshare-pico-lcd-114.md) (Pico LCD), [104](104-later-tracks-esp-network.md) (Wi‑Fi W1–W3 ✅; dual ✅; sockets ✅; HTTP/TLS ✅; RMII…).
+Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP done; later tags), [106](106-esp-ble-idf.md) (BLE), [108](108-esp-usb-idf.md) (USB OTG), [109](109-esp-camera-idf.md) (camera), [110](110-board-waveshare-pico-lcd-114.md) (Pico LCD), [104](104-later-tracks-esp-network.md) (Wi‑Fi W1–W3 ✅; dual ✅; sockets ✅; HTTP/TLS ✅; RMII ✅).
 
 ## Prerequisites (not this issue)
 
