@@ -96,7 +96,7 @@ building the core from scratch.
 | [062](062-targets-esp-rp.md) | MCU targets: ESP32 / RP2040 / RP2350 / STM8 / CH32V / GD32V | 🚧 (RP Pio+Dma+UsbCdc ✅ `@v0.11.0`; ESP C3+S3+STM8+CH32V+GD32V Pin…Adc ✅; **P4 Pin…Adc+Rmt+LP GPIO+regi2c+LP UART** ✅ `@v0.15.0`; RMII ✅ `esp_eth@v0.2.0`) | 010 |
 | [086](086-machine-ch32v.md) | `machine_ch32v` CH32V003 QingKe Pin…Adc | ✅ `@v0.1.0` | 061, 062 |
 | [087](087-machine-gd32v.md) | `machine_gd32v` GD32VF103 Nuclei Pin…Adc | ✅ `@v0.2.0` | 061, 086 |
-| [117](117-machine-gd32v-gd32vw553.md) | `machine_gd32v` GD32VW553 Pin+Pwm+Rc+Uart twins (`*_vw553`) | 🔨 Pin+Pwm+Rc+Uart ✅ `@v0.5.0` | 061, 062, 087 |
+| [117](117-machine-gd32v-gd32vw553.md) | `machine_gd32v` GD32VW553 Pin+Pwm+Rc+Uart+I2c+Spi twins (`*_vw553`) | 🔨 Pin+Pwm+Rc+Uart+I2c+Spi ✅ `@v0.7.0` | 061, 062, 087 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
 | [098](098-board-adafruit-rp2040-can-feather.md) | Board pack Adafruit RP2040 CAN Feather (MCP25625) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/adafruit_rp2040_can_feather)) | 061, 062, 075 |
