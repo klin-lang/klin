@@ -1,0 +1,17 @@
+// file header
+module demo
+import io // host
+// A point
+struct Point {
+x:i32 // horiz
+y:i32
+// last field
+}
+enum Slot { A, B=2 // skip
+}
+fn   main(){
+let x=1 // one
+// before puts
+puts("ok")
+}
+// footer

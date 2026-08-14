@@ -1879,6 +1879,21 @@ fn main() {}
     expect(expanded, isNot(contains(r'$event_loop')));
   });
 
+  test('klin fmt: preserves // comments (issue 128)', () {
+    final ugly = File('test/fmt_comments.kl').readAsStringSync();
+    final expected = File('test/fmt_comments.fmt.kl').readAsStringSync();
+    final once = formatSource(ugly);
+    expect(once, expected);
+    expect(formatSource(once), once);
+
+    final lexer = Lexer('fn main() {\n    let x = 1 // trail\n}\n');
+    final tokens = lexer.tokenize();
+    expect(tokens.any((t) => t.lexeme.contains('//')), isFalse);
+    expect(lexer.comments, hasLength(1));
+    expect(lexer.comments.single.trailing, isTrue);
+    expect(lexer.comments.single.text, '// trail');
+  });
+
   test('klin fmt: ugly source matches golden and is idempotent (issue 033)',
       () async {
     final ugly = await File('test/fmt_ugly.kl').readAsString();
