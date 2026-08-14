@@ -13,39 +13,32 @@
 
 ## Install (recommended)
 
-Requires [Dart tap](https://github.com/dart-lang/homebrew-dart) to build from source.
+**Stable** downloads the prebuilt binary from the GitHub Release
+(`klin-macos-*` / `klin-linux-*`). **No Dart** and no `dart-lang/dart` tap.
 
-Homebrew **6+** [tap trust](https://docs.brew.sh/Tap-Trust): third-party taps
-are not loaded until you trust a formula (or the whole tap). Prefer
-`brew trust --formula …` over `brew trust <tap>`. Klin’s build dep is
-`dart-lang/dart/dart` — without trusting it, `brew install` fails with
-“Refusing to load formula … from untrusted tap”.
-
-Short form — Homebrew adds the Klin tap automatically:
+Short form — Homebrew adds the tap automatically and trusts that formula:
 
 ```sh
-brew tap dart-lang/dart
-brew trust --formula dart-lang/dart/dart
 brew install klin-lang/klin/klin
 klin --version
 ```
 
-Equivalent explicit taps (short name `klin` also needs trust):
+Equivalent explicit taps (Homebrew 6+ [tap trust](https://docs.brew.sh/Tap-Trust)
+if the short name is refused):
 
 ```sh
-brew tap dart-lang/dart
-brew trust --formula dart-lang/dart/dart
 brew tap klin-lang/klin
 brew trust --formula klin-lang/klin/klin
 brew install klin
 ```
 
-HEAD (`main`):
+HEAD (`main`) still compiles from source — needs
+[Dart tap](https://github.com/dart-lang/homebrew-dart):
 
 ```sh
+brew tap dart-lang/dart
+brew trust --formula dart-lang/dart/dart
 brew install --HEAD klin-lang/klin/klin
-# or, after `brew tap klin-lang/klin`:
-brew install --HEAD klin
 ```
 
 Upgrade:
@@ -72,29 +65,27 @@ Each asset has `.sha256`. Homebrew covers macOS/Linux; Windows for now via
 ## Releasing a new stable formula
 
 1. Push tag `vX.Y.Z` on `klin` → `release` workflow publishes binaries
-2. Compute source sha:
-
-```sh
-curl -sL \
-  "https://github.com/klin-lang/klin/archive/refs/tags/vX.Y.Z.tar.gz" \
-  | shasum -a 256
-```
-
-3. Update `url` / `sha256` / `version` in **both**:
+2. Copy each platform `.sha256` from the Release into **both** formulas
+   (`on_macos` / `on_linux` `url` + `sha256` + `version`):
    - [`Formula/klin.rb`](../Formula/klin.rb) (this repo)
    - [`klin-lang/homebrew-klin`](https://github.com/klin-lang/homebrew-klin) `Formula/klin.rb`
+
+```sh
+# example
+curl -sL \
+  "https://github.com/klin-lang/klin/releases/download/vX.Y.Z/klin-macos-arm64.sha256"
+```
 
 ## Install from clone (no tap)
 
 ```sh
-brew tap dart-lang/dart
-brew install --formula Formula/klin.rb          # stable (tag in formula)
-brew install --HEAD --formula Formula/klin.rb   # main
+brew install --formula Formula/klin.rb          # stable (Release tarball)
+brew install --HEAD --formula Formula/klin.rb   # main (needs Dart tap)
 ```
 
 ## Install layout
 
-- `bin/klin` — AOT (`dart compile exe`)
+- `bin/klin` — AOT binary (Release tarball; HEAD uses `dart compile exe`)
 - `share/klin/stdlib/` — stdlib (`pkgshare`); compiler also looks for `stdlib/`
   next to binary ([`lib/project.dart`](../lib/project.dart))
 - `share/klin/templates/` — MCU scaffolds for `klin init` (`pkgshare`); same

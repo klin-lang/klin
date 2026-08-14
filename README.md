@@ -42,20 +42,18 @@ Host `cc` flags: `-g` / `--debug`, `-O0`…`-O3` / `-Os` / `-Oz` / `--opt LEVEL`
 
 ### Homebrew
 
-Tap: [`klin-lang/homebrew-klin`](https://github.com/klin-lang/homebrew-klin)
-(needs the [Dart tap](https://github.com/dart-lang/homebrew-dart) to build).
-
-Short form (Homebrew auto-taps `klin-lang/klin`):
+Tap: [`klin-lang/homebrew-klin`](https://github.com/klin-lang/homebrew-klin).
+Stable installs the **prebuilt** GitHub Release (no Dart). `--HEAD` still
+builds from `main` and needs the [Dart tap](https://github.com/dart-lang/homebrew-dart).
 
 ```sh
-brew tap dart-lang/dart
-brew trust --formula dart-lang/dart/dart   # Homebrew 6+ tap trust
 brew install klin-lang/klin/klin
 klin --version
 ```
 
-Or step by step: `brew tap klin-lang/klin`, `brew trust --formula klin-lang/klin/klin`, then `brew install klin`.
-Latest `main`: `brew install --HEAD klin-lang/klin/klin` (or `--HEAD klin` after tap).
+Or: `brew tap klin-lang/klin` then `brew install klin`
+(Homebrew 6+: `brew trust --formula klin-lang/klin/klin` if the short name is refused).
+Latest `main`: `brew install --HEAD klin-lang/klin/klin`.
 Upgrade: `brew upgrade klin`.
 
 Formula source of truth in this repo: [`Formula/klin.rb`](Formula/klin.rb)
