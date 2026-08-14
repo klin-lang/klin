@@ -5,16 +5,22 @@
 
 A growing map (`m[k] = v` past capacity) reallocates: new buffer,
 copy, free. That cost is not in the assignment. Same sin in the
-grammar (`map[K]V`) and in a “honest” `$fn` stdlib that grows.
-Klin will not ship either.
+grammar (`map[K]V`) and in a `$fn` stdlib that grows. Klin will
+not ship either.
 
-Do not reopen as “small map” or “stdlib with visible Allocator grow.”
-A grow is still a hidden branch + copy unless the caller writes the
-new buffer themselves.
+Do not reopen as “small map”, `stdlib/map`, or a `klin-lang/uthash`
+wrapper. That is 050/060 through the back door.
 
-Fixed layout stays ordinary Klin: `obj.field`, `table[Enum.x]`,
-kv-enum ([072](072-enums.md)). Runtime lookup is the caller’s C
-(`@[cimport]` uthash) or a linear/`bsearch` they own.
+## Instead (do this)
+
+| Situation | Do | Cost |
+|---|---|---|
+| Firmware / closed set, keys known at compile time | `obj.field` or `table[Enum.x]` | one load |
+| Closed set, key at runtime (id, code) | sorted `[N]T` + binary search you own | `O(log n)`, capacity = `N` |
+| Host, dynamic strings, many keys | `@[cimport]` **uthash** (or khash) **in that program** | C `malloc` = C contract |
+
+Example: [`examples/sorted_lookup.kl`](../examples/sorted_lookup.kl)
+(enum index + owned bsearch). No uthash in this repo.
 
 ## What “read, don’t search” was
 
