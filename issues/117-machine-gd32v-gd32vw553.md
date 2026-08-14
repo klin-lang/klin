@@ -113,7 +113,8 @@ and register pointers differ. I2c is `I2cVw553` and Adc is `AdcVw553`
 
 ## Out of scope (this tag)
 
-- Wi‑Fi / BLE (new packages, not `machine_gd32v`; not `esp_wifi`)
+- Wi‑Fi — [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [`@v0.1.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0) [126](126-gd32v-wifi-sdk.md) (not this package; not `esp_wifi`)
+- BLE (later sibling, not `machine_gd32v`)
 - Board pack / `klin init` for a VW553 module
 - Full Nuclei / GigaDevice wireless SDK vendoring
 - Combining with CH32V sources

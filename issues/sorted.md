@@ -97,6 +97,7 @@ building the core from scratch.
 | [086](086-machine-ch32v.md) | `machine_ch32v` CH32V003 QingKe Pin…Adc | ✅ `@v0.1.0` | 061, 062 |
 | [087](087-machine-gd32v.md) | `machine_gd32v` GD32VF103 Nuclei Pin…Adc | ✅ `@v0.2.0` | 061, 086 |
 | [117](117-machine-gd32v-gd32vw553.md) | `machine_gd32v` GD32VW553 Pin…Adc twins (`*_vw553`) | ✅ `@v0.8.0` | 061, 062, 087 |
+| [126](126-gd32v-wifi-sdk.md) | `gd32v_wifi` GD32VW553 STA (GigaDevice SDK, not `machine_*`) | 🔨 STA `@v0.1.0` | 021, 024, 049, 061, 062, 117 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
 | [098](098-board-adafruit-rp2040-can-feather.md) | Board pack Adafruit RP2040 CAN Feather (MCP25625) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/adafruit_rp2040_can_feather)) | 061, 062, 075 |
