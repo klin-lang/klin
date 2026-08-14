@@ -905,7 +905,9 @@ final class GroupExpr extends Expr {
   GroupExpr(this.inner, this.pos);
 }
 
-/// `error(code)`: constructs the error branch of the current `!T`.
+/// `error(code)`: constructs the error branch of a `!T`.
+/// In a function returning `!T`, that is the return type. Elsewhere
+/// (issue 132) a `match` / typed `!T` context supplies the ok type.
 final class ErrorExpr extends Expr {
   final Expr code;
   final SourcePos pos;

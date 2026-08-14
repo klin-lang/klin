@@ -1,6 +1,6 @@
 # 132 — `match { … else { error(n) } } or { … }`
 
-**Status:** 💭 planned (before 1.0; not after the `.kl` freeze)
+**Status:** ✅ done
 **Depends on:** [009](009-errors.md) (D2), [014](014-match.md)
 
 Filed as 130; renumbered because `main` already has
@@ -23,20 +23,14 @@ place you write `else { error(1) }`. Same shape for an integer `match`.
 
 ## What
 
-Today `error(n)` is only legal in a function that returns `!T` (it
-builds that function’s error return). `match` as an expression must be
-the entire `let` / `=` RHS, so `match { } or { }` is rejected. Success
-may be local (`let n = match …`); failure of the same thought must
-leave to a `fn`.
+`error(n)` is a `!T` **value** (D2), not only a `return` from
+`fn …(): !T`:
 
-The real change is D2, not a `match`-only hack:
-
-1. `error(n)` is a `!T` **value** (ok-type from context: other arms or
-   an annotation). Still `error(1)` — an `i32` code. No bare `error`.
-2. `match` arms: all `T` → result `T`. Any `error(n)` / `!T` → result
-   `!T` (success arms wrap like `return "red"` in `fn (): !str`).
-3. `or` unwraps any `!T` expression, including such a `match`, when
-   the `or` is the `let` / `=` root.
+1. In a function returning `!T`, `error(n)` still builds that return type.
+2. In a `match` expression, success arms supply the ok type; any
+   `error(n)` / `!T` arm makes the result `!T`.
+3. A root `or { … }` unwraps such a `match` (`let` / `=` only — same
+   rule as bare `match`).
 
 ```klin
 let s = match c {
@@ -62,12 +56,19 @@ fn color_name(c: Color): !str {
 let s = color_name(c) or { "??" }
 ```
 
-No new grammar. Parser already accepts `OrExpr(MatchExpr, …)` (`or`
-binds loosest). Checker + emit.
+No new grammar. Parser already accepted `OrExpr(MatchExpr, …)`.
+Emission stays a tagged struct + `if (is_err)`.
 
-Emission stays a tagged struct + `if (is_err)` — the same C you would
-write in `main`. A helper that exists only so `error()` can return is
-an extra C function the programmer did not ask for.
+## Done
+
+- [x] `error(n)` as `!T` in expression position (incl. `main` via `match`
+  / annotated `let x: !T = error(n)`)
+- [x] `match` unifies `T` + `error(n)` → `!T`
+- [x] `let x = match { … } or { … }` when the `match` is `!T`
+- [x] Existing `fn …(): !T` + `return error(n)` unchanged
+- [x] Golden [`test/match_else_or.kl`](../test/match_else_or.kl) + checker
+  errors
+- [x] Docs: D2, [15-match](../docs/15-match.md), guide §5, [language](../docs/language.md)
 
 ## Out of scope
 
@@ -77,18 +78,3 @@ an extra C function the programmer did not ask for.
 - `match` in call arguments / `pick` / arithmetic
 - Algebraic `Ok` / `Err` patterns
 - Changing integer `match` exhaustiveness
-
-## When
-
-Next language step after [129](129-enum-match-exhaustive.md), **before
-1.0**. After the `.kl` freeze, `error(n)` would change meaning in a
-stable language (or the function tax stays forever).
-
-## Criteria (when work starts)
-
-- [ ] `error(n)` as `!T` in expression position (incl. `main`)
-- [ ] `match` unifies `T` + `error(n)` → `!T`
-- [ ] `let x = match { … } or { … }` when the `match` is `!T`
-- [ ] Existing `fn …(): !T` + `return error(n)` unchanged
-- [ ] Golden + checker errors (`error` without a code, `T`/`!U` mismatch)
-- [ ] Docs: D2, [15-match](../docs/15-match.md), guide §5

@@ -32,4 +32,4 @@ No new grammar. Emission is unchanged (`if` / `else if` chain).
 - Dead-arm warnings (duplicate `Color.Red`)
 - Exhaustiveness on integers
 - Algebraic / payload enums
-- `match { } or { }` / `error(n)` as a value — [132](132-match-else-or.md)
+- `match { } or { }` / `error(n)` as a value — [132](132-match-else-or.md) ✅

@@ -1044,6 +1044,51 @@ fn main() {
     expect(result.stdout, await File('test/enum_match_exh.out').readAsString());
   });
 
+  test('golden: match else { error(n) } or { } (issue 132)', () async {
+    final result = await _compileAndRun('test/match_else_or.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/match_else_or.out').readAsString());
+
+    final source = File('test/match_else_or.kl').readAsStringSync();
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'test/match_else_or.kl');
+    expect(c, contains('klin_res_str'));
+    expect(c, contains('.is_err = true'));
+    expect(c, contains('.is_err = false'));
+  });
+
+  test('error: bare error(n) without !T context (issue 132)', () {
+    const source = 'fn main() { let x = error(1) }';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(
+        predicate((e) =>
+            e is CheckError && e.toString().contains('needs a `!T` context')),
+      ),
+    );
+  });
+
+  test('error: match with only error arms cannot infer !T (issue 132)', () {
+    const source = '''
+fn main() {
+    let x = match 1 {
+        else { error(1) }
+    } or { 0 }
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(
+        predicate((e) =>
+            e is CheckError &&
+            e.toString().contains('at least one success arm')),
+      ),
+    );
+  });
+
   test('golden: enum as array index (issue 126)', () async {
     final result = await _compileAndRun('test/enum_index.kl', tmp);
     expect(result.exitCode, 0, reason: result.stderr);

@@ -2,7 +2,8 @@
 
 Issue: [014](../issues/014-match.md) (MVP), [084](../issues/084-match-when-rel.md)
 (`when` guards + relational patterns),
-[129](../issues/129-enum-match-exhaustive.md) (exhaustive enum `match`).
+[129](../issues/129-enum-match-exhaustive.md) (exhaustive enum `match`),
+[132](../issues/132-match-else-or.md) (`else { error(n) }` + `or`).
 
 ## Syntax
 
@@ -79,6 +80,23 @@ pattern when <bool expr> { … }
 - Expression type: common type of arms (unification like array literals);
   `match` counts as returning on all paths when every arm returns and
   the arms cover the subject (`else`, or every enum variant).
+- **`error(n)` in an arm** makes the expression `!T` (ok type from the
+  success arms). A root `or { … }` may unwrap it:
+
+```
+let s = match c {
+    Color.Red { "red" }
+    Color.Green { "green" }
+    Color.Blue { "blue" }
+    else { error(1) }
+} or {
+    printf("bad: %d\n", err)
+    "??"
+}
+```
+
+  A named `fn …(): !T` with `return error(n)` stays valid — both forms
+  ([132](../issues/132-match-else-or.md)).
 
 ## Emission
 
@@ -131,4 +149,5 @@ overarching principle satisfied.
 Example: [`examples/match.kl`](../examples/match.kl),
 [`examples/enums.kl`](../examples/enums.kl).
 Tests: `test/match_stmt.kl`, `test/match_expr.kl`, `test/match_when.kl`,
-`test/match_rel.kl`, `test/fmt_match.kl`, `test/enum_match_exh.kl`.
+`test/match_rel.kl`, `test/fmt_match.kl`, `test/enum_match_exh.kl`,
+`test/match_else_or.kl`.

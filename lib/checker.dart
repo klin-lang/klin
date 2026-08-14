@@ -2476,16 +2476,16 @@ final class Checker {
           }
           return _checkAwait(expr);
         }(),
-      ErrorExpr(:final code, :final pos) => () {
-          final current = _currentReturn;
-          if (current is! ResultType) {
-            throw CheckError(
-                '`error(...)` requires a function returning `!T`', pos);
-          }
+      ErrorExpr(:final code) => () {
           final codeType = _inferExpr(code);
           _expectAssignable(const PrimType(PrimKind.i32), codeType, code.pos);
           _materialize(code, const PrimType(PrimKind.i32));
-          return current;
+          // In a `!T` function, `error(n)` still builds that return type.
+          if (_currentReturn is ResultType) {
+            return _currentReturn as ResultType;
+          }
+          // Otherwise a bare error — match (or a typed `!T` let) fills the ok.
+          return const BareErrorType();
         }(),
       PropagateExpr(:final result, :final pos) => () {
           final resultType = _inferExpr(result);
@@ -2842,7 +2842,10 @@ final class Checker {
         _materialize(right, type);
       case GroupExpr(:final inner):
         _materialize(inner, type);
-      case PropagateExpr() || OrExpr() || ErrorExpr() || AwaitExpr():
+      case PropagateExpr() || OrExpr() || AwaitExpr():
+        break;
+      case ErrorExpr():
+        // `error(n)` only materializes when the outer type is `!T`.
         break;
       case IntLit() ||
             FloatLit() ||
@@ -2865,8 +2868,19 @@ final class Checker {
           _materialize(element, type.elem);
         }
       case MatchExpr(:final arms):
-        for (final arm in arms) {
-          _materialize(arm.body, type);
+        if (type is ResultType) {
+          for (final arm in arms) {
+            final body = _unwrapGroups(arm.body);
+            if (body is ErrorExpr || arm.body.resolvedType is ResultType) {
+              _materialize(arm.body, type);
+            } else {
+              _materialize(arm.body, type.ok);
+            }
+          }
+        } else {
+          for (final arm in arms) {
+            _materialize(arm.body, type);
+          }
         }
       case PickExpr(:final thenExpr, :final elseExpr):
         _materialize(thenExpr, type);
@@ -2970,10 +2984,14 @@ final class Checker {
   }
 
   /// Infers a `let` initializer / assignment RHS. `match` is allowed only when
-  /// it *is* that value (optionally wrapped in groups), not nested inside
-  /// arithmetic, call arguments, etc.
+  /// it *is* that value (optionally under a root `or { }`, or wrapped in
+  /// groups), not nested inside arithmetic, call arguments, etc.
   KlinType _inferLetOrAssignValue(Expr value) {
-    if (_unwrapGroups(value) is MatchExpr) {
+    final root = _unwrapGroups(value);
+    if (root is MatchExpr) {
+      return _withMatchExprAllowed(() => _inferExpr(value));
+    }
+    if (root is OrExpr && _unwrapGroups(root.result) is MatchExpr) {
       return _withMatchExprAllowed(() => _inferExpr(value));
     }
     return _inferExpr(value);
@@ -3151,11 +3169,11 @@ final class Checker {
     final subjectType = subject.resolvedType!;
     _checkMatchArmsOrder(arms.map((a) => a.pattern).toList());
 
-    KlinType? resultType;
     // Arm bodies are ordinary expressions — not a fresh let/assign root —
     // so nested `match` expressions stay forbidden here.
     final savedAllow = _allowMatchExpr;
     _allowMatchExpr = false;
+    final bodyTypes = <KlinType>[];
     try {
       for (final arm in arms) {
         if (arm.pattern is! ElsePattern) {
@@ -3174,15 +3192,50 @@ final class Checker {
         isExpr: true,
       );
       for (final arm in arms) {
-        final bodyType = _inferExpr(arm.body);
-        resultType = resultType == null
-            ? bodyType
-            : _unifyNumeric(resultType, bodyType, arm.body.pos);
+        bodyTypes.add(_inferExpr(arm.body));
       }
     } finally {
       _allowMatchExpr = savedAllow;
     }
 
+    final needsResult = bodyTypes.any(
+      (t) => t is BareErrorType || t is ResultType,
+    );
+    if (needsResult) {
+      KlinType? ok;
+      for (var i = 0; i < bodyTypes.length; i++) {
+        final t = bodyTypes[i];
+        if (t is BareErrorType) continue;
+        final piece = t is ResultType ? t.ok : t;
+        ok = ok == null
+            ? piece
+            : _unifyNumeric(ok, piece, arms[i].body.pos);
+      }
+      if (ok == null) {
+        throw CheckError(
+          '`error(...)` in `match` needs at least one success arm to infer `!T`',
+          pos,
+        );
+      }
+      final concreteOk = _defaultConcrete(ok, pos);
+      final result = ResultType(concreteOk);
+      for (var i = 0; i < arms.length; i++) {
+        final t = bodyTypes[i];
+        if (t is BareErrorType || t is ResultType) {
+          _materialize(arms[i].body, result);
+        } else {
+          _materialize(arms[i].body, concreteOk);
+        }
+      }
+      return result;
+    }
+
+    KlinType? resultType;
+    for (var i = 0; i < bodyTypes.length; i++) {
+      resultType = resultType == null
+          ? bodyTypes[i]
+          : _unifyNumeric(resultType, bodyTypes[i], arms[i].body.pos);
+    }
     final concrete = _defaultConcrete(resultType!, pos);
     for (final arm in arms) {
       _materialize(arm.body, concrete);
@@ -3202,6 +3255,9 @@ final class Checker {
 
   bool _isAssignable(KlinType target, KlinType source) {
     if (target == source) return true;
+    if (source is BareErrorType && target is ResultType) {
+      return true;
+    }
     if (source is UntypedInt && target is PrimType && target.kind.isInteger) {
       return true;
     }
@@ -3240,13 +3296,15 @@ final class Checker {
       ArrayType() => type,
       SliceType() => type,
       FnType() => type,
-      ResultType() => type,
+      ResultType(:final ok) => ResultType(_defaultConcrete(ok, pos)),
+      StrType() => type,
       VoidType() => throw CheckError(
           'cannot use a void value in this context',
           pos,
         ),
-      StrType() => throw CheckError(
-          'cannot use a string in this context',
+      BareErrorType() => throw CheckError(
+          '`error(...)` needs a `!T` context '
+          '(a function returning `!T`, or a `match` arm with a success value)',
           pos,
         ),
     };

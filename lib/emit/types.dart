@@ -144,6 +144,148 @@ void _collectResultTypes(KlinType? type, Set<ResultType> output) {
   }
 }
 
+/// Local `!T` from `match` / `error(n)` (issue 132) may not appear on a
+/// function signature — walk bodies so typedefs still emit.
+void _collectResultTypesFromBlock(Block block, Set<ResultType> output) {
+  for (final stmt in block.stmts) {
+    _collectResultTypesFromStmt(stmt, output);
+  }
+}
+
+void _collectResultTypesFromStmt(Stmt stmt, Set<ResultType> output) {
+  switch (stmt) {
+    case LetStmt(:final init, :final resolvedType):
+      _collectResultTypes(resolvedType, output);
+      if (init != null) _collectResultTypesFromExpr(init, output);
+    case LetDestructureStmt(:final source):
+      _collectResultTypesFromExpr(source, output);
+    case LetArrayDestructureStmt(:final source):
+      _collectResultTypesFromExpr(source, output);
+    case AssignStmt(:final value):
+      _collectResultTypesFromExpr(value, output);
+    case MultiAssignStmt(:final values):
+      for (final v in values) {
+        _collectResultTypesFromExpr(v, output);
+      }
+    case StructAssignStmt(:final source):
+      _collectResultTypesFromExpr(source, output);
+    case ReturnStmt(:final value):
+      if (value != null) _collectResultTypesFromExpr(value, output);
+    case IfStmt(:final cond, :final thenBlock, :final elseBranch):
+      _collectResultTypesFromExpr(cond, output);
+      _collectResultTypesFromBlock(thenBlock, output);
+      if (elseBranch != null) _collectResultTypesFromStmt(elseBranch, output);
+    case WhileStmt(:final cond, :final body):
+      _collectResultTypesFromExpr(cond, output);
+      _collectResultTypesFromBlock(body, output);
+    case ForRangeStmt(:final start, :final endExclusive, :final body):
+      _collectResultTypesFromExpr(start, output);
+      _collectResultTypesFromExpr(endExclusive, output);
+      _collectResultTypesFromBlock(body, output);
+    case ForCStmt(:final initExpr, :final cond, :final postExpr, :final body):
+      if (initExpr != null) _collectResultTypesFromExpr(initExpr, output);
+      if (cond != null) _collectResultTypesFromExpr(cond, output);
+      if (postExpr != null) _collectResultTypesFromExpr(postExpr, output);
+      _collectResultTypesFromBlock(body, output);
+    case MatchStmt(:final subject, :final arms):
+      _collectResultTypesFromExpr(subject, output);
+      for (final arm in arms) {
+        if (arm.when != null) _collectResultTypesFromExpr(arm.when!, output);
+        _collectResultTypesFromBlock(arm.body, output);
+      }
+    case BlockStmt(:final block):
+      _collectResultTypesFromBlock(block, output);
+    case DeferStmt(:final body):
+      _collectResultTypesFromStmt(body, output);
+    case CallStmt(:final args):
+      for (final a in args) {
+        _collectResultTypesFromExpr(a, output);
+      }
+    case MethodCallStmt(:final call):
+      _collectResultTypesFromExpr(call, output);
+    case AwaitStmt(:final expr):
+      _collectResultTypesFromExpr(expr, output);
+    default:
+      break;
+  }
+}
+
+void _collectResultTypesFromExpr(Expr expr, Set<ResultType> output) {
+  _collectResultTypes(expr.resolvedType, output);
+  switch (expr) {
+    case BinaryExpr(:final left, :final right):
+      _collectResultTypesFromExpr(left, output);
+      _collectResultTypesFromExpr(right, output);
+    case UnaryExpr(:final operand):
+      _collectResultTypesFromExpr(operand, output);
+    case GroupExpr(:final inner):
+      _collectResultTypesFromExpr(inner, output);
+    case CallExpr(:final args):
+      for (final a in args) {
+        _collectResultTypesFromExpr(a, output);
+      }
+    case MethodCallExpr(:final receiver, :final args):
+      _collectResultTypesFromExpr(receiver, output);
+      for (final a in args) {
+        _collectResultTypesFromExpr(a, output);
+      }
+    case FieldExpr(:final object):
+      _collectResultTypesFromExpr(object, output);
+    case IndexExpr(:final object, :final index):
+      _collectResultTypesFromExpr(object, output);
+      _collectResultTypesFromExpr(index, output);
+    case CastExpr(:final expr):
+      _collectResultTypesFromExpr(expr, output);
+    case OrExpr(:final result, :final fallback):
+      _collectResultTypesFromExpr(result, output);
+      for (final s in fallback.stmts) {
+        _collectResultTypesFromStmt(s, output);
+      }
+      _collectResultTypesFromExpr(fallback.value, output);
+    case PropagateExpr(:final result):
+      _collectResultTypesFromExpr(result, output);
+    case ErrorExpr(:final code):
+      _collectResultTypesFromExpr(code, output);
+    case MatchExpr(:final subject, :final arms):
+      _collectResultTypesFromExpr(subject, output);
+      for (final arm in arms) {
+        if (arm.when != null) _collectResultTypesFromExpr(arm.when!, output);
+        _collectResultTypesFromExpr(arm.body, output);
+      }
+    case PickExpr(:final cond, :final thenExpr, :final elseExpr):
+      _collectResultTypesFromExpr(cond, output);
+      _collectResultTypesFromExpr(thenExpr, output);
+      _collectResultTypesFromExpr(elseExpr, output);
+    case ArrayLitExpr(:final elements):
+      for (final e in elements) {
+        _collectResultTypesFromExpr(e, output);
+      }
+    case StructLitExpr(:final namedFields, :final positionalFields):
+      if (namedFields != null) {
+        for (final v in namedFields.values) {
+          _collectResultTypesFromExpr(v, output);
+        }
+      }
+      if (positionalFields != null) {
+        for (final v in positionalFields) {
+          _collectResultTypesFromExpr(v, output);
+        }
+      }
+    case SliceFromExpr(:final array):
+      _collectResultTypesFromExpr(array, output);
+    case AwaitExpr(:final operand):
+      _collectResultTypesFromExpr(operand, output);
+    case InterpolatedStringExpr(:final parts):
+      for (final part in parts) {
+        if (part is InterpSlot) {
+          _collectResultTypesFromExpr(part.expr, output);
+        }
+      }
+    default:
+      break;
+  }
+}
+
 String _resultCName(KlinType ok) => 'klin_res_${_typeToken(ok)}';
 
 String _typeToken(KlinType type) => switch (type) {

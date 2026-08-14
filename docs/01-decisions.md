@@ -61,6 +61,19 @@ Rationale: Zig and Rust converged on this independently.
 In emission: `!T` is a struct with a tag. The propagation operator is `if (r.is_err)
 return r;`. Zero overhead beyond checking the flag.
 
+`error(n)` is a `!T` **value** ([132](../issues/132-match-else-or.md)): in a
+function returning `!T` it is that return type; in a `match` expression a
+success arm supplies the ok type. Both forms are valid:
+
+```
+fn color_name(c: Color): !str { … return error(1) … }
+
+let s = match c {
+    Color.Red { "red" }
+    else { error(1) }
+} or { "??" }
+```
+
 ---
 
 ## D3. Generics — DECIDED
