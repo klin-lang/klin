@@ -21,7 +21,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 | **STM8S** | ✅ Pin…Adc (emit-c) | [`machine_stm8`](https://github.com/klin-lang/machine_stm8) `@v0.2.0` — no DAC; SDCC link later. |
 | **CH32V003** | ✅ Pin…Adc | [`machine_ch32v`](https://github.com/klin-lang/machine_ch32v) `@v0.1.0` — QingKe RV32EC ([086](086-machine-ch32v.md)). |
 | **GD32VF103** | ✅ Pin…Adc | [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v) `@v0.2.0` — Nuclei N205 ([087](087-machine-gd32v.md)). |
-| **GD32VW553** | 🔨 Pin ✅ | Same package [`@v0.3.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.3.0) — `pin_out_vw553` / `pin_in_vw553` ([117](117-machine-gd32v-gd32vw553.md)); Nuclei N307; F4-style GPIO `0x40020000` (**not** VF103 `0x40010800`). Pwm…Adc / Wi‑Fi 6 / BLE later. |
+| **GD32VW553** | 🔨 Pin+Pwm+Rc ✅ | Same package [`@v0.4.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.4.0) — `pin_out_vw553` / `pwm_out_vw553` / `rc_out_vw553` ([117](117-machine-gd32v-gd32vw553.md)); Nuclei N307; F4-style GPIO `0x40020000` + AFSEL (**not** VF103 `0x40010800` / AFIO). Uart…Adc / Wi‑Fi 6 / BLE later. |
 | **ESP32** (classic / other) | Later | Classic = **Xtensa**; C6 etc. separate from C3/S3/P4. |
 
 ## What already carries to these MCUs
@@ -53,7 +53,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 10. **PIO-as-SPI** helpers — ✅ (`machine_rp@v0.11.0`; board LCD remux → [095](095-board-waveshare-rp2350-lcd-096.md))  
 11. **CH32V003** Pin…Adc — ✅ (`machine_ch32v@v0.1.0`; [086](086-machine-ch32v.md))  
 12. **GD32VF103** Pin…Adc — ✅ (`machine_gd32v@v0.2.0`; [087](087-machine-gd32v.md))  
-12b. **GD32VW553** Pin twins — ✅ `pin_out_vw553` `machine_gd32v@v0.3.0` ([117](117-machine-gd32v-gd32vw553.md); Pwm…Adc / radio later)  
+12b. **GD32VW553** Pin+Pwm+Rc twins — ✅ `pin_out_vw553` / `pwm_out_vw553` / `rc_out_vw553` `machine_gd32v@v0.4.0` ([117](117-machine-gd32v-gd32vw553.md); Uart…Adc / radio later)  
 13. **Wi‑Fi** (ESP-IDF STA + SoftAP + scan + link) — ✅ [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.4.0` ([101](101-esp-wifi-idf.md); W1–W3 → [104](104-later-tracks-esp-network.md); DHCP default, optional static; not in `machine_*`)  
 14. **Ethernet** (ESP-IDF; W5500 SPI + RMII EMAC) — ✅ [`esp_eth`](https://github.com/klin-lang/esp_eth) `@v0.2.0` ([102](102-esp-eth-idf.md); other SPI chips later)  
 15. **BLE** (ESP-IDF NimBLE GAP/GATT + bond + UUID16/128 + privacy + Mesh OnOff) — ✅ [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.10.0` ([106](106-esp-ble-idf.md); not in `machine_*`)  
