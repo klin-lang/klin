@@ -59,6 +59,8 @@ honest C-shaped FFI and adds `mut` in the signature, Go-like
 
 Founding notes: [docs/00-idea.md](docs/00-idea.md),
 [docs/01-decisions.md](docs/01-decisions.md).
+What is in the language: [docs/language.md](docs/language.md)
+(`$fn` is the generic — not `[T]`).
 Doc map: [docs/README.md](docs/README.md).
 
 ## Who it is for

@@ -156,6 +156,7 @@ not the one that sounds best in the README.
 
 ## Decisions, architecture, how to write Klin
 
+- What is the language (vs library vs not Klin): [language.md](language.md)
 - Decisions (memory, errors, generics = `$fn`): [01-decisions.md](01-decisions.md),
   [04-macros.md](04-macros.md)
 - Compiler rules: [02-architecture.md](02-architecture.md)

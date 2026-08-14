@@ -1,9 +1,11 @@
 # AGENTS.md
 
 Klin is a systems language compiled to C. The compiler is written in Dart
-(`bin/klin.dart`, `lib/`). Landing and idea: `README.md`, `docs/00-idea.md`.
-Language tutorial: `docs/guide.md`. Doc map: `docs/README.md`. CLI:
-`docs/06-cli.md`, `Taskfile.yml`. Project rules: `CLAUDE.md`.
+(`bin/klin.dart`, `lib/`). **Language surface** (what is in `.kl`, what is
+a library, what not to propose): `docs/language.md`. Landing and idea:
+`README.md`, `docs/00-idea.md`. Tutorial: `docs/guide.md`. Doc map:
+`docs/README.md`. CLI: `docs/06-cli.md`, `Taskfile.yml`. Rules: `CLAUDE.md`.
+Generics are `$fn`, not `[T]` in the compiler.
 
 Committed text in this repo and `klin-lang/*` packages is **English only**
 (docs, issues, comments, commits, PRs). See `CLAUDE.md`.

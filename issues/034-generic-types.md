@@ -5,6 +5,8 @@
 
 Klin already has generics: **`$fn`**, expanded before parse into ordinary
 `fn` / `struct`. User page: [docs/04-macros.md](../docs/04-macros.md).
+Surface (do not treat this issue as “add generics”):
+[docs/language.md](../docs/language.md).
 This issue is only optional `fn id[T]` **sugar** later — not “add
 generics,” and not a hole in the language.
 

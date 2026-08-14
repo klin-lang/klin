@@ -17,6 +17,7 @@ Landing and [00-idea.md](00-idea.md) explain **why** Klin. To go from
 
 | If you want… | Read |
 |---|---|
+| What **is** the language (agents: read this first) | [language.md](language.md) — the `.kl` contract; `$fn` **is** the generic |
 | What Klin is, why C, who it is for | [../README.md](../README.md) (landing) then [00-idea.md](00-idea.md) |
 | To write a small program | [guide.md](guide.md) (`if` / `defer` / `import` / precedence) |
 | Typed MCU registers (SVD) | [device.md](device.md) |
@@ -32,6 +33,7 @@ Landing and [00-idea.md](00-idea.md) explain **why** Klin. To go from
 
 | Doc | Role |
 |---|---|
+| [language.md](language.md) | What is in `.kl` vs a library vs not Klin |
 | [00-idea.md](00-idea.md) | Principle, C backend, neighbors, non-goals |
 | [01-decisions.md](01-decisions.md) | D1–D9 (memory, errors, generics, …) |
 | [02-architecture.md](02-architecture.md) | Pipeline and engineering rules Z1–Z6 |
@@ -43,6 +45,7 @@ These are feature write-ups. The tutorial is [guide.md](guide.md).
 
 | Doc | Topic |
 |---|---|
+| [language.md](language.md) | Language surface — do not propose `[T]` / `map` / `yield` |
 | [04-macros.md](04-macros.md) | Generics = `$fn` expand (not `[T]` in the compiler) |
 | [device.md](device.md) | `$device` / fluent MMIO from SVD |
 | [07-interpolation.md](07-interpolation.md) | `"$name"` / `${expr}` → `printf` |
@@ -59,8 +62,9 @@ These are feature write-ups. The tutorial is [guide.md](guide.md).
 [guide.md](guide.md) (§4, §6, §8, §9). Enums, `Type.fn`, and
 destructuring: [syntax.md](syntax.md) (enum as `[N]T` index;
 exhaustive `match` on enum).
-Generics are `$fn` ([04-macros.md](04-macros.md)) — expand to plain
-`fn` before parse; not `[T]` in the compiler. Bitwise / logical
+The `.kl` contract (what is language vs library vs struck):
+[language.md](language.md). Generics are `$fn` ([04-macros.md](04-macros.md))
+— expand to plain `fn` before parse; not `[T]` in the compiler. Bitwise / logical
 operators: [01-decisions.md](01-decisions.md) D8 / D9. Do not treat
 `issues/` as the user guide.
 
