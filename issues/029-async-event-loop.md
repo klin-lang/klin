@@ -4,7 +4,6 @@
 `sleep_ms`/`spawn` + `$event_loop` + `flag_wait`); phase 4 **async/await MVP in
 core** ✅; phase 3 RTOS examples ✅; IDE → [087](087-intellij-plugin.md) (board blink → [028](028-freertos.md) ✅)
 **Depends on:** D1/D3 decisions; 026, 028; remote lib → 049.
-`yield` ([018](018-generators-yield.md)) is ❌ struck — not a dependency.
 **User map:** [docs/README.md](../docs/README.md) — loop = library;
 `async` / `.await` = language sugar (no hidden runtime).
 
@@ -17,7 +16,7 @@ the prime rule.
 This is a **big beast**: not one PR. Lib with callbacks first; `async`/`await`
 in the language only when lib and executor model are clear.
 
-Related: [018](018-generators-yield.md), [024](024-rtos.md), [028](028-freertos.md).
+Related: [024](024-rtos.md), [028](028-freertos.md).
 
 ## Layer model (full flexibility, not forced)
 
@@ -46,12 +45,11 @@ event loop splits into two parts with different status:
    `Allocator` (like `slice_alloc`, layer 2). Not vendor-specific, so
    can be optional stdlib module (012 style) **or** external library
    (remote import [049](049-remote-imports.md)).
-2. **Sugar `async`/`await` (and generators)** — **core feature**
+2. **Sugar `async`/`await`** — **core feature**
    (parser/emit, desugar to explicit state machine, hypothesis B below), cannot
-   be delivered as `.kl`. Tied to [018](018-generators-yield.md) and
-   D1/D3 decision. Sugar assuming loop on `main`/task: **lib macros** (like
-   `$rtos_task` in [028](028-freertos.md)), not user-`@[…]` or mandatory
-   core attribute.
+   be delivered as `.kl`. Tied to D1/D3 decision. Sugar assuming loop on
+   `main`/task: **lib macros** (like `$rtos_task` in [028](028-freertos.md)),
+   not user-`@[…]` or mandatory core attribute.
 
 Conclusion: loop runtime alone → library (best in Klin); `async`/`await` →
 core, if at all. "Rather as library" applies only to point 1.
@@ -96,7 +94,7 @@ Examples: [`examples/freertos_eventloop_macro/`](../examples/freertos_eventloop_
 |---|---|---|
 | Poll loop + queue + WFI | yes | — |
 | Explicit buffers / `Allocator` | yes | — |
-| Sugar `await foo()` | no | core feature (018 / here) |
+| Sugar `await foo()` | no | core feature (here) |
 
 Minimal picture after expand:
 
@@ -140,7 +138,7 @@ not GC-like runtime.
 cannot add real `await`.
 
 **Not required** for event-loop. Lib with callbacks first; `async`/`await`
-is separate, late decision (also [018](018-generators-yield.md)).
+is separate, late decision.
 
 ```
 optional:  [ lib eloop ]     ← no language change
@@ -383,7 +381,7 @@ Not in core: global default loop, auto-async `main`, Promise, hidden scheduler.
 - Top-level `async fn` only — **no** async methods on structs yet.
 - Body MVP: `let`, `if` / `while`, calls, `.await`, `return`.
 - Async result MVP: **void** (sketch `ticker`); `!T` / value-returning async later.
-- No recursive async; no `yield` ([018](018-generators-yield.md) separate).
+- No recursive async.
 - IDE keyword highlight only after syntax lands on `main`.
 
 #### Success criterion

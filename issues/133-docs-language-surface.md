@@ -13,8 +13,8 @@ Filed as 131, then 132; renumbered because `main` already has
 Agents (and readers) treat `issues/` as a shopping list. They come
 back with “Klin has no generics,” `fn id[T]`, `map[K]V`, `Result[T,E]`,
 or a JSON stdlib. Those are decisions, not holes. `$fn` **is** the
-generic ([127](127-docs-generics-fn.md)). Map / `yield` / ORM are
-struck ([125](125-drop-host-json-sqlite.md)).
+generic ([127](127-docs-generics-fn.md)). Map is struck
+([125](125-drop-host-json-sqlite.md)).
 
 There was no one page that says: this is the `.kl` contract; everything
 else is a library, a tool, or not Klin.

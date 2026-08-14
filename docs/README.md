@@ -45,7 +45,7 @@ These are feature write-ups. The tutorial is [guide.md](guide.md).
 
 | Doc | Topic |
 |---|---|
-| [language.md](language.md) | Language surface — do not propose `[T]` / `map` / `yield` |
+| [language.md](language.md) | Language surface — do not propose `[T]` / `map` |
 | [04-macros.md](04-macros.md) | Generics = `$fn` expand (not `[T]` in the compiler) |
 | [device.md](device.md) | `$device` / fluent MMIO from SVD |
 | [07-interpolation.md](07-interpolation.md) | `"$name"` / `${expr}` → `printf` |

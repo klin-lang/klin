@@ -61,9 +61,8 @@ These look like holes. They are decisions.
 |---|---|
 | `[T]`, `Vec[T]`, `fn id[T]`, `Result[T,E]` | Generics **are** `$fn`. `!T` exists. [034](../issues/034-generic-types.md) is optional sugar later, not a gap. |
 | `map[K]V` / hash map | ❌ struck — grow on insert is a hidden resize ([060](../issues/060-map-kv.md)). Use `table[Enum.x]` or owned bsearch. |
-| `yield` / generators | ❌ struck — iterator = struct + `next()` ([018](../issues/018-generators-yield.md)) |
 | Closures that capture | Not now (D7). Hidden alloc of the environment. Use `fn` pointer + explicit context. |
-| JSON / SQLite / ORM | ❌ not doing / struck ([125](../issues/125-drop-host-json-sqlite.md)) |
+| JSON / SQLite | ❌ not doing ([125](../issues/125-drop-host-json-sqlite.md)) |
 | Exceptions, GC, borrow checker, autofree | Rejected (D1 / D2 / idea) |
 | `c("…")`, parse C headers | FFI declarations only ([09-ffi-c.md](09-ffi-c.md)) |
 | `? :` | `pick` ([18-pick.md](18-pick.md)) |

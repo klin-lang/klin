@@ -95,7 +95,7 @@ Template split: general (non-arithmetic) in `$fn slice_ops`, numeric
 (`+`/`*`/`<`/`==`) in `$fn slice_num_ops` — so the general template also works for
 non-numeric types.
 
-Outside MVP: `flatMap`, `groupBy`, lazy iterators (018), sort with
+Outside MVP: `flatMap`, `groupBy`, lazy iterators (struct + `next()`), sort with
 closure comparator.
 
 ## Layer 2 (`*_alloc`) — ✅
@@ -145,7 +145,7 @@ mis-parsed as a struct literal. Worth fixing this parser limitation
 
 - Copying JS 1:1 (`map` always new GC array).
 - `using` / RAII / autofree of result.
-- Closures (D7), core generics (034), generators (018).
+- Closures (D7), core generics (034).
 - Methods on `[]T` before slice receiver decision.
 - DCE of unused `pub` in emit (hence separate `slice_alloc` module).
 

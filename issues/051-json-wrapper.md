@@ -37,5 +37,4 @@ in the expand beyond what the C lib does.
 ## Out of scope
 
 - native `json` type / dynamic maps in the language
-- ~~ORM / schema codegen from JSON Schema~~ — [070](070-host-orm-sqlite.md) (❌ struck)
 - priority relative to core / embedded / basic FFI
