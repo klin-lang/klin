@@ -4,7 +4,7 @@
 # Homebrew formula for the Klin compiler (issue 067).
 #
 # Stable = prebuilt GitHub Release (no Dart).
-# HEAD = build from main (`dart compile exe`).
+# HEAD = build from main (`dart compile exe`; needs dart-lang/dart).
 #
 #   brew install klin-lang/klin/klin
 #   brew install --HEAD klin-lang/klin/klin
