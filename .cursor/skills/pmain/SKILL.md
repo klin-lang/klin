@@ -23,6 +23,8 @@ git pull origin main
   fresh `main`.
 - Network: on `git pull` failures, retry with backoff (4s, 8s, 16s, 32s).
 - After `pmain`, usually: `git checkout -b cursor/<desc>-...`, then make changes.
+- To catch an **existing** feature branch up with `main`, use `rmain`
+  (rebase onto `origin/main`) — not another `pmain`.
 
 ## When to use
 

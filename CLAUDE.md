@@ -33,3 +33,4 @@ language; the tree stays English.
 - Do not expand the scope of the current step in `issues/sorted.md`.
 - Feature workflow (always): sync/`checkout` from `origin/main` → new branch → implement (code + tests) → update docs (`docs/`, `issues/`, README/stdlib README as needed) and `examples/` → push + PR → skill `rcfix` (Bugbot, fixes, scoreboard). Never commit on `main`/`develop`.
 - Skill `pmain` (`.cursor/skills/pmain/SKILL.md`): shorthand for "sync main" — `git checkout main && git pull origin main` (update only; never work/commit on `main`).
+- Skill `rmain` (`.cursor/skills/rmain/SKILL.md`): shorthand for "rebase on main" — stay on the current feature/fix branch, `git fetch origin main && git rebase origin/main` (then `--force-with-lease` if already pushed). Never rebase `main`/`develop`.
