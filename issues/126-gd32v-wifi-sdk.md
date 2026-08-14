@@ -1,6 +1,6 @@
 # 126 — GD32VW553 Wi‑Fi as a separate SDK package (`gd32v_wifi`)
 
-**Status:** 🔨 STA published [`@v0.1.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0) (SoftAP / scan / BLE later)  
+**Status:** 🔨 STA + SoftAP published [`@v0.2.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.2.0) (scan / BLE later)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [117](117-machine-gd32v-gd32vw553.md)
 
 ## Verdict
@@ -8,7 +8,7 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: [`klin-lang/gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.1.0` |
+| Where does the code live? | External: [`klin-lang/gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.2.0` |
 | Engine | **GigaDevice VW55x Wi‑Fi BLE SDK** (`wifi_management` / `wifi_net_ip` / lwIP / OSAL) — not MMIO, **not** ESP-IDF |
 | Relation to `machine_gd32v` | **Separate.** [117](117-machine-gd32v-gd32vw553.md) Pin…Adc twins stay MMIO. Same split as [`esp_wifi`](https://github.com/klin-lang/esp_wifi) vs `machine_esp` ([101](101-esp-wifi-idf.md)). |
 | BLE | Later sibling package (`gd32v_ble`), not this file — same split as [106](106-esp-ble-idf.md) |
@@ -36,10 +36,26 @@ on the include/link path (AN158).
 
 Default IP mode = **DHCP** (SDK management starts DHCP after assoc). Static IP later.
 
+## Scope (`@v0.2.0` — SoftAP)
+
+- `ap_init` — same `wifi_management_init` (once)  
+- `ap_start(ssid, pass, channel)` — `wifi_management_ap_start` (AN158 §5.3 / §4.4.8). Channel `1`…`13`. Empty pass = `AUTH_MODE_OPEN`; else `AUTH_MODE_WPA2` (password length 8…63). `hidden=0` (broadcast SSID). Do **not** pass a `"wpa2"` string — AN158 table 5-4 is a doc bug; the API takes `wifi_ap_auth_mode_t`.  
+- `ap_wait_started` / `ap_started` — last `ap_start` result (`i32` 1/0, same as `sta_connected`)  
+- `ap_wait_ip(timeout_ms)` — poll `wifi_get_vif_ip` (vif 0)  
+- `ap_ip_u32` / `ap_gateway_u32` / `ap_netmask_u32` / `ap_log_ip_info`  
+- `ap_stop` — `wifi_management_ap_stop` (does **not** `deinit`; `sta_stop` still deinit)  
+- Implementation: `@[link("ap_sdk.c")]` + `@[cimport]` (no `@[cinclude]`)  
+- Example `examples/softap/` — needs the official SDK to link an ELF  
+- SoftAP-only on this tag — do **not** mix `sta_*` and `ap_*` (APSTA later)  
+
+Default AP IPv4 = SDK SoftAP (typically `192.168.4.1` + DHCPS). `ap_set_ip` / `ap_station_num` later.
+
+Changelog: `@v0.1.0` STA+DHCP → `@v0.2.0` SoftAP
+
 ## Out of scope (this tag)
 
-- SoftAP / scan / RSSI / APSTA / roaming / WPS / EAP-TLS  
-- Static IPv4 (`wifi_set_vif_ip`)  
+- Scan / RSSI / APSTA / roaming / WPS / EAP-TLS  
+- Static IPv4 (`wifi_set_vif_ip`) / `ap_set_ip` / `ap_station_num`  
 - BLE — later `gd32v_ble` (AN152), not this package  
 - Sockets / HTTP / MQTT  
 - Board pack / `klin init` — [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) [127](127-board-gd32vw553h-eval.md) (no radio API there)  
@@ -49,11 +65,11 @@ Default IP mode = **DHCP** (SDK management starts DHCP after assoc). Static IP l
 ## Contract (prime rule)
 
 - No Klin GC / hidden heap — SSID/pass are C strings you pass in.  
-- SDK heap / OSAL task / eloop / lwIP DHCP are **SDK contracts**, documented in the package README.  
+- SDK heap / OSAL task / eloop / lwIP DHCP / SoftAP DHCPS are **SDK contracts**, documented in the package README.  
 - Errors are `i32` (0 = ok, same as `wifi_management_*`).  
 - Host `klin test` must not require the SDK tree.
 
-## Usage
+## Usage (STA)
 
 ```klin
 import "github/klin-lang/gd32v_wifi" wifi
@@ -75,14 +91,36 @@ fn main() {
 }
 ```
 
+## Usage (SoftAP)
+
+```klin
+import "github/klin-lang/gd32v_wifi" wifi
+
+fn main() {
+    let mut e = wifi.ap_init()
+    if e != wifi.err_ok() {
+        return
+    }
+    e = wifi.ap_start("klin-ap", "klinpass1", 6)
+    if e != wifi.err_ok() {
+        return
+    }
+    e = wifi.ap_wait_ip(5000)
+    if e != wifi.err_ok() {
+        return
+    }
+    wifi.ap_log_ip_info()
+}
+```
+
 ```sh
-klin get github/klin-lang/gd32v_wifi@v0.1.0
+klin get github/klin-lang/gd32v_wifi@v0.2.0
 ```
 
 ## Links
 
 - Package: https://github.com/klin-lang/gd32v_wifi  
-- Tag: [v0.1.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0)  
+- Tag: [v0.2.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.2.0) (STA [v0.1.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0))  
 - SDK: https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK  
 - AN158 Wi‑Fi Development Guide (GigaDevice)  
 - Chip MMIO: [117](117-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
