@@ -88,3 +88,4 @@ Klin paths (`lib/`, `-I`, `$KLIN_PATH`): [11-klin-libraries.md](11-klin-librarie
 Modules (`module` / `import` / `pub`): [12-modules.md](12-modules.md).
 fmt details: [05-fmt.md](05-fmt.md). Macros / SVD: [04-macros.md](04-macros.md).
 FFI (import `@[cimport]`/`@[link]` and export `@[cexport]`): [09-ffi-c.md](09-ffi-c.md).
+ASM units / `asm("…")`: [10-asm.md](10-asm.md).

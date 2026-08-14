@@ -22,6 +22,7 @@ Landing and [00-idea.md](00-idea.md) explain **why** Klin. To go from
 | Typed MCU registers (SVD) | [device.md](device.md) |
 | Blink on a board (`klin init`) | [embedded.md](embedded.md) |
 | Runnable demos | [../examples/README.md](../examples/README.md) |
+| Talk to C / drop to ASM | [09-ffi-c.md](09-ffi-c.md), [10-asm.md](10-asm.md) — FFI and `asm("…")`, not a C/ASM language |
 | Event loop | **Library** ([`eventloop`](https://github.com/klin-lang/eventloop)); `async` / `.await` are language sugar over it |
 | RTOS / FreeRTOS | **Library** ([`klin_freertos`](https://github.com/klin-lang/klin_freertos)); kernel stays C |
 | CLI / install details | [06-cli.md](06-cli.md), [17-homebrew.md](17-homebrew.md), [make.md](make.md) |
@@ -75,6 +76,15 @@ package. Zephyr / RT-Thread are not packaged yet
 ([024](../issues/024-rtos.md), [028](../issues/028-freertos.md),
 [`examples/stm32/freertos_blink/`](../examples/stm32/freertos_blink/)).
 
+C and ASM stay **outside** the grammar. Talk to existing C with
+`@[cimport]` / `@[cexport]` / `@[link]` — there is no `c("…")`
+snippet ([09-ffi-c.md](09-ffi-c.md),
+[`examples/ffi_add/`](../examples/ffi_add/),
+[`examples/cexport_add/`](../examples/cexport_add/)). ASM is a
+`.s` / `.S` unit on `@[link]`, or the `asm("…")` statement (emits
+`asm volatile("…");` — a GNU string, not an assembler)
+([10-asm.md](10-asm.md), [`examples/asm_add/`](../examples/asm_add/)).
+
 ## Tooling
 
 | Doc | Topic |
@@ -82,7 +92,7 @@ package. Zephyr / RT-Thread are not packaged yet
 | [05-fmt.md](05-fmt.md) | `klin fmt` |
 | [06-cli.md](06-cli.md) | `run` / `test` / `get` / `--emit-c` / flags |
 | [09-ffi-c.md](09-ffi-c.md) | `@[cimport]` / `@[cexport]` / `@[link]` |
-| [10-asm.md](10-asm.md) | `.s` / `.S` via `@[link]` |
+| [10-asm.md](10-asm.md) | `.s` / `.S` via `@[link]`; `asm("…")` → `asm volatile` |
 | [11-klin-libraries.md](11-klin-libraries.md) | `lib/`, `-I`, directory packages, remote imports |
 | [17-homebrew.md](17-homebrew.md) | `brew install klin` |
 | [19-debug.md](19-debug.md) | `#line`, `-g`, gdb / lldb |

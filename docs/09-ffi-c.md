@@ -1,6 +1,8 @@
 # C FFI — import and export (issues 021 / 045)
 
-Interop with C is **explicit declarations** in Klin, not a header parser.
+Interop with C is **explicit declarations** in Klin, not a header parser
+and not a `c("…")` snippet. C you did not write in Klin lives in a
+header (`@[cinclude]`) or a unit you `@[link]` (`.c` / `.a` / `.o` / `-l`).
 
 | Direction | Attributes | Example |
 |---|---|---|

@@ -132,6 +132,7 @@ This README is not a tutorial. Map: [docs/README.md](docs/README.md).
 | `--emit-h` / `--emit-pp` | C header from `@[cexport]` / macro expand |
 
 C FFI both ways: [docs/09-ffi-c.md](docs/09-ffi-c.md).
+ASM units and `asm("…")`: [docs/10-asm.md](docs/10-asm.md).
 Libraries: [docs/11-klin-libraries.md](docs/11-klin-libraries.md).
 
 ## License

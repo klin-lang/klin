@@ -148,6 +148,7 @@ building the core from scratch.
 | [121](121-docs-async-lib.md) | Map: event loop is a library; `async` / `.await` are language | ✅ | 116, 029 |
 | [122](122-docs-hello-to-board.md) | Path: hello → register → small project (no `issues/`) | ✅ | 116, 117, 118, 119 |
 | [123](123-docs-rtos-lib.md) | Map: FreeRTOS is C + `klin_freertos`, not the language | ✅ | 116, 024, 028 |
+| [124](124-docs-c-asm.md) | Map: C FFI + ASM units / `asm("…")` (not a C/ASM language) | ✅ | 116, 021, 022 |
 
 ---
 

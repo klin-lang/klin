@@ -84,7 +84,9 @@ What you keep from C:
 - **Not a superset of C.** It does not parse legal C. Parsing full C
   (preprocessor, `typedef` vs identifier, the "lexer hack") is an order
   of magnitude harder than a clean grammar. Interop is FFI declarations,
-  not header ingestion.
+  not header ingestion and not a `c("…")` snippet. Drop-to-ASM is a
+  `.s` unit or `asm("…")` → `asm volatile` — not an assembler in Klin
+  ([09-ffi-c.md](09-ffi-c.md), [10-asm.md](10-asm.md)).
 - **No GC.** Neither by default nor optionally at the start.
 - **No borrow checker.** That is a research problem, not a matter of
   enthusiasm. Solo + Polonius = a project that never reaches 1.0.

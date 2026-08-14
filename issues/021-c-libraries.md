@@ -17,6 +17,7 @@
 - unknown calls = checker error, **except** host builtins `puts` / `printf`
 - example: [`examples/ffi_add/`](../examples/ffi_add/)
 - note: [`docs/09-ffi-c.md`](../docs/09-ffi-c.md)
+- map: [docs/README.md](../docs/README.md) Start here (C / ASM) — [124](124-docs-c-asm.md)
 
 Prime rule test: FFI does not hide allocation or ownership — user's
 contract with C.
