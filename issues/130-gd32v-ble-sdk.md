@@ -95,6 +95,7 @@ Same Klin names as [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.5.0`:
 - `bond_start` — `app_sec_send_bond_req` on active link (central preferred, else peripheral)  
 - `bonded` / `wait_bonded(timeout_ms)` — poll / block until pair success  
 - `bond_count` / `bond_clear` — SDK peer flash (`ble_peer_all_addr_get` / `ble_peer_data_delete`)  
+- Re-pair MVP: a new successful pair **replaces** the prior bond for that peer (same policy as `esp_ble@v0.5.0`)  
 - `version()` → `5`  
 - Example `examples/bond/`  
 - **Not** included (until later, like `esp_ble@v0.7.0`): passkey / PIN MITM  
