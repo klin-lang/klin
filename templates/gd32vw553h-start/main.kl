@@ -1,0 +1,16 @@
+// GD32VW553 START RGB red (PB0) blink — scaffold from `klin init gd32vw553h-start`.
+// Run `klin get` once, then `make emit` / `make elf`.
+import "github/klin-lang/machine_gd32v" machine
+import "github/klin-lang/gd32vw553h_start" board
+
+@[link("board/startup.S")]
+fn main() {
+    let led = machine.pin_out_vw553(cast(machine.Port, board.led_r_port()), board.led_r_pin())
+    while true {
+        led.toggle()
+        let mut i: i32 = 0
+        while i < 400000 {
+            i = i + 1
+        }
+    }
+}

@@ -1,6 +1,6 @@
 # 075 — Board pack / `klin init` vs host (laptop): linker & startup
 
-**Status:** 🔨 MCU `klin init` ✅ (`nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`, `waveshare-esp32-s3-pico`, `gd32vw553h-eval`; host-init still 💭)  
+**Status:** 🔨 MCU `klin init` ✅ (`nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`, `waveshare-esp32-s3-pico`, `gd32vw553h-eval`, `gd32vw553h-start`; host-init still 💭)  
 **Depends on:** [010](010-bare-metal.md), [054](054-embedded-project-layout.md), [053](053-device-board-assets.md); optionally [074](074-board-ioc-klin-mod.md)
 
 ## Verdict in brief
@@ -161,7 +161,8 @@ lower priority.
 - [x] `klin init <board> [dir]` — scaffold from `templates/` (`lib/init.dart`, CLI)
 - [x] additional boards: `pico`, `pico2`, `waveshare-rp2350-lcd-096`,
       `waveshare-esp32-s3-pico` (ESP-IDF scaffold; no freestanding ld/startup),
-      `gd32vw553h-eval` (RISC-V freestanding + board pack [127](127-board-gd32vw553h-eval.md))
+      `gd32vw553h-eval` (RISC-V freestanding + board pack [127](127-board-gd32vw553h-eval.md)),
+      `gd32vw553h-start` (RISC-V freestanding + board pack [129](129-board-gd32vw553h-start.md))
 - [ ] (optional, low priority) `klin init` host → `hello` + mod
 
 ## Implementation notes
@@ -174,7 +175,8 @@ lower priority.
   (`machine_rp` blink), `waveshare-rp2350-lcd-096` (backlight + board pack
   [095](095-board-waveshare-rp2350-lcd-096.md)), `waveshare-esp32-s3-pico`
   (ESP-IDF + D10 blink + board pack [100](100-board-waveshare-esp32-s3-pico.md)),
-  `gd32vw553h-eval` (VW553 LED1 + board pack [127](127-board-gd32vw553h-eval.md)).
+  `gd32vw553h-eval` (VW553 LED1 + board pack [127](127-board-gd32vw553h-eval.md)),
+  `gd32vw553h-start` (VW553 RGB red + board pack [129](129-board-gd32vw553h-start.md)).
 - ESP scaffolds use **IDF** (`main/app_main.c`, `sdkconfig.defaults`, `idf.py`)
   instead of `board/startup.s` + `linker.ld` — still layer B (one-time copy);
   packages via `klin get`.
@@ -192,7 +194,9 @@ lower priority.
   [`waveshare_esp32_s3_pico`](https://github.com/klin-lang/waveshare_esp32_s3_pico)
   ([100](100-board-waveshare-esp32-s3-pico.md)),
   [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval)
-  ([127](127-board-gd32vw553h-eval.md)).
+  ([127](127-board-gd32vw553h-eval.md)),
+  [`gd32vw553h_start`](https://github.com/klin-lang/gd32vw553h_start)
+  ([129](129-board-gd32vw553h-start.md)).
 
 ## Related
 

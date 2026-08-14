@@ -28,7 +28,7 @@
 - Full Nuclei SDK vendoring inside Klin
 - GD32VW553 twins — [117](117-machine-gd32v-gd32vw553.md) (same package; Pin…Adc ✅ `@v0.8.0`)  
 - Wi‑Fi on VW553 — [126](126-gd32v-wifi-sdk.md) / [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [`@v0.3.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.3.0) (not this file)  
-- Board pack / `klin init` — [127](127-board-gd32vw553h-eval.md) / [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) (not this file)  
+- Board pack / `klin init` — [127](127-board-gd32vw553h-eval.md) / [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval), [129](129-board-gd32vw553h-start.md) / [`gd32vw553h_start`](https://github.com/klin-lang/gd32vw553h_start) (not this file)  
 - BLE on VW553 — later sibling package, not this file
 
 ## Links
