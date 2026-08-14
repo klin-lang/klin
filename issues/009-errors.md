@@ -29,3 +29,7 @@ let cfg = load("app.toml") or {
 - [x] `or` with default value
 - [x] compile error on ignoring `!T`
 - [x] objdump: overhead = flag check, nothing more
+
+Later: `error(n)` as a `!T` **value** (not only `return` from `fn …(): !T`),
+so `let x = match { … else { error(1) } } or { … }` is legal and a
+named `fn …(): !T` stays legal — [132](132-match-else-or.md).

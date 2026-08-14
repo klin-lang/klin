@@ -55,6 +55,8 @@ let a = match x {
   checker error
 - Expression form only as `let` initializer or right-hand side of
   assignment (lowers to statement, not to a C expression)
+- `match { … else { error(n) } } or { … }` — [132](132-match-else-or.md)
+  (`error` as a `!T` value; both the function form and the local form)
 - Arms return a value, not a string — `str` is not yet a first-class type
   (example with `"abc"` from early sketch would fail the checker
   outside `match` too)
