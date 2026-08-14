@@ -1,6 +1,6 @@
 # 130 — GD32VW553 BLE as a separate SDK package (`gd32v_ble`)
 
-**Status:** 🔨 advertise + GATT published [`@v0.2.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.2.0) (central later)  
+**Status:** 🔨 advertise + GATT + central scan/connect published [`@v0.3.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.3.0) (GATT client later)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [117](117-machine-gd32v-gd32vw553.md), [126](126-gd32v-wifi-sdk.md)
 
 ## Verdict
@@ -8,8 +8,8 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: [`klin-lang/gd32v_ble`](https://github.com/klin-lang/gd32v_ble) `@v0.2.0` |
-| Engine | **GigaDevice VW55x BLE SDK** (AN152 stack + `MSDK/ble/app` managers + `ble_gatts_*`) — not MMIO, **not** ESP-IDF NimBLE |
+| Where does the code live? | External: [`klin-lang/gd32v_ble`](https://github.com/klin-lang/gd32v_ble) `@v0.3.0` |
+| Engine | **GigaDevice VW55x BLE SDK** (AN152 stack + `MSDK/ble/app` managers + `ble_gatts_*` / `ble_scan_*` / `ble_conn_*`) — not MMIO, **not** ESP-IDF NimBLE |
 | Relation to `machine_gd32v` | **Separate.** Pin…Adc twins stay MMIO ([117](117-machine-gd32v-gd32vw553.md)). Same split as [`esp_ble`](https://github.com/klin-lang/esp_ble) vs `machine_esp` ([106](106-esp-ble-idf.md)). |
 | Relation to `gd32v_wifi` | Sibling radio package ([126](126-gd32v-wifi-sdk.md)). Not the same Klin module. |
 
@@ -27,6 +27,7 @@ Klin C glue calls the SDK **app** managers (`ble_init` / `app_adp_set_name` /
 GATT uses the stack GATTS API (`ble_gatts_svc_add` / `ble_gatts_ntf_ind_send`
 in `MSDK/blesw/src/export/ble_gatts.h`) — same pattern as SDK
 `MSDK/ble/profile/dis/ble_diss.c` / `profile/sample/ble_sample_srv.c`.
+Scan / central use `ble_scan_*` / `ble_conn_*` (AN152).
 `BLE_GAP_ADV_PROP_UNDIR_CONN` is GigaDevice `ble_gap.h`, not NimBLE.
 
 ## Scope (`@v0.1.0` — advertise)
@@ -55,10 +56,23 @@ Same Klin names as [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.2.0`:
 - `version()` → `2`  
 - Example `examples/gatt/`  
 
+## Scope (`@v0.3.0` — central scan + connect)
+
+Same Klin names as [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.3.0`:
+
+- `scan_max()` → **16** (fixed table; dedupe by address; **no** glue `malloc` — do not use SDK `app_scan_mgr`)  
+- `scan_start(duration_ms)` — active scan (`ble_scan_param_set` / `ble_scan_enable`); stops advertising first; `duration_ms` must be `> 0`; blocks until duration elapses on-device  
+- `scan_stop` / `scan_count` / `scan_rssi` / `scan_addr_type` / `scan_addr` / `scan_name`  
+- `central_connect(index, timeout_ms)` — `ble_conn_connect` to scan row (GAP only; no GATT client)  
+- `central_wait_connected` / `central_connected()` (`bool`) / `central_disconnect`  
+- `init` also registers scan + conn callbacks  
+- `version()` → `3`  
+- Example `examples/scan/`  
+- **Board note:** needs an SDK image with **observer/central** roles (e.g. **msdk_ffd**). Default peripheral-only **msdk** may not export scan/central APIs.
+
 ## Out of scope (this tag)
 
 - GATT client / discover / `gattc_*`  
-- Central scan + connect  
 - Bonding / passkey / privacy / Mesh  
 - Custom UUID16/128 (later, like [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.6.0`)  
 - Wi‑Fi — [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [126](126-gd32v-wifi-sdk.md)  
@@ -68,8 +82,8 @@ Same Klin names as [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.2.0`:
 
 ## Contract (prime rule)
 
-- No Klin GC / hidden heap — advertise name is a C string you pass in; GATT payloads are caller buffers + a fixed 20-byte static in C.  
-- SDK heap / OSAL BLE task / GAP / GATTS events are **SDK contracts**, documented in the package README.  
+- No Klin GC / hidden heap — advertise name is a C string you pass in; GATT payloads are caller buffers + a fixed 20-byte static in C; scan results are a fixed 16-row static table.  
+- SDK heap / OSAL BLE task / GAP / GATTS / scan events are **SDK contracts**, documented in the package README.  
 - Errors are `i32` (0 = ok).  
 - Host `klin test` must not require the SDK tree.
 
@@ -83,17 +97,18 @@ fn main() {
     if e != ble.err_ok() {
         return
     }
-    let mut seed: [1]u8
-    seed[0] = 42
-    e = ble.gatt_set(cast(*u8, &seed[0]), 1)
+    e = ble.scan_start(5000)
     if e != ble.err_ok() {
         return
     }
-    e = ble.advertise("klin-gatt")
+    if ble.scan_count() < 1 {
+        return
+    }
+    e = ble.central_connect(0, 10000)
     if e != ble.err_ok() {
         return
     }
-    e = ble.wait_connected(-1)
+    e = ble.central_wait_connected(15000)
     if e != ble.err_ok() {
         return
     }
@@ -101,13 +116,13 @@ fn main() {
 ```
 
 ```sh
-klin get github/klin-lang/gd32v_ble@v0.2.0
+klin get github/klin-lang/gd32v_ble@v0.3.0
 ```
 
 ## Links
 
 - Package: https://github.com/klin-lang/gd32v_ble  
-- Tag: [v0.2.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.2.0) (advertise [v0.1.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.1.0))  
+- Tag: [v0.3.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.3.0) (GATT [v0.2.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.2.0), advertise [v0.1.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.1.0))  
 - SDK: https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK  
 - AN152 BLE Development Guide (GigaDevice)  
 - Chip MMIO: [117](117-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
