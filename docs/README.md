@@ -12,6 +12,8 @@ not recreate it.
 | Blink on a board (`klin init`) | [embedded.md](embedded.md) |
 | Typed MCU registers (SVD) | [device.md](device.md) |
 | Runnable demos | [../examples/README.md](../examples/README.md) |
+| Event loop | **Library** ([`eventloop`](https://github.com/klin-lang/eventloop)); `async` / `.await` are language sugar over it |
+| RTOS / FreeRTOS | **Library** ([`klin_freertos`](https://github.com/klin-lang/klin_freertos)); kernel stays C |
 | CLI / install details | [06-cli.md](06-cli.md), [17-homebrew.md](17-homebrew.md), [make.md](make.md) |
 | What to build next | [../issues/sorted.md](../issues/sorted.md) — roadmap, not a manual |
 
@@ -47,6 +49,21 @@ These are feature write-ups. The tutorial is [guide.md](guide.md).
 destructuring: [syntax.md](syntax.md). Bitwise / logical operators:
 [01-decisions.md](01-decisions.md) D8 / D9. Do not treat `issues/` as
 the user guide.
+
+The event loop is a **library**
+([`eventloop`](https://github.com/klin-lang/eventloop)), not a language
+runtime — no hidden scheduler. `async fn` / `.await` **are** language
+(the compiler desugars them; a `.kl` file cannot invent `await`). They
+need an explicit executor. The same lib works with plain `fn` callbacks
+and no `async` ([029](../issues/029-async-event-loop.md),
+[`examples/remote_eventloop/`](../examples/remote_eventloop/)).
+
+RTOS is the same split: the kernel stays C;
+[`klin_freertos`](https://github.com/klin-lang/klin_freertos) is a thin
+FFI client, not a Klin scheduler. `$rtos_task` is a macro in that
+package. Zephyr / RT-Thread are not packaged yet
+([024](../issues/024-rtos.md), [028](../issues/028-freertos.md),
+[`examples/stm32/freertos_blink/`](../examples/stm32/freertos_blink/)).
 
 ## Tooling
 

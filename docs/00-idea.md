@@ -89,6 +89,10 @@ What you keep from C:
 - **No borrow checker.** That is a research problem, not a matter of
   enthusiasm. Solo + Polonius = a project that never reaches 1.0.
 - **No runtime.** No goroutines, no scheduler in the language.
+  FreeRTOS is a C kernel plus
+  [`klin_freertos`](https://github.com/klin-lang/klin_freertos)
+  (FFI, not stdlib). The event loop is the `eventloop` package;
+  `async` / `.await` are language sugar over that explicit executor.
 - **No exceptions.** Hidden control flow.
 
 ## Neighbors
