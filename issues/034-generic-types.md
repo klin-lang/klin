@@ -40,7 +40,8 @@ No vtable / boxing by default; frontend catches errors before gcc sees `.c`.
 Only when you collect **2–3 hard places** where `$fn` is clearly worse
 — not "would be nicer":
 
-1. container with methods (`Vec[T]` / `HashMap[K,V]`) hard as macro-expand alone
+1. container with methods (`Vec[T]`) hard as macro-expand alone
+   (`HashMap` / [060](060-map-kv.md) is ❌ struck — hidden resize)
 2. parameterized `Option`/`Result` in many APIs (today `!T` suffices)
 3. diagnostics from expanded `$fn` really block users
 
