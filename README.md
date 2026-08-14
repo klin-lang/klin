@@ -69,12 +69,14 @@ Doc map: [docs/README.md](docs/README.md).
 already exists.
 
 - **Host:** `klin run`, libc, packages (`klin get`)
-- **MCU:** STM32, RP2040 / RP2350, ESP32, CH32V, GD32V, … plus anything
-  with a vendor `cc` (including parts LLVM will not target)
+- **MCU:** STM32, RP2040 / RP2350, ESP32, CH32V, GD32V, STM8, megaAVR,
+  ATxmega, PIC16, … plus anything with a vendor `cc` (including parts
+  LLVM will not target)
 
 STM32 was the **first** freestanding demo (an LED, no libc). It is not
 the only target. Walkthrough: [docs/embedded.md](docs/embedded.md)
-(`klin init pico` / Nucleo / ESP / VW553). Board trees:
+(`klin init pico` / Nucleo / ESP / VW553). AVR / Arduino FAQ:
+[docs/arduino.md](docs/arduino.md). Board trees:
 [`templates/`](templates/), [`examples/stm32/`](examples/stm32/).
 Typed registers from SVD: [docs/device.md](docs/device.md).
 
