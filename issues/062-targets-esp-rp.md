@@ -13,8 +13,8 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 
 | Target | Realistic? | Notes |
 |---|---|---|
-| **RP2040** | ✅ path exists | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.11.0` — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Pio**+**Dma**+**UsbCdc** (UsbCdc RP2350 first; Pio `out_pins`/TX DMA; no DAC). |
-| **RP2350** | ✅ Arm + RISC-V | Same APIs via `*_rp2350` twins (+ UsbCdc poll). Board: Waveshare LCD-0.96 → [095](095-board-waveshare-rp2350-lcd-096.md). |
+| **RP2040** | ✅ path exists | [`machine_rp`](https://github.com/klin-lang/machine_rp) `@v0.11.0` — Pin+Pwm+Rc+Uart+I2c+Spi+Adc+**Pio**+**Dma**+**UsbCdc** (UsbCdc RP2350 first; Pio `out_pins`/TX DMA; no DAC). Pico-LCD-1.14 shield → [110](110-board-waveshare-pico-lcd-114.md). |
+| **RP2350** | ✅ Arm + RISC-V | Same APIs via `*_rp2350` twins (+ UsbCdc poll). Board: Waveshare LCD-0.96 → [095](095-board-waveshare-rp2350-lcd-096.md); Pico-LCD-1.14 shield → [110](110-board-waveshare-pico-lcd-114.md). |
 | **ESP32-C3** | ✅ Pin…Adc | [`machine_esp`](https://github.com/klin-lang/machine_esp) `@v0.7.0` — MMIO + LEDC; minimal **ESP-IDF** boot; no DAC; Wi‑Fi → [`esp_wifi`](https://github.com/klin-lang/esp_wifi) [101](101-esp-wifi-idf.md); ETH → [`esp_eth`](https://github.com/klin-lang/esp_eth) W5500 SPI [102](102-esp-eth-idf.md) (no on-chip EMAC); BLE → [`esp_ble`](https://github.com/klin-lang/esp_ble) [106](106-esp-ble-idf.md); USB OTG N/A on C3 (no OTG PHY); camera N/A on C3 (no DVP/LCD_CAM); IDF radio/net stacks not in `machine_esp`. |
 | **ESP32-S3** | ✅ Pin…Adc+Rmt (`*_s3`) | Same package `@v0.5.0`/`@v0.6.0`/`@v0.7.0` — twin factories + `rmt_tx_s3` ([099](099-machine-esp-esp32-s3.md)); board Waveshare S3-Pico → [100](100-board-waveshare-esp32-s3-pico.md); Xtensa via IDF; Wi‑Fi → [101](101-esp-wifi-idf.md); ETH → [`esp_eth`](https://github.com/klin-lang/esp_eth) W5500 [102](102-esp-eth-idf.md) (no on-chip EMAC); BLE → [`esp_ble`](https://github.com/klin-lang/esp_ble) [106](106-esp-ble-idf.md); USB OTG → [`esp_usb`](https://github.com/klin-lang/esp_usb) TinyUSB CDC [108](108-esp-usb-idf.md); camera → [`esp_camera`](https://github.com/klin-lang/esp_camera) DVP JPEG [109](109-esp-camera-idf.md); IDF radio/net/USB/cam stacks not in `machine_esp`. |
 | **ESP32-P4** | Later | Dual **RISC-V** HP; **on-chip EMAC** (RMII) → natural next [`esp_eth`](https://github.com/klin-lang/esp_eth) backend [102](102-esp-eth-idf.md); **no** on-die Wi‑Fi/BLE (companion chip / host — not `esp_wifi` on P4 alone). `machine_esp` twins (`*_p4`) when started — **not** a copy of C3/S3 MMIO maps. |
@@ -32,7 +32,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 
 ## What is not out of the box
 
-- generic board pack / Klin-tree `examples/rp2040/…` (lives in [`machine_rp`](https://github.com/klin-lang/machine_rp); Waveshare RP2350-LCD-0.96 → [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) [095](095-board-waveshare-rp2350-lcd-096.md); Adafruit RP2040 CAN Feather → [`adafruit_rp2040_can_feather`](https://github.com/klin-lang/adafruit_rp2040_can_feather) [098](098-board-adafruit-rp2040-can-feather.md); Waveshare ESP32-S3-Pico → [`waveshare_esp32_s3_pico`](https://github.com/klin-lang/waveshare_esp32_s3_pico) [100](100-board-waveshare-esp32-s3-pico.md))
+- generic board pack / Klin-tree `examples/rp2040/…` (lives in [`machine_rp`](https://github.com/klin-lang/machine_rp); Waveshare RP2350-LCD-0.96 → [`waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) [095](095-board-waveshare-rp2350-lcd-096.md); Waveshare Pico-LCD-1.14 shield → [`waveshare_pico_lcd_114`](https://github.com/klin-lang/waveshare_pico_lcd_114) [110](110-board-waveshare-pico-lcd-114.md); Adafruit RP2040 CAN Feather → [`adafruit_rp2040_can_feather`](https://github.com/klin-lang/adafruit_rp2040_can_feather) [098](098-board-adafruit-rp2040-can-feather.md); Waveshare ESP32-S3-Pico → [`waveshare_esp32_s3_pico`](https://github.com/klin-lang/waveshare_esp32_s3_pico) [100](100-board-waveshare-esp32-s3-pico.md))
 - automatic ESP-IDF or pico-sdk in Klin CLI (example ships its own `idf.py` flow)
 - freestanding ESP image (no IDF)
 - Classic Xtensa ESP32 / C6 / **ESP32-P4** ports (S3 Pin…Adc ✅ → [099](099-machine-esp-esp32-s3.md); P4 = own twins + RMII via [102](102-esp-eth-idf.md))
@@ -57,12 +57,13 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 15. **BLE** (ESP-IDF NimBLE GAP/GATT + bond + UUID16/128 + privacy + Mesh OnOff) — ✅ [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.10.0` ([106](106-esp-ble-idf.md); not in `machine_*`)  
 16. **USB OTG** (ESP-IDF TinyUSB device CDC) — ✅ [`esp_usb`](https://github.com/klin-lang/esp_usb) `@v0.1.0` ([108](108-esp-usb-idf.md); not in `machine_*`; host / other classes later)  
 17. **Camera** (ESP-IDF esp32-camera DVP JPEG) — ✅ [`esp_camera`](https://github.com/klin-lang/esp_camera) `@v0.1.0` ([109](109-esp-camera-idf.md); not in `machine_*`; CSI / RGB stream later)  
-18. **ESP32-P4** — later: `machine_esp` Pin… twins (`*_p4`) + [`esp_eth`](https://github.com/klin-lang/esp_eth) **RMII** backend (on-chip EMAC; preferred first RMII target vs classic ESP32); Wi‑Fi/BLE only via companion / other host, not on-die; USB OTG can use [`esp_usb`](https://github.com/klin-lang/esp_usb) when P4 board work starts  
-19. **Later tracks** (Pico LCD shields; USB host classes; camera CSI/stream) — 💭 [103](103-later-tracks-ble-usb-camera-lcd.md) (one at a time; BLE → [106](106-esp-ble-idf.md); USB device CDC → [108](108-esp-usb-idf.md); camera JPEG → [109](109-esp-camera-idf.md))  
-20. **Later network** (SoftAP / RMII / dual Wi‑Fi+ETH / sockets…) — 💭 [104](104-later-tracks-esp-network.md) (one at a time)  
-21. **Later IoT** (MQTT / OTA…) — 💭 maybe [105](105-later-tracks-iot.md) (after sockets + HTTP/TLS in [104](104-later-tracks-esp-network.md))  
-22. **Later Arduino boards** (Leonardo / Uno R4 / Due / Giga / Portenta) — 💭 [107](107-later-tracks-arduino-boards.md) (one silicon family at a time; FAQ [docs/arduino.md](../docs/arduino.md))  
-23. Classic ESP32 / C6 / freestanding ESP / SDCC STM8 — later  
+18. **Pico LCD shield** (Waveshare Pico-LCD-1.14 ST7789) — ✅ [`waveshare_pico_lcd_114`](https://github.com/klin-lang/waveshare_pico_lcd_114) `@v0.1.0` ([110](110-board-waveshare-pico-lcd-114.md); board pack, not `machine_*`)  
+19. **ESP32-P4** — later: `machine_esp` Pin… twins (`*_p4`) + [`esp_eth`](https://github.com/klin-lang/esp_eth) **RMII** backend (on-chip EMAC; preferred first RMII target vs classic ESP32); Wi‑Fi/BLE only via companion / other host, not on-die; USB OTG can use [`esp_usb`](https://github.com/klin-lang/esp_usb) when P4 board work starts  
+20. **Later tags** (USB host classes; camera CSI/stream; LCD font/S3 SPI / other shield sizes) — see [103](103-later-tracks-ble-usb-camera-lcd.md) / [108](108-esp-usb-idf.md) / [109](109-esp-camera-idf.md) / [110](110-board-waveshare-pico-lcd-114.md)  
+21. **Later network** (SoftAP / RMII / dual Wi‑Fi+ETH / sockets…) — 💭 [104](104-later-tracks-esp-network.md) (one at a time)  
+22. **Later IoT** (MQTT / OTA…) — 💭 maybe [105](105-later-tracks-iot.md) (after sockets + HTTP/TLS in [104](104-later-tracks-esp-network.md))  
+23. **Later Arduino boards** (Leonardo / Uno R4 / Due / Giga / Portenta) — 💭 [107](107-later-tracks-arduino-boards.md) (one silicon family at a time; FAQ [docs/arduino.md](../docs/arduino.md))  
+24. Classic ESP32 / C6 / freestanding ESP / SDCC STM8 — later  
 
 ## Out of scope
 
@@ -79,6 +80,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 - ESP BLE (IDF NimBLE, not `machine_*`): https://github.com/klin-lang/esp_ble ([106](106-esp-ble-idf.md))  
 - ESP USB OTG (IDF TinyUSB, not `machine_*`): https://github.com/klin-lang/esp_usb ([108](108-esp-usb-idf.md))  
 - ESP camera (IDF esp32-camera, not `machine_*`): https://github.com/klin-lang/esp_camera ([109](109-esp-camera-idf.md))  
+- Pico LCD shield: https://github.com/klin-lang/waveshare_pico_lcd_114 ([110](110-board-waveshare-pico-lcd-114.md))  
 - Later ESP/Pico tracks: [103](103-later-tracks-ble-usb-camera-lcd.md)  
 - Later ESP network tracks: [104](104-later-tracks-esp-network.md)  
 - Later IoT tracks (maybe): [105](105-later-tracks-iot.md)  

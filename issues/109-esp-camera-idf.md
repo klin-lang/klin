@@ -48,7 +48,7 @@ Track C from [103](103-later-tracks-ble-usb-camera-lcd.md).
 
 - Folding camera into `machine_esp` or board packs  
 - Freestanding (no IDF / no esp32-camera)  
-- Pico LCD shields — still [103](103-later-tracks-ble-usb-camera-lcd.md)  
+- Pico LCD shields — ✅ [110](110-board-waveshare-pico-lcd-114.md) (other sizes later)  
 - USB host webcam class — [`esp_usb`](https://github.com/klin-lang/esp_usb) later tags  
 
 ## Contract (prime rule)
@@ -101,6 +101,7 @@ klin get github/klin-lang/esp_camera@v0.1.0
 - Ethernet sibling: [102](102-esp-eth-idf.md) / [`esp_eth`](https://github.com/klin-lang/esp_eth)  
 - BLE sibling: [106](106-esp-ble-idf.md) / [`esp_ble`](https://github.com/klin-lang/esp_ble)  
 - USB sibling: [108](108-esp-usb-idf.md) / [`esp_usb`](https://github.com/klin-lang/esp_usb)  
+- Pico LCD shield: [110](110-board-waveshare-pico-lcd-114.md) / [`waveshare_pico_lcd_114`](https://github.com/klin-lang/waveshare_pico_lcd_114)  
 - Chip MMIO: [099](099-machine-esp-esp32-s3.md) / [`machine_esp`](https://github.com/klin-lang/machine_esp)  
 - Board (no camera API): [100](100-board-waveshare-esp32-s3-pico.md)  
 - Catalog: [061](061-micropython-machine-api.md), targets [062](062-targets-esp-rp.md)  

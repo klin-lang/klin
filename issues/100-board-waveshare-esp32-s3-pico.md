@@ -25,8 +25,8 @@
   - `adc` — A1 (CH6) → PWM D10
   - `pwm` — D10 LEDC fade
 
-**Out of scope:** BLE, freestanding (no IDF), camera / USB OTG / Pico LCD
-shields (later tracks → [103](103-later-tracks-ble-usb-camera-lcd.md)).
+**Out of scope:** BLE, freestanding (no IDF), camera / USB OTG (→ [109](109-esp-camera-idf.md) / [108](108-esp-usb-idf.md)).
+Pico LCD shields use Pico GP map — [`waveshare_pico_lcd_114`](https://github.com/klin-lang/waveshare_pico_lcd_114) [110](110-board-waveshare-pico-lcd-114.md) (`machine_rp` path; S3 SPI twin later).
 Chip Wi‑Fi (silicon radio) → separate [`esp_wifi`](https://github.com/klin-lang/esp_wifi)
 ([101](101-esp-wifi-idf.md)); this pack has **no** radio API.
 
