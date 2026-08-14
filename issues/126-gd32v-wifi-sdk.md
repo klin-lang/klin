@@ -1,6 +1,6 @@
 # 126 — GD32VW553 Wi‑Fi as a separate SDK package (`gd32v_wifi`)
 
-**Status:** 🔨 STA + SoftAP + scan published [`@v0.3.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.3.0) (assoc RSSI / BLE later)  
+**Status:** 🔨 STA + SoftAP + scan + link + static published [`@v0.4.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.4.0) (APSTA / BLE later)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [117](117-machine-gd32v-gd32vw553.md)
 
 ## Verdict
@@ -8,7 +8,7 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: [`klin-lang/gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.3.0` |
+| Where does the code live? | External: [`klin-lang/gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.4.0` |
 | Engine | **GigaDevice VW55x Wi‑Fi BLE SDK** (`wifi_management` / `wifi_net_ip` / lwIP / OSAL) — not MMIO, **not** ESP-IDF |
 | Relation to `machine_gd32v` | **Separate.** [117](117-machine-gd32v-gd32vw553.md) Pin…Adc twins stay MMIO. Same split as [`esp_wifi`](https://github.com/klin-lang/esp_wifi) vs `machine_esp` ([101](101-esp-wifi-idf.md)). |
 | BLE | Later sibling package (`gd32v_ble`), not this file — same split as [106](106-esp-ble-idf.md) |
@@ -34,7 +34,7 @@ on the include/link path (AN158).
 - Host tests use the C file **without** SDK headers (`__has_include` stubs)  
 - Example `examples/sta_connect/` — needs the official SDK to link an ELF  
 
-Default IP mode = **DHCP** (SDK management starts DHCP after assoc). Static IP later.
+Default IP mode = **DHCP** (SDK management starts DHCP after assoc). Static IP → `@v0.4.0`.
 
 ## Scope (`@v0.2.0` — SoftAP)
 
@@ -48,7 +48,7 @@ Default IP mode = **DHCP** (SDK management starts DHCP after assoc). Static IP l
 - Example `examples/softap/` — needs the official SDK to link an ELF  
 - SoftAP-only on this tag — do **not** mix `sta_*` and `ap_*` (APSTA later)  
 
-Default AP IPv4 = SDK SoftAP (typically `192.168.4.1` + DHCPS). `ap_set_ip` / `ap_station_num` later.
+Default AP IPv4 = SDK SoftAP (typically `192.168.4.1` + DHCPS). `ap_set_ip` / `ap_station_num` → `@v0.4.0`.
 
 Changelog: `@v0.1.0` STA+DHCP → `@v0.2.0` SoftAP
 
@@ -64,10 +64,21 @@ Changelog: `@v0.1.0` STA+DHCP → `@v0.2.0` SoftAP
 
 Changelog: `@v0.1.0` STA+DHCP → `@v0.2.0` SoftAP → `@v0.3.0` scan
 
+## Scope (`@v0.4.0` — link + static + SoftAP extras)
+
+- `sta_rssi` / `sta_channel` / `sta_authmode` / `sta_ap_ssid(out, max_len)` / `sta_log_link` — after `sta_connected`. Each call → SDK (`macif_vif_sta_rssi_get` / `macif_vif_current_chan_get` / `wifi_vif_tab[0].sta.cfg`). Associated SSID into **caller** buffer.  
+- `sta_set_static_ip(ip, gw, mask)` — optional `wifi_set_vif_ip` / `IP_ADDR_STATIC_IPV4`. `0,0,0` = DHCP (default). Prefer before `sta_connect`.  
+- `sta_set_hostname(name)` — optional `wifi_vif_hostname_set` (vif 0). Empty = SDK default.  
+- `ap_set_ip(ip, gw, mask)` — optional SoftAP IPv4 + DHCPS (`IP_ADDR_DHCP_SERVER`). `0,0,0` = SDK default. Prefer before `ap_start`.  
+- `ap_station_num` — associated STA count (`macif_vif_ap_assoc_info_get`; AN158 example treats the return as a count).  
+- Host stubs: after DHCP connect still `192.168.1.50`; after static then connect, those packed `u32`s; link rssi `-42` / ch `6` / auth `3`; `ap_station_num` → `0`.  
+- `version()` → `4`
+
+Changelog: `@v0.1.0` STA+DHCP → `@v0.2.0` SoftAP → `@v0.3.0` scan → `@v0.4.0` link+static+AP extras
+
 ## Out of scope (this tag)
 
-- Associated-AP RSSI / channel / auth (`sta_rssi` later) / APSTA / roaming / WPS / EAP-TLS  
-- Static IPv4 (`wifi_set_vif_ip`) / `ap_set_ip` / `ap_station_num`  
+- APSTA / roaming / WPS / EAP-TLS  
 - BLE — later `gd32v_ble` (AN152), not this package  
 - Sockets / HTTP / MQTT  
 - Board pack / `klin init` — [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) [127](127-board-gd32vw553h-eval.md) (no radio API there)  
@@ -101,7 +112,19 @@ fn main() {
         return
     }
     wifi.sta_log_ip_info()
+    wifi.sta_log_link()
 }
+```
+
+Optional static IPv4 (prefer before `sta_connect`):
+
+```klin
+    let _h = wifi.sta_set_hostname("klin-wifi")
+    let _s = wifi.sta_set_static_ip(
+        wifi.ipv4(10, 0, 0, 20),
+        wifi.ipv4(10, 0, 0, 1),
+        wifi.ipv4(255, 255, 255, 0)
+    )
 ```
 
 ## Usage (SoftAP)
@@ -123,7 +146,18 @@ fn main() {
         return
     }
     wifi.ap_log_ip_info()
+    let _n = wifi.ap_station_num()
 }
+```
+
+Optional AP IPv4 + DHCPS (prefer before `ap_start`):
+
+```klin
+    let _ip = wifi.ap_set_ip(
+        wifi.ipv4(192, 168, 8, 1),
+        wifi.ipv4(192, 168, 8, 1),
+        wifi.ipv4(255, 255, 255, 0)
+    )
 ```
 
 ## Usage (scan)
@@ -147,13 +181,13 @@ fn main() {
 ```
 
 ```sh
-klin get github/klin-lang/gd32v_wifi@v0.3.0
+klin get github/klin-lang/gd32v_wifi@v0.4.0
 ```
 
 ## Links
 
 - Package: https://github.com/klin-lang/gd32v_wifi  
-- Tag: [v0.3.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.3.0) (SoftAP [v0.2.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.2.0), STA [v0.1.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0))  
+- Tag: [v0.4.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.4.0) (scan [v0.3.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.3.0), SoftAP [v0.2.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.2.0), STA [v0.1.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0))  
 - SDK: https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK  
 - AN158 Wi‑Fi Development Guide (GigaDevice)  
 - Chip MMIO: [117](117-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
