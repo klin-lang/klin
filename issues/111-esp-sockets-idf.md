@@ -33,7 +33,7 @@ Sockets sit **above** Wi‑Fi and Ethernet. Folding TCP into `esp_wifi` would hi
 ## Out of scope
 
 - Bringing up Wi‑Fi / ETH / DHCP (→ [101](101-esp-wifi-idf.md) / [102](102-esp-eth-idf.md))  
-- HTTP / TLS (→ [104](104-later-tracks-esp-network.md) **N3**)  
+- HTTP / TLS — ✅ [`esp_http`](https://github.com/klin-lang/esp_http) → [112](112-esp-http-idf.md)  
 - MQTT / OTA (→ [105](105-later-tracks-iot.md); after N3)  
 - IPv6 / non-blocking select/poll MVP  
 - Changing the Klin compiler  
