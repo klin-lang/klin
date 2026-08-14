@@ -38,7 +38,7 @@ Wi‑Fi W1–W3 + N1 dual + N2 sockets + N3 HTTP/TLS done. **Next**: ETH **E1/E2
 
 | # | Track | Likely home | Notes |
 |---|---|---|---|
-| E1 | **RMII internal EMAC** | `esp_eth` | SoCs with on-chip EMAC: classic **ESP32**; prefer **ESP32-P4** (Pin…Adc+Rmt ✅ `machine_esp@v0.12.0` [114](114-machine-esp-esp32-p4.md); RMII still this `esp_eth` track). PHY e.g. LAN8720 / IP101; pins / PHY args explicit. |
+| E1 | **RMII internal EMAC** | `esp_eth` | SoCs with on-chip EMAC: classic **ESP32**; prefer **ESP32-P4** (Pin…Adc+Rmt+LP GPIO ✅ `machine_esp@v0.13.0` [114](114-machine-esp-esp32-p4.md); RMII still this `esp_eth` track). PHY e.g. LAN8720 / IP101; pins / PHY args explicit. |
 | E2 | **Other SPI MAC+PHY** | `esp_eth` | **DM9051**, **KSZ8851SNL** (IDF-native); same pattern as `w5500_start`. |
 | E3 | **ENC28J60** | `esp_eth` (low priority) | IDF-discouraged for new designs; only if hardware on the desk. |
 | E4 | **CH390 / esp-eth-drivers** | later | Outside core IDF; optional after E2. |
