@@ -58,7 +58,7 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `enums.kl` | Enums + enum-as-index ([docs/syntax.md](../docs/syntax.md), [072](../issues/072-enums.md), [126](../issues/126-enum-index.md)) |
 | `associated_fn.kl` | Associated functions ([docs/syntax.md](../docs/syntax.md), [079](../issues/079-associated-functions.md)) |
 | `number_literals.kl` | Binary / exponent literals ([081](../issues/081-number-literals.md)) |
-| `sorted_lookup.kl` | Closed KV: enum index + owned bsearch ([060](../issues/060-map-kv.md) ❌ no map) |
+| `sorted_lookup.kl` | Closed KV: enum index ([126](../issues/126-enum-index.md)) + owned bsearch ([060](../issues/060-map-kv.md) ❌) |
 | `sketch_async_eventloop.kl` | `async`/`await` + remote eventloop ([029](../issues/029-async-event-loop.md); also [`remote_eventloop/`](remote_eventloop/)) |
 
 ## Host — folders
