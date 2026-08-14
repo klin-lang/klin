@@ -1,6 +1,7 @@
-# 086 — `machine_ch32v`: CH32V003 (QingKe RISC-V) Pin…Adc
+# 134 — `machine_ch32v`: CH32V003 (QingKe RISC-V) Pin…Adc
 
 **Status:** ✅ MVP `@v0.1.0` published  
+**Formerly:** `086` (renumbered to resolve duplicate issue numbers).
 
 **Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [010](010-bare-metal.md), [021](021-c-libraries.md)
 
@@ -13,7 +14,7 @@
 | Chip MVP | **CH32V003** (QingKe RV32EC, HSI ≈ 24 MHz) |
 | API | Pin + Pwm + Rc + Uart + I2c + Spi + Adc (same shape as other `machine_*`) |
 | ADC width | **10-bit** (`read_u12` name kept for API parity → `0..=1023`) |
-| vs GD32V | Separate repo ([087](087-machine-gd32v.md)) — different core/vectors |
+| vs GD32V | Separate repo ([135](135-machine-gd32v.md)) — different core/vectors |
 
 ## Scope (MVP `@v0.1.0`)
 
@@ -35,6 +36,6 @@ klin get github/klin-lang/machine_ch32v@v0.1.0
 
 ## Links
 
-- Companion GD32V port: [087](087-machine-gd32v.md)
+- Companion GD32V port: [135](135-machine-gd32v.md)
 - API catalog: [061](061-micropython-machine-api.md)
 - Other RISC-V (ESP-C3 / RP2350): [062](062-targets-esp-rp.md)

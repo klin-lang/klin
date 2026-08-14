@@ -3,9 +3,9 @@
 **Status:** ✅ done
 **Depends on:** [009](009-errors.md) (D2), [014](014-match.md)
 
-Filed as 130; renumbered because `main` already has
-[130-winget](130-winget-scoop-windows.md) /
-[130-gd32v-ble](130-gd32v-ble-sdk.md).
+Filed as 130; renumbered to 132 because `main` already had
+[130](130-winget-scoop-windows.md) (WinGet/Scoop). GD32V BLE is now
+[140](140-gd32v-ble-sdk.md).
 
 ## Verdict
 

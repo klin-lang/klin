@@ -92,13 +92,13 @@ building the core from scratch.
 | [060](060-map-kv.md) | ~~KV map (hash map)~~ | ❌ struck (hidden resize) | — |
 | [061](061-micropython-machine-api.md) | MicroPython-style `machine` API (PWM, UART, …) | ✅ (+ rp Pio+Dma+UsbCdc `@v0.11.0` / ch32v `@v0.1.0` / gd32v `@v0.2.0`) | 010, 031? |
 | [062](062-targets-esp-rp.md) | MCU targets: ESP32 / RP2040 / RP2350 / STM8 / CH32V / GD32V | 🚧 (RP Pio+Dma+UsbCdc ✅ `@v0.11.0`; ESP C3+S3+STM8+CH32V+GD32V Pin…Adc ✅; **P4 Pin…Adc+Rmt+LP GPIO+regi2c+LP UART** ✅ `@v0.15.0`; RMII ✅ `esp_eth@v0.2.0`) | 010 |
-| [086](086-machine-ch32v.md) | `machine_ch32v` CH32V003 QingKe Pin…Adc | ✅ `@v0.1.0` | 061, 062 |
-| [087](087-machine-gd32v.md) | `machine_gd32v` GD32VF103 Nuclei Pin…Adc | ✅ `@v0.2.0` | 061, 086 |
-| [117](117-machine-gd32v-gd32vw553.md) | `machine_gd32v` GD32VW553 Pin…Adc twins (`*_vw553`) | ✅ `@v0.8.0` | 061, 062, 087 |
-| [126](126-gd32v-wifi-sdk.md) | `gd32v_wifi` GD32VW553 STA + SoftAP + scan + link + static (GigaDevice SDK, not `machine_*`) | 🔨 STA+SoftAP+scan+link+static `@v0.4.0` | 021, 024, 049, 061, 062, 117 |
-| [127](127-board-gd32vw553h-eval.md) | Board pack GD32VW553H-EVAL (pins + `klin init`) | 🔨 `@v0.1.0` ([repo](https://github.com/klin-lang/gd32vw553h_eval)) | 061, 062, 075, 117 |
-| [129](129-board-gd32vw553h-start.md) | Board pack GD32VW553 START (UART2 + RGB V4 + `klin init`) | 🔨 `@v0.1.0` ([repo](https://github.com/klin-lang/gd32vw553h_start)) | 061, 062, 075, 117 |
-| [130](130-gd32v-ble-sdk.md) | `gd32v_ble` GD32VW553 advertise + GATT + central + gattc + Just Works bond (GigaDevice AN152, not `machine_*`) | 🔨 advertise+GATT+scan/connect+gattc+jw-bond `@v0.5.0` | 021, 024, 049, 061, 062, 117, 126 |
+| [134](134-machine-ch32v.md) | `machine_ch32v` CH32V003 QingKe Pin…Adc | ✅ `@v0.1.0` | 061, 062 |
+| [135](135-machine-gd32v.md) | `machine_gd32v` GD32VF103 Nuclei Pin…Adc | ✅ `@v0.2.0` | 061, 134 |
+| [136](136-machine-gd32v-gd32vw553.md) | `machine_gd32v` GD32VW553 Pin…Adc twins (`*_vw553`) | ✅ `@v0.8.0` | 061, 062, 135 |
+| [137](137-gd32v-wifi-sdk.md) | `gd32v_wifi` GD32VW553 STA + SoftAP + scan + link + static (GigaDevice SDK, not `machine_*`) | 🔨 STA+SoftAP+scan+link+static `@v0.4.0` | 021, 024, 049, 061, 062, 136 |
+| [138](138-board-gd32vw553h-eval.md) | Board pack GD32VW553H-EVAL (pins + `klin init`) | 🔨 `@v0.1.0` ([repo](https://github.com/klin-lang/gd32vw553h_eval)) | 061, 062, 075, 136 |
+| [139](139-board-gd32vw553h-start.md) | Board pack GD32VW553 START (UART2 + RGB V4 + `klin init`) | 🔨 `@v0.1.0` ([repo](https://github.com/klin-lang/gd32vw553h_start)) | 061, 062, 075, 136 |
+| [140](140-gd32v-ble-sdk.md) | `gd32v_ble` GD32VW553 advertise + GATT + central + gattc + Just Works bond (GigaDevice AN152, not `machine_*`) | 🔨 advertise+GATT+scan/connect+gattc+jw-bond `@v0.5.0` | 021, 024, 049, 061, 062, 136, 137 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
 | [098](098-board-adafruit-rp2040-can-feather.md) | Board pack Adafruit RP2040 CAN Feather (MCP25625) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/adafruit_rp2040_can_feather)) | 061, 062, 075 |
