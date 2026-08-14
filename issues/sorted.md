@@ -156,6 +156,8 @@ building the core from scratch.
 | [127](127-docs-generics-fn.md) | Map: generics are `$fn`, not `[T]` in the compiler | ✅ | 116, 026, 034 |
 | [128](128-fmt-comments.md) | `klin fmt` keeps `//` comments | ✅ | 033 |
 | [129](129-enum-match-exhaustive.md) | Exhaustive `match` on enum (checker) | ✅ | 072, 014 |
+| [130](130-winget-scoop-windows.md) | Windows package channels: WinGet + Scoop (wrap Release `.zip`) | 💭 | 076, 067 |
+| [131](131-linux-install-docs.md) | Linux install docs (tarball) + no apt/snap note | 💭 | 076, 067 |
 
 ---
 
