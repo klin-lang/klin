@@ -1,6 +1,6 @@
 # 114 — `machine_esp` ESP32-P4 (Pin…Adc+Rmt twin factories)
 
-**Status:** ✅ published [`@v0.8.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.8.0) (Pin) / [`@v0.9.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.9.0) (Pwm…Spi) / [`@v0.10.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.10.0) (Rmt TX) / [`@v0.11.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.11.0) (Adc)  
+**Status:** ✅ published [`@v0.8.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.8.0) (Pin) / [`@v0.9.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.9.0) (Pwm…Spi) / [`@v0.10.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.10.0) (Rmt TX) / [`@v0.11.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.11.0) (Adc1) / [`@v0.12.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.12.0) (Adc2)  
 **Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md)
 
 ## Verdict
@@ -11,11 +11,11 @@
 | Where does the code live? | External: [`klin-lang/machine_esp`](https://github.com/klin-lang/machine_esp) |
 | Pattern | Twin factories like S3 `*_s3` / RP `*_rp2350` — **no** shared `#ifdef` mega-driver |
 | C3 / S3 | Unchanged: `pin_out` / `pin_out_s3` / … |
-| P4 | Explicit: `pin_out_p4` / `pin_in_p4` / `pwm_out_p4` / `rc_out_p4` / `uart_out_p4` / `i2c_out_p4` / `spi_out_p4` / `rmt_tx_p4` / `adc_out_p4` |
+| P4 | Explicit: `pin_out_p4` / `pin_in_p4` / `pwm_out_p4` / `rc_out_p4` / `uart_out_p4` / `i2c_out_p4` / `spi_out_p4` / `rmt_tx_p4` / `adc_out_p4` / `adc2_out_p4` |
 
 P4 MMIO is **not** a copy of C3/S3 (`0x6000…`). GPIO / IO_MUX live in the
 `0x500E…` band; peri clocks are **HP_SYS_CLKRST** `0x500E6000` (IDF `soc` / TRM).
-ADC1 oneshot is **LP_ADC** `0x50127000` (not HP SARADC `0x500DE000`).
+ADC oneshot is **LP_ADC** `0x50127000` (not HP SARADC `0x500DE000`): ADC1 MEAS1, ADC2 MEAS2.
 
 ## What changed vs C3/S3 (MMIO, not ISA)
 
@@ -25,7 +25,7 @@ ADC1 oneshot is **LP_ADC** `0x50127000` (not HP SARADC `0x500DE000`).
 4. **GPIO ≥ 32** — `OUT1` / `ENABLE1` / `IN1`  
 5. **Clock** — `GPIO_CLOCK_GATE` bit 0; peri via HP_SYS_CLKRST (not SYSTEM `0x600C…`); ADC oneshot via **LPPERI** `0x50120000`  
 6. **LEDC timer** — DUTY_RES `[4:0]`, CLK_DIV `[22:5]`, RST bit **24**, PARA_UP bit **26**; `LEDC_CONF` `@ +0x170`. Call **`freq_p4`**, not C3/S3 `freq`.  
-7. **ADC1 oneshot** — LP_ADC RTC path. Call **`read_u12_p4` / `read_u16_p4`**, not C3/S3 `read_u12`. CH0→GPIO16 … CH7→GPIO23.  
+7. **ADC oneshot** — LP_ADC RTC path. Call **`read_u12_p4` / `read_u16_p4`**, not C3/S3 `read_u12`. ADC1 CH0→GPIO16 … CH7→GPIO23; ADC2 `adc2_out_p4` CH0→GPIO49 … CH5→GPIO54 (hw pad = channel+2).  
 8. **Signals** — UART0..4 TX/RX **10/13/16/19/22**; LEDC_LS_SIG_OUT0..7 **126..133**; I2C0 SCL/SDA **68/69**; SPI2 CK/Q/D **53/54/55**; RMT_SIG_OUT0..3 **246..249**  
 9. **Examples** — `idf.py set-target esp32p4`
 
@@ -39,12 +39,12 @@ Dual RISC-V vs C3 RISC-V / S3 Xtensa is handled by **ESP-IDF**, not Klin.
 | [`@v0.9.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.9.0) | Pwm/Rc/Uart/I2c/Spi `*_p4` + examples `pwm_p4` / `rc_p4` / `uart_p4` / `i2c_p4` / `spi_p4` |
 | [`@v0.10.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.10.0) | `rmt_tx_p4` (TX ch 0..=3, `put`/`start`/`wait_done`; no DMA/carrier) + `examples/rmt_p4` |
 | [`@v0.11.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.11.0) | `adc_out_p4` + `read_u12_p4` / `read_u16_p4` (ADC1 CH0→GPIO16 … CH7→GPIO23) + `examples/adc_p4` |
+| [`@v0.12.0`](https://github.com/klin-lang/machine_esp/releases/tag/v0.12.0) | `adc2_out_p4` (ADC2 CH0→GPIO49 … CH5→GPIO54; hw pad = channel+2) + `examples/adc2_p4` |
 
-`version()` → `11`.
+`version()` → `12`.
 
 ## Out of scope (this tag)
 
-- ADC2 (GPIO49..54)  
 - regi2c SAR calibration  
 - LP GPIO  
 - RMII Ethernet — [`esp_eth`](https://github.com/klin-lang/esp_eth) [104](104-later-tracks-esp-network.md) **E1** (P4 preferred first RMII host; does not require more `machine_esp` P4 APIs)  
@@ -68,21 +68,22 @@ let servo = machine.rc_out_p4(2, 0, 0, 80000000, 50, 1000, 2000)
 let rmt = machine.rmt_tx_p4(2, 0, 80000000)
 let adc = machine.adc_out_p4(16, 0)
 let raw = adc.read_u12_p4()
+let adc2 = machine.adc2_out_p4(49, 0)
 ```
 
 `uart_out_p4` accepts instance **0..=4**. I2C0 only. SPI2 only. Soft SPI CS via a separate `Pin`.
 `rmt_tx_p4` is TX channels **0..=3** only (no DMA / carrier).
-ADC1 oneshot is LP_ADC — call **`read_u12_p4`**, not `read_u12`.
+ADC oneshot is LP_ADC — call **`read_u12_p4`**, not `read_u12`. ADC2: `adc2_out_p4`.
 
 ```sh
-klin get github/klin-lang/machine_esp@v0.11.0
+klin get github/klin-lang/machine_esp@v0.12.0
 ```
 
 ## Links
 
 - Repo: https://github.com/klin-lang/machine_esp  
-- PR: https://github.com/klin-lang/machine_esp/pull/8 (Pin), [#9](https://github.com/klin-lang/machine_esp/pull/9) (Pwm…Spi), [#10](https://github.com/klin-lang/machine_esp/pull/10) (Rmt), [#11](https://github.com/klin-lang/machine_esp/pull/11) (Adc)  
-- Tags: [v0.8.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.8.0), [v0.9.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.9.0), [v0.10.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.10.0), [v0.11.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.11.0)  
+- PR: https://github.com/klin-lang/machine_esp/pull/8 (Pin), [#9](https://github.com/klin-lang/machine_esp/pull/9) (Pwm…Spi), [#10](https://github.com/klin-lang/machine_esp/pull/10) (Rmt), [#11](https://github.com/klin-lang/machine_esp/pull/11) (Adc1), [#12](https://github.com/klin-lang/machine_esp/pull/12) (Adc2)  
+- Tags: [v0.8.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.8.0), [v0.9.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.9.0), [v0.10.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.10.0), [v0.11.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.11.0), [v0.12.0](https://github.com/klin-lang/machine_esp/releases/tag/v0.12.0)  
 - Catalog: [061](061-micropython-machine-api.md), targets [062](062-targets-esp-rp.md)  
 - S3 twin (same package): [099](099-machine-esp-esp32-s3.md)  
 - RMII later: [102](102-esp-eth-idf.md) / [104](104-later-tracks-esp-network.md)
