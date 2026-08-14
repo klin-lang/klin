@@ -38,7 +38,7 @@ Wi‑Fi W1–W3 + N1 dual + N2 sockets + N3 HTTP/TLS done. **Next**: ETH **E1/E2
 
 | # | Track | Likely home | Notes |
 |---|---|---|---|
-| E1 | **RMII internal EMAC** | `esp_eth` | SoCs with on-chip EMAC: classic **ESP32**; prefer **ESP32-P4** when that port is on the desk (targets [062](062-targets-esp-rp.md) — P4 may still be “Later” there). PHY e.g. LAN8720 / IP101; pins / PHY args explicit. |
+| E1 | **RMII internal EMAC** | `esp_eth` | SoCs with on-chip EMAC: classic **ESP32**; prefer **ESP32-P4** (Pin port started — `machine_esp@v0.8.0` [114](114-machine-esp-esp32-p4.md); RMII still this `esp_eth` track). PHY e.g. LAN8720 / IP101; pins / PHY args explicit. |
 | E2 | **Other SPI MAC+PHY** | `esp_eth` | **DM9051**, **KSZ8851SNL** (IDF-native); same pattern as `w5500_start`. |
 | E3 | **ENC28J60** | `esp_eth` (low priority) | IDF-discouraged for new designs; only if hardware on the desk. |
 | E4 | **CH390 / esp-eth-drivers** | later | Outside core IDF; optional after E2. |
@@ -65,7 +65,7 @@ Parked; do not ship “for completeness”:
 2. Prefer additive tags on existing repos (`esp_wifi` / `esp_eth`) for SoftAP / RMII / SPI backends.  
 3. Sockets / HTTP / TLS / dual-netif glue = **new** packages (like `esp_wifi` vs `machine_esp`).  
 4. Prime rule: no hidden allocation / control flow / cost.  
-5. Classic ESP32 / P4 `machine_*` ports stay under [062](062-targets-esp-rp.md) — RMII in `esp_eth` can land when that silicon is on the desk (does not require a finished `machine_esp` P4 port).
+5. Classic ESP32 `machine_*` stays under [062](062-targets-esp-rp.md). P4 Pin started ([114](114-machine-esp-esp32-p4.md)) — RMII in `esp_eth` still does **not** require more `machine_esp` P4 APIs.
 
 ## Out of scope (this issue)
 

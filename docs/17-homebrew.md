@@ -47,6 +47,31 @@ Upgrade:
 brew upgrade klin
 ```
 
+## macOS Command Line Tools
+
+Homebrew itself needs a current **Xcode Command Line Tools** (CLT) install,
+even when the formula only downloads the **prebuilt** Klin binary (no Dart).
+This is Apple / Homebrew, not a Klin or Dart requirement.
+
+On a new macOS (e.g. **macOS 26**) `brew install` can fail with:
+
+```text
+Error: Your Command Line Tools (CLT) does not support macOS 26.
+You have 16.x.x.
+Update them from Software Update or run:
+  softwareupdate --all --install --force
+If that doesn't show you an update, run:
+  sudo rm -rf /Library/Developer/CommandLineTools
+  sudo xcode-select --install
+```
+
+Or install the CLT package that matches the OS (e.g. **Command Line Tools
+for Xcode 26.3**) from Software Update / Apple Developer, then retry
+`brew install klin-lang/klin/klin`.
+
+`klin run` still needs a host C compiler on `PATH` (`clang` from CLT is
+enough). `--emit-c` does not.
+
 ## Platforms in Release ([076](../issues/076-release-windows-arm.md))
 
 On tag `v*` workflow builds 6 assets (`dart compile exe` per host — no

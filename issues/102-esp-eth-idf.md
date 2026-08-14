@@ -32,7 +32,7 @@
 
 ## Out of scope (this tag)
 
-- RMII / other SPI chips — later → [104](104-later-tracks-esp-network.md) (same `esp_eth` package for RMII + SPI backends; **P4 preferred first RMII** host — see [062](062-targets-esp-rp.md))  
+- RMII / other SPI chips — later → [104](104-later-tracks-esp-network.md) (same `esp_eth` package for RMII + SPI backends; **P4 preferred first RMII** host — Pin port started [114](114-machine-esp-esp32-p4.md); RMII is still this package)  
 - Dual Wi‑Fi+ETH prefer/failover ✅ [113](113-esp-netif-dual-idf.md); sockets ✅ [111](111-esp-sockets-idf.md); HTTP ✅ [112](112-esp-http-idf.md)  
 - Freestanding (no IDF)  
 - Folding into `machine_esp` or board pack APIs
@@ -117,5 +117,5 @@ klin get github/klin-lang/esp_eth@v0.1.2
 - Dual Wi‑Fi+ETH glue: [113](113-esp-netif-dual-idf.md) / [`esp_netif_dual`](https://github.com/klin-lang/esp_netif_dual)  
 - BLE sibling: [106](106-esp-ble-idf.md) / [`esp_ble`](https://github.com/klin-lang/esp_ble)  
 - Network later backlog: [104](104-later-tracks-esp-network.md)  
-- Chip MMIO: [099](099-machine-esp-esp32-s3.md) / [`machine_esp`](https://github.com/klin-lang/machine_esp)  
+- Chip MMIO: [099](099-machine-esp-esp32-s3.md) / [114](114-machine-esp-esp32-p4.md) / [`machine_esp`](https://github.com/klin-lang/machine_esp)  
 - Catalog: [061](061-micropython-machine-api.md), targets [062](062-targets-esp-rp.md)  
