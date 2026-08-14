@@ -1,6 +1,6 @@
-# 117 — `machine_gd32v` GD32VW553 (Pin… later twins)
+# 117 — `machine_gd32v` GD32VW553 (Pin…Adc twins)
 
-**Status:** 🔨 Pin ✅ [`@v0.3.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.3.0); Pwm+Rc ✅ [`@v0.4.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.4.0); Uart ✅ [`@v0.5.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.5.0); I2c ✅ [`@v0.6.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.6.0); Spi…Adc later  
+**Status:** ✅ Pin…Adc [`@v0.8.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.8.0) (Pin [`@v0.3.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.3.0); Pwm+Rc [`@v0.4.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.4.0); Uart [`@v0.5.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.5.0); I2c [`@v0.6.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.6.0); Spi [`@v0.7.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.7.0); Adc [`@v0.8.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.8.0))
 **Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [087](087-machine-gd32v.md)
 
 ## Verdict
@@ -10,8 +10,8 @@
 | Change the Klin compiler? | **No** |
 | Where does the code live? | Same package: [`klin-lang/machine_gd32v`](https://github.com/klin-lang/machine_gd32v) |
 | Pattern | Twin factories `*_vw553` — **no** shared `#ifdef` mega-driver |
-| VF103 | Unchanged: `pin_out` / `pwm_out` / `rc_out` / `uart_out` / `i2c_out` / … ([087](087-machine-gd32v.md)) |
-| VW553 | Explicit: `pin_out_vw553` / `pin_in_vw553` [`@v0.3.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.3.0); `pwm_out_vw553` / `rc_out_vw553` [`@v0.4.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.4.0); `uart_out_vw553` [`@v0.5.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.5.0); `i2c_out_vw553` → `I2cVw553` [`@v0.6.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.6.0). Spi…Adc later. |
+| VF103 | Unchanged: `pin_out` / `pwm_out` / `rc_out` / `uart_out` / `i2c_out` / `spi_out` / … ([087](087-machine-gd32v.md)) |
+| VW553 | Explicit: `pin_out_vw553` / `pin_in_vw553` [`@v0.3.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.3.0); `pwm_out_vw553` / `rc_out_vw553` [`@v0.4.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.4.0); `uart_out_vw553` [`@v0.5.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.5.0); `i2c_out_vw553` → `I2cVw553` [`@v0.6.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.6.0); `spi_out_vw553` [`@v0.7.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.7.0); `adc_out_vw553` → `AdcVw553` [`@v0.8.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.8.0). |
 
 VW553 MMIO is **not** a copy of VF103. VF103 is Nuclei **N205** with F1-style
 GPIO (`CTL0`/`CTL1` @ `0x40010800`, RCU APB2 @ `0x40021000`). VW553 is Nuclei
@@ -31,12 +31,13 @@ SDK (same split as [`esp_wifi`](https://github.com/klin-lang/esp_wifi) vs
    `PBEN=1`, `PCEN=2`. Timer clocks: `RCU_APB1EN` `+0x40` (`TIMER1EN=0`,
    `TIMER2EN=1`), `RCU_APB2EN` `+0x44` (`TIMER0EN=0`, `TIMER15EN=17`,
    `TIMER16EN=18`). USART clocks: APB1 `USART0EN=18`, `UART1EN=17`; APB2
-   `UART2EN=4`. I2C clocks: APB1 `I2C0EN=21`, `I2C1EN=22`. Default IRC16M
-   **16 MHz** (not VF103 IRC8M).
+   `UART2EN=4`. I2C clocks: APB1 `I2C0EN=21`, `I2C1EN=22`. SPI clock: APB2
+   `SPIEN=12`. ADC clock: APB2 `ADCEN=8`. Default IRC16M **16 MHz** (not VF103 IRC8M).
 3. **Ports** — A..C, pins 0..=15 (package may bond fewer pads; edit the example).
 4. **AF** — `GPIOx_AFSEL0/1` `+0x20`/`+0x24` (4 bits/pin, AF 0..=15). **Not**
    VF103 AFIO remap. Caller passes `af` (PA0 TIMER1_CH0 = **AF1**, PA0
-   USART0_TX = **AF0**, PA2 I2C0_SCL = **AF2**, datasheet Table 2-5).
+   USART0_TX = **AF0**, PA2 I2C0_SCL = **AF2**, PA5 SPI_SCK = **AF4**,
+   PA0 ADC_IN0 = analog / no AF, datasheet Table 2-5).
 5. **Timers** — TIMER0 `0x40010000` (advanced, CCHP MOE); TIMER1 `0x40000000` /
    TIMER2 `0x40000400` (32-bit CNT/CAR); TIMER15 `0x40018000` / TIMER16
    `0x40018400` (CCHP MOE). TIMER5 is basic — no PWM channels. Same `Pwm` /
@@ -51,10 +52,19 @@ SDK (same split as [`esp_wifi`](https://github.com/klin-lang/esp_wifi) vs
    CKCFG (same base addresses, different registers). Factory returns
    **`I2cVw553`** with the same method names as `I2c` (different IP — no kind
    branch on the VF103 path). Default SCL=PA2 AF2 / SDA=PA3 AF2.
-8. **Core** — N307 (RV32IMAFDCPB). Examples stay polling; no ECLIC this tag.
+8. **SPI** — one SPI @ `0x40013000` (APB2 bit 12). Same CTL0/STAT/DATA as
+   VF103 SPI0 — same `Spi` methods (TBE=bit 1, RBNE=bit 0). Soft NSS.
+   Default SCK=PA5 AF4 / MISO=PA6 AF3 / MOSI=PA7 AF5.
+9. **ADC** — one ADC @ `0x40012000` (APB2 bit 8). UM §12.5 CTL1 SWRCST **bit 30**,
+   4-bit SAMPT, 12-bit DRES=00 — **not** VF103 ADC0 @ `0x40012400` / SWRCST
+   bit 22. Factory returns **`AdcVw553`** with the same method names as `Adc`.
+   GPIO analog (`CTL=11`), no AF. Default CH0=PA0. Channels 0..=8 = PAx;
+   9=temp / 10=VREFINT (`TSVREN`).
+10. **Core** — N307 (RV32IMAFDCPB). Examples stay polling; no ECLIC this tag.
 
-Same `Pin` / `Pwm` / `Rc` / `Uart` methods as VF103 — only the factory and
-register pointers differ. I2c is `I2cVw553` (new-style IP).
+Same `Pin` / `Pwm` / `Rc` / `Uart` / `Spi` methods as VF103 — only the factory
+and register pointers differ. I2c is `I2cVw553` and Adc is `AdcVw553`
+(different IP).
 
 ## Scope (`@v0.3.0` — Pin)
 
@@ -85,9 +95,24 @@ register pointers differ. I2c is `I2cVw553` (new-style IP).
   IRC16M ≈ 16 MHz, 100 kHz; external pull-ups)
 - `version()` → 5
 
+## Scope (`@v0.7.0` — Spi)
+
+- `spi_out_vw553(spi, sck_*, miso_*, mosi_*, spi_clk_hz, baud_hz, mode)` → `Spi`
+- Host tests for SPI base / baud@16 MHz (no factory MMIO)
+- Example `examples/spi_pa5_vw553/` (SCK=PA5 AF4, MISO=PA6 AF3, MOSI=PA7 AF5,
+  IRC16M ≈ 16 MHz, 1 MHz mode 0, soft CS=PA4)
+- `version()` → 6
+
+## Scope (`@v0.8.0` — Adc)
+
+- `adc_out_vw553(port, num, channel)` → `AdcVw553`
+- Host tests for ADC base / channel clamp / SAMPT layout (no factory MMIO)
+- Example `examples/adc_pa0_vw553/` (CH0=PA0 analog, PWM fade on PA1
+  TIMER1_CH1 AF1, IRC16M ≈ 16 MHz)
+- `version()` → 7
+
 ## Out of scope (this tag)
 
-- Spi / Adc `*_vw553` (later tags, same package)
 - Wi‑Fi / BLE (new packages, not `machine_gd32v`; not `esp_wifi`)
 - Board pack / `klin init` for a VW553 module
 - Full Nuclei / GigaDevice wireless SDK vendoring
@@ -121,13 +146,25 @@ fn main() {
     let mut w: [1]u8
     w[0] = 0
     bus.writeto(0x50, w)
+    let s = machine.spi_out_vw553(
+        0,
+        machine.Port.A, 5, 4,
+        machine.Port.A, 6, 3,
+        machine.Port.A, 7, 5,
+        16000000,
+        1000000,
+        0
+    )
+    let _ = s.write_read_u8(0x9F)
+    let adc = machine.adc_out_vw553(machine.Port.A, 0, 0)
+    let raw = adc.read_u12()
 }
 ```
 
-Do **not** call `pin_out` / `pwm_out` / `rc_out` / `uart_out` / `i2c_out` (VF103) on a VW553.
+Do **not** call `pin_out` / `pwm_out` / `rc_out` / `uart_out` / `i2c_out` / `spi_out` / `adc_out` (VF103) on a VW553.
 
 ```sh
-klin get github/klin-lang/machine_gd32v@v0.6.0
+klin get github/klin-lang/machine_gd32v@v0.8.0
 ```
 
 ## Links
@@ -136,6 +173,8 @@ klin get github/klin-lang/machine_gd32v@v0.6.0
 - Tags: [v0.3.0](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.3.0) (Pin),
   [v0.4.0](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.4.0) (Pwm+Rc),
   [v0.5.0](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.5.0) (Uart),
-  [v0.6.0](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.6.0) (I2c)
+  [v0.6.0](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.6.0) (I2c),
+  [v0.7.0](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.7.0) (Spi),
+  [v0.8.0](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.8.0) (Adc)
 - VF103 MVP: [087](087-machine-gd32v.md)
 - Catalog: [061](061-micropython-machine-api.md), targets [062](062-targets-esp-rp.md)
