@@ -1,6 +1,6 @@
 # 117 — `machine_gd32v` GD32VW553 (Pin… later twins)
 
-**Status:** 🔨 Pin first (`pin_out_vw553` / `pin_in_vw553`)  
+**Status:** 🔨 Pin ✅ [`@v0.3.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.3.0); Pwm…Adc later  
 **Depends on:** [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [087](087-machine-gd32v.md)
 
 ## Verdict
@@ -62,8 +62,13 @@ fn main() {
 
 Do **not** call `pin_out` (VF103) on a VW553.
 
+```sh
+klin get github/klin-lang/machine_gd32v@v0.3.0
+```
+
 ## Links
 
 - Package: https://github.com/klin-lang/machine_gd32v
+- Tag: [v0.3.0](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.3.0)
 - VF103 MVP: [087](087-machine-gd32v.md)
 - Catalog: [061](061-micropython-machine-api.md), targets [062](062-targets-esp-rp.md)
