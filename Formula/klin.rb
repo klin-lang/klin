@@ -60,6 +60,11 @@ class Klin < Formula
     <<~EOS
       Klin needs a host C compiler (gcc, clang, or tcc) on PATH for `klin run`.
 
+      On macOS, Homebrew also needs current Xcode Command Line Tools (CLT),
+      even for this prebuilt bottle (no Dart). A new OS can fail with
+      "CLT does not support macOS …" — update CLT via Software Update or
+      `xcode-select --install`, then retry. That is Apple/Homebrew, not Klin.
+
       Stdlib is installed at:
         #{pkgshare}/stdlib
       Board scaffolds (`klin init`) at:

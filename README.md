@@ -56,6 +56,12 @@ Or: `brew tap klin-lang/klin` then `brew install klin`
 Latest `main`: `brew install --HEAD klin-lang/klin/klin`.
 Upgrade: `brew upgrade klin`.
 
+macOS: Homebrew needs **current Xcode Command Line Tools**, even for the
+prebuilt binary (no Dart). A new OS (e.g. macOS 26) can fail with
+`CLT does not support macOS 26` — update CLT via Software Update or
+`xcode-select --install` (e.g. CLT for Xcode 26.3), then retry. That is
+Apple/Homebrew, not Klin. Details: [docs/17-homebrew.md](docs/17-homebrew.md).
+
 Formula source of truth in this repo: [`Formula/klin.rb`](Formula/klin.rb)
 (keep in sync with the tap). Details: [docs/17-homebrew.md](docs/17-homebrew.md).
 

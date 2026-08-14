@@ -28,6 +28,11 @@ homebrew-core later.
 `brew upgrade klin` = upgrade the **compiler**, not `.kl` packages
 ([066](066-klin-upgrade-outdated.md)).
 
+macOS: Homebrew needs **current Xcode Command Line Tools** even for the
+prebuilt formula (no Dart). New OS versions can refuse an old CLT
+(`CLT does not support macOS …`) — update via Software Update /
+`xcode-select --install`. See [docs/17-homebrew.md](../docs/17-homebrew.md).
+
 ## Checklist
 
 - [x] `Formula/klin.rb` (HEAD + room for stable url/sha256)
