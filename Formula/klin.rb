@@ -5,6 +5,7 @@
 #
 # Tap (recommended):
 #   brew tap dart-lang/dart
+#   brew trust --formula dart-lang/dart/dart   # Homebrew 6+
 #   brew install klin-lang/klin/klin
 #   brew install --HEAD klin-lang/klin/klin
 #
