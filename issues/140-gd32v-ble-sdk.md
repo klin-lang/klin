@@ -155,7 +155,7 @@ Same Klin names as [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.9.0`:
 - Bonding already distributes IRK (`bond_enable` / `bond_passkey`) for peer resolution  
 - `version()` → `9`  
 - Example `examples/privacy/`  
-- **Not** included (until later, like `esp_ble@v0.10.0`): Mesh; host-RPA knobs beyond controller privacy  
+- **Not** included (until `@v0.10.0`): Mesh — see below; host-RPA knobs beyond controller privacy  
 
 ## Scope (`@v0.10.0` — Mesh Gen OnOff)
 
