@@ -1,6 +1,6 @@
 # 130 — Windows package channels: WinGet + Scoop
 
-**Status:** 💭 planned (today: `.zip` from Release only)
+**Status:** 🔨 Scoop ✅ live ([`klin-lang/scoop-klin`](https://github.com/klin-lang/scoop-klin)); WinGet 💭 planned
 **Depends on:** [076](076-release-windows-arm.md), [067](067-homebrew.md)
 
 ## Goal
@@ -95,13 +95,23 @@ Gotcha: the SHA256 comes from the published `.sha256` sidecar — never
 hand-compute. `klin run` still needs a host C compiler (MSVC/clang/mingw);
 `--emit-c` does not.
 
-## Scoop
+## Scoop — ✅ done
+
+Live bucket: [`klin-lang/scoop-klin`](https://github.com/klin-lang/scoop-klin)
+(`bucket/klin.json`).
+
+```powershell
+scoop bucket add klin https://github.com/klin-lang/scoop-klin
+scoop install klin
+```
 
 - App manifest `klin.json` (`version`, `architecture.64bit`/`arm64` `url` +
-  `hash`, `bin: "klin.exe"`, `extract_dir`) pointing at the Release `.zip`.
-- Host in a bucket repo (e.g. `klin-lang/scoop-klin`) mirroring the Homebrew tap
-  pattern; keep a copy in this repo for review like `Formula/klin.rb`.
-- `checkver` + `autoupdate` blocks so new tags bump the manifest automatically.
+  `hash`, `bin: "klin.exe"`) points at the Release `.zip` (`stdlib\` +
+  `templates\` sit beside `klin.exe` at the archive root, so no `extract_dir`).
+- `checkver` + `autoupdate` blocks bump `version` / `url` / `hash` from the
+  Release `.sha256` sidecars on each new tag.
+- Manifest verified as valid JSON with reachable asset URLs (`v0.1.3`, x64 +
+  arm64); an end-to-end `scoop install` on a Windows host is still pending.
 
 ## Release automation (optional, later)
 
@@ -117,9 +127,11 @@ on `PATH` (MSVC / clang / mingw on Windows). `--emit-c` does not.
 
 ## Criteria
 
-- [ ] Scoop manifest `klin.json` (x64 + arm64, hashes from Release) in repo +
-      bucket repo.
+- [x] Scoop manifest `klin.json` (x64 + arm64, hashes from Release) in bucket
+      repo [`klin-lang/scoop-klin`](https://github.com/klin-lang/scoop-klin).
 - [ ] WinGet manifest set for `klin-lang.klin` (x64 + arm64) prepared.
-- [ ] Docs: Windows install via WinGet/Scoop in
-      [docs/17-homebrew.md](../docs/17-homebrew.md) (or a rename) + README.
-- [ ] `winget install` / `scoop install` yield a working `klin --version`.
+- [x] Docs: Scoop install in [docs/17-homebrew.md](../docs/17-homebrew.md) +
+      README (WinGet still pending).
+- [ ] `winget install` / `scoop install` yield a working `klin --version`
+      (Scoop manifest validated: valid JSON + reachable URLs; Windows run
+      pending).

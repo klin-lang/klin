@@ -93,6 +93,14 @@ klin run examples/hello.kl          # from a clone
 
 Details and CLT notes: [docs/17-homebrew.md](docs/17-homebrew.md).
 
+**Windows** (Scoop, prebuilt, no Dart):
+
+```powershell
+scoop bucket add klin https://github.com/klin-lang/scoop-klin
+scoop install klin
+klin --version
+```
+
 **From source** (Dart SDK `^3.5` + a host C compiler):
 
 ```sh

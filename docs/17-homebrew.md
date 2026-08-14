@@ -83,9 +83,32 @@ cross-compilation):
 | Linux x64 / arm64 | `klin-linux-amd64.tar.gz` / `klin-linux-arm64.tar.gz` |
 | Windows x64 / arm64 | `klin-windows-amd64.zip` / `klin-windows-arm64.zip` |
 
-Each asset has `.sha256`. Homebrew covers macOS/Linux; Windows for now via
-`.zip` from Release (Scoop/WinGet — future). On Windows host C compiler for
-`klin run` is MSVC / clang / mingw.
+Each asset has `.sha256`. Homebrew covers macOS/Linux; Windows via **Scoop**
+(below) or the raw `.zip` from Release (WinGet — future, see
+[130](../issues/130-winget-scoop-windows.md)). On Windows the host C compiler
+for `klin run` is MSVC / clang / mingw.
+
+## Windows (Scoop)
+
+Prebuilt, no Dart. Bucket: [`klin-lang/scoop-klin`](https://github.com/klin-lang/scoop-klin)
+(wraps the `klin-windows-*.zip` Release assets; `stdlib\` + `templates\` ship
+beside `klin.exe`).
+
+```powershell
+scoop bucket add klin https://github.com/klin-lang/scoop-klin
+scoop install klin
+klin --version
+```
+
+Upgrade after a new `v*` release (the manifest auto-updates via
+`checkver` / `autoupdate`):
+
+```powershell
+scoop update klin
+```
+
+`klin run` still needs a host C compiler on `PATH` (MSVC / clang / mingw);
+`--emit-c` does not.
 
 ## Releasing a new stable formula
 
