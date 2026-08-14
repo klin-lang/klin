@@ -8,7 +8,7 @@ not recreate it.
 | If you want… | Read |
 |---|---|
 | What Klin is, why C, who it is for | [../README.md](../README.md) (landing) then [00-idea.md](00-idea.md) |
-| To write a small program | [guide.md](guide.md) |
+| To write a small program | [guide.md](guide.md) (`if` / `defer` / `import` / precedence) |
 | Blink on a board (`klin init`) | [embedded.md](embedded.md) |
 | Typed MCU registers (SVD) | [device.md](device.md) |
 | Runnable demos | [../examples/README.md](../examples/README.md) |
@@ -41,9 +41,11 @@ These are feature write-ups. The tutorial is [guide.md](guide.md).
 | [16-slice.md](16-slice.md) | `slice` / `slice_alloc` |
 | [18-pick.md](18-pick.md) | `pick cond { a } { b }` → `?:` |
 
-Enums, associated functions, bitwise / logical operators, destructuring:
-see the matching `issues/0xx-*.md` and `examples/*.kl` until those notes
-exist. Do not treat `issues/` as the user guide.
+`if` / `defer` / `import` and the operator table live in
+[guide.md](guide.md) (§4, §6, §8, §9). Enums, associated functions, and
+destructuring still have no dedicated note — see the matching
+`issues/0xx-*.md` and `examples/*.kl`. Do not treat `issues/` as the
+user guide.
 
 ## Tooling
 

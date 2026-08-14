@@ -1,7 +1,8 @@
 # Modules (issue 006)
 
 `module` / `import` / `pub` — encapsulation instead of flat C linkage.
-Search paths (`lib/`, `-I`, directory package): [11-klin-libraries.md](11-klin-libraries.md).
+Tutorial: [guide.md](guide.md) §8. Search paths (`lib/`, `-I`, directory
+package): [11-klin-libraries.md](11-klin-libraries.md).
 
 ## Syntax
 

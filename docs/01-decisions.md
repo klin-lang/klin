@@ -155,7 +155,8 @@ Binary `&` vs unary `&` (address) — distinguished by position, like `*`
 (multiplication vs dereference).
 
 Implemented in [078](../issues/078-bitwise-ops.md); example:
-[`examples/bitwise.kl`](../examples/bitwise.kl).
+[`examples/bitwise.kl`](../examples/bitwise.kl). Combined table (with
+`&&` / `||` / `or { }`): [guide.md](guide.md) §9.
 
 ---
 
@@ -179,7 +180,8 @@ Without a `&&` token, `a && b` used to lex as `&` `&` and parse as
 as single tokens closes that hole.
 
 Implemented in [097](../issues/097-logical-ops.md); example:
-[`examples/logical.kl`](../examples/logical.kl).
+[`examples/logical.kl`](../examples/logical.kl). Combined table:
+[guide.md](guide.md) §9.
 
 ---
 

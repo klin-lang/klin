@@ -143,6 +143,7 @@ building the core from scratch.
 | [116](116-docs-reorg.md) | Docs map: landing README, idea, short guide (not STM32-only) | ✅ | 036, 082, 023 |
 | [117](117-docs-device.md) | User doc for SVD / `$device` / fluent MMIO | ✅ | 116, 011, 027, 053 |
 | [118](118-docs-embedded.md) | User doc: `klin init` walkthrough (not STM32-only) | ✅ | 116, 075, 054 |
+| [119](119-docs-guide-control.md) | Guide: `if` / `defer` / `import` + precedence table | ✅ | 116, 003, 008, 006 |
 
 ---
 
