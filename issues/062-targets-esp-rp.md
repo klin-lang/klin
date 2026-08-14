@@ -21,7 +21,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 | **STM8S** | ✅ Pin…Adc (emit-c) | [`machine_stm8`](https://github.com/klin-lang/machine_stm8) `@v0.2.0` — no DAC; SDCC link later. |
 | **CH32V003** | ✅ Pin…Adc | [`machine_ch32v`](https://github.com/klin-lang/machine_ch32v) `@v0.1.0` — QingKe RV32EC ([086](086-machine-ch32v.md)). |
 | **GD32VF103** | ✅ Pin…Adc | [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v) `@v0.2.0` — Nuclei N205 ([087](087-machine-gd32v.md)). |
-| **GD32VW553** | ✅ Pin…Adc; 🔨 Wi‑Fi STA | Same package [`@v0.8.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.8.0) — `pin_out_vw553`…`adc_out_vw553` ([117](117-machine-gd32v-gd32vw553.md)); Wi‑Fi → [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.1.0` [126](126-gd32v-wifi-sdk.md) (GigaDevice `wifi_management`, **not** ESP-IDF). Nuclei N307; F4-style GPIO. BLE later. |
+| **GD32VW553** | ✅ Pin…Adc; 🔨 Wi‑Fi STA | Same package [`@v0.8.0`](https://github.com/klin-lang/machine_gd32v/releases/tag/v0.8.0) — `pin_out_vw553`…`adc_out_vw553` ([117](117-machine-gd32v-gd32vw553.md)); Wi‑Fi → [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [`@v0.1.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0) [126](126-gd32v-wifi-sdk.md) (GigaDevice `wifi_management`, **not** ESP-IDF). Nuclei N307; F4-style GPIO. BLE later. |
 | **ESP32** (classic / other) | Later | Classic = **Xtensa**; C6 etc. separate from C3/S3/P4. |
 
 ## What already carries to these MCUs

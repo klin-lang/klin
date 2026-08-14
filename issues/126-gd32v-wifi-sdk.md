@@ -1,6 +1,6 @@
 # 126 — GD32VW553 Wi‑Fi as a separate SDK package (`gd32v_wifi`)
 
-**Status:** 🔨 STA first slice `@v0.1.0` (package tree ready; publish when [`klin-lang/gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) exists)  
+**Status:** 🔨 STA published [`@v0.1.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0) (SoftAP / scan / BLE later)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [117](117-machine-gd32v-gd32vw553.md)
 
 ## Verdict
@@ -82,7 +82,7 @@ klin get github/klin-lang/gd32v_wifi@v0.1.0
 ## Links
 
 - Package: https://github.com/klin-lang/gd32v_wifi  
-- First tag: `v0.1.0` (after the repo is created and the tree is pushed)  
+- Tag: [v0.1.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0)  
 - SDK: https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK  
 - AN158 Wi‑Fi Development Guide (GigaDevice)  
 - Chip MMIO: [117](117-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
