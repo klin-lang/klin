@@ -219,12 +219,12 @@ void main() {
 
   test('templatesCandidatesForInstallRoot Homebrew + release layout', () {
     final sep = Platform.pathSeparator;
-    final roots = ['/opt/klin', '/opt/homebrew/Cellar/klin/0.1.1'];
+    final roots = ['/opt/klin', '/opt/homebrew/Cellar/klin/0.1.2'];
     final paths = templatesCandidatesForInstallRoot(roots).toList();
     expect(paths, contains('/opt/klin${sep}templates'));
     expect(
       paths,
-      contains('/opt/homebrew/Cellar/klin/0.1.1${sep}share${sep}klin${sep}templates'),
+      contains('/opt/homebrew/Cellar/klin/0.1.2${sep}share${sep}klin${sep}templates'),
     );
   });
 
