@@ -209,7 +209,7 @@ final class Parser {
 
   /// `import <ident|"path"> [alias]` (issue 048).
   ImportSpec _importSpec() {
-    final keyword = _expect(TokenKind.import, 'oczekiwano `import`');
+    final keyword = _expect(TokenKind.import, 'expected `import`');
     final String spec;
     final bool isPath;
     if (_check(TokenKind.string)) {
@@ -262,10 +262,10 @@ final class Parser {
   }
 
   StructDecl _struct(bool isPub, List<Attr> attrs) {
-    final keyword = _expect(TokenKind.struct, 'oczekiwano `struct`');
+    final keyword = _expect(TokenKind.struct, 'expected `struct`');
     final name = _expect(TokenKind.ident, 'expected struct name');
     _rejectCKeyword(name, 'a struct name');
-    _expect(TokenKind.lBrace, 'oczekiwano `{`');
+    _expect(TokenKind.lBrace, 'expected `{`');
     final fields = <FieldDecl>[];
     while (!_check(TokenKind.rBrace) && !_check(TokenKind.eof)) {
       // Shared type: `x, y: T` ≡ `x: T` `y: T` (issue 068). Names accumulate
@@ -286,7 +286,7 @@ final class Parser {
         _expect(TokenKind.comma, 'expected `,` or `:` after field name');
       }
     }
-    _expect(TokenKind.rBrace, 'oczekiwano `}`');
+    _expect(TokenKind.rBrace, 'expected `}`');
     return StructDecl(
       name: name.lexeme,
       fields: fields,
@@ -298,7 +298,7 @@ final class Parser {
   }
 
   EnumDecl _enum(bool isPub, List<Attr> attrs) {
-    final keyword = _expect(TokenKind.enum_, 'oczekiwano `enum`');
+    final keyword = _expect(TokenKind.enum_, 'expected `enum`');
     final name = _expect(TokenKind.ident, 'expected enum name');
     _rejectCKeyword(name, 'an enum name');
     String? baseTypeName;
@@ -306,7 +306,7 @@ final class Parser {
       _advance();
       baseTypeName = _typeName();
     }
-    _expect(TokenKind.lBrace, 'oczekiwano `{`');
+    _expect(TokenKind.lBrace, 'expected `{`');
     final variants = <EnumVariant>[];
     while (!_check(TokenKind.rBrace) && !_check(TokenKind.eof)) {
       final variant = _expect(TokenKind.ident, 'expected enum variant name');
@@ -323,7 +323,7 @@ final class Parser {
       // `A` / `B` (canonical fmt style, like struct fields) both parse.
       if (_check(TokenKind.comma)) _advance();
     }
-    _expect(TokenKind.rBrace, 'oczekiwano `}`');
+    _expect(TokenKind.rBrace, 'expected `}`');
     if (variants.isEmpty) {
       throw ParseError(
           'enum `${name.lexeme}` must have at least one variant', keyword.pos);
@@ -340,7 +340,7 @@ final class Parser {
   }
 
   FuncDecl _func(bool isPub, List<Attr> attrs, {bool isAsync = false}) {
-    final fn = _expect(TokenKind.fn, 'oczekiwano `fn`');
+    final fn = _expect(TokenKind.fn, 'expected `fn`');
     Receiver? receiver;
     if (_check(TokenKind.lParen)) {
       _advance();
@@ -379,7 +379,7 @@ final class Parser {
       throw ParseError(
           'async associated functions are not supported in MVP', fn.pos);
     }
-    _expect(TokenKind.lParen, 'oczekiwano `(`');
+    _expect(TokenKind.lParen, 'expected `(`');
     final params = <Param>[];
     if (!_check(TokenKind.rParen)) {
       // Shared type: `a, b: T` ≡ `a: T, b: T` (issue 068). Names accumulate
@@ -405,7 +405,7 @@ final class Parser {
         _expect(TokenKind.comma, 'expected `,` or `:` after parameter name');
       }
     }
-    _expect(TokenKind.rParen, 'oczekiwano `)`');
+    _expect(TokenKind.rParen, 'expected `)`');
 
     String? returnTypeName;
     if (_check(TokenKind.colon)) {
@@ -432,7 +432,7 @@ final class Parser {
   }
 
   Block _block() {
-    final open = _expect(TokenKind.lBrace, 'oczekiwano `{`');
+    final open = _expect(TokenKind.lBrace, 'expected `{`');
     final stmts = <Stmt>[];
     while (!_check(TokenKind.rBrace) && !_check(TokenKind.eof)) {
       try {
@@ -446,7 +446,7 @@ final class Parser {
         _synchronizeStmt();
       }
     }
-    _expect(TokenKind.rBrace, 'oczekiwano `}`');
+    _expect(TokenKind.rBrace, 'expected `}`');
     return Block(stmts, open.pos);
   }
 
@@ -518,10 +518,10 @@ final class Parser {
   }
 
   AsmStmt _asmStmt() {
-    final keyword = _expect(TokenKind.asm_, 'oczekiwano `asm`');
-    _expect(TokenKind.lParen, 'oczekiwano `(` po `asm`');
-    final code = _expect(TokenKind.string, 'oczekiwano napis instrukcji asm');
-    _expect(TokenKind.rParen, 'oczekiwano `)` po instrukcji asm');
+    final keyword = _expect(TokenKind.asm_, 'expected `asm`');
+    _expect(TokenKind.lParen, 'expected `(` after `asm`');
+    final code = _expect(TokenKind.string, 'expected asm instruction string');
+    _expect(TokenKind.rParen, 'expected `)` after the asm instruction');
     return AsmStmt(code.lexeme, keyword.pos);
   }
 
@@ -641,7 +641,7 @@ final class Parser {
 
   /// `{ field [: target], … } = source` — bare struct assign (phase A′).
   Stmt _structAssign() {
-    final open = _expect(TokenKind.lBrace, 'oczekiwano `{`');
+    final open = _expect(TokenKind.lBrace, 'expected `{`');
     final fields = <String>[];
     final targets = <Expr>[];
     final seenFields = <String>{};
@@ -693,7 +693,7 @@ final class Parser {
   }
 
   IfStmt _ifStmt() {
-    final ifTok = _expect(TokenKind.if_, 'oczekiwano `if`');
+    final ifTok = _expect(TokenKind.if_, 'expected `if`');
     // Optional parens: `if cond {` and `if (cond) {` — same. Suppress struct
     // literals so a trailing `name {` is the body brace (issue 064).
     final cond = _headerExpr();
@@ -716,7 +716,7 @@ final class Parser {
   }
 
   WhileStmt _whileStmt() {
-    final tok = _expect(TokenKind.while_, 'oczekiwano `while`');
+    final tok = _expect(TokenKind.while_, 'expected `while`');
     final cond = _headerExpr();
     final body = _block();
     return WhileStmt(cond: cond, body: body, pos: tok.pos);
@@ -868,7 +868,7 @@ final class Parser {
   }
 
   Stmt _forStmt() {
-    final forTok = _expect(TokenKind.for_, 'oczekiwano `for`');
+    final forTok = _expect(TokenKind.for_, 'expected `for`');
 
     // for i in start..<end { ... }
     // for i = 0; i < n; i = i + 1 { ... }
@@ -879,7 +879,7 @@ final class Parser {
         _advance(); // name
         _advance(); // in
         final start = _expr();
-        _expect(TokenKind.dotDotLess, 'oczekiwano `..<`');
+        _expect(TokenKind.dotDotLess, 'expected `..<`');
         // `for i in 0..<n {` — bare `n` must not eat the body `{` as struct lit.
         final end = _headerExpr();
         final body = _block();
@@ -901,24 +901,24 @@ final class Parser {
       if (_check(TokenKind.equal) || _check(TokenKind.colonEqual)) {
         _advance();
       } else {
-        throw ParseError('oczekiwano `=` lub `:=`', _current.pos);
+        throw ParseError('expected `=` or `:=`', _current.pos);
       }
       initName = name.lexeme;
       initExpr = _expr();
     }
-    _expect(TokenKind.semicolon, 'oczekiwano `;`');
+    _expect(TokenKind.semicolon, 'expected `;`');
 
     Expr? cond;
     if (!_check(TokenKind.semicolon)) {
       cond = _expr();
     }
-    _expect(TokenKind.semicolon, 'oczekiwano `;`');
+    _expect(TokenKind.semicolon, 'expected `;`');
 
     String? postName;
     Expr? postExpr;
     if (!_check(TokenKind.lBrace)) {
       final name = _expect(TokenKind.ident, 'expected name in post expression');
-      _expect(TokenKind.equal, 'oczekiwano `=`');
+      _expect(TokenKind.equal, 'expected `=`');
       postName = name.lexeme;
       // `for ; ; i = j {` — bare `j` must not eat the body `{` as struct lit.
       postExpr = _headerExpr();
@@ -937,7 +937,7 @@ final class Parser {
   }
 
   ReturnStmt _returnStmt() {
-    final tok = _expect(TokenKind.return_, 'oczekiwano `return`');
+    final tok = _expect(TokenKind.return_, 'expected `return`');
     Expr? value;
     // Without semicolons, do not consume the following statement (`return` plus
     // `puts(...)` or `x = ...` on the next line). `return fib(n)` on one line is valid.
@@ -948,7 +948,7 @@ final class Parser {
   }
 
   DeferStmt _deferStmt() {
-    final tok = _expect(TokenKind.defer_, 'oczekiwano `defer`');
+    final tok = _expect(TokenKind.defer_, 'expected `defer`');
     return DeferStmt(body: _stmt(), pos: tok.pos);
   }
 
@@ -990,7 +990,7 @@ final class Parser {
       };
 
   Stmt _letStmt() {
-    final letTok = _expect(TokenKind.let, 'oczekiwano `let`');
+    final letTok = _expect(TokenKind.let, 'expected `let`');
     var isMut = false;
     if (_check(TokenKind.mut)) {
       _advance();
@@ -1025,7 +1025,7 @@ final class Parser {
 
   /// `let [mut] { a, b } = expr` — struct destructuring (issue 056, phase A).
   Stmt _structDestructureLet(Token letTok, bool isMut) {
-    _expect(TokenKind.lBrace, 'oczekiwano `{`');
+    _expect(TokenKind.lBrace, 'expected `{`');
     final fields = <String>[];
     final binds = <String>[];
     final seenFields = <String>{};
@@ -1083,7 +1083,7 @@ final class Parser {
   /// `let [mut] [a, b] = expr` — fixed-array destructuring (issue 056, phase C).
   /// A `_` pattern skips that position without binding (phase D).
   Stmt _arrayDestructureLet(Token letTok, bool isMut) {
-    _expect(TokenKind.lBracket, 'oczekiwano `[`');
+    _expect(TokenKind.lBracket, 'expected `[`');
     final names = <String?>[];
     final seen = <String>{};
     var boundCount = 0;
@@ -1138,7 +1138,7 @@ final class Parser {
   LetStmt _shortLetStmt() {
     final name = _expect(TokenKind.ident, 'expected variable name');
     _rejectCKeyword(name, 'a variable name');
-    _expect(TokenKind.colonEqual, 'oczekiwano `:=`');
+    _expect(TokenKind.colonEqual, 'expected `:=`');
     final init = _expr();
     return LetStmt(
       isMut: true,
@@ -1151,7 +1151,7 @@ final class Parser {
   }
 
   List<Expr> _argList() {
-    _expect(TokenKind.lParen, 'oczekiwano `(`');
+    _expect(TokenKind.lParen, 'expected `(`');
     _exprParenDepth++;
     final savedNoStruct = _noStructLit;
     _noStructLit = false;
@@ -1164,7 +1164,7 @@ final class Parser {
           args.add(_expr());
         }
       }
-      _expect(TokenKind.rParen, 'oczekiwano `)`');
+      _expect(TokenKind.rParen, 'expected `)`');
       return args;
     } finally {
       _exprParenDepth--;
@@ -1205,7 +1205,7 @@ final class Parser {
   }
 
   OrBlock _orBlock() {
-    final open = _expect(TokenKind.lBrace, 'oczekiwano `{` po `or`');
+    final open = _expect(TokenKind.lBrace, 'expected `{` after `or`');
     final stmts = <Stmt>[];
     while (!_check(TokenKind.rBrace) && !_check(TokenKind.eof)) {
       if (_canStartExpr(_current.kind)) {
@@ -1361,7 +1361,7 @@ final class Parser {
         break;
       case TokenKind.error_:
         _advance();
-        _expect(TokenKind.lParen, 'oczekiwano `(` po `error`');
+        _expect(TokenKind.lParen, 'expected `(` after `error`');
         _exprParenDepth++;
         try {
           final code = _expr();
@@ -1429,16 +1429,16 @@ final class Parser {
         break;
       case TokenKind.cast:
         _advance();
-        _expect(TokenKind.lParen, 'oczekiwano `(` po `cast`');
+        _expect(TokenKind.lParen, 'expected `(` after `cast`');
         _exprParenDepth++;
         try {
           final typeName = _typeName();
-          _expect(TokenKind.comma, 'oczekiwano `,` po typie castowania');
+          _expect(TokenKind.comma, 'expected `,` after the cast type');
           final savedNoStructCast = _noStructLit;
           _noStructLit = false;
           final value = _expr();
           _noStructLit = savedNoStructCast;
-          _expect(TokenKind.rParen, 'oczekiwano `)` po castowaniu');
+          _expect(TokenKind.rParen, 'expected `)` after the cast');
           expr = CastExpr(typeName: typeName, expr: value, pos: t.pos);
         } finally {
           _exprParenDepth--;
@@ -1452,7 +1452,7 @@ final class Parser {
           _noStructLit = false;
           final inner = _expr();
           _noStructLit = savedNoStructParen;
-          _expect(TokenKind.rParen, 'oczekiwano `)`');
+          _expect(TokenKind.rParen, 'expected `)`');
           expr = GroupExpr(inner, open.pos);
         } finally {
           _exprParenDepth--;
@@ -1466,14 +1466,14 @@ final class Parser {
         final bracket = _advance();
         if (_check(TokenKind.colon)) {
           _advance();
-          _expect(TokenKind.rBracket, 'oczekiwano `]` po `:`');
+          _expect(TokenKind.rBracket, 'expected `]` after `:`');
           expr = SliceFromExpr(array: expr, pos: bracket.pos);
         } else {
           final savedNoStructIndex = _noStructLit;
           _noStructLit = false;
           final index = _expr();
           _noStructLit = savedNoStructIndex;
-          _expect(TokenKind.rBracket, 'oczekiwano `]` po indeksie');
+          _expect(TokenKind.rBracket, 'expected `]` after the index');
           expr = IndexExpr(object: expr, index: index, pos: bracket.pos);
         }
         continue;
@@ -1484,7 +1484,7 @@ final class Parser {
         expr = AwaitExpr(expr, aw.pos);
         continue;
       }
-      final member = _expect(TokenKind.ident, 'expected field name lub metody');
+      final member = _expect(TokenKind.ident, 'expected field or method name');
       if (_callParenSameLine(member.pos)) {
         expr = MethodCallExpr(
           receiver: expr,
@@ -1500,7 +1500,7 @@ final class Parser {
   }
 
   StructLitExpr _structLit(Token typeName, {String? moduleName}) {
-    _expect(TokenKind.lBrace, 'oczekiwano `{`');
+    _expect(TokenKind.lBrace, 'expected `{`');
     if (_check(TokenKind.rBrace)) {
       _advance();
       return StructLitExpr.positional(
@@ -1525,7 +1525,7 @@ final class Parser {
         if (!_check(TokenKind.comma)) break;
         _advance();
       } while (true);
-      _expect(TokenKind.rBrace, 'oczekiwano `}`');
+      _expect(TokenKind.rBrace, 'expected `}`');
       return StructLitExpr.named(
         moduleName: moduleName,
         typeName: typeName.lexeme,
@@ -1538,7 +1538,7 @@ final class Parser {
       _advance();
       fields.add(_expr());
     }
-    _expect(TokenKind.rBrace, 'oczekiwano `}`');
+    _expect(TokenKind.rBrace, 'expected `}`');
     return StructLitExpr.positional(
       moduleName: moduleName,
       typeName: typeName.lexeme,
@@ -1718,7 +1718,7 @@ final class Parser {
     final first = _expect(TokenKind.ident, 'expected type name');
     if (!_check(TokenKind.dot)) return first.lexeme;
     _advance();
-    final second = _expect(TokenKind.ident, 'expected type name po `.`');
+    final second = _expect(TokenKind.ident, 'expected type name after `.`');
     return '${first.lexeme}.${second.lexeme}';
   }
 

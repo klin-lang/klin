@@ -21,6 +21,8 @@ and both `docs/` and `issues/` are English (including English file slugs).
 - [x] `README.md`, `pubspec.yaml` description, CLI help
 - [x] `CLAUDE.md` / agent rules: EN
 - [x] compiler code comments (eventually all EN; when editing a file — EN)
+- [x] leftover PL after the first pass — [115](115-english-leftover-pl.md)
+  (Taskfile / gitignore / a few parser·lexer·checker diagnostics)
 
 ## Criteria
 

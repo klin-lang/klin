@@ -1,36 +1,36 @@
-# go-task — wspólne komendy na Windows / Linux / macOS
+# go-task — shared commands on Windows / Linux / macOS
 # https://taskfile.dev
 #
-# Instalacja: https://taskfile.dev/installation/
-# Lista:      task --list
+# Install: https://taskfile.dev/installation/
+# List:      task --list
 
 version: "3"
 
 vars:
-  # Na Windowsie binarka ma rozszerzenie .exe; na Unixie puste.
+  # On Windows the binary has a .exe suffix; empty on Unix.
   EXE: '{{if eq OS "windows"}}.exe{{end}}'
   KLIN_BIN: build/klin{{.EXE}}
 
 tasks:
   default:
-    desc: lista komend
+    desc: list commands
     cmds:
       - task --list
 
   get:
-    desc: pobierz zależności Dart
+    desc: fetch Dart dependencies
     run: once
     cmds:
       - dart pub get
 
   analyze:
-    desc: analiza statyczna
+    desc: static analysis
     deps: [get]
     cmds:
       - dart analyze
 
   test:
-    desc: testy złote
+    desc: golden tests
     deps: [get]
     cmds:
       - dart test
@@ -42,13 +42,13 @@ tasks:
       - test
 
   hello:
-    desc: pełny przelot hello.kl → C → uruchomienie
+    desc: full hello.kl → C → run
     deps: [get]
     cmds:
       - dart run bin/klin.dart hello.kl
 
   run:
-    desc: "kompiluj i uruchom plik .kl (task run -- ścieżka.kl)"
+    desc: "compile and run a .kl file (task run -- path.kl)"
     deps: [get]
     cmds:
       - dart run bin/klin.dart {{.CLI_ARGS}}
@@ -56,7 +56,7 @@ tasks:
       vars: [CLI_ARGS]
 
   release:
-    desc: samodzielna binarka kompilatora (build/klin[.exe])
+    desc: standalone compiler binary (build/klin[.exe])
     deps: [get]
     cmds:
       - dart compile exe bin/klin.dart -o {{.KLIN_BIN}}
@@ -64,7 +64,7 @@ tasks:
       - "{{.KLIN_BIN}}"
 
   clean:
-    desc: usuń out/ i binarkę release
+    desc: remove out/ and the release binary
     cmds:
       - cmd: rm -rf out "{{.KLIN_BIN}}"
         platforms: [linux, darwin]
