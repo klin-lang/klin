@@ -60,7 +60,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 18. **Pico LCD shield** (Waveshare Pico-LCD-1.14 ST7789) — ✅ [`waveshare_pico_lcd_114`](https://github.com/klin-lang/waveshare_pico_lcd_114) `@v0.1.0` ([110](110-board-waveshare-pico-lcd-114.md); board pack, not `machine_*`)  
 19. **ESP32-P4** — later: `machine_esp` Pin… twins (`*_p4`) + [`esp_eth`](https://github.com/klin-lang/esp_eth) **RMII** backend (on-chip EMAC; preferred first RMII target vs classic ESP32); Wi‑Fi/BLE only via companion / other host, not on-die; USB OTG can use [`esp_usb`](https://github.com/klin-lang/esp_usb) when P4 board work starts  
 20. **Later tags** (USB host classes; camera CSI/stream; LCD font/S3 SPI / other shield sizes) — see [103](103-later-tracks-ble-usb-camera-lcd.md) / [108](108-esp-usb-idf.md) / [109](109-esp-camera-idf.md) / [110](110-board-waveshare-pico-lcd-114.md)  
-21. **Later network** (RMII / dual Wi‑Fi+ETH / sockets…) — 🔨 Wi‑Fi SoftAP+scan+RSSI ✅; rest 💭 [104](104-later-tracks-esp-network.md) (one at a time)  
+21. **Later network** (RMII / dual Wi‑Fi+ETH / HTTP/TLS…) — 🔨 Wi‑Fi W1–W3 + sockets ✅ [`esp_sockets`](https://github.com/klin-lang/esp_sockets) [111](111-esp-sockets-idf.md); rest 💭 [104](104-later-tracks-esp-network.md)  
 22. **Later IoT** (MQTT / OTA…) — 💭 maybe [105](105-later-tracks-iot.md) (after sockets + HTTP/TLS in [104](104-later-tracks-esp-network.md))  
 23. **Later Arduino boards** (Leonardo / Uno R4 / Due / Giga / Portenta) — 💭 [107](107-later-tracks-arduino-boards.md) (one silicon family at a time; FAQ [docs/arduino.md](../docs/arduino.md))  
 24. Classic ESP32 / C6 / freestanding ESP / SDCC STM8 — later  
