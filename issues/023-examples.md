@@ -36,7 +36,9 @@ examples/
 ## What not to mix
 
 - Do not replace `test/*.kl` — goldens stay in `test/`.
-- Do not promise a full tutorial (that is closer to README / 013).
+- A short language tutorial lives in [docs/guide.md](../docs/guide.md)
+  (issue [116](116-docs-reorg.md)). This directory stays demos, not a book.
+  A full language reference is still out of scope.
 
 ## Later
 

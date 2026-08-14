@@ -1,6 +1,6 @@
 // Canonical Vec2i + len_sq (no macros). Pair: point_macro.kl
 // Run: dart run bin/klin.dart run examples/point.kl
-// See: note/04-macros.md
+// See: docs/04-macros.md
 
 struct Vec2i {
     x: i32

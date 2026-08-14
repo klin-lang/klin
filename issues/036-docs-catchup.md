@@ -20,4 +20,5 @@ picture of what already works — without rewriting `issues/` to EN.
 ## Out of scope
 
 - Translating `issues/` / `docs/` to EN (now tracked separately; see [082](082-english-issues-docs.md))
-- Full language reference
+- Full language reference (a short tutorial is [116](116-docs-reorg.md) /
+  [docs/guide.md](../docs/guide.md); this issue stays a feature catch-up)

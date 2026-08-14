@@ -1,5 +1,8 @@
 # Architecture and engineering rules
 
+Compiler pipeline and day-one rules. Not an introduction — start with
+[00-idea.md](00-idea.md) and [guide.md](guide.md).
+
 ## Pipeline
 
 ```
@@ -50,7 +53,8 @@ lib/checker.dart
 lib/emit_c.dart
 test/             # golden tests: .kl files + expected output
 out/              # ALL generated output, ignored by git
-doc/
+docs/             # design + user docs (map: docs/README.md)
+issues/           # roadmap (what compiles) — not a user manual
 ```
 
 Split into files from day one, even though initially everything

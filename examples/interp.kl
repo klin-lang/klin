@@ -1,5 +1,5 @@
 /// String interpolation demo (print-only MVP → printf).
-/// See note/07-interpolation.md
+/// See docs/07-interpolation.md
 import io
 
 fn main() {

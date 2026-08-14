@@ -1,286 +1,143 @@
 # Klin
 
-> **Experimental 0.1.2** — the language and toolchain work for real programs
-> (host + STM32 demos), but the public packaging surface is still settling.
-> Expect breaking changes before 1.0.
+> **Experimental 0.1.2** — real programs compile (host and several MCU
+> families). The public packaging surface is still settling. Expect
+> breaking changes before 1.0.
 
-Klin is a systems programming language that compiles to C. Its Dart frontend
-parses and checks Klin source, then emits one readable `.c` file for
-`gcc`, `clang`, or `tcc`.
+Klin is a systems language **wedged** between you and C. The compiler
+checks Klin source and emits **one readable `.c` file**. `gcc`, `clang`,
+`tcc`, or a vendor toolchain (`arm-none-eabi-gcc`, …) finish the build.
 
-Design docs (English): [`docs/`](docs/) — start with
-[docs/00-idea.md](docs/00-idea.md),
-[docs/01-decisions.md](docs/01-decisions.md),
-[docs/02-architecture.md](docs/02-architecture.md).
-Roadmap: [`issues/sorted.md`](issues/sorted.md).
+It does not replace C and does not hide it. If this project stops, the
+last compile is still C you can keep shipping.
 
-## Prerequisites
+```klin
+struct Vec2 {
+    x: i32
+    y: i32
+}
 
-| Need | Notes |
-|---|---|
-| **Dart SDK** `^3.5` | [dart.dev/get-dart](https://dart.dev/get-dart); Homebrew: `brew tap dart-lang/dart && brew install dart` |
-| **Host C compiler** | `gcc`, `clang`, or `tcc` on `PATH` for `klin run` (not needed for `--emit-c` alone) |
-| **Git** | Clone / remote packages (`klin get`) |
+fn (v: Vec2) len_sq(): i32 {
+    return v.x * v.x + v.y * v.y
+}
 
-## Install
+fn (mut v: Vec2) translate(dx: i32, dy: i32) {
+    v.x = v.x + dx
+    v.y = v.y + dy
+}
+```
 
-### From source (development)
+`mut` is in the signature. In the `.c` it is only `*`.
+
+## Why it exists
+
+> **No hidden allocation, no hidden control flow, no hidden cost.**
+
+If a line allocates or branches, the syntax shows it. The check is
+practical: Klin vs the same thing written by hand in C — `objdump -d`
+should match. C++ broke that with copy constructors, exceptions, and
+operator overloading. Klin refuses to.
+
+The C backend is the product, not a temporary IR:
+
+| | Klin | C | Zig / Rust | Nelua |
+|---|---|---|---|---|
+| Artifact | one readable `.c` | you write C | LLVM / their toolchain | also C |
+| If the compiler dies | **keep the `.c`** | you already have C | you need `zig` / `rustc` | keep the `.c` |
+| Hidden cost | forbidden | none (and no structure) | `Drop`, panic, … | mostly honest |
+| Reach | **any C compiler** | any | LLVM backends | any C compiler |
+| Mutation | visible (`mut`) | n/a | `const` / borrow | implicit `self` pointer |
+
+Klin is not “better Zig”. Zig and Rust are stronger languages with
+modern backends. Klin’s bet is different: **must be C at the end** —
+vendor `gcc`, an existing C tree, a chip LLVM will never see, or a
+codebase that has to outlive its compiler.
+
+Closest sibling: [Nelua](https://nelua.io) (Lua → C). Klin takes the
+honest C-shaped FFI and adds `mut` in the signature, Go-like
+`fmt` / `test` / modules, and SVD registers as a first-class path.
+
+Founding notes: [docs/00-idea.md](docs/00-idea.md),
+[docs/01-decisions.md](docs/01-decisions.md).
+Doc map: [docs/README.md](docs/README.md).
+
+## Who it is for
+
+**Systems code** — host tools and firmware — wherever a C compiler
+already exists.
+
+- **Host:** `klin run`, libc, packages (`klin get`)
+- **MCU:** STM32, RP2040 / RP2350, ESP32, CH32V, GD32V, … plus anything
+  with a vendor `cc` (including parts LLVM will not target)
+
+STM32 was the **first** freestanding demo (an LED, no libc). It is not
+the only target. Board trees: [`templates/`](templates/),
+[`examples/stm32/`](examples/stm32/), `klin init <board>`.
+
+You get methods, modules, `!T` errors, immutability by default, and
+typed MMIO from SVD — with no runtime and no GC.
+
+## Quick start
+
+**Homebrew** (prebuilt, no Dart):
+
+```sh
+brew install klin-lang/klin/klin
+klin --version
+klin run examples/hello.kl          # from a clone
+```
+
+Details and CLT notes: [docs/17-homebrew.md](docs/17-homebrew.md).
+
+**From source** (Dart SDK `^3.5` + a host C compiler):
 
 ```sh
 git clone https://github.com/klin-lang/klin.git
 cd klin
 dart pub get
 dart run bin/klin.dart run examples/hello.kl
-dart run bin/klin.dart --version   # → klin 0.1.2
 ```
-
-Use `dart run bin/klin.dart …` while developing. Details:
-[docs/06-cli.md](docs/06-cli.md), [docs/make.md](docs/make.md).
-Debug with gdb/lldb (`#line`): [docs/19-debug.md](docs/19-debug.md).
-Host `cc` flags: `-g` / `--debug`, `-O0`…`-O3` / `-Os` / `-Oz` / `--opt LEVEL`
-([docs/06-cli.md](docs/06-cli.md), [docs/19-debug.md](docs/19-debug.md)).
-
-### Homebrew
-
-Tap: [`klin-lang/homebrew-klin`](https://github.com/klin-lang/homebrew-klin).
-Stable installs the **prebuilt** GitHub Release (no Dart). `--HEAD` still
-builds from `main` and needs the [Dart tap](https://github.com/dart-lang/homebrew-dart).
 
 ```sh
-brew install klin-lang/klin/klin
-klin --version
+klin --emit-c examples/vec2.kl      # just the .c
+klin fmt -w examples/hello.kl
+klin test examples/
 ```
 
-Or: `brew tap klin-lang/klin` then `brew install klin`
-(Homebrew 6+: `brew trust --formula klin-lang/klin/klin` if the short name is refused).
-Latest `main`: `brew install --HEAD klin-lang/klin/klin`.
-Upgrade: `brew upgrade klin`.
+CLI: [docs/06-cli.md](docs/06-cli.md). Debug (`#line`, `-g`):
+[docs/19-debug.md](docs/19-debug.md).
 
-macOS: Homebrew needs **current Xcode Command Line Tools**, even for the
-prebuilt binary (no Dart). A new OS (e.g. macOS 26) can fail with
-`CLT does not support macOS 26` — update CLT via Software Update or
-`xcode-select --install` (e.g. CLT for Xcode 26.3), then retry. That is
-Apple/Homebrew, not Klin. Details: [docs/17-homebrew.md](docs/17-homebrew.md).
+## Learn the language
 
-Formula source of truth in this repo: [`Formula/klin.rb`](Formula/klin.rb)
-(keep in sync with the tap). Details: [docs/17-homebrew.md](docs/17-homebrew.md).
+1. [docs/guide.md](docs/guide.md) — hello → structs → `!T` → C
+2. [`examples/`](examples/README.md) — host demos and board sketches
+3. [`stdlib/`](stdlib/README.md) — optional `io`, `str`, `math`, `mem`, …
+
+That is the tutorial. This README is not one.
+
+## Toolchain (short)
+
+| Command | Role |
+|---|---|
+| `klin run <file.kl>` | Emit C, host `cc`, execute |
+| `klin --emit-c` | Write `out/*.c` only |
+| `klin fmt` / `klin test` | Format / run `*_test.kl` |
+| `klin get` / `outdated` / `upgrade` | Remote packages (`klin.mod` / `klin.lock`) |
+| `--emit-h` / `--emit-pp` | C header from `@[cexport]` / macro expand |
+
+C FFI both ways: [docs/09-ffi-c.md](docs/09-ffi-c.md).
+Libraries: [docs/11-klin-libraries.md](docs/11-klin-libraries.md).
 
 ## License
 
 The compiler and stdlib are **[MIT](LICENSE)**.
 
-Code generated by the Klin compiler and standard library fragments compiled
-into your program are not subject to any additional restrictions — your
-program is yours. See [docs/03-name-license.md](docs/03-name-license.md).
+Code generated by the Klin compiler and standard library fragments
+compiled into your program are not subject to any additional
+restrictions — your program is yours.
+See [docs/03-name-license.md](docs/03-name-license.md).
 
-## Toolchain
+## Roadmap and contributing
 
-```sh
-dart run bin/klin.dart run examples/hello.kl
-dart run bin/klin.dart examples/hello.kl          # alias for run
-dart run bin/klin.dart fmt -w examples/hello.kl
-dart run bin/klin.dart test examples/
-dart run bin/klin.dart get github/klin-lang/osa@v0.1.0   # remote deps → cache + klin.mod / klin.lock
-dart run bin/klin.dart outdated                        # report newer remote tags
-dart run bin/klin.dart upgrade                         # bump outdated requires + fetch
-dart run bin/klin.dart --emit-c examples/hello.kl
-dart run bin/klin.dart --emit-h examples/cexport_add/lib.kl
-dart run bin/klin.dart --emit-pp examples/point_macro.kl
-```
-
-| Command / flag | Role |
-|---|---|
-| `run <file.kl>` | Compile to C, host `cc`, execute |
-| bare path | Same as `run` |
-| `fmt [-w]` | Go-style format ([docs/05-fmt.md](docs/05-fmt.md)) |
-| `test` | Run `*_test.kl` (`import testing`) |
-| `get` / `update` | Fetch remote `github`/`gitlab` packages (`klin.mod` + `klin.lock`) |
-| `outdated` / `upgrade` | Report / bump to newer remote tags (network) |
-| `--emit-c` | Write generated `.c` only |
-| `--emit-h` | Write C header for `@[cexport]` (`out/<base>.h`) |
-| `--emit-pp` | Write preprocessor output (`.pp.kl`) |
-| `-I` | Klin source search dirs (`import` → `name.kl`; [docs/11-klin-libraries.md](docs/11-klin-libraries.md)) |
-| `-l` / `-L` | Host linker libs / search paths ([docs/09-ffi-c.md](docs/09-ffi-c.md)) |
-| `-g` / `--debug` | Host `cc -g` (debug symbols; [docs/19-debug.md](docs/19-debug.md)) |
-| `-O…` / `--opt` | Host `cc -O…` (`0`…`3` / `s` / `z`; [docs/06-cli.md](docs/06-cli.md)) |
-
-CLI summary: [docs/06-cli.md](docs/06-cli.md).
-Homebrew details: [docs/17-homebrew.md](docs/17-homebrew.md).
-
-Optional host I/O, strings, math, clocks, heap, and slice helpers: [`stdlib/`](stdlib/)
-(`import io`, `import str`, `import math`, `import testing`, `import time`,
-`import mem`, `import slice`, `import slice_alloc` — see
-[docs/08-time.md](docs/08-time.md),
-[docs/14-allocator.md](docs/14-allocator.md),
-[docs/16-slice.md](docs/16-slice.md)).
-Klin libraries (`lib/`, `-I`, `$KLIN_PATH`; directory packages; import aliases
-`import geom oso` and string path imports `import "sub/osa"`; remote
-`import "github/klin-lang/osa"` after `klin get`):
-[docs/11-klin-libraries.md](docs/11-klin-libraries.md),
-[`examples/klin_lib/`](examples/klin_lib/), [`examples/pkg_geom/`](examples/pkg_geom/),
-[`examples/remote_osa/`](examples/remote_osa/).
-C FFI — import (`@[cimport]` / `@[link]`) **and** export (`@[cexport]`):
-[docs/09-ffi-c.md](docs/09-ffi-c.md), examples
-[`ffi_add/`](examples/ffi_add/) and [`cexport_add/`](examples/cexport_add/).
-ASM units (`.s` / `.S` via `@[link]`): [docs/10-asm.md](docs/10-asm.md),
-[`examples/asm_add/`](examples/asm_add/).
-Bare-metal programs omit host stdlib imports. STM32 demos:
-[`examples/stm32/`](examples/stm32/) — see [`examples/README.md`](examples/README.md).
-
-### Macros and SVD
-
-`$fn` macros and `$peripherals_from_svd(...)` expand before parsing
-([docs/04-macros.md](docs/04-macros.md)). Inspect with `--emit-pp`.
-Fluent MMIO (`RCC.AHB1ENR.GPIOAEN.set(1)`) lowers to zero-cost
-`static inline` accessors (same as `svd2klin`).
-
-### String interpolation
-
-Ordinary `"…"` strings may contain `$name` / `${expr}` / `${expr:format}`
-and lower to `printf` (no hidden allocation). Formats: native printf
-(`%d`, `%.2f`), masks (`0.00`, `0.###`), `s8` truncate, `hex` / `sci`.
-**Print-only MVP** — use as the sole argument to `puts` / `printf` /
-`io.print` / `io.println`. Details: [docs/07-interpolation.md](docs/07-interpolation.md),
-example: [`examples/interp.kl`](examples/interp.kl).
-
-### Function pointers
-
-Type `fn(T…): Ret` — top-level function as a value (C function pointer, no
-capture). See [docs/13-fn-ptr.md](docs/13-fn-ptr.md),
-[`examples/fn_ptr.kl`](examples/fn_ptr.kl).
-
-### Slice helpers
-
-Zero-alloc `import slice` (`map_into_*`, `filter_into_*`, `reduce_*`, …) and
-heap `import slice_alloc` (`map_alloc_*` / `filter_alloc_*` + explicit
-`Allocator` / `defer free`). Separate modules so freestanding code never pulls
-`malloc`. See [docs/16-slice.md](docs/16-slice.md),
-[`examples/slice_ops.kl`](examples/slice_ops.kl),
-[`examples/slice_alloc_demo.kl`](examples/slice_alloc_demo.kl).
-
-### `match`
-
-Default break — no fallthrough. Arms take value groups (`1, 2, 3`) or
-inclusive ranges (`4..=10`), plus a final `else`. Also an expression form
-in `let` / assignment position (`else` required there). Integer subjects
-only; lowers to an `if`/`else if` chain with the subject in one temp, so
-`break` / `continue` in an arm still belong to the enclosing loop. See
-[docs/15-match.md](docs/15-match.md), [`examples/match.kl`](examples/match.kl).
-An enum subject is also allowed (arms use `Enum.Variant`, no ranges).
-
-### `pick`
-
-Two-way expression choice (`pick cond { a } { b }` → C `?:`). Nested freely;
-statement `if` is unchanged. See [docs/18-pick.md](docs/18-pick.md),
-[`examples/pick.kl`](examples/pick.kl).
-
-### Enums
-
-`enum Color { Red, Green, Blue }` is a distinct named type over an integer base
-(default `i32`; `enum Status: u8 { Ok, Warn = 5, Err }` sets the base and explicit
-values). Variants are read as `Color.Red`, compared with `==` / `!=`, and used in
-`match`. Methods work with a receiver (`fn (c: Color) name(): str`). Conversion
-to/from the integer base is explicit via `cast` (`cast(i32, c)`, `cast(Color, 1)`)
-— never implicit. Emission is a portable `typedef` plus integer constants (no C23
-`enum E : T`, so gcc/clang/tcc all work), zero hidden cost. See
-[issues/072-enums.md](issues/072-enums.md), [`examples/enums.kl`](examples/enums.kl).
-
-### Associated (static) functions
-
-`fn Type.name(…)` declares a function namespaced under a type, with no instance
-receiver — constructors and parsers such as `fn Point.new(x, y: i32): Point` or
-`fn Color.from_name(s: str): !Color`. Call them as `Type.name(…)` (e.g.
-`Point.new(3, 4)`, `Color.from_name("red")`). Works on enums and structs; emits
-as a plain C function (`Type_name(…)`), zero hidden cost. See
-[issues/079-associated-functions.md](issues/079-associated-functions.md),
-[`examples/associated_fn.kl`](examples/associated_fn.kl).
-
-### Bitwise operators
-
-Integers only: `& | ^ ~ << >>` (map 1:1 to C). Precedence is Rust-like, not C
-(`* / %` → `+ -` → `<< >>` → `&` → `^` → `|` → comparisons → `==`):
-`flags & mask == bit` means `(flags & mask) == bit`, not C’s
-`flags & (mask == bit)`. Signed `>>` is arithmetic; unsigned is logical.
-Decision: [docs/01-decisions.md](docs/01-decisions.md) D8; also
-[issues/078-bitwise-ops.md](issues/078-bitwise-ops.md),
-[`examples/bitwise.kl`](examples/bitwise.kl).
-
-### Logical operators
-
-`bool` only: `&&` / `||` (short-circuit, map 1:1 to C) and unary `!`.
-Precedence: `||` → `&&` → `==` / comparisons → bitwise (D9).
-Keyword `or` is error-handling (`or { … }`), not logical OR; value choice is
-[`pick`](docs/18-pick.md). See
-[issues/097-logical-ops.md](issues/097-logical-ops.md),
-[`examples/logical.kl`](examples/logical.kl).
-
-### Compound assignment
-
-`+= -= *= /= %=` and bitwise `&= |= ^= <<= >>=` emit 1:1 as C `op=` (LHS once).
-Same mutability / type rules as `target = target op value`.
-
-### Number literals
-
-Integers are decimal (`123`), hex (`0xFF`), binary (`0b1010`), or octal
-(`0o755`, never C's leading-zero form); character literals `'A'` / `'\n'` are
-untyped ints (ASCII); floats use a dot (`1.5`) and/or an exponent (`1e9`,
-`1.5e-3`, `2.5E+2`). `_` groups digits (`1_000`, `0b1111_0000`). Binary and
-octal emit as portable `0x` (no `0b`/`0o` in the C, so gcc/clang/tcc all work);
-characters emit as C `'…'`. See
-[issues/081-number-literals.md](issues/081-number-literals.md),
-[`examples/number_literals.kl`](examples/number_literals.kl).
-
-### Short declaration (`:=`)
-
-`name := expr` is sugar for `let mut name = expr`. See
-[docs/14-short-decl.md](docs/14-short-decl.md),
-[`examples/short_decl.kl`](examples/short_decl.kl).
-
-### Shared type annotation
-
-Function parameters and struct fields may share one type across a comma list
-(Go-style): `fn add(a, b: i32)` ≡ `fn add(a: i32, b: i32)`, and
-`struct Point { x, y: f64 }`. Mixing is fine (`a, b: i32, c: f64`). It is pure
-parser sugar — the same C is emitted as the expanded form
-([issues/068-shared-type-decl.md](issues/068-shared-type-decl.md)).
-
-### Destructuring
-
-`let { x, y } = p` and `let mut { x, y } = p` bind struct fields by name in one
-statement. A subset of fields is allowed and order is irrelevant; the source is
-evaluated once and each binding lowers to a plain field read (`.field`).
-
-`let [a, b] = xs` and `let mut [a, b] = xs` bind a fixed-length array `[N]T`
-positionally, where `N` equals the number of patterns. A named array is indexed
-in place (`xs[i]`) and an array-literal source binds element-wise. Slices `[]T`
-(runtime length) are rejected. Use `_` to skip a position: `let [_, b, _, d] = xs`.
-
-Struct fields can be renamed to a different local: `let { x: px, y: py } = p`
-(mixable with plain fields).
-
-Multi-assignment `a, b = b, a` writes two or more existing targets at once; the
-values are evaluated before any target is written, so swaps and rotations need
-no temporary. Targets follow the usual `mut` rules; `or`/`!`/`match` values must
-be assigned in their own statement.
-
-Bare `{ x, y } = p` (and rename `{ x: target } = p`) assigns struct fields to
-existing places rather than declaring new bindings. Bare array assignment
-`[ … ] = xs` is not provided — with the whitespace-insensitive grammar a
-statement-leading `[` would attach to the previous expression; use
-multi-assignment instead (`a, b = xs[0], xs[1]`).
-
-Everything lowers to plain reads/writes, so it disappears in C. No tuples. See
-[issues/056-destructuring.md](issues/056-destructuring.md),
-[`examples/destructure.kl`](examples/destructure.kl),
-[`examples/multi_assign.kl`](examples/multi_assign.kl).
-
-## Test
-
-```sh
-dart test   # compiler / golden tests
-```
-
-Design docs and roadmap:
-
-- [Roadmap](issues/sorted.md)
-- [Design notes](docs/)
+Work order (what compiles): [`issues/sorted.md`](issues/sorted.md).
+Compiler tests: `dart test`. Agent rules: [`CLAUDE.md`](CLAUDE.md).

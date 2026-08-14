@@ -1,8 +1,9 @@
 # AGENTS.md
 
 Klin is a systems language compiled to C. The compiler is written in Dart
-(`bin/klin.dart`, `lib/`). See `README.md`, `docs/06-cli.md`, and `Taskfile.yml`
-for the full command surface; `CLAUDE.md` holds the project rules and workflow.
+(`bin/klin.dart`, `lib/`). Landing and idea: `README.md`, `docs/00-idea.md`.
+Language tutorial: `docs/guide.md`. Doc map: `docs/README.md`. CLI:
+`docs/06-cli.md`, `Taskfile.yml`. Project rules: `CLAUDE.md`.
 
 ## Cursor Cloud specific instructions
 
