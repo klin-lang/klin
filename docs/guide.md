@@ -256,6 +256,7 @@ The other direction: `@[cexport, codename("klin_add")]` plus
 | Topic | Where |
 |---|---|
 | `match` / `pick` | [15-match.md](15-match.md), [18-pick.md](18-pick.md) |
+| Enums / `Type.fn` / destructuring | [syntax.md](syntax.md) |
 | Packages / search paths | [11-klin-libraries.md](11-klin-libraries.md), [12-modules.md](12-modules.md) |
 | `$fn` macros | [04-macros.md](04-macros.md) |
 | SVD / `$device` (MCU registers) | [device.md](device.md) |

@@ -144,6 +144,7 @@ building the core from scratch.
 | [117](117-docs-device.md) | User doc for SVD / `$device` / fluent MMIO | ✅ | 116, 011, 027, 053 |
 | [118](118-docs-embedded.md) | User doc: `klin init` walkthrough (not STM32-only) | ✅ | 116, 075, 054 |
 | [119](119-docs-guide-control.md) | Guide: `if` / `defer` / `import` + precedence table | ✅ | 116, 003, 008, 006 |
+| [120](120-docs-syntax.md) | User page: enums / `Type.fn` / destructuring | ✅ | 116, 072, 079, 056 |
 
 ---
 

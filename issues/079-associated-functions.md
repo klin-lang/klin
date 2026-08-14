@@ -2,6 +2,7 @@
 
 **Status:** ✅ done (enum + struct, current module)
 **Depends on:** 005 (methods with receiver), 072 (enums)
+**User page:** [docs/syntax.md](../docs/syntax.md)
 
 ## Goal
 

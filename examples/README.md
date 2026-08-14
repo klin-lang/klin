@@ -1,7 +1,8 @@
 # Examples
 
 Runnable Klin demos (not golden tests — those live in `test/`).
-Language tutorial: [docs/guide.md](../docs/guide.md). Why Klin exists:
+Language tutorial: [docs/guide.md](../docs/guide.md). Enums / `Type.fn` /
+destructuring: [docs/syntax.md](../docs/syntax.md). Why Klin exists:
 [docs/00-idea.md](../docs/00-idea.md).
 
 Each **folder** has its own `README.md` with **What / Why / How / Links**.
@@ -39,8 +40,8 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `slice_ops.kl` | `stdlib/slice` map/filter/reduce ([017](../issues/017-collection-methods.md), [docs/16](../docs/16-slice.md)) |
 | `slice_alloc_demo.kl` | `stdlib/slice_alloc` + explicit `Allocator` ([017](../issues/017-collection-methods.md), [docs/16](../docs/16-slice.md)) |
 | `short_decl.kl` | `:=` sugar for `let mut` ([055](../issues/055-short-decl.md), [docs/14](../docs/14-short-decl.md)) |
-| `destructure.kl` | Destructuring `let { x, y } = p` / `let [a, b] = xs` ([056](../issues/056-destructuring.md)) |
-| `multi_assign.kl` | Multi-assignment / swap `a, b = b, a` ([056](../issues/056-destructuring.md)) |
+| `destructure.kl` | Destructuring `let { x, y } = p` / `let [a, b] = xs` ([docs/syntax.md](../docs/syntax.md), [056](../issues/056-destructuring.md)) |
+| `multi_assign.kl` | Multi-assignment / swap `a, b = b, a` ([docs/syntax.md](../docs/syntax.md), [056](../issues/056-destructuring.md)) |
 | `match.kl` | `match` stmt + expr, no fallthrough ([014](../issues/014-match.md), [docs/15](../docs/15-match.md)) |
 | `add_test.kl` | Sample `klin test` (`import testing`) |
 | `interp.kl` | String interpolation → `printf` ([docs/07-interpolation.md](../docs/07-interpolation.md)) |
@@ -50,8 +51,8 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `math_basic.kl` | `stdlib/math` |
 | `bitwise.kl` | Bitwise operators |
 | `logical.kl` | Logical operators (`&&` / `||`) |
-| `enums.kl` | Enums ([072](../issues/072-enums.md)) |
-| `associated_fn.kl` | Associated functions |
+| `enums.kl` | Enums ([docs/syntax.md](../docs/syntax.md), [072](../issues/072-enums.md)) |
+| `associated_fn.kl` | Associated functions ([docs/syntax.md](../docs/syntax.md), [079](../issues/079-associated-functions.md)) |
 | `number_literals.kl` | Binary / exponent literals ([081](../issues/081-number-literals.md)) |
 | `sketch_async_eventloop.kl` | `async`/`await` + remote eventloop ([029](../issues/029-async-event-loop.md); also [`remote_eventloop/`](remote_eventloop/)) |
 
