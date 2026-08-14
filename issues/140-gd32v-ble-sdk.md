@@ -1,6 +1,6 @@
 # 140 — GD32VW553 BLE as a separate SDK package (`gd32v_ble`)
 
-**Status:** 🔨 advertise + GATT + central + GATT client + Just Works bonding + UUID16 + passkey + UUID128/multi + privacy + Mesh OnOff published [`@v0.10.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.10.0)  
+**Status:** 🔨 advertise + GATT + central + GATT client + Just Works bonding + UUID16 + passkey + UUID128/multi + privacy + Mesh OnOff + Mesh provisioner published [`@v0.11.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.11.0) (Level/vendor later)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [136](136-machine-gd32v-gd32vw553.md), [137](137-gd32v-wifi-sdk.md)
 **Formerly:** `130` (renumbered to resolve duplicate issue numbers).
 
@@ -9,8 +9,8 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: [`klin-lang/gd32v_ble`](https://github.com/klin-lang/gd32v_ble) `@v0.10.0` |
-| Engine | **GigaDevice VW55x BLE SDK** (AN152 stack + `MSDK/ble/app` managers + `ble_gatts_*` / `ble_scan_*` / `ble_conn_*` / `ble_gattc_*` / `app_sec_*` / `ble_adp_privacy_recfg` / `bt_mesh_*`) — not MMIO, **not** ESP-IDF NimBLE |
+| Where does the code live? | External: [`klin-lang/gd32v_ble`](https://github.com/klin-lang/gd32v_ble) `@v0.11.0` |
+| Engine | **GigaDevice VW55x BLE SDK** (AN152 stack + `MSDK/ble/app` managers + `ble_gatts_*` / `ble_scan_*` / `ble_conn_*` / `ble_gattc_*` / `app_sec_*` / `ble_adp_privacy_recfg` / `bt_mesh_*` / CDB) — not MMIO, **not** ESP-IDF NimBLE |
 | Relation to `machine_gd32v` | **Separate.** Pin…Adc twins stay MMIO ([136](136-machine-gd32v-gd32vw553.md)). Same split as [`esp_ble`](https://github.com/klin-lang/esp_ble) vs `machine_esp` ([106](106-esp-ble-idf.md)). |
 | Relation to `gd32v_wifi` | Sibling radio package ([137](137-gd32v-wifi-sdk.md)). Not the same Klin module. |
 
@@ -38,6 +38,8 @@ Privacy uses `ble_adp_privacy_recfg` + `BLE_GAP_LOCAL_ADDR_RESOLVABLE` for
 adv/scan/connect (controller RPA — not NimBLE `ble_hs_pvcy_rpa_config`).
 Mesh uses Zephyr-style `bt_mesh_init` + Gen OnOff (`mesh_cfg.h` / BLE_MAX —
 same class as SDK `light_demo`; not NimBLE `CONFIG_BT_NIMBLE_MESH`).
+Provisioner uses CDB (`bt_mesh_cdb_create` / `bt_mesh_provision_adv|gatt`) when
+`CONFIG_BT_MESH_PROVISIONER` + `CONFIG_BT_MESH_CDB` (SDK `provisioner` example).
 `BLE_GAP_ADV_PROP_UNDIR_CONN` is GigaDevice `ble_gap.h`, not NimBLE.
 
 ## Scope (`@v0.1.0` — advertise)
@@ -170,11 +172,25 @@ Same Klin names as [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.10.0`:
 - Engine: Zephyr-style `bt_mesh_init` / `bt_mesh_prov_enable` (not NimBLE `CONFIG_BT_NIMBLE_MESH`)  
 - `version()` → `10`  
 - Example `examples/mesh/`  
-- **Not** included: provisioner role, extra models (Level/vendor), friend/LPN knobs beyond SDK defaults  
+- **Not** included (until `@v0.11.0`): provisioner role — see below; Level/vendor / friend/LPN still later  
+
+## Scope (`@v0.11.0` — Mesh provisioner)
+
+- `mesh_provisioner_enable` — after `init`; creates CDB + self-provisions at addr **1** (fixed demo net/dev keys)  
+- Mutually exclusive with `mesh_enable` (Gen OnOff node)  
+- Needs `CONFIG_BT_MESH_PROVISIONER` + `CONFIG_BT_MESH_CDB` (+ BLE_MAX); otherwise returns `-1`  
+- Unprov beacons fill a fixed table (`mesh_unprov_count` / `mesh_unprov_uuid` / `mesh_unprov_clear`; max **8**)  
+- `mesh_prov_adv(index, addr, timeout_ms)` / `mesh_prov_gatt` — PB-ADV / PB-GATT; `addr` 0 = auto; blocks until `node_added`  
+- Auth: auto `bt_mesh_auth_method_set_none` (no interactive OOB)  
+- `mesh_cdb_count` / `mesh_cdb_addr(index)` — dense view of allocated CDB nodes  
+- `version()` → `11`  
+- Example `examples/mesh_prov/`  
+- **Not** included (until later): Gen Level / vendor models; friend / LPN knobs; interactive OOB auth methods  
 
 ## Out of scope (this tag)
 
-- Provisioner / extra Mesh models beyond Gen OnOff  
+- Extra Mesh models (Level / vendor) beyond Gen OnOff node + provisioner  
+- Friend / LPN knobs beyond SDK defaults  
 - Wi‑Fi — [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [137](137-gd32v-wifi-sdk.md)  
 - Board packs — [138](138-board-gd32vw553h-eval.md) / [139](139-board-gd32vw553h-start.md) (no radio API)  
 - Vendoring `GD32VW55x_WiFi_BLE_SDK`  
@@ -182,9 +198,10 @@ Same Klin names as [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.10.0`:
 
 ## Contract (prime rule)
 
-- No Klin GC / hidden heap — advertise name is a C string you pass in; GATT payloads are caller buffers + fixed per-slot 20-byte statics in C (max 4 slots); scan results are a fixed 16-row static table; GATT client uses a fixed 20-byte client buffer; bond keys live in **SDK flash storage**; passkey is an explicit `i32` PIN; 128-bit UUIDs are explicit 16-byte LE buffers. UUID table frozen at `init`.  
+- No Klin GC / hidden heap — advertise name is a C string you pass in; GATT payloads are caller buffers + fixed per-slot 20-byte statics in C (max 4 slots); scan results are a fixed 16-row static table; GATT client uses a fixed 20-byte client buffer; bond keys live in **SDK flash storage**; passkey is an explicit `i32` PIN; 128-bit UUIDs are explicit 16-byte LE buffers. UUID table frozen at `init`. Unprov UUID table max 8.  
 - `privacy_enable` only when radio is idle (not advertising / scanning / connected).  
-- Mesh needs explicit SDK mesh + BLE_MAX; mesh stack buffers are **SDK contracts**.  
+- Mesh needs explicit SDK mesh + BLE_MAX; provisioner needs PROVISIONER+CDB; mesh stack buffers are **SDK contracts**.  
+- `mesh_enable` and `mesh_provisioner_enable` are mutually exclusive.  
 - SDK heap / OSAL BLE task / GAP / GATTS / GATTC / security / privacy / mesh / scan events are **SDK contracts**, documented in the package README.  
 - Errors are `i32` (0 = ok).  
 - Host `klin test` must not require the SDK tree.
@@ -199,26 +216,24 @@ fn main() {
     if e != ble.err_ok() {
         return
     }
-    e = ble.mesh_enable()
+    e = ble.mesh_provisioner_enable()
     if e != ble.err_ok() {
         return
     }
-    while true {
-        if ble.mesh_onoff_changed() {
-            let _o = ble.mesh_onoff()
-        }
+    if ble.mesh_unprov_count() > 0 {
+        e = ble.mesh_prov_adv(0, 2, 30000)
     }
 }
 ```
 
 ```sh
-klin get github/klin-lang/gd32v_ble@v0.10.0
+klin get github/klin-lang/gd32v_ble@v0.11.0
 ```
 
 ## Links
 
 - Package: https://github.com/klin-lang/gd32v_ble  
-- Tag: [v0.10.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.10.0) (privacy [v0.9.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.9.0), UUID128/multi [v0.8.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.8.0), passkey [v0.7.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.7.0), UUID16 [v0.6.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.6.0), bonding [v0.5.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.5.0), GATT client [v0.4.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.4.0), central [v0.3.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.3.0), GATT [v0.2.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.2.0), advertise [v0.1.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.1.0))  
+- Tag: [v0.11.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.11.0) (Mesh OnOff [v0.10.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.10.0), privacy [v0.9.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.9.0), UUID128/multi [v0.8.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.8.0), passkey [v0.7.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.7.0), UUID16 [v0.6.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.6.0), bonding [v0.5.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.5.0), GATT client [v0.4.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.4.0), central [v0.3.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.3.0), GATT [v0.2.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.2.0), advertise [v0.1.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.1.0))  
 - SDK: https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK  
 - AN152 BLE Development Guide (GigaDevice)  
 - Chip MMIO: [136](136-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
