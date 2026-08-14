@@ -11,7 +11,7 @@ This is a **maybe** queue: ship only when there is a concrete device + protocol 
 Do **not** fold MQTT / cloud SDKs into `machine_*` or into the current STA/W5500 tags.  
 Do **not** start here before thin **sockets** ([104](104-later-tracks-esp-network.md) N2) **and** **HTTP/TLS** ([104](104-later-tracks-esp-network.md) N3).
 
-Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (USB / camera / LCD), [106](106-esp-ble-idf.md) (BLE), [104](104-later-tracks-esp-network.md) (SoftAP / RMII / sockets / HTTP/TLS…).
+Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (camera / LCD; USB → [108](108-esp-usb-idf.md)), [106](106-esp-ble-idf.md) (BLE), [108](108-esp-usb-idf.md) (USB OTG), [104](104-later-tracks-esp-network.md) (SoftAP / RMII / sockets / HTTP/TLS…).
 
 ## Prerequisites (not this issue)
 
