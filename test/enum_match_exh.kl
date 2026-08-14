@@ -1,0 +1,27 @@
+enum Color { Red, Green, Blue }
+
+// Exhaustive `match` without `else` returns on every path (issue 129).
+fn (c: Color) name(): str {
+    match c {
+        Color.Red { return "red" }
+        Color.Green { return "green" }
+        Color.Blue { return "blue" }
+    }
+}
+
+fn main() {
+    let c: Color = Color.Green
+    printf("%s\n", c.name())
+
+    match c {
+        Color.Red { printf("R\n") }
+        Color.Green, Color.Blue { printf("not-red\n") }
+    }
+
+    let n = match c {
+        Color.Red { 1 }
+        Color.Green { 2 }
+        Color.Blue { 3 }
+    }
+    printf("%d\n", n)
+}

@@ -11,7 +11,7 @@ fn (c: Color) name(): str {
     match c {
         Color.Red { return "red" }
         Color.Green { return "green" }
-        else { return "blue" }
+        Color.Blue { return "blue" }
     }
 }
 
@@ -19,11 +19,12 @@ fn main() {
     let c: Color = Color.Green
     printf("color: %s\n", c.name())
 
-    // Enums compare with `==` / `!=` and drive `match`.
+    // Enums compare with `==` / `!=` and drive `match` (exhaustive: every
+    // variant, or `else` for a leftover after `cast`).
     match c {
         Color.Red { printf("stop\n") }
         Color.Green { printf("go\n") }
-        else { printf("slow\n") }
+        Color.Blue { printf("slow\n") }
     }
 
     // Explicit conversion to/from the integer base — never implicit.

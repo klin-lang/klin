@@ -16,13 +16,15 @@ fn (c: Color) name(): str {
     match c {
         Color.Red { return "red" }
         Color.Green { return "green" }
-        else { return "blue" }
+        Color.Blue { return "blue" }
     }
 }
 ```
 
 - `==` / `!=` only with the **same** enum; no `<` / `>`
-- `match` patterns are `Enum.Variant`; `match` is not exhaustive
+- `match` patterns are `Enum.Variant`. The checker requires every
+  variant (or a final `else`). A `when` guard does not count — it can
+  fail. `else` is the hatch for a leftover after `cast`.
 - Number conversion is explicit: `cast(i32, s)`, `cast(Status, 5)`
 - Receiver methods work like on structs
 - Emission is a `typedef` plus integer constants (portable; not C23
@@ -46,7 +48,8 @@ auto `to_string`.
 
 Runnable: [`examples/enums.kl`](../examples/enums.kl),
 [`examples/sorted_lookup.kl`](../examples/sorted_lookup.kl).
-Issues: [072](../issues/072-enums.md), [126](../issues/126-enum-index.md).
+Issues: [072](../issues/072-enums.md), [126](../issues/126-enum-index.md),
+[129](../issues/129-enum-match-exhaustive.md).
 
 ## Associated functions (`Type.fn`)
 

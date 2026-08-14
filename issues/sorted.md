@@ -155,6 +155,7 @@ building the core from scratch.
 | [126](126-enum-index.md) | Enum as `[N]T` index (`table[Slot.B]`) | ✅ | 072, 007 |
 | [127](127-docs-generics-fn.md) | Map: generics are `$fn`, not `[T]` in the compiler | ✅ | 116, 026, 034 |
 | [128](128-fmt-comments.md) | `klin fmt` keeps `//` comments | ✅ | 033 |
+| [129](129-enum-match-exhaustive.md) | Exhaustive `match` on enum (checker) | ✅ | 072, 014 |
 
 ---
 

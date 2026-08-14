@@ -53,11 +53,12 @@ These are feature write-ups. The tutorial is [guide.md](guide.md).
 | [15-match.md](15-match.md) | `match` (no fallthrough) |
 | [16-slice.md](16-slice.md) | `slice` / `slice_alloc` |
 | [18-pick.md](18-pick.md) | `pick cond { a } { b }` → `?:` |
-| [syntax.md](syntax.md) | Enums (incl. `table[Slot.B]`), `Type.fn`, destructuring |
+| [syntax.md](syntax.md) | Enums (incl. `table[Slot.B]`, exhaustive `match`), `Type.fn`, destructuring |
 
 `if` / `defer` / `import` and the operator table live in
 [guide.md](guide.md) (§4, §6, §8, §9). Enums, `Type.fn`, and
-destructuring: [syntax.md](syntax.md) (enum as `[N]T` index too).
+destructuring: [syntax.md](syntax.md) (enum as `[N]T` index;
+exhaustive `match` on enum).
 Generics are `$fn` ([04-macros.md](04-macros.md)) — expand to plain
 `fn` before parse; not `[T]` in the compiler. Bitwise / logical
 operators: [01-decisions.md](01-decisions.md) D8 / D9. Do not treat
