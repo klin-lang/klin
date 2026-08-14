@@ -30,7 +30,7 @@
 - GD32VW553 twins — [136](136-machine-gd32v-gd32vw553.md) (same package; Pin…Adc ✅ `@v0.8.0`)  
 - Wi‑Fi on VW553 — [137](137-gd32v-wifi-sdk.md) / [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [`@v0.4.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.4.0) (not this file)  
 - Board pack / `klin init` — [138](138-board-gd32vw553h-eval.md) / [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval), [139](139-board-gd32vw553h-start.md) / [`gd32vw553h_start`](https://github.com/klin-lang/gd32vw553h_start) (not this file)  
-- BLE on VW553 — [140](140-gd32v-ble-sdk.md) / [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [`@v0.7.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.7.0) (not this file)
+- BLE on VW553 — [140](140-gd32v-ble-sdk.md) / [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [`@v0.8.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.8.0) (not this file)
 
 ## Links
 
