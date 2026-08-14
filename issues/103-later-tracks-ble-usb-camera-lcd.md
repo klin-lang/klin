@@ -43,9 +43,10 @@ Work top-down or pick by hardware on the desk. Each row = own issue + package/bo
 
 - Implementation or package scaffolding  
 - Priority vs language core  
-- Merging camera into `machine_esp` or folding USB OTG into board packs  
+- Merging camera into `machine_esp` or folding USB into board packs  
 - ESP network package later tags (→ [104](104-later-tracks-esp-network.md))
 - Re-implementing BLE advertise / GATT / scan MVP (→ [106](106-esp-ble-idf.md))
+- Re-implementing USB device CDC MVP (→ [108](108-esp-usb-idf.md))
 ## Links
 
 - Targets: [062](062-targets-esp-rp.md)  
