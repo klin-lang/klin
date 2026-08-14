@@ -153,8 +153,8 @@ fn main() {
 exits — `return`, `break`, `continue`, or falling off the end. Several
 `defer`s in one scope run **last-in, first-out**.
 
-Emission is a shared epilogue plus `goto cleanup`. There is no hidden
-destructor: the statement you wrote is what runs.
+The compiler inserts that statement at every exit from the block
+(visible copies in the `.c`). There is no hidden destructor.
 
 Runnable: [`examples/mem_heap.kl`](../examples/mem_heap.kl).
 
