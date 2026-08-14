@@ -1,6 +1,6 @@
 # 140 — GD32VW553 BLE as a separate SDK package (`gd32v_ble`)
 
-**Status:** 🔨 advertise + GATT + central + GATT client + Just Works bonding + UUID16 + passkey + UUID128/multi published [`@v0.8.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.8.0) (privacy later)  
+**Status:** 🔨 advertise + GATT + central + GATT client + Just Works bonding + UUID16 + passkey + UUID128/multi + privacy published [`@v0.9.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.9.0) (mesh later)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [136](136-machine-gd32v-gd32vw553.md), [137](137-gd32v-wifi-sdk.md)
 **Formerly:** `130` (renumbered to resolve duplicate issue numbers).
 
@@ -9,8 +9,8 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: [`klin-lang/gd32v_ble`](https://github.com/klin-lang/gd32v_ble) `@v0.8.0` |
-| Engine | **GigaDevice VW55x BLE SDK** (AN152 stack + `MSDK/ble/app` managers + `ble_gatts_*` / `ble_scan_*` / `ble_conn_*` / `ble_gattc_*` / `app_sec_*`) — not MMIO, **not** ESP-IDF NimBLE |
+| Where does the code live? | External: [`klin-lang/gd32v_ble`](https://github.com/klin-lang/gd32v_ble) `@v0.9.0` |
+| Engine | **GigaDevice VW55x BLE SDK** (AN152 stack + `MSDK/ble/app` managers + `ble_gatts_*` / `ble_scan_*` / `ble_conn_*` / `ble_gattc_*` / `app_sec_*` / `ble_adp_privacy_recfg`) — not MMIO, **not** ESP-IDF NimBLE |
 | Relation to `machine_gd32v` | **Separate.** Pin…Adc twins stay MMIO ([136](136-machine-gd32v-gd32vw553.md)). Same split as [`esp_ble`](https://github.com/klin-lang/esp_ble) vs `machine_esp` ([106](106-esp-ble-idf.md)). |
 | Relation to `gd32v_wifi` | Sibling radio package ([137](137-gd32v-wifi-sdk.md)). Not the same Klin module. |
 
@@ -34,6 +34,8 @@ GATT client uses `ble_gattc_*` (`ble_gattc_svc_reg` / `ble_gattc_start_discovery
 Bonding uses `app_sec_set_authen` / `app_sec_send_bond_req` + peer flash
 (`ble_peer_all_addr_get` / `ble_peer_data_delete`); `ble_init` already calls
 `app_sec_mgr_init`.
+Privacy uses `ble_adp_privacy_recfg` + `BLE_GAP_LOCAL_ADDR_RESOLVABLE` for
+adv/scan/connect (controller RPA — not NimBLE `ble_hs_pvcy_rpa_config`).
 `BLE_GAP_ADV_PROP_UNDIR_CONN` is GigaDevice `ble_gap.h`, not NimBLE.
 
 ## Scope (`@v0.1.0` — advertise)
@@ -141,9 +143,21 @@ Same Klin names as [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.8.0`:
 - Example `examples/multi/`  
 - **Not** included (until later, like `esp_ble@v0.9.0`): LE privacy  
 
+## Scope (`@v0.9.0` — LE privacy / controller RPA)
+
+Same Klin names as [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.9.0`:
+
+- `privacy_enable` / `privacy_disable` — after `init`, **before** advertise / scan / connect (fail if radio busy)  
+- Controller RPA via `ble_adp_privacy_recfg(PRIV_EN_BIT|0, NULL)`; adv/scan/connect use `BLE_GAP_LOCAL_ADDR_RESOLVABLE` when privacy is on  
+- `privacy_enabled` / `own_addr_type` / `own_addr(*mut u8)` — query own address (`own_addr_type` is GD32 enum 0/1; `own_addr` uses `ble_adp_public_addr_get` / `ble_adp_identity_addr_get`, no RPA event cache)  
+- Bonding already distributes IRK (`bond_enable` / `bond_passkey`) for peer resolution  
+- `version()` → `9`  
+- Example `examples/privacy/`  
+- **Not** included (until later, like `esp_ble@v0.10.0`): Mesh; host-RPA knobs beyond controller privacy  
+
 ## Out of scope (this tag)
 
-- Privacy / Mesh  
+- Mesh  
 - Wi‑Fi — [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [137](137-gd32v-wifi-sdk.md)  
 - Board packs — [138](138-board-gd32vw553h-eval.md) / [139](139-board-gd32vw553h-start.md) (no radio API)  
 - Vendoring `GD32VW55x_WiFi_BLE_SDK`  
@@ -152,7 +166,8 @@ Same Klin names as [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.8.0`:
 ## Contract (prime rule)
 
 - No Klin GC / hidden heap — advertise name is a C string you pass in; GATT payloads are caller buffers + fixed per-slot 20-byte statics in C (max 4 slots); scan results are a fixed 16-row static table; GATT client uses a fixed 20-byte client buffer; bond keys live in **SDK flash storage**; passkey is an explicit `i32` PIN; 128-bit UUIDs are explicit 16-byte LE buffers. UUID table frozen at `init`.  
-- SDK heap / OSAL BLE task / GAP / GATTS / GATTC / security / scan events are **SDK contracts**, documented in the package README.  
+- `privacy_enable` only when radio is idle (not advertising / scanning / connected).  
+- SDK heap / OSAL BLE task / GAP / GATTS / GATTC / security / privacy / scan events are **SDK contracts**, documented in the package README.  
 - Errors are `i32` (0 = ok).  
 - Host `klin test` must not require the SDK tree.
 
@@ -162,37 +177,26 @@ Same Klin names as [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.8.0`:
 import "github/klin-lang/gd32v_ble" ble
 
 fn main() {
-    let mut e = ble.gatt_clear()
+    let mut e = ble.init()
     if e != ble.err_ok() {
         return
     }
-    e = ble.gatt_add_uuid16(0xA001, 0xA002)
+    e = ble.privacy_enable()
     if e != ble.err_ok() {
         return
     }
-    let mut svc: [16]u8
-    let mut chr: [16]u8
-    // fill 16-byte LE UUID128…
-    e = ble.gatt_add_uuid128(cast(*u8, &svc[0]), cast(*u8, &chr[0]))
-    if e != ble.err_ok() {
-        return
-    }
-    e = ble.init()
-    if e != ble.err_ok() {
-        return
-    }
-    e = ble.advertise("klin-multi")
+    e = ble.advertise("klin-rpa")
 }
 ```
 
 ```sh
-klin get github/klin-lang/gd32v_ble@v0.8.0
+klin get github/klin-lang/gd32v_ble@v0.9.0
 ```
 
 ## Links
 
 - Package: https://github.com/klin-lang/gd32v_ble  
-- Tag: [v0.8.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.8.0) (passkey [v0.7.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.7.0), UUID16 [v0.6.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.6.0), bonding [v0.5.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.5.0), GATT client [v0.4.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.4.0), central [v0.3.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.3.0), GATT [v0.2.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.2.0), advertise [v0.1.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.1.0))  
+- Tag: [v0.9.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.9.0) (UUID128/multi [v0.8.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.8.0), passkey [v0.7.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.7.0), UUID16 [v0.6.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.6.0), bonding [v0.5.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.5.0), GATT client [v0.4.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.4.0), central [v0.3.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.3.0), GATT [v0.2.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.2.0), advertise [v0.1.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.1.0))  
 - SDK: https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK  
 - AN152 BLE Development Guide (GigaDevice)  
 - Chip MMIO: [136](136-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
