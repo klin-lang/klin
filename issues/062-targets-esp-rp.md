@@ -77,6 +77,7 @@ target **ESP32**, **RP2040**, **RP2350**, **STM8**, **CH32V**, **GD32V**?
 - ESP package: https://github.com/klin-lang/machine_esp  
 - ESP Wi‑Fi (IDF, not `machine_*`): https://github.com/klin-lang/esp_wifi ([101](101-esp-wifi-idf.md))  
 - ESP Ethernet (IDF, not `machine_*`): https://github.com/klin-lang/esp_eth ([102](102-esp-eth-idf.md))  
+- ESP sockets (LwIP BSD, not `machine_*`): https://github.com/klin-lang/esp_sockets ([111](111-esp-sockets-idf.md))  
 - ESP BLE (IDF NimBLE, not `machine_*`): https://github.com/klin-lang/esp_ble ([106](106-esp-ble-idf.md))  
 - ESP USB OTG (IDF TinyUSB, not `machine_*`): https://github.com/klin-lang/esp_usb ([108](108-esp-usb-idf.md))  
 - ESP camera (IDF esp32-camera, not `machine_*`): https://github.com/klin-lang/esp_camera ([109](109-esp-camera-idf.md))  

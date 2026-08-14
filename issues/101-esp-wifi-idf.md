@@ -74,7 +74,7 @@ Changelog: `@v0.1.0` STA+DHCP → `@v0.1.1` static → `@v0.2.0` SoftAP → `@v0
 
 ## Out of scope
 
-- Dual Wi‑Fi+ETH / APSTA / sockets / HTTP / TLS — later → [104](104-later-tracks-esp-network.md)  
+- Dual Wi‑Fi+ETH / APSTA / HTTP / TLS — later → [104](104-later-tracks-esp-network.md); sockets ✅ [111](111-esp-sockets-idf.md)  
 - BLE — ✅ separate package [`esp_ble`](https://github.com/klin-lang/esp_ble) → [106](106-esp-ble-idf.md) (was track A in [103](103-later-tracks-ble-usb-camera-lcd.md))  
 - Freestanding (no IDF)  
 - Reconnect policy beyond the small, documented retry in `sta_idf.c` (max 5)
