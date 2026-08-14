@@ -38,7 +38,7 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `hello.kl` | Minimal `puts` |
 | `vec2.kl` | Struct + methods |
 | `point.kl` | `Vec2i` + `len_sq` (canonical Klin) |
-| `point_macro.kl` | Same via `$fn` ([docs/04-macros.md](../docs/04-macros.md)) |
+| `point_macro.kl` | Same via `$fn` — Klin’s generic, not `[T]` in the compiler ([docs/04-macros.md](../docs/04-macros.md)) |
 | `slice_sum.kl` | Arrays / slices |
 | `fn_ptr.kl` | Function pointers without capture ([017](../issues/017-collection-methods.md) phase 2) |
 | `slice_ops.kl` | `stdlib/slice` map/filter/reduce ([017](../issues/017-collection-methods.md), [docs/16](../docs/16-slice.md)) |

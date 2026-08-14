@@ -43,7 +43,7 @@ These are feature write-ups. The tutorial is [guide.md](guide.md).
 
 | Doc | Topic |
 |---|---|
-| [04-macros.md](04-macros.md) | `$fn` preprocessor (D3) |
+| [04-macros.md](04-macros.md) | Generics = `$fn` expand (not `[T]` in the compiler) |
 | [device.md](device.md) | `$device` / fluent MMIO from SVD |
 | [07-interpolation.md](07-interpolation.md) | `"$name"` / `${expr}` → `printf` |
 | [12-modules.md](12-modules.md) | `module` / `import` / `pub` |
@@ -58,9 +58,10 @@ These are feature write-ups. The tutorial is [guide.md](guide.md).
 `if` / `defer` / `import` and the operator table live in
 [guide.md](guide.md) (§4, §6, §8, §9). Enums, `Type.fn`, and
 destructuring: [syntax.md](syntax.md) (enum as `[N]T` index too).
-Bitwise / logical operators:
-[01-decisions.md](01-decisions.md) D8 / D9. Do not treat `issues/` as
-the user guide.
+Generics are `$fn` ([04-macros.md](04-macros.md)) — expand to plain
+`fn` before parse; not `[T]` in the compiler. Bitwise / logical
+operators: [01-decisions.md](01-decisions.md) D8 / D9. Do not treat
+`issues/` as the user guide.
 
 The event loop is a **library**
 ([`eventloop`](https://github.com/klin-lang/eventloop)), not a language

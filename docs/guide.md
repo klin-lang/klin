@@ -276,7 +276,7 @@ You can write host Klin now. Next, still without `issues/`:
 | `match` / `pick` | [15-match.md](15-match.md), [18-pick.md](18-pick.md) |
 | Enums / `table[Slot.B]` / `Type.fn` / destructuring | [syntax.md](syntax.md) |
 | Packages / search paths | [11-klin-libraries.md](11-klin-libraries.md), [12-modules.md](12-modules.md) |
-| `$fn` macros | [04-macros.md](04-macros.md) |
+| Generics (`$fn`, not `[T]` in the compiler) | [04-macros.md](04-macros.md) |
 | Interpolation | [07-interpolation.md](07-interpolation.md) |
 | Host stdlib | [../stdlib/README.md](../stdlib/README.md) |
 | C FFI / ASM units / `asm("…")` | [09-ffi-c.md](09-ffi-c.md), [10-asm.md](10-asm.md) |

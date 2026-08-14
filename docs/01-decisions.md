@@ -65,11 +65,15 @@ return r;`. Zero overhead beyond checking the flag.
 
 ## D3. Generics — DECIDED
 
-**Choice: preprocessor/compile-time macros, NOT in the language grammar.**
+**Choice: `$fn` preprocessor. Not `[T]` in the compiler.**
 
-Nelua model: a powerful preprocessor with AST access generates
-specialized code. Classes, generics, and polymorphism implemented
-ad hoc, without putting them in the core.
+Klin has generics. They expand **before** parse into ordinary `fn` /
+`struct`. The checker never holds a type parameter. This is
+intentional, not a gap — user page: [04-macros.md](04-macros.md).
+
+Nelua model: a powerful preprocessor generates specialized code.
+Classes, generics, and polymorphism implemented ad hoc, without
+putting `T` in the core.
 
 ```
 $fn point(name: str, T: type) {

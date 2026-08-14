@@ -55,6 +55,8 @@ What you get that C does not:
 - immutability by default; mutation visible in the signature
 - typed register access from SVD, where the chip has an SVD
   ([device.md](device.md))
+- generics via `$fn` (expand before parse), not `[T]` in the compiler
+  ([04-macros.md](04-macros.md))
 
 What you keep from C:
 
@@ -117,7 +119,7 @@ Klin is not "better than Zig" and does not claim to be. It makes a
 | Source | Take |
 |---|---|
 | **V** | `mut` (immutability by default), `pub`, no `null`, `!T` + `or {}` |
-| **Nelua** | preprocessor instead of generics in the core, `cimport` / `cexport` / `codename`, ZII |
+| **Nelua** | preprocessor as the generic (`$fn`, not `[T]` in the compiler), `cimport` / `cexport` / `codename`, ZII |
 | **Go** | `defer`, methods on structs without inheritance, `fmt` / `test` / modules |
 | **Zig / Odin** | allocator as an explicit argument, not global magic |
 
@@ -154,7 +156,8 @@ not the one that sounds best in the README.
 
 ## Decisions, architecture, how to write Klin
 
-- Decisions (memory, errors, generics): [01-decisions.md](01-decisions.md)
+- Decisions (memory, errors, generics = `$fn`): [01-decisions.md](01-decisions.md),
+  [04-macros.md](04-macros.md)
 - Compiler rules: [02-architecture.md](02-architecture.md)
 - Path (no `issues/`): [guide.md](guide.md) → [device.md](device.md) →
   [embedded.md](embedded.md)

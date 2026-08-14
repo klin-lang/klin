@@ -1,14 +1,35 @@
-# Compile-time macros (`$fn`, D3)
+# Generics via `$fn` (not `[T]` in the compiler)
 
-Decision: [01-decisions.md](01-decisions.md) § D3. Issue: [026](../issues/026-preprocessor.md).
-Example: [`point.kl`](../examples/point.kl) (plain Klin) and
+Klin **has** generics. They are `$fn`, not `fn id[T]` / `Vec[T]`.
+That is a conscious choice ([D3](01-decisions.md)): a preprocessor
+monomorphizes **before** parse. The checker and the C emitter never
+see a type parameter.
+
+`$point(Vec2i, i32)` becomes a plain `fn`. In a program you call
+`each_i32`, not `each[i32]`. Issue [034](../issues/034-generic-types.md)
+is optional grammar sugar later — not a hole, and not “missing
+generics.”
+
+Decision: [01-decisions.md](01-decisions.md) § D3. Implementation:
+[026](../issues/026-preprocessor.md). Example:
+[`point.kl`](../examples/point.kl) (plain Klin) and
 [`point_macro.kl`](../examples/point_macro.kl) (same via `$fn`).
+Stdlib: [`slice`](../stdlib/slice.kl) (`$slice_ops(i32)` → `each_i32`).
 
-## Why
+## Pipeline
 
-Generics are **not** in the language grammar. Instead a preprocessor before
-parse/check/emit substitutes slots (`$name`, `$T`, …) and generates plain
-Klin code — monomorphization visible in `--emit-pp`, zero runtime overhead.
+1. You write a `$fn` template and call it (`$point(Vec2i, i32)`).
+2. Expand (`--emit-pp`) substitutes `$name` / `$T` and emits **plain
+   Klin** — ordinary `struct` / `fn`.
+3. Parse → check → emit C see only that plain Klin. Nothing generic
+   remains at runtime.
+
+## Why `$fn` instead of compiler generics
+
+A C backend must monomorphize anyway. `each[T]` and `$fn each_$T`
+produce the **same** `.c`. Putting `T` in the checker is a large
+frontend for naming (`map_into[T]` vs `map_into_i32`), not a different
+execution model. So Klin keeps `[T]` out of the compiler on purpose.
 
 ## Before (you write a template)
 
@@ -98,5 +119,6 @@ and are not valid Klin until `--emit-pp`.
 
 ## What this is not
 
+- Not `fn foo[T]` / `Vec[T]` in the parser or checker ([034](../issues/034-generic-types.md)).
 - Not Nelua with full AST-quote / metaprogramming.
 - Not hidden polymorphism in C — `.c` keeps plain `Vec2i` / `int32_t`.

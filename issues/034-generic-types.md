@@ -3,9 +3,14 @@
 **Status:** 💭 not now (staying with D3)
 **Depends on:** D3 experience / [026](026-preprocessor.md); does not block main queue
 
+Klin already has generics: **`$fn`**, expanded before parse into ordinary
+`fn` / `struct`. User page: [docs/04-macros.md](../docs/04-macros.md).
+This issue is only optional `fn id[T]` **sugar** later — not “add
+generics,” and not a hole in the language.
+
 ## Verdict (after 017 / 057)
 
-**We are not implementing generics in grammar.** Staying with **D3**
+**We are not implementing `[T]` in the compiler.** Staying with **D3**
 ([docs/01-decisions.md](../docs/01-decisions.md)): monomorphization via `$fn`
 before parse.
 
@@ -21,7 +26,7 @@ semantic. **Still do not promise** `a.alloc(T, n)`
 
 ## Context
 
-D3: generics **not** in grammar — compile-time macros. MVP works
+D3: `$fn` is the generic (no `[T]` in the checker). MVP works
 (`point_macro`, SVD fluent, slice helpers — [docs/16-slice.md](../docs/16-slice.md)).
 
 ## Variants (when we revisit)
@@ -50,5 +55,6 @@ Then plan **variant 2**, not variant 3.
 ## Decision checklist
 
 - [x] Verdict: staying with D3; reopening topic = variant 2 after criteria above
-- [x] Short addendum in D3 ([docs/01-decisions.md](../docs/01-decisions.md))
+- [x] Short addendum in D3 ([docs/01-decisions.md](../docs/01-decisions.md));
+      user page [docs/04-macros.md](../docs/04-macros.md) ([127](127-docs-generics-fn.md))
 - [ ] Collect 2–3 hard `$fn` pain points (start condition for implementation — not now)
