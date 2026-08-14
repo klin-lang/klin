@@ -18,7 +18,7 @@
 - Examples: `blink` (LED1), `uart_com0`, `button_key`
 - Pin macros match Nuclei SDK `gd32vw553h_eval.h`
 
-**Out of scope:** START kit (SDK default UART2 PA6/PA7 — different map), Wi‑Fi API (→ [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [126](126-gd32v-wifi-sdk.md)), BLE, SPI helpers (those pads overlap the LEDs), board pack for VF103 Longan Nano, vendoring the wireless SDK.
+**Out of scope:** START kit (→ [129](129-board-gd32vw553h-start.md) / [`gd32vw553h_start`](https://github.com/klin-lang/gd32vw553h_start); SDK default UART2 PA6/PA7), Wi‑Fi API (→ [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [126](126-gd32v-wifi-sdk.md)), BLE, SPI helpers (those pads overlap the LEDs), board pack for VF103 Longan Nano, vendoring the wireless SDK.
 
 **Scaffold:** `klin init gd32vw553h-eval` — freestanding LED1 blink via
 bundled `templates/gd32vw553h-eval/` ([075](075-board-pack-init-host.md)).
