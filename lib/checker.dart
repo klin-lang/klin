@@ -805,6 +805,53 @@ final class Checker {
 
   String _key(String module, String name) => '$module.$name';
 
+  /// C rules: 0,1,2,… unless `= N` restarts the sequence.
+  List<(String name, int value, SourcePos pos)> _enumDiscriminants(
+    EnumDecl decl,
+  ) {
+    var next = 0;
+    final out = <(String, int, SourcePos)>[];
+    for (final variant in decl.variants) {
+      final valueExpr = variant.value;
+      if (valueExpr is IntLit) {
+        final parsed =
+            _parseIntLiteralValue(valueExpr.lexeme.replaceAll('_', ''));
+        if (parsed == null) {
+          throw CheckError(
+              'enum value must be an integer literal', valueExpr.pos);
+        }
+        next = parsed;
+      }
+      out.add((variant.name, next, variant.pos));
+      next += 1;
+    }
+    return out;
+  }
+
+  /// `table[Slot.B]` — enum as array index when every variant fits `[0, N)`.
+  void _checkEnumIndex(EnumType indexType, KlinType objectType, SourcePos pos) {
+    final decl = _enums[_key(indexType.moduleName, indexType.name)];
+    if (decl == null) {
+      throw CheckError('unknown enum `${indexType.displayName}`', pos);
+    }
+    if (objectType is! ArrayType) {
+      throw CheckError(
+        'enum index requires a fixed array `[N]T`, got `${objectType.displayName}`',
+        pos,
+      );
+    }
+    final n = objectType.len;
+    for (final (name, value, _) in _enumDiscriminants(decl)) {
+      if (value < 0 || value >= n) {
+        throw CheckError(
+          'enum `${decl.name}` does not fit `[${n}]` '
+          '(variant `$name` = $value)',
+          pos,
+        );
+      }
+    }
+  }
+
   /// Rejects a method/associated function whose C mangling would collide with
   /// an enum variant constant (`Type_Variant` / `mod_Type_Variant`).
   void _rejectEnumVariantCNameClash(
@@ -2239,8 +2286,11 @@ final class Checker {
       IndexExpr(:final object, :final index, :final pos) => () {
           final objectType = _inferExpr(object);
           final indexType = _defaultConcrete(_inferExpr(index), index.pos);
-          if (indexType is! PrimType || !indexType.kind.isInteger) {
-            throw CheckError('index requires an integer type', index.pos);
+          if (indexType is EnumType) {
+            _checkEnumIndex(indexType, objectType, index.pos);
+          } else if (indexType is! PrimType || !indexType.kind.isInteger) {
+            throw CheckError(
+                'index requires an integer or enum type', index.pos);
           }
           _materialize(index, indexType);
           return switch (objectType) {

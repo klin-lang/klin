@@ -19,6 +19,7 @@ Example: `examples/enums.kl`. Goldens: `test/enum_basic.kl`.
 
 **Beyond this MVP** (still “under consideration”, sections below): string-enum, kv-enum,
 exhaustive `match`, bitflags (require [078](078-bitwise-ops.md)).
+Enum as `[N]T` index → [126](126-enum-index.md) ✅.
 
 ## Goal
 

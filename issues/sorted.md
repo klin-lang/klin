@@ -150,6 +150,7 @@ building the core from scratch.
 | [123](123-docs-rtos-lib.md) | Map: FreeRTOS is C + `klin_freertos`, not the language | ✅ | 116, 024, 028 |
 | [124](124-docs-c-asm.md) | Map: C FFI + ASM units / `asm("…")` (not a C/ASM language) | ✅ | 116, 021, 022 |
 | [125](125-drop-host-json-sqlite.md) | Drop JSON / SQLite; strike ORM, `yield`, map (hidden resize) | ✅ | 050, 051, 070, 018, 060 |
+| [126](126-enum-index.md) | Enum as `[N]T` index (`table[Slot.B]`) | ✅ | 072, 007 |
 
 ---
 

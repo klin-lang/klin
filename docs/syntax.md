@@ -24,6 +24,9 @@ fn (c: Color) name(): str {
 - `==` / `!=` only with the **same** enum; no `<` / `>`
 - `match` patterns are `Enum.Variant`; `match` is not exhaustive
 - Number conversion is explicit: `cast(i32, s)`, `cast(Status, 5)`
+- Array index: `codes[Slot.B]` when every variant fits `[0, N)` —
+  same load as `codes[cast(i32, Slot.B)]`. Not a map. Slices still
+  want an integer (`i8`…`u64`, `usize` / `isize`, or `int`)
 - Receiver methods work like on structs
 - Emission is a `typedef` plus integer constants (portable; not C23
   `enum E : T`)

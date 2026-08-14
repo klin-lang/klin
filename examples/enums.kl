@@ -33,4 +33,8 @@ fn main() {
     if s2 == Status.Warn {
         printf("roundtrip ok\n")
     }
+
+    // Enum as `[N]T` index when variants fit `0 .. N-1` (issue 126).
+    let codes: [3]i32 = [10, 20, 30]
+    printf("slot: %d\n", codes[c])
 }

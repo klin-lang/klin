@@ -1,0 +1,12 @@
+enum Slot {
+    A
+    B
+    C
+}
+
+fn main() {
+    let codes: [3]i32 = [10, 20, 30]
+    printf("b=%d\n", codes[Slot.B])
+    let s: Slot = Slot.C
+    printf("c=%d\n", codes[s])
+}

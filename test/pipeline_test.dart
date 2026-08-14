@@ -1038,6 +1038,54 @@ fn main() {
     expect(c, contains('(Status)(5)'));
   });
 
+  test('golden: enum as array index (issue 126)', () async {
+    final result = await _compileAndRun('test/enum_index.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/enum_index.out').readAsString());
+
+    final source = File('test/enum_index.kl').readAsStringSync();
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'test/enum_index.kl');
+    expect(c, contains('codes[s]'));
+    expect(c, contains('codes[Slot_B]'));
+  });
+
+  test('error: enum index does not fit the array (issue 126)', () {
+    const source = '''
+enum Slot { A, B = 5 }
+fn main() {
+  let codes: [3]i32 = [1, 2, 3]
+  printf("%d\\n", codes[Slot.A])
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError &&
+          e.toString().contains('does not fit') &&
+          e.toString().contains('B'))),
+    );
+  });
+
+  test('error: enum index requires a fixed array (issue 126)', () {
+    const source = '''
+enum Slot { A, B }
+fn main() {
+  let codes: [2]i32 = [1, 2]
+  let xs = codes[:]
+  printf("%d\\n", xs[Slot.A])
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError && e.toString().contains('fixed array'))),
+    );
+  });
+
   test('error: enum base type must be an integer (issue 072)', () {
     const source = 'enum E: f64 { A, B }\nfn main() {}';
     final program = Parser(Lexer(source).tokenize()).parse();
