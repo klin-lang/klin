@@ -12,16 +12,15 @@
 
 | Artifact | Meaning |
 |---|---|
-| [`Formula/klin.rb`](../Formula/klin.rb) | build from source (`dart compile exe`) + `pkgshare` stdlib |
+| [`Formula/klin.rb`](../Formula/klin.rb) | stable = Release tarball; HEAD = `dart compile exe` + `pkgshare` stdlib |
 | [`.github/workflows/release.yml`](../.github/workflows/release.yml) | tag `v*` → macOS/Linux binaries + GitHub Release |
 | [`docs/17-homebrew.md`](../docs/17-homebrew.md) | install / tap / sha256 |
 
 Stdlib discovery for binary / Homebrew `share/klin`: `lib/project.dart`.
 
 ```sh
-brew tap dart-lang/dart
-brew install klin-lang/klin/klin          # stable (tap klin-lang/homebrew-klin)
-brew install --HEAD klin-lang/klin/klin   # main
+brew install klin-lang/klin/klin          # stable (prebuilt Release; no Dart)
+brew install --HEAD klin-lang/klin/klin   # main (needs dart-lang/dart)
 ```
 
 homebrew-core later.
