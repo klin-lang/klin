@@ -17,10 +17,10 @@ class Klin < Formula
   homepage "https://github.com/klin-lang/klin"
   license "MIT"
   # Pin the version-bump commit: GitHub may serve a stale
-  # refs/tags/v0.1.1.tar.gz after the tag was moved.
-  url "https://github.com/klin-lang/klin/archive/0ea3216c03ce496aa11a8b5877f907dca99c1424.tar.gz"
-  sha256 "dcf378b733e4cb7ba8d6d5fbe92c3f370c354592898a245b1eefb5df31221151"
-  version "0.1.1"
+  # refs/tags/vX.Y.Z.tar.gz after a tag is moved.
+  url "https://github.com/klin-lang/klin/archive/5e3ef4bfba3a61369dad862e6682c831eed480d3.tar.gz"
+  sha256 "0f4310746e32b0acaacaa41c2d548ecf51adba4942ae5dad7a47a641ab4498e0"
+  version "0.1.2"
 
   head "https://github.com/klin-lang/klin.git", branch: "main"
 
