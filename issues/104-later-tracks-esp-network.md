@@ -1,6 +1,6 @@
 # 104 — Later tracks: ESP network (`esp_wifi` / `esp_eth` beyond MVP)
 
-**Status:** 🔨 W1 SoftAP ✅ `@v0.2.0`; W2 Scan ✅ `@v0.3.0`; remaining backlog (one track at a time)  
+**Status:** 🔨 W1–W3 Wi‑Fi ✅ (`@v0.2.0`…`@v0.4.0`); ETH/shared backlog (one track at a time)  
 **Depends on:** [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md), [062](062-targets-esp-rp.md)
 
 ## Verdict
@@ -19,6 +19,7 @@ Sibling (non-network): [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP 
 | ETH W5500 SPI (IDF; DHCP default) | [`esp_eth`](https://github.com/klin-lang/esp_eth) → [102](102-esp-eth-idf.md) |
 | **W1 SoftAP** | [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.2.0` — `ap_init` / `ap_start(ssid,pass,channel)` / `ap_wait_started` / `ap_set_ip` / `ap_station_num`; SoftAP-only (no APSTA this tag) |
 | **W2 Scan** | [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.3.0` — `scan_start` / `scan_count` / `scan_ssid(caller buf)` / rssi/channel/authmode; max 16; needs `sta_init` |
+| **W3 RSSI / link** | [`esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.4.0` — `sta_rssi` / `sta_channel` / `sta_authmode` / `sta_ap_ssid` / `sta_log_link` after assoc |
 
 ## Queue — Wi‑Fi (`esp_wifi` or sibling)
 
@@ -26,7 +27,9 @@ Sibling (non-network): [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP 
 |---|---|---|---|
 | W1 | **SoftAP** | Same `esp_wifi` package | ✅ `@v0.2.0` — explicit AP SSID/pass/channel; not hidden provisioning |
 | W2 | **Scan** (SSID list) | `esp_wifi` | ✅ `@v0.3.0` — caller buffer for SSID; fixed C table max 16 |
-| W3 | **RSSI / link stats** | `esp_wifi` | Thin ioctl/query after assoc. **Next** |
+| W3 | **RSSI / link stats** | `esp_wifi` | ✅ `@v0.4.0` — thin `esp_wifi_sta_get_ap_info` after assoc |
+
+Wi‑Fi queue W1–W3 done. **Next** from this issue: ETH **E1/E2** (hardware) or shared **N2 sockets**.
 
 ## Queue — Ethernet (`esp_eth`, same package)
 

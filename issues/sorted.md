@@ -101,10 +101,10 @@ building the core from scratch.
 | [098](098-board-adafruit-rp2040-can-feather.md) | Board pack Adafruit RP2040 CAN Feather (MCP25625) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/adafruit_rp2040_can_feather)) | 061, 062, 075 |
 | [099](099-machine-esp-esp32-s3.md) | `machine_esp` ESP32-S3 Pin…Adc+Rmt (`*_s3`) | ✅ `@v0.5.0`/`@v0.6.0`/`@v0.7.0` ([repo](https://github.com/klin-lang/machine_esp)) | 061, 062 |
 | [100](100-board-waveshare-esp32-s3-pico.md) | Board pack Waveshare ESP32-S3-Pico | ✅ `@v0.3.0` ([repo](https://github.com/klin-lang/waveshare_esp32_s3_pico)) | 061, 062, 099 |
-| [101](101-esp-wifi-idf.md) | ESP Wi‑Fi thin IDF package (`esp_wifi` STA + SoftAP + scan) | ✅ `@v0.3.0` ([repo](https://github.com/klin-lang/esp_wifi)) | 021, 024, 049, 061, 062, 099 |
+| [101](101-esp-wifi-idf.md) | ESP Wi‑Fi thin IDF package (`esp_wifi` STA + SoftAP + scan + link) | ✅ `@v0.4.0` ([repo](https://github.com/klin-lang/esp_wifi)) | 021, 024, 049, 061, 062, 099 |
 | [102](102-esp-eth-idf.md) | ESP Ethernet thin IDF package (`esp_eth` W5500) | ✅ `@v0.1.2` ([repo](https://github.com/klin-lang/esp_eth)) | 021, 024, 049, 061, 062, 101 |
 | [103](103-later-tracks-ble-usb-camera-lcd.md) | Later tracks A–D MVP done (BLE/USB/camera/Pico LCD); leftover tags | ✅ MVP (later tags elsewhere) | 061, 062, 101, 102, 106, 108, 109, 110 |
-| [104](104-later-tracks-esp-network.md) | Later tracks: ESP network (SoftAP ✅; scan ✅; RSSI / RMII / sockets…) | 🔨 W1+W2 ✅; rest backlog | 101, 102, 062 |
+| [104](104-later-tracks-esp-network.md) | Later tracks: ESP network (Wi‑Fi W1–W3 ✅; RMII / sockets…) | 🔨 Wi‑Fi W1–W3 ✅; ETH/shared backlog | 101, 102, 062 |
 | [105](105-later-tracks-iot.md) | Later tracks: IoT (MQTT / OTA…) | 💭 maybe backlog (after sockets + HTTP/TLS) | 104, 101, 102 |
 | [106](106-esp-ble-idf.md) | ESP BLE thin IDF package (`esp_ble` GATT + bond + UUID16/128 + privacy + Mesh OnOff) | ✅ `@v0.10.0` ([repo](https://github.com/klin-lang/esp_ble)) | 021, 024, 049, 061, 062, 101 |
 | [107](107-later-tracks-arduino-boards.md) | Later tracks: Arduino boards (Leonardo / Uno R4 / Due / Giga / Portenta) | 💭 backlog (one family at a time) | 061, 062, 075 |

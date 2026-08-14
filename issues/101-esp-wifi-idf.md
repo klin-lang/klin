@@ -1,6 +1,6 @@
 # 101 — ESP Wi‑Fi as a separate IDF package (`esp_wifi`)
 
-**Status:** ✅ published `@v0.3.0` (STA + SoftAP + scan + static IP / assoc)  
+**Status:** ✅ published `@v0.4.0` (STA + SoftAP + scan + link stats + static IP / assoc)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [099](099-machine-esp-esp32-s3.md)
 
 ## Verdict
@@ -8,7 +8,7 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: [`klin-lang/esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.3.0` |
+| Where does the code live? | External: [`klin-lang/esp_wifi`](https://github.com/klin-lang/esp_wifi) `@v0.4.0` |
 | Engine | **ESP-IDF** v5.x (`esp_wifi` / netif / event loop / NVS) — not MMIO |
 | Relation to `machine_esp` | **Separate.** Radio is in silicon; `machine_*` MVP stays Pin…Adc(+Rmt). Same split as µPython `machine` vs `network` ([061](061-micropython-machine-api.md)). |
 
@@ -25,11 +25,11 @@ Board pack [100](100-board-waveshare-esp32-s3-pico.md) stays pins/WS2812/buses �
 | **DHCP (dynamic)** | **Default** — no extra call; `sta_wait_ip` waits for GOT_IP |
 | **Static** | Opt-in via `sta_set_static_ip` (+ optional `sta_set_hostname`) — disables DHCP on the STA netif only |
 | **SoftAP** | Default IDF AP IP (typically `192.168.4.1` + DHCPS); optional `ap_set_ip` |
-| **Wi‑Fi + ETH together / APSTA** | Two separate packages / netifs or APSTA — **no** dual/failover/APSTA API yet ([104](104-later-tracks-esp-network.md) N1); **do not** mix `sta_*` + `ap_*` in one binary on `@v0.3.0` |
+| **Wi‑Fi + ETH together / APSTA** | Two separate packages / netifs or APSTA — **no** dual/failover/APSTA API yet ([104](104-later-tracks-esp-network.md) N1); **do not** mix `sta_*` + `ap_*` in one binary on `@v0.4.0` |
 
 Same idea as [`esp_eth`](https://github.com/klin-lang/esp_eth) ([102](102-esp-eth-idf.md)).
 
-## Scope (`@v0.3.0`)
+## Scope (`@v0.4.0`)
 
 ### STA (`@v0.1.0` / `@v0.1.1`)
 
@@ -63,20 +63,28 @@ Same idea as [`esp_eth`](https://github.com/klin-lang/esp_eth) ([102](102-esp-et
 - Example: `examples/scan/`  
 - SoftAP-only mode **cannot** scan (needs STA init)
 
-Changelog: `@v0.1.0` STA+DHCP → `@v0.1.1` static IP / hostname / gw+mask / assoc wait → `@v0.2.0` SoftAP → `@v0.3.0` scan
+### Link stats (`@v0.4.0` — [104](104-later-tracks-esp-network.md) W3)
+
+- `sta_rssi` / `sta_channel` / `sta_authmode` — after `sta_connected` (`esp_wifi_sta_get_ap_info`; each call → IDF)  
+- `sta_ap_ssid(out, max_len)` — associated SSID into **caller** buffer  
+- `sta_log_link` — debug printf  
+- Example: `examples/sta_connect/` logs link after GOT_IP  
+
+Changelog: `@v0.1.0` STA+DHCP → `@v0.1.1` static → `@v0.2.0` SoftAP → `@v0.3.0` scan → `@v0.4.0` link stats
 
 ## Out of scope
 
-- Post-assoc RSSI / dual Wi‑Fi+ETH / APSTA / sockets / HTTP / TLS — later → [104](104-later-tracks-esp-network.md)  
+- Dual Wi‑Fi+ETH / APSTA / sockets / HTTP / TLS — later → [104](104-later-tracks-esp-network.md)  
 - BLE — ✅ separate package [`esp_ble`](https://github.com/klin-lang/esp_ble) → [106](106-esp-ble-idf.md) (was track A in [103](103-later-tracks-ble-usb-camera-lcd.md))  
 - Freestanding (no IDF)  
 - Reconnect policy beyond the small, documented retry in `sta_idf.c` (max 5)
 
 ## Contract (prime rule)
 
-- No Klin GC / hidden heap — SSID/pass are C strings you pass in; scan SSID goes into a **caller** buffer.  
+- No Klin GC / hidden heap — SSID/pass are C strings you pass in; scan/assoc SSID goes into a **caller** buffer.  
 - IDF heap / NVS / default event loop / DHCP-or-static / SoftAP DHCPS / scan driver list are **IDF contracts**, documented in the package README.  
 - Scan result table max **16** (fixed in C, documented).  
+- Link getters call IDF each time (no Klin cache).  
 - Errors are `i32` (`esp_err_t`); check them.
 
 ## Usage (DHCP — default)
@@ -103,6 +111,8 @@ fn app() {
     return
   }
   wifi.sta_log_ip_info()
+  wifi.sta_log_link()
+  let _r = wifi.sta_rssi()
 }
 ```
 
@@ -180,13 +190,13 @@ fn app() {
 ```
 
 ```sh
-klin get github/klin-lang/esp_wifi@v0.3.0
+klin get github/klin-lang/esp_wifi@v0.4.0
 ```
 
 ## Links
 
 - Repo: https://github.com/klin-lang/esp_wifi  
-- Tag: [v0.3.0](https://github.com/klin-lang/esp_wifi/releases/tag/v0.3.0)  
+- Tag: [v0.4.0](https://github.com/klin-lang/esp_wifi/releases/tag/v0.4.0)  
 - Ethernet sibling: [102](102-esp-eth-idf.md) / [`esp_eth`](https://github.com/klin-lang/esp_eth)  
 - Network later backlog: [104](104-later-tracks-esp-network.md)  
 - Chip MMIO: [099](099-machine-esp-esp32-s3.md) / [`machine_esp`](https://github.com/klin-lang/machine_esp)  
