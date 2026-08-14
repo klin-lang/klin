@@ -103,13 +103,14 @@ building the core from scratch.
 | [100](100-board-waveshare-esp32-s3-pico.md) | Board pack Waveshare ESP32-S3-Pico | ✅ `@v0.3.0` ([repo](https://github.com/klin-lang/waveshare_esp32_s3_pico)) | 061, 062, 099 |
 | [101](101-esp-wifi-idf.md) | ESP Wi‑Fi thin IDF package (`esp_wifi` STA) | ✅ `@v0.1.1` ([repo](https://github.com/klin-lang/esp_wifi)) | 021, 024, 049, 061, 062, 099 |
 | [102](102-esp-eth-idf.md) | ESP Ethernet thin IDF package (`esp_eth` W5500) | ✅ `@v0.1.2` ([repo](https://github.com/klin-lang/esp_eth)) | 021, 024, 049, 061, 062, 101 |
-| [103](103-later-tracks-ble-usb-camera-lcd.md) | Later tracks: Pico LCD (BLE → [106](106-esp-ble-idf.md); USB → [108](108-esp-usb-idf.md); camera → [109](109-esp-camera-idf.md)) | 💭 backlog (one track at a time) | 061, 062, 101, 102, 106, 108, 109 |
+| [103](103-later-tracks-ble-usb-camera-lcd.md) | Later tracks A–D MVP done (BLE/USB/camera/Pico LCD); leftover tags | ✅ MVP (later tags elsewhere) | 061, 062, 101, 102, 106, 108, 109, 110 |
 | [104](104-later-tracks-esp-network.md) | Later tracks: ESP network (SoftAP / RMII / dual Wi‑Fi+ETH / sockets…) | 💭 backlog (one track at a time) | 101, 102, 062 |
 | [105](105-later-tracks-iot.md) | Later tracks: IoT (MQTT / OTA…) | 💭 maybe backlog (after sockets + HTTP/TLS) | 104, 101, 102 |
 | [106](106-esp-ble-idf.md) | ESP BLE thin IDF package (`esp_ble` GATT + bond + UUID16/128 + privacy + Mesh OnOff) | ✅ `@v0.10.0` ([repo](https://github.com/klin-lang/esp_ble)) | 021, 024, 049, 061, 062, 101 |
 | [107](107-later-tracks-arduino-boards.md) | Later tracks: Arduino boards (Leonardo / Uno R4 / Due / Giga / Portenta) | 💭 backlog (one family at a time) | 061, 062, 075 |
 | [108](108-esp-usb-idf.md) | ESP USB OTG thin IDF package (`esp_usb` TinyUSB device CDC) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_usb)) | 021, 024, 049, 061, 062 |
 | [109](109-esp-camera-idf.md) | ESP camera thin IDF package (`esp_camera` DVP JPEG) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_camera)) | 021, 024, 049, 061, 062 |
+| [110](110-board-waveshare-pico-lcd-114.md) | Board pack Waveshare Pico-LCD-1.14 (ST7789 shield) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/waveshare_pico_lcd_114)) | 061, 062, 075 |
 | [064](064-if-cond-struct-literal-parse.md) | `if`/`while` condition ending in a name mistaken for a struct literal | ✅ | — |
 | [068](068-shared-type-decl.md) | Shared type annotation (`a, b: i32` like Go; both forms OK) | ✅ | 002, 004, 005 |
 | [069](069-eventemitter-signals.md) | Observer / EventEmitter / Signals (library; JS-signals explicitly) | 💭 | 013, 057 |

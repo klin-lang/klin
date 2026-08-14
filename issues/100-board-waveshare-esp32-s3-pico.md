@@ -25,8 +25,8 @@
   - `adc` — A1 (CH6) → PWM D10
   - `pwm` — D10 LEDC fade
 
-**Out of scope:** BLE, freestanding (no IDF), camera / USB OTG / Pico LCD
-shields (later tracks → [103](103-later-tracks-ble-usb-camera-lcd.md)).
+**Out of scope:** BLE, freestanding (no IDF), camera / USB OTG (→ [109](109-esp-camera-idf.md) / [108](108-esp-usb-idf.md)).
+Pico LCD shields use Pico GP map — [`waveshare_pico_lcd_114`](https://github.com/klin-lang/waveshare_pico_lcd_114) [110](110-board-waveshare-pico-lcd-114.md) (`machine_rp` path; S3 SPI twin later).
 Chip Wi‑Fi (silicon radio) → separate [`esp_wifi`](https://github.com/klin-lang/esp_wifi)
 ([101](101-esp-wifi-idf.md)); this pack has **no** radio API.
 
@@ -59,4 +59,4 @@ klin get github/klin-lang/machine_esp@v0.7.0
 - Shop (PL): [Botland 23396 — ESP32-S3-Pico](https://botland.com.pl/moduly-wifi-i-bt-esp32/23396-esp32-s3-pico-plytka-rozwojowa-zgodna-z-raspberry-pi-pico-waveshare-23803.html)  
 
 - Chip port: [099](099-machine-esp-esp32-s3.md)  
-- Sibling packs: [095](095-board-waveshare-rp2350-lcd-096.md), [098](098-board-adafruit-rp2040-can-feather.md)
+- Sibling packs: [095](095-board-waveshare-rp2350-lcd-096.md), [098](098-board-adafruit-rp2040-can-feather.md), [110](110-board-waveshare-pico-lcd-114.md)
