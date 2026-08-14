@@ -30,6 +30,18 @@ dart run bin/klin.dart run -g examples/hello.kl
 # binary: out/hello  (then: gdb ./out/hello)
 ```
 
+### Optimization (`-O` / `--opt`)
+
+Host `cc -O…` is opt-in (default = whatever the C compiler uses without `-O`):
+
+```sh
+dart run bin/klin.dart run -O2 examples/hello.kl
+dart run bin/klin.dart run --opt s examples/hello.kl   # → -Os
+dart run bin/klin.dart run -g -O0 examples/hello.kl    # debug + no opt
+```
+
+Allowed levels: `0` `1` `2` `3` `s` `z` (forms `O2`, `-Os`, … also OK).
+
 `--emit-c` alone still skips `cc`; use the manual recipe below if you only want
 the `.c` file.
 

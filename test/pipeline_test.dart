@@ -4434,8 +4434,41 @@ fn test_color() {
       expect(proc.exitCode, 0, reason: '$flag: ${proc.stderr}');
       expect(proc.stdout.toString(), contains('usage:'));
       expect(proc.stdout.toString(), contains('--version'));
+      expect(proc.stdout.toString(), contains('--opt'));
       expect(proc.stderr.toString(), isEmpty);
     }
+  });
+
+  test('klin run -O2 / --opt s / -Os compile hello', () async {
+    for (final flags in [
+      ['-O2'],
+      ['--opt', 's'],
+      ['-Os'],
+      ['-g', '-O0'],
+    ]) {
+      final proc = await Process.run('dart', [
+        'run',
+        'bin/klin.dart',
+        'run',
+        ...flags,
+        'test/hello.kl',
+      ]);
+      expect(proc.exitCode, 0, reason: '$flags: ${proc.stderr}');
+      expect(proc.stdout, await File('test/hello.out').readAsString());
+    }
+  });
+
+  test('klin run --opt invalid prints usage', () async {
+    final proc = await Process.run('dart', [
+      'run',
+      'bin/klin.dart',
+      'run',
+      '--opt',
+      'fast',
+      'test/hello.kl',
+    ]);
+    expect(proc.exitCode, isNot(0));
+    expect(proc.stderr.toString(), contains('usage:'));
   });
 
   test('klin with no args prints help on stdout', () async {
@@ -4653,6 +4686,53 @@ fn main() {}
     );
     expect(debug, contains('-g'));
     expect(debug.indexOf('-g'), lessThan(debug.indexOf('-o')));
+  });
+
+  test('normalizeCcOptFlag and buildCcArgs -O / --opt', () {
+    expect(normalizeCcOptFlag('0'), '-O0');
+    expect(normalizeCcOptFlag('2'), '-O2');
+    expect(normalizeCcOptFlag('O3'), '-O3');
+    expect(normalizeCcOptFlag('-Os'), '-Os');
+    expect(normalizeCcOptFlag('z'), '-Oz');
+    expect(normalizeCcOptFlag('Oz'), '-Oz');
+    expect(normalizeCcOptFlag('S'), '-Os');
+    expect(normalizeCcOptFlag('9'), isNull);
+    expect(normalizeCcOptFlag('fast'), isNull);
+
+    const pos = SourcePos(1, 1);
+    final program = Program(
+      [],
+      [
+        FuncDecl(
+          name: 'main',
+          receiver: null,
+          params: const [],
+          returnTypeName: null,
+          body: Block(const [], pos),
+          pos: pos,
+        ),
+      ],
+      pos,
+    );
+    final plain = buildCcArgs(
+      cPath: 'a.c',
+      binPath: 'a',
+      program: program,
+      sourceDir: tmp.path,
+    );
+    expect(plain.any((a) => a.startsWith('-O')), isFalse);
+    final opt2 = buildCcArgs(
+      cPath: 'a.c',
+      binPath: 'a',
+      program: program,
+      sourceDir: tmp.path,
+      debug: true,
+      opt: normalizeCcOptFlag('2'),
+    );
+    expect(opt2, contains('-g'));
+    expect(opt2, contains('-O2'));
+    expect(opt2.indexOf('-g'), lessThan(opt2.indexOf('-O2')));
+    expect(opt2.indexOf('-O2'), lessThan(opt2.indexOf('-o')));
   });
 
   test('cheader cimport skips C prototype emission', () {

@@ -20,16 +20,16 @@ import 'package:klin/version.dart';
 /// Usage:
 ///   klin --version|-v
 ///   klin --help|-h
-///   klin run [--cc …] [-g|--debug] [-I dir] [-l lib] [-L dir] <file.kl>
+///   klin run [--cc …] [-g|--debug] [-O…|--opt …] [-I dir] [-l lib] [-L dir] <file.kl>
 ///   klin fmt [-w] <file.kl…>
 ///   klin lsp
-///   klin test [--cc …] [-I dir] [-l lib] [-L dir] [path…]
+///   klin test [--cc …] [-O…|--opt …] [-I dir] [-l lib] [-L dir] [path…]
 ///   klin init <board> [dir]
 ///   klin get [path[@ref]…]
 ///   klin update [path[@ref]…]
 ///   klin outdated [path…]
 ///   klin upgrade [path…]
-///   klin [--cc …] [-g|--debug] [-I dir] [-l lib] [-L dir]
+///   klin [--cc …] [-g|--debug] [-O…|--opt …] [-I dir] [-l lib] [-L dir]
 ///        [--emit-c] [--emit-h] [--emit-pp] <file.kl>
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {
@@ -172,6 +172,7 @@ Future<void> main(List<String> args) async {
     cliLibs: opts.libs,
     cliLibDirs: opts.libDirs,
     debug: opts.debug,
+    opt: opts.opt,
   );
   final compile = await Process.run(opts.cc, ccArgs);
   if (compile.exitCode != 0) {
@@ -483,6 +484,7 @@ Future<void> _runFmt(List<String> args) async {
 
 Future<void> _runTest(List<String> args) async {
   var cc = 'gcc';
+  String? opt;
   final klinPathDirs = <String>[];
   final libs = <String>[];
   final libDirs = <String>[];
@@ -495,6 +497,24 @@ Future<void> _runTest(List<String> args) async {
         exit(2);
       }
       cc = args[++i];
+    } else if (a == '--opt' || a == '-O') {
+      if (i + 1 >= args.length) {
+        stderr.writeln(_testUsage());
+        exit(2);
+      }
+      final flag = normalizeCcOptFlag(args[++i]);
+      if (flag == null) {
+        stderr.writeln(_testUsage());
+        exit(2);
+      }
+      opt = flag;
+    } else if (a.startsWith('-O') && a.length > 2) {
+      final flag = normalizeCcOptFlag(a);
+      if (flag == null) {
+        stderr.writeln(_testUsage());
+        exit(2);
+      }
+      opt = flag;
     } else if (a == '-I') {
       if (i + 1 >= args.length) {
         stderr.writeln(_testUsage());
@@ -558,6 +578,7 @@ Future<void> _runTest(List<String> args) async {
         klinPathDirs: klinPathDirs,
         cliLibs: libs,
         cliLibDirs: libDirs,
+        opt: opt,
       );
       if (result.ok) {
         stdout.writeln('ok\t$shown');
@@ -605,6 +626,7 @@ final class _Opts {
   final bool emitH;
   final bool emitPp;
   final bool debug;
+  final String? opt;
   final List<String> klinPathDirs;
   final List<String> libs;
   final List<String> libDirs;
@@ -616,6 +638,7 @@ final class _Opts {
     this.emitH,
     this.emitPp,
     this.debug,
+    this.opt,
     this.klinPathDirs,
     this.libs,
     this.libDirs,
@@ -631,6 +654,7 @@ _Opts? _parseArgs(List<String> args) {
   var emitH = false;
   var emitPp = false;
   var debug = false;
+  String? opt;
   final klinPathDirs = <String>[];
   final libs = <String>[];
   final libDirs = <String>[];
@@ -649,6 +673,15 @@ _Opts? _parseArgs(List<String> args) {
       emitPp = true;
     } else if (a == '-g' || a == '--debug') {
       debug = true;
+    } else if (a == '--opt' || a == '-O') {
+      if (i + 1 >= args.length) return null;
+      final flag = normalizeCcOptFlag(args[++i]);
+      if (flag == null) return null;
+      opt = flag;
+    } else if (a.startsWith('-O') && a.length > 2) {
+      final flag = normalizeCcOptFlag(a);
+      if (flag == null) return null;
+      opt = flag;
     } else if (a == '-I') {
       if (i + 1 >= args.length) return null;
       klinPathDirs.add(args[++i]);
@@ -685,6 +718,7 @@ _Opts? _parseArgs(List<String> args) {
     emitH,
     emitPp,
     debug,
+    opt,
     klinPathDirs,
     libs,
     libDirs,
@@ -692,22 +726,28 @@ _Opts? _parseArgs(List<String> args) {
 }
 
 String _testUsage() =>
-    'usage: klin test [--cc gcc|clang|tcc] [-I dir] [-l lib] [-L dir] [path…]';
+    'usage: klin test [--cc gcc|clang|tcc] [-O0|-O1|-O2|-O3|-Os|-Oz|--opt LEVEL] '
+    '[-I dir] [-l lib] [-L dir] [path…]';
 
 String _usageText() =>
     'usage: klin --version|-v\n'
     '       klin --help|-h\n'
     '       klin run [--cc gcc|clang|tcc] [-g|--debug] '
+    '[-O0|-O1|-O2|-O3|-Os|-Oz|--opt LEVEL] '
     '[-I dir] [-l lib] [-L dir] <file.kl>\n'
     '       klin fmt [-w] <file.kl…>\n'
     '       klin lsp\n'
-    '       klin test [--cc gcc|clang|tcc] [-I dir] [-l lib] [-L dir] [path…]\n'
+    '       klin test [--cc gcc|clang|tcc] '
+    '[-O0|-O1|-O2|-O3|-Os|-Oz|--opt LEVEL] '
+    '[-I dir] [-l lib] [-L dir] [path…]\n'
     '       klin init <board> [dir]\n'
     '       klin get [path[@ref]…]\n'
     '       klin update [path[@ref]…]\n'
     '       klin outdated [path…]\n'
     '       klin upgrade [path…]\n'
-    '       klin [--cc gcc|clang|tcc] [-g|--debug] [-I dir] [-l lib] [-L dir] '
+    '       klin [--cc gcc|clang|tcc] [-g|--debug] '
+    '[-O0|-O1|-O2|-O3|-Os|-Oz|--opt LEVEL] '
+    '[-I dir] [-l lib] [-L dir] '
     '[--emit-c] [--emit-h] [--emit-pp] <file.kl>\n';
 
 String _basenameWithoutExt(String path) {
