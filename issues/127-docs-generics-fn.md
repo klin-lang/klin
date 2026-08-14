@@ -29,3 +29,5 @@ hole.
 - Implementing `[T]` in the compiler (034 stays 💭)
 - Changing `$fn` expand or stdlib names
 - Landing README feature dump
+
+See also [133](133-docs-language-surface.md) (`docs/language.md`).

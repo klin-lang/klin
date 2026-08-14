@@ -13,11 +13,13 @@ messages, PR titles and bodies. No bilingual PL+EN mirror
 [115](issues/115-english-leftover-pl.md)). Chat with a human may use another
 language; the tree stays English.
 
+- **What is the language** (read before proposing grammar): @docs/language.md
+  — `$fn` **is** the generic; do not add `[T]`, `map`, `yield`, `Result[T,E]`
 - Landing / why: @README.md, @docs/00-idea.md
 - Language tutorial: @docs/guide.md
 - Design decisions: @docs/01-decisions.md
 - Architecture and rules: @docs/02-architecture.md
-- Roadmap: @issues/sorted.md
+- Roadmap: @issues/sorted.md — not a shopping list; 💭 often means not now / struck
 
 ## Rules that always apply
 

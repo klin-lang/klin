@@ -69,7 +69,8 @@ return r;`. Zero overhead beyond checking the flag.
 
 Klin has generics. They expand **before** parse into ordinary `fn` /
 `struct`. The checker never holds a type parameter. This is
-intentional, not a gap — user page: [04-macros.md](04-macros.md).
+intentional, not a gap — [04-macros.md](04-macros.md),
+[language.md](language.md).
 
 Nelua model: a powerful preprocessor generates specialized code.
 Classes, generics, and polymorphism implemented ad hoc, without

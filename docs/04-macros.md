@@ -3,7 +3,8 @@
 Klin **has** generics. They are `$fn`, not `fn id[T]` / `Vec[T]`.
 That is a conscious choice ([D3](01-decisions.md)): a preprocessor
 monomorphizes **before** parse. The checker and the C emitter never
-see a type parameter.
+see a type parameter. Language surface (do not propose `[T]`):
+[language.md](language.md).
 
 `$point(Vec2i, i32)` becomes a plain `fn`. In a program you call
 `each_i32`, not `each[i32]`. Issue [034](../issues/034-generic-types.md)

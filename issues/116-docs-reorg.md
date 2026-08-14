@@ -25,6 +25,7 @@ notes pile:
 | `docs/01-decisions.md` | Decision log D1–D9 |
 | `docs/02-architecture.md` | Compiler rules (Z1–Z6) |
 | `docs/guide.md` | Short language tutorial (not a full spec) |
+| `docs/language.md` | `.kl` contract — what is language vs library vs not Klin ([133](133-docs-language-surface.md)) |
 | `docs/03+` | Feature and tooling notes |
 | `issues/` | Roadmap — what compiles next |
 | `examples/` | Runnable demos |
