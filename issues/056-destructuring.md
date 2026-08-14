@@ -2,6 +2,7 @@
 
 **Status:** ✅ — phases A (structs) + A′ (bare `{}=`) + B (multi-assign) + C (arrays `[N]T`) + D (rename / `_`). Bare `[]=` deliberately skipped (see below).
 **Depends on:** [005](005-structs-methods.md) (struct lit/fields ✅); nice to have [007](007-pointers-arrays-slices.md) (fixed-length arrays)
+**User page:** [docs/syntax.md](../docs/syntax.md)
 
 > **Do not confuse with RAII destructors.** D6 ([docs/01-decisions.md](../docs/01-decisions.md)):
 > no constructors/destructors. Here we mean **destructuring** —

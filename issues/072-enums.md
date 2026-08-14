@@ -2,6 +2,7 @@
 
 **Status:** ✅ done (MVP: core + methods + explicit conversion; no string/kv-enum)
 **Depends on:** 002 (checker/types), 005 (methods with receiver), 014 (`match`)
+**User page:** [docs/syntax.md](../docs/syntax.md)
 
 ## Done (MVP)
 
