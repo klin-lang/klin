@@ -91,6 +91,7 @@ klin get github/klin-lang/esp_usb@v0.1.0
 - Wi‑Fi sibling: [101](101-esp-wifi-idf.md) / [`esp_wifi`](https://github.com/klin-lang/esp_wifi)  
 - Ethernet sibling: [102](102-esp-eth-idf.md) / [`esp_eth`](https://github.com/klin-lang/esp_eth)  
 - BLE sibling: [106](106-esp-ble-idf.md) / [`esp_ble`](https://github.com/klin-lang/esp_ble)  
+- Camera sibling: [109](109-esp-camera-idf.md) / [`esp_camera`](https://github.com/klin-lang/esp_camera)  
 - RP USB CDC (different): [095](095-board-waveshare-rp2350-lcd-096.md) / [`machine_rp`](https://github.com/klin-lang/machine_rp)  
 - Chip MMIO: [099](099-machine-esp-esp32-s3.md) / [`machine_esp`](https://github.com/klin-lang/machine_esp)  
 - Board (no USB API): [100](100-board-waveshare-esp32-s3-pico.md)  
