@@ -1879,7 +1879,7 @@ fn main() {}
     expect(expanded, isNot(contains(r'$event_loop')));
   });
 
-  test('klin fmt: preserves // comments (issue 128)', () {
+  test('klin fmt: preserves // comments (issue 128)', () async {
     final ugly = File('test/fmt_comments.kl').readAsStringSync();
     final expected = File('test/fmt_comments.fmt.kl').readAsStringSync();
     final once = formatSource(ugly);
@@ -1892,6 +1892,32 @@ fn main() {}
     expect(lexer.comments, hasLength(1));
     expect(lexer.comments.single.trailing, isTrue);
     expect(lexer.comments.single.text, '// trail');
+
+    // stdout (`fmt` without -w) must keep comments
+    final stdoutProc = await Process.run(
+      'dart',
+      ['run', 'bin/klin.dart', 'fmt', 'test/fmt_comments.kl'],
+    );
+    expect(stdoutProc.exitCode, 0, reason: stdoutProc.stderr.toString());
+    expect(stdoutProc.stdout, expected);
+    expect(stdoutProc.stdout, contains('// file header'));
+    expect(stdoutProc.stdout, contains('// one'));
+
+    // `-w` uses the same formatSource — must rewrite the file with comments
+    final dir = Directory.systemTemp.createTempSync('klin_fmt_w_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final copy = File('${dir.path}/fmt_comments.kl')
+      ..writeAsStringSync(ugly);
+    final writeProc = await Process.run(
+      'dart',
+      ['run', 'bin/klin.dart', 'fmt', '-w', copy.path],
+    );
+    expect(writeProc.exitCode, 0, reason: writeProc.stderr.toString());
+    final written = copy.readAsStringSync();
+    expect(written, expected);
+    expect(written, contains('// file header'));
+    expect(written, contains('// one'));
+    expect(written, contains('// footer'));
   });
 
   test('klin fmt: ugly source matches golden and is idempotent (issue 033)',

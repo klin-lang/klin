@@ -14,6 +14,7 @@ them. 033 listed preservation as later.
 - [x] Lexer collects `SourceComment` (not a token; parser unchanged)
 - [x] `formatSource` replays leading / trailing / header / footer `//`
 - [x] Golden `test/fmt_comments.kl` + idempotence
+- [x] CLI `fmt` (stdout) and `fmt -w` both keep comments (same `formatSource`)
 - [x] [docs/05-fmt.md](../docs/05-fmt.md)
 
 ## Out of scope
