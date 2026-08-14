@@ -128,6 +128,7 @@ unless you are changing the IDF entry.
 |---|---|
 | Language (host) | [guide.md](guide.md) |
 | Registers / `$device` | [device.md](device.md) |
+| FreeRTOS tasks | [`klin_freertos`](https://github.com/klin-lang/klin_freertos) (kernel stays C) — [`examples/stm32/freertos_blink/`](../examples/stm32/freertos_blink/) |
 | Per-board README | [`templates/`](../templates/) |
 | Older in-tree STM32 sketches | [`examples/stm32/`](../examples/stm32/) |
 | Why packs exist | [075](../issues/075-board-pack-init-host.md), [054](../issues/054-embedded-project-layout.md) |

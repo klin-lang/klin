@@ -2,6 +2,8 @@
 
 **Status:** ✅ done (`klin_freertos` through `@v0.4.0` + blink + objdump vs C)
 **Depends on:** 024, 010, 021, 022?; 026 welcome; 030 for `@[isr]`
+**User map:** [docs/README.md](../docs/README.md) — RTOS = C kernel +
+`klin_freertos` library, not a Klin scheduler.
 
 Separate from general [024](024-rtos.md) (FFI + "C API client" — settled).
 

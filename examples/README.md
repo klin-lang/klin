@@ -69,6 +69,11 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 
 ## Remote packages & RTOS sketches
 
+FreeRTOS is a **C kernel** plus
+[`klin_freertos`](https://github.com/klin-lang/klin_freertos) (FFI, not
+the language). `klin init` does not scaffold an RTOS. Board demo:
+[`stm32/freertos_blink/`](stm32/freertos_blink/).
+
 | Path | Notes |
 |---|---|
 | [`remote_osa/`](remote_osa/) | `klin get` + `import "github/klin-lang/osa"` ([049](../issues/049-remote-imports.md)) |
