@@ -81,5 +81,6 @@ klin get github/klin-lang/esp_sockets@v0.1.0
 - Repo: https://github.com/klin-lang/esp_sockets  
 - Tag: [v0.1.0](https://github.com/klin-lang/esp_sockets/releases/tag/v0.1.0)  
 - Network later: [104](104-later-tracks-esp-network.md)  
+- Dual Wi‑Fi+ETH: [113](113-esp-netif-dual-idf.md)  
 - Wi‑Fi / ETH: [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md)  
 - IoT later: [105](105-later-tracks-iot.md)  

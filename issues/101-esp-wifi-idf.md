@@ -25,7 +25,7 @@ Board pack [100](100-board-waveshare-esp32-s3-pico.md) stays pins/WS2812/buses �
 | **DHCP (dynamic)** | **Default** — no extra call; `sta_wait_ip` waits for GOT_IP |
 | **Static** | Opt-in via `sta_set_static_ip` (+ optional `sta_set_hostname`) — disables DHCP on the STA netif only |
 | **SoftAP** | Default IDF AP IP (typically `192.168.4.1` + DHCPS); optional `ap_set_ip` |
-| **Wi‑Fi + ETH together / APSTA** | Two separate packages / netifs or APSTA — **no** dual/failover/APSTA API yet ([104](104-later-tracks-esp-network.md) N1); **do not** mix `sta_*` + `ap_*` in one binary on `@v0.4.0` |
+| **Wi‑Fi + ETH together / APSTA** | Dual default-route glue ✅ [`esp_netif_dual`](https://github.com/klin-lang/esp_netif_dual) [113](113-esp-netif-dual-idf.md) ([104](104-later-tracks-esp-network.md) N1); **APSTA** still later; **do not** mix `sta_*` + `ap_*` in one binary on `@v0.4.0` |
 
 Same idea as [`esp_eth`](https://github.com/klin-lang/esp_eth) ([102](102-esp-eth-idf.md)).
 
@@ -74,7 +74,7 @@ Changelog: `@v0.1.0` STA+DHCP → `@v0.1.1` static → `@v0.2.0` SoftAP → `@v0
 
 ## Out of scope
 
-- Dual Wi‑Fi+ETH / APSTA / HTTP / TLS — later → [104](104-later-tracks-esp-network.md); sockets ✅ [111](111-esp-sockets-idf.md)  
+- Dual Wi‑Fi+ETH prefer/failover ✅ [113](113-esp-netif-dual-idf.md); APSTA / SoftAP+ETH later → [104](104-later-tracks-esp-network.md); sockets ✅ [111](111-esp-sockets-idf.md); HTTP ✅ [112](112-esp-http-idf.md)  
 - BLE — ✅ separate package [`esp_ble`](https://github.com/klin-lang/esp_ble) → [106](106-esp-ble-idf.md) (was track A in [103](103-later-tracks-ble-usb-camera-lcd.md))  
 - Freestanding (no IDF)  
 - Reconnect policy beyond the small, documented retry in `sta_idf.c` (max 5)
@@ -198,6 +198,7 @@ klin get github/klin-lang/esp_wifi@v0.4.0
 - Repo: https://github.com/klin-lang/esp_wifi  
 - Tag: [v0.4.0](https://github.com/klin-lang/esp_wifi/releases/tag/v0.4.0)  
 - Ethernet sibling: [102](102-esp-eth-idf.md) / [`esp_eth`](https://github.com/klin-lang/esp_eth)  
+- Dual Wi‑Fi+ETH glue: [113](113-esp-netif-dual-idf.md) / [`esp_netif_dual`](https://github.com/klin-lang/esp_netif_dual)  
 - Network later backlog: [104](104-later-tracks-esp-network.md)  
 - Chip MMIO: [099](099-machine-esp-esp32-s3.md) / [`machine_esp`](https://github.com/klin-lang/machine_esp)  
 - Board (no radio API): [100](100-board-waveshare-esp32-s3-pico.md)  
