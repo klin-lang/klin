@@ -26,7 +26,7 @@ Landing and [00-idea.md](00-idea.md) explain **why** Klin. To go from
 | Talk to C / drop to ASM | [09-ffi-c.md](09-ffi-c.md), [10-asm.md](10-asm.md) — FFI and `asm("…")`, not a C/ASM language |
 | Event loop | **Library** ([`eventloop`](https://github.com/klin-lang/eventloop)); `async` / `.await` are language sugar over it |
 | RTOS / FreeRTOS | **Library** ([`klin_freertos`](https://github.com/klin-lang/klin_freertos)); kernel stays C |
-| CLI / install details | [06-cli.md](06-cli.md), [17-homebrew.md](17-homebrew.md), [make.md](make.md) |
+| CLI / install details | [06-cli.md](06-cli.md), [17-homebrew.md](17-homebrew.md) (brew / Scoop / Linux tarball), [make.md](make.md) |
 | What to build next | [../issues/sorted.md](../issues/sorted.md) — roadmap, not a manual |
 
 ## Design (why the language is this way)
@@ -101,7 +101,7 @@ snippet ([09-ffi-c.md](09-ffi-c.md),
 | [09-ffi-c.md](09-ffi-c.md) | `@[cimport]` / `@[cexport]` / `@[link]` |
 | [10-asm.md](10-asm.md) | `.s` / `.S` via `@[link]`; `asm("…")` → `asm volatile` |
 | [11-klin-libraries.md](11-klin-libraries.md) | `lib/`, `-I`, directory packages, remote imports |
-| [17-homebrew.md](17-homebrew.md) | `brew install klin` |
+| [17-homebrew.md](17-homebrew.md) | Install: Homebrew / Scoop / Linux tarball |
 | [19-debug.md](19-debug.md) | `#line`, `-g`, gdb / lldb |
 | [08-time.md](08-time.md) | `stdlib/time` |
 

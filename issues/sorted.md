@@ -159,7 +159,7 @@ building the core from scratch.
 | [128](128-fmt-comments.md) | `klin fmt` keeps `//` comments | ✅ | 033 |
 | [129](129-enum-match-exhaustive.md) | Exhaustive `match` on enum (checker) | ✅ | 072, 014 |
 | [130](130-winget-scoop-windows.md) | Windows package channels: WinGet + Scoop (wrap Release `.zip`) | 💭 | 076, 067 |
-| [131](131-linux-install-docs.md) | Linux install docs (tarball) + no apt/snap note | 💭 | 076, 067 |
+| [131](131-linux-install-docs.md) | Linux install docs (tarball) + no apt/snap note | ✅ | 076, 067 |
 | [132](132-match-else-or.md) | `match { else { error(n) } } or { }` — `error` as `!T` value | ✅ | 009, 014 |
 | [133](133-docs-language-surface.md) | Page: what is the language (agents: not “no generics”) | ✅ | 116, 127, 125 |
 

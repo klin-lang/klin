@@ -1,7 +1,10 @@
-# Homebrew — installing the Klin compiler (issue 067)
+# Installing Klin (Homebrew, Scoop, Linux tarball)
 
 `brew upgrade klin` = upgrade the **compiler**, not `.kl` packages
 ([066](../issues/066-klin-upgrade-outdated.md)).
+
+Issue: [067](../issues/067-homebrew.md) (Homebrew), [130](../issues/130-winget-scoop-windows.md)
+(Scoop / WinGet), [131](../issues/131-linux-install-docs.md) (Linux tarball).
 
 ## Status
 
@@ -10,6 +13,8 @@
 - Formula copy in this repo: [`Formula/klin.rb`](../Formula/klin.rb) (keep in sync)
 - CI release on tag `v*`: [`.github/workflows/release.yml`](../.github/workflows/release.yml)
 - Name `klin` free in homebrew-core; own tap first, core later
+- **No `apt` / `.deb` / `snap` package** — use Homebrew on Linux, the
+  Release `.tar.gz` below, or build from source. Do not look for a PPA.
 
 ## Install (recommended)
 
@@ -87,6 +92,48 @@ Each asset has `.sha256`. Homebrew covers macOS/Linux; Windows via **Scoop**
 (below) or the raw `.zip` from Release (WinGet — future, see
 [130](../issues/130-winget-scoop-windows.md)). On Windows the host C compiler
 for `klin run` is MSVC / clang / mingw.
+
+## Linux (Release tarball, no Homebrew)
+
+Prebuilt, no Dart. Same assets Homebrew uses on Linux
+(`klin-linux-amd64.tar.gz` / `klin-linux-arm64.tar.gz` + `.sha256`).
+
+**There is no `apt`, `.deb`, or `snap` package.** Use this tarball, Linuxbrew
+(`brew install klin-lang/klin/klin` above), or build from source.
+
+The archive layout is `klin`, `stdlib/`, `templates/` at the top level. Keep
+`stdlib/` and `templates/` **beside the binary** (or under `share/klin/` next
+to an install prefix) so discovery in [`lib/project.dart`](../lib/project.dart)
+/ [`lib/init.dart`](../lib/init.dart) finds them — same rule as Homebrew
+`pkgshare`.
+
+### One-liner ([`scripts/install-linux.sh`](../scripts/install-linux.sh))
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/klin-lang/klin/main/scripts/install-linux.sh | bash
+```
+
+Installs into `~/.local/lib/klin/` (binary + `stdlib/` + `templates/`) and
+symlinks `~/.local/bin/klin`. Override with `KLIN_PREFIX=/opt/klin` if needed.
+Ensure `~/.local/bin` is on `PATH`.
+
+### Manual steps (amd64)
+
+```sh
+mkdir -p ~/.local/lib/klin ~/.local/bin
+cd ~/.local/lib/klin
+curl -fsSL -O https://github.com/klin-lang/klin/releases/latest/download/klin-linux-amd64.tar.gz
+curl -fsSL -O https://github.com/klin-lang/klin/releases/latest/download/klin-linux-amd64.sha256
+sha256sum -c klin-linux-amd64.sha256
+tar -xzf klin-linux-amd64.tar.gz          # klin, stdlib/, templates/
+ln -sfn "$PWD/klin" ~/.local/bin/klin
+klin --version
+```
+
+For arm64, replace `amd64` with `arm64` (`uname -m` → `aarch64`).
+
+`klin run` still needs a host C compiler on `PATH` (`gcc` / `clang` / `tcc`);
+`--emit-c` does not.
 
 ## Windows (Scoop)
 
