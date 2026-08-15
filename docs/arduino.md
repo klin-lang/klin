@@ -20,7 +20,7 @@ Catalog: [061](../issues/061-micropython-machine-api.md)
 |---|---|---|
 | **Uno** / Uno clones / **Nano** / Pro Mini / many “328P” boards | ATmega328P | Pin…Adc + Pwm / Uart / I2c / Spi ✅ |
 | **Mega** 2560 | ATmega2560 | Pin ✅; Pwm…Adc factories later |
-| **Leonardo** / Micro / Pro Micro | ATmega32U4 | Later → [107](../issues/107-later-tracks-arduino-boards.md) (extend `machine_avr`) |
+| **Leonardo** / Micro / Pro Micro | ATmega32U4 | Planned → [142](../issues/142-machine-avr-atmega32u4.md) (extend `machine_avr`) |
 | **Nano Every** | ATmega4809 (megaAVR 0-series) | Later (not 328P) |
 
 Examples: `blink_uno` (D13 = PB5), `blink_mega` (D13 = PB7).
@@ -28,6 +28,13 @@ Examples: `blink_uno` (D13 = PB5), `blink_mega` (D13 = PB7).
 ```sh
 klin get github/klin-lang/machine_avr@v0.2.0
 ```
+
+## tinyAVR (not classic megaAVR)
+
+Modern **tinyAVR 0/1/2-series** (AVRxt + UPDI) is a **separate** package —
+[`machine_tinyavr`](https://github.com/klin-lang/machine_tinyavr) — planned as
+[141](../issues/141-machine-tinyavr.md) (MVP **ATtiny1624**). Do not use
+`machine_avr` for these parts. Classic ATtiny85 is out of that MVP.
 
 ## Arduino boards that are not megaAVR
 
@@ -59,6 +66,8 @@ Board packs Klin already has that are *Arduino-adjacent* (same chips, other bran
 ## Links
 
 - Later Arduino tracks: [107](../issues/107-later-tracks-arduino-boards.md)  
+- Leonardo / 32U4: [142](../issues/142-machine-avr-atmega32u4.md)  
+- tinyAVR: [141](../issues/141-machine-tinyavr.md)  
 - Targets overview: [062](../issues/062-targets-esp-rp.md)  
 - `machine` catalog: [061](../issues/061-micropython-machine-api.md)  
 - AVR: https://github.com/klin-lang/machine_avr  
