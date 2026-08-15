@@ -94,7 +94,8 @@ fn main() {
     if math.sqrt_f32(9.0) == 3.0 {
         printf("sqrt_f32_ok\n")
     }
-    if math.abs_f32(0.0 - 2.0) == 2.0 {
+    let two_f32: f32 = 2.0
+    if math.abs_f32(0.0 - two_f32) == 2.0 {
         printf("abs_f32_ok\n")
     }
     if math.pow_f32(2.0, 3.0) == 8.0 {
