@@ -99,6 +99,8 @@ building the core from scratch.
 | [138](138-board-gd32vw553h-eval.md) | Board pack GD32VW553H-EVAL (pins + `klin init`) | 🔨 `@v0.1.0` ([repo](https://github.com/klin-lang/gd32vw553h_eval)) | 061, 062, 075, 136 |
 | [139](139-board-gd32vw553h-start.md) | Board pack GD32VW553 START (UART2 + RGB V4 + `klin init`) | 🔨 `@v0.1.0` ([repo](https://github.com/klin-lang/gd32vw553h_start)) | 061, 062, 075, 136 |
 | [140](140-gd32v-ble-sdk.md) | `gd32v_ble` GD32VW553 advertise + GATT + central + gattc + jw-bond + UUID16 + passkey + UUID128/multi + privacy + Mesh OnOff + provisioner + Level/vendor + Friend/LPN (GigaDevice AN152, not `machine_*`) | 🔨 advertise+GATT+scan/connect+gattc+jw-bond+uuid16+passkey+uuid128/multi+privacy+mesh+prov+level+friend `@v0.13.0` | 021, 024, 049, 061, 062, 136, 137 |
+| [141](141-machine-tinyavr.md) | `machine_tinyavr` tinyAVR 0/1/2-series Pin…Adc (ATtiny1624 MVP) | 💭 | 061, 062, 021 |
+| [142](142-machine-avr-atmega32u4.md) | `machine_avr` ATmega32U4 (Leonardo / Micro / Pro Micro) | 💭 | 061, 107 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
 | [098](098-board-adafruit-rp2040-can-feather.md) | Board pack Adafruit RP2040 CAN Feather (MCP25625) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/adafruit_rp2040_can_feather)) | 061, 062, 075 |
@@ -110,7 +112,7 @@ building the core from scratch.
 | [104](104-later-tracks-esp-network.md) | Later tracks: ESP network (Wi‑Fi W1–W3 ✅; N1 dual ✅; sockets ✅; HTTP/TLS ✅; RMII ✅) | 🔨 Wi‑Fi+N1–N3+E1 ✅; ETH E2+ backlog | 101, 102, 062, 111, 112, 113 |
 | [105](105-later-tracks-iot.md) | Later tracks: IoT (MQTT / OTA…) | 💭 maybe backlog (sockets+HTTP ✅; ready for MQTT) | 104, 101, 102, 111, 112 |
 | [106](106-esp-ble-idf.md) | ESP BLE thin IDF package (`esp_ble` GATT + bond + UUID16/128 + privacy + Mesh OnOff) | ✅ `@v0.10.0` ([repo](https://github.com/klin-lang/esp_ble)) | 021, 024, 049, 061, 062, 101 |
-| [107](107-later-tracks-arduino-boards.md) | Later tracks: Arduino boards (Leonardo / Uno R4 / Due / Giga / Portenta) | 💭 backlog (one family at a time) | 061, 062, 075 |
+| [107](107-later-tracks-arduino-boards.md) | Later tracks: Arduino boards (Leonardo → [142](142-machine-avr-atmega32u4.md); Uno R4 / Due / Giga / Portenta) | 💭 backlog (one family at a time) | 061, 062, 075 |
 | [108](108-esp-usb-idf.md) | ESP USB OTG thin IDF package (`esp_usb` TinyUSB device CDC) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_usb)) | 021, 024, 049, 061, 062 |
 | [109](109-esp-camera-idf.md) | ESP camera thin IDF package (`esp_camera` DVP JPEG) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_camera)) | 021, 024, 049, 061, 062 |
 | [110](110-board-waveshare-pico-lcd-114.md) | Board pack Waveshare Pico-LCD-1.14 (ST7789 shield) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/waveshare_pico_lcd_114)) | 061, 062, 075 |
