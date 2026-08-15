@@ -36,8 +36,9 @@ Bonding uses `app_sec_set_authen` / `app_sec_send_bond_req` + peer flash
 `app_sec_mgr_init`.
 Privacy uses `ble_adp_privacy_recfg` + `BLE_GAP_LOCAL_ADDR_RESOLVABLE` for
 adv/scan/connect (controller RPA — not NimBLE `ble_hs_pvcy_rpa_config`).
-Mesh uses Zephyr-style `bt_mesh_init` + Gen OnOff (`mesh_cfg.h` / BLE_MAX —
-same class as SDK `light_demo`; not NimBLE `CONFIG_BT_NIMBLE_MESH`).
+Mesh uses Zephyr-style `bt_mesh_init` + Gen OnOff / Level / vendor (`mesh_cfg.h` /
+BLE_MAX — same class as SDK `light_demo` / `vnd_module`; not NimBLE
+`CONFIG_BT_NIMBLE_MESH`).
 Provisioner uses CDB (`bt_mesh_cdb_create` / `bt_mesh_provision_adv|gatt`) when
 `CONFIG_BT_MESH_PROVISIONER` + `CONFIG_BT_MESH_CDB` (SDK `provisioner` example).
 `BLE_GAP_ADV_PROP_UNDIR_CONN` is GigaDevice `ble_gap.h`, not NimBLE.
