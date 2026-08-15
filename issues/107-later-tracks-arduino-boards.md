@@ -63,7 +63,8 @@ Hardware-on-desk may reorder; do **not** start E2 before B’s RA patterns exist
 
 - Implementation or repo scaffolding  
 - Priority vs language core  
-- Nano Every (ATmega4809), MKR SAMD, Nicla, Opta (open separate rows when needed)  
+- Nano Every (ATmega4809), MKR SAMD, Nicla, Opta (open separate rows when needed)
+- tinyAVR / AVRxt — [141](141-machine-tinyavr.md) (not this queue)  
 - Promising full µPython `machine` parity on H7 dual-core day one  
 
 ## Links

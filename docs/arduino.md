@@ -23,18 +23,18 @@ Catalog: [061](../issues/061-micropython-machine-api.md)
 | **Leonardo** / Micro / Pro Micro | ATmega32U4 | Planned → [142](../issues/142-machine-avr-atmega32u4.md) (extend `machine_avr`) |
 | **Nano Every** | ATmega4809 (megaAVR 0-series) | Later (not 328P) |
 
+Examples: `blink_uno` (D13 = PB5), `blink_mega` (D13 = PB7).
+
+```sh
+klin get github/klin-lang/machine_avr@v0.2.0
+```
+
 ## tinyAVR (not classic megaAVR)
 
 Modern **tinyAVR 0/1/2-series** (AVRxt + UPDI) is a **separate** package —
 [`machine_tinyavr`](https://github.com/klin-lang/machine_tinyavr) — planned as
 [141](../issues/141-machine-tinyavr.md) (MVP **ATtiny1624**). Do not use
 `machine_avr` for these parts. Classic ATtiny85 is out of that MVP.
-
-Examples: `blink_uno` (D13 = PB5), `blink_mega` (D13 = PB7).
-
-```sh
-klin get github/klin-lang/machine_avr@v0.2.0
-```
 
 ## Arduino boards that are not megaAVR
 
