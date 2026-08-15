@@ -134,7 +134,7 @@ building the core from scratch.
 | [097](097-logical-ops.md) | Logical operators (`&&` / `\|\|`; bool only, short-circuit) | ✅ | 002, 003, 078 |
 | [079](079-associated-functions.md) | Associated/static functions on types (`Type.func`; constructors/parsers) | ✅ | 005, 072 |
 | [080](080-stdlib-str.md) | `stdlib/str` — `eq`/`len`/… (string compares without `==`) | ✅ | 012, 021 |
-| [083](083-stdlib-math.md) | `stdlib/math` — thin libm + typed `min_*`/`max_*`/`clamp_*` | ✅ | 012, 021 |
+| [083](083-stdlib-math.md) | `stdlib/math` — libm f64/`*_f32` + `sqr`/`cube`/`cbrt`/`root` + `div_*` | ✅ | 012, 021 |
 | [081](081-number-literals.md) | Literals: binary `0b`, float exponent `1e…`, char `'A'`, octal `0o` | ✅ | 002 |
 | [086](086-lsp.md) | Language Server (`klin lsp` MVP + cross-file + rename) | ✅ | 002, 033, 026 |
 | [087](087-intellij-plugin.md) | IntelliJ plugin for Klin (LSP client + highlight; not full PSI) | ✅ MVP (no Marketplace) | 086, 093 |

@@ -13,6 +13,9 @@ pub fn tan(x: f64): f64
 @[cinclude("<math.h>"), cimport, codename("sqrt")]
 pub fn sqrt(x: f64): f64
 
+@[cinclude("<math.h>"), cimport, codename("cbrt")]
+pub fn cbrt(x: f64): f64
+
 @[cinclude("<math.h>"), cimport, codename("fabs")]
 pub fn abs(x: f64): f64
 
@@ -40,6 +43,58 @@ pub fn min(a, b: f64): f64
 
 @[cinclude("<math.h>"), cimport, codename("fmax")]
 pub fn max(a, b: f64): f64
+
+@[cinclude("<math.h>"), cimport, codename("sinf")]
+pub fn sin_f32(x: f32): f32
+
+@[cinclude("<math.h>"), cimport, codename("cosf")]
+pub fn cos_f32(x: f32): f32
+
+@[cinclude("<math.h>"), cimport, codename("tanf")]
+pub fn tan_f32(x: f32): f32
+
+@[cinclude("<math.h>"), cimport, codename("sqrtf")]
+pub fn sqrt_f32(x: f32): f32
+
+@[cinclude("<math.h>"), cimport, codename("cbrtf")]
+pub fn cbrt_f32(x: f32): f32
+
+@[cinclude("<math.h>"), cimport, codename("fabsf")]
+pub fn abs_f32(x: f32): f32
+
+@[cinclude("<math.h>"), cimport, codename("floorf")]
+pub fn floor_f32(x: f32): f32
+
+@[cinclude("<math.h>"), cimport, codename("ceilf")]
+pub fn ceil_f32(x: f32): f32
+
+@[cinclude("<math.h>"), cimport, codename("powf")]
+pub fn pow_f32(x, y: f32): f32
+
+@[cinclude("<math.h>"), cimport, codename("logf")]
+pub fn log_f32(x: f32): f32
+
+@[cinclude("<math.h>"), cimport, codename("log10f")]
+pub fn log10_f32(x: f32): f32
+
+@[cinclude("<math.h>"), cimport, codename("log2f")]
+pub fn log2_f32(x: f32): f32
+
+/// IEEE `fminf` / `fmaxf` (NaN rules). Comparison `min_f32` / `max_f32` stay separate.
+@[cinclude("<math.h>"), cimport, codename("fminf")]
+pub fn min_ieee_f32(a, b: f32): f32
+
+@[cinclude("<math.h>"), cimport, codename("fmaxf")]
+pub fn max_ieee_f32(a, b: f32): f32
+
+/// nth root via `pow(x, 1/n)`. Negative bases follow IEEE `pow`, not `cbrt`.
+pub fn root(x, n: f64): f64 {
+    return pow(x, 1.0 / n)
+}
+
+pub fn root_f32(x, n: f32): f32 {
+    return pow_f32(x, 1.0 / n)
+}
 
 /// Clamp to `[lo, hi]` via libm `min`/`max` (f64).
 pub fn clamp(x, lo, hi: f64): f64 {
@@ -78,6 +133,53 @@ $cmp_ops(u64)
 $cmp_ops(f32)
 $cmp_ops(f64)
 
+/// `x*x` / `x*x*x` — no libm. Unsuffixed `sqr` / `cube` are f64.
+$fn pow_ops(T: type) {
+    pub fn sqr_$T(x: $T): $T {
+        return x * x
+    }
+
+    pub fn cube_$T(x: $T): $T {
+        return x * x * x
+    }
+}
+
+$pow_ops(i32)
+$pow_ops(i64)
+$pow_ops(u8)
+$pow_ops(u16)
+$pow_ops(u32)
+$pow_ops(u64)
+$pow_ops(f32)
+$pow_ops(f64)
+
+pub fn sqr(x: f64): f64 {
+    return x * x
+}
+
+pub fn cube(x: f64): f64 {
+    return x * x * x
+}
+
+/// Quotient and remainder (`a / b`, `a % b`). Integers only; `b == 0` is UB.
+$fn div_ops(T: type) {
+    pub struct Div_$T {
+        quot: $T
+        rem: $T
+    }
+
+    pub fn div_$T(a, b: $T): Div_$T {
+        return Div_$T{ quot: a / b, rem: a % b }
+    }
+}
+
+$div_ops(i32)
+$div_ops(i64)
+$div_ops(u8)
+$div_ops(u16)
+$div_ops(u32)
+$div_ops(u64)
+
 pub fn pi(): f64 {
     return 3.141592653589793
 }
@@ -89,4 +191,16 @@ pub fn di(): f64 {
 
 pub fn e(): f64 {
     return 2.718281828459045
+}
+
+pub fn pi_f32(): f32 {
+    return 3.14159265
+}
+
+pub fn di_f32(): f32 {
+    return 6.2831853
+}
+
+pub fn e_f32(): f32 {
+    return 2.7182817
 }

@@ -18,7 +18,7 @@ User libraries / directory packages: [docs/11-klin-libraries.md](../docs/11-klin
 |---|---|
 | [`io`](io.kl) | Host `print` / `println` (thin libc wrappers) |
 | [`str`](str.kl) | Host `eq` / `len` (thin `strcmp` / `strlen`; no `==` on `str`) |
-| [`math`](math.kl) | Host `sin` / `sqrt` / … (thin libm; `@[link("-lm")]`) |
+| [`math`](math.kl) | Host `sin` / `sqrt` / `sin_f32` / `sqr` / `cbrt` / `div_i32` / … (libm + Klin helpers; `@[link("-lm")]`) |
 | [`testing`](testing.kl) | `assert` / `assert_eq_i32` for `klin test` |
 | [`time`](time.kl) | Wall / monotonic clocks, `Duration`, format, UTC calendar `add_*` |
 | [`mem`](mem.kl) | Explicit host heap `Allocator` (`malloc`/`free`) |
@@ -65,10 +65,17 @@ let p = math.pi()
 let t = math.di()       // 2π
 let c = math.clamp_i32(x, 0, 100_000)
 let f = math.clamp_f32(t, 0.0, 1.0)
+let s = math.sqr(3.0)   // 9; also sqr_i32 / cube / cbrt / root
+let { quot, rem } = math.div_i32(17, 5)
 ```
 
-Typed `min_*` / `max_*` / `clamp_*` for `i32`/`i64`/`u8`/`u16`/`u32`/`u64`/`f32`/`f64`
-(no overloading). `min`/`max`/`clamp` remain f64 (libm / thin wrappers).
+Typed `min_*` / `max_*` / `clamp_*` / `sqr_*` / `cube_*` for
+`i32`/`i64`/`u8`/`u16`/`u32`/`u64`/`f32`/`f64` (no overloading).
+`min`/`max`/`clamp` / `sin` / `sqrt` remain f64; `*_f32` is the float
+libm twin (`sinf`, `sqrtf`, …). `min_ieee_f32` is `fminf` (NaN rules),
+not comparison `min_f32`. `root(x, n)` is `pow(x, 1/n)`.
+
+Integer `div_*` returns `Div_* { quot, rem }` — destructure, no tuples.
 
 Links with `-lm`. Do **not** import on bare metal without libm.
 

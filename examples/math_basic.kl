@@ -9,4 +9,9 @@ fn main() {
     printf("abs(-3.5)=%.1f\n", math.abs(-3.5))
     printf("clamp_i32=%d\n", math.clamp_i32(200_000, 0, 100_000))
     printf("clamp=%.1f\n", math.clamp(1.5, 0.0, 1.0))
+    printf("sqr(3)=%.1f cube(2)=%.1f\n", math.sqr(3.0), math.cube(2.0))
+    printf("cbrt(-8)=%.1f sqrt_f32(9)=%.1f\n", math.cbrt(0.0 - 8.0), math.sqrt_f32(9.0))
+    printf("sin_f32(0)=%.1f pi_f32=%.4f\n", math.sin_f32(0.0), math.pi_f32())
+    let { quot, rem } = math.div_i32(17, 5)
+    printf("div_i32(17,5)=%d rem %d\n", quot, rem)
 }
