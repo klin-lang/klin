@@ -207,9 +207,9 @@ fn main() {
     e = wifi.concurrent_set(1)
     e = wifi.sta_connect("myssid", "mypass")
     e = wifi.sta_wait_ip(20000)
-    e = wifi.ap_init()
+    e = wifi.ap_init() /* attach SoftAP client; management already open */
     e = wifi.ap_start("klin-ap", "klinpass1", 6)
-    e = wifi.ap_wait_ip(5000)
+    e = wifi.ap_wait_ip(5000) /* SoftAP vif 1 */
 }
 ```
 
