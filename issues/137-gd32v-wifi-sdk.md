@@ -1,6 +1,6 @@
 # 137 — GD32VW553 Wi‑Fi as a separate SDK package (`gd32v_wifi`)
 
-**Status:** 🔨 STA + SoftAP + scan + link + static published [`@v0.4.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.4.0) (APSTA later)  
+**Status:** 🔨 STA + SoftAP + scan + link + static + APSTA published [`@v0.5.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.5.0)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [136](136-machine-gd32v-gd32vw553.md)
 **Formerly:** `126` (renumbered to resolve duplicate issue numbers).
 
@@ -9,7 +9,7 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: [`klin-lang/gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.4.0` |
+| Where does the code live? | External: [`klin-lang/gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.5.0` |
 | Engine | **GigaDevice VW55x Wi‑Fi BLE SDK** (`wifi_management` / `wifi_net_ip` / lwIP / OSAL) — not MMIO, **not** ESP-IDF |
 | Relation to `machine_gd32v` | **Separate.** [136](136-machine-gd32v-gd32vw553.md) Pin…Adc twins stay MMIO. Same split as [`esp_wifi`](https://github.com/klin-lang/esp_wifi) vs `machine_esp` ([101](101-esp-wifi-idf.md)). |
 | BLE | Sibling [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [140](140-gd32v-ble-sdk.md) (advertise+GATT+scan/connect+gattc+jw-bond+uuid16+passkey+uuid128/multi+privacy+mesh+prov+level+friend `@v0.13.0`) — same split as [106](106-esp-ble-idf.md) |
@@ -47,7 +47,7 @@ Default IP mode = **DHCP** (SDK management starts DHCP after assoc). Static IP �
 - `ap_stop` — `wifi_management_ap_stop` (does **not** `deinit`; `sta_stop` still deinit)  
 - Implementation: `@[link("ap_sdk.c")]` + `@[cimport]` (no `@[cinclude]`)  
 - Example `examples/softap/` — needs the official SDK to link an ELF  
-- SoftAP-only on this tag — do **not** mix `sta_*` and `ap_*` (APSTA later)  
+- SoftAP-only on this tag — do **not** mix `sta_*` and `ap_*` until `@v0.5.0` (`concurrent_set(1)`) — see below  
 
 Default AP IPv4 = SDK SoftAP (typically `192.168.4.1` + DHCPS). `ap_set_ip` / `ap_station_num` → `@v0.4.0`.
 
@@ -77,9 +77,24 @@ Changelog: `@v0.1.0` STA+DHCP → `@v0.2.0` SoftAP → `@v0.3.0` scan
 
 Changelog: `@v0.1.0` STA+DHCP → `@v0.2.0` SoftAP → `@v0.3.0` scan → `@v0.4.0` link+static+AP extras
 
+## Scope (`@v0.5.0` — APSTA)
+
+- `concurrent_supported` — 1 if SDK built with `CFG_WIFI_CONCURRENT` (`wlan_config.h`)  
+- `concurrent_set(enable)` / `concurrent()` — `wifi_management_concurrent_set` / `get` (AN158 §4.4.10 / §4.4.11)  
+- Call **`sta_init` or `ap_init` once** to open management; then `concurrent_set(1)`; then mix `sta_*` + `ap_*`  
+- The other `*_init` after management is already open is **attach-only** (does not call `wifi_management_init` again)  
+- SoftAP uses **vif 1** while STA stays **vif 0** (`WIFI_VIF_INDEX_SOFTAP_MODE`)  
+- `ap_wait_ip` / `ap_ip_u32` / `ap_gateway_u32` / `ap_netmask_u32` / `ap_log_ip_info` / `ap_station_num` use the SoftAP vif (**1** when concurrent; **0** SoftAP-only)  
+- SoftAP channel follows STA when linked (SDK may rewrite the channel)  
+- Without `CFG_WIFI_CONCURRENT` → `concurrent_supported` is false / `concurrent_set` → `-1`  
+- `version()` → `5`  
+- Example `examples/apsta/`  
+
+Changelog: … → `@v0.4.0` link+static → `@v0.5.0` APSTA
+
 ## Out of scope (this tag)
 
-- APSTA / roaming / WPS / EAP-TLS  
+- Roaming / WPS / EAP-TLS  
 - BLE — [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [140](140-gd32v-ble-sdk.md) (AN152), not this package  
 - Sockets / HTTP / MQTT  
 - Board pack / `klin init` — [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) [138](138-board-gd32vw553h-eval.md) (no radio API there)  
@@ -89,7 +104,8 @@ Changelog: `@v0.1.0` STA+DHCP → `@v0.2.0` SoftAP → `@v0.3.0` scan → `@v0.4
 ## Contract (prime rule)
 
 - No Klin GC / hidden heap — SSID/pass are C strings you pass in; scan SSID goes into a **caller** buffer.  
-- SDK heap / OSAL task / eloop / lwIP DHCP / SoftAP DHCPS / scan result list malloc are **SDK contracts**, documented in the package README.  
+- SDK heap / OSAL task / eloop / lwIP DHCP / SoftAP DHCPS / concurrent / scan result list malloc are **SDK contracts**, documented in the package README.  
+- APSTA needs explicit `concurrent_set(1)` and `CFG_WIFI_CONCURRENT`.  
 - Scan result table max **16** (fixed in C, documented).  
 - Errors are `i32` (0 = ok, same as `wifi_management_*`).  
 - Host `klin test` must not require the SDK tree.
@@ -181,14 +197,30 @@ fn main() {
 }
 ```
 
+## Usage (APSTA)
+
+```klin
+import "github/klin-lang/gd32v_wifi" wifi
+
+fn main() {
+    let mut e = wifi.sta_init()
+    e = wifi.concurrent_set(1)
+    e = wifi.sta_connect("myssid", "mypass")
+    e = wifi.sta_wait_ip(20000)
+    e = wifi.ap_init() /* attach SoftAP client; management already open */
+    e = wifi.ap_start("klin-ap", "klinpass1", 6)
+    e = wifi.ap_wait_ip(5000) /* SoftAP vif 1 */
+}
+```
+
 ```sh
-klin get github/klin-lang/gd32v_wifi@v0.4.0
+klin get github/klin-lang/gd32v_wifi@v0.5.0
 ```
 
 ## Links
 
 - Package: https://github.com/klin-lang/gd32v_wifi  
-- Tag: [v0.4.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.4.0) (scan [v0.3.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.3.0), SoftAP [v0.2.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.2.0), STA [v0.1.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0))  
+- Tag: [v0.5.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.5.0) (link+static [v0.4.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.4.0), scan [v0.3.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.3.0), SoftAP [v0.2.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.2.0), STA [v0.1.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0))  
 - SDK: https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK  
 - AN158 Wi‑Fi Development Guide (GigaDevice)  
 - Chip MMIO: [136](136-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
