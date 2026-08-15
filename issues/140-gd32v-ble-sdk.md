@@ -172,7 +172,7 @@ Same Klin names as [`esp_ble`](https://github.com/klin-lang/esp_ble) `@v0.10.0`:
 - Engine: Zephyr-style `bt_mesh_init` / `bt_mesh_prov_enable` (not NimBLE `CONFIG_BT_NIMBLE_MESH`)  
 - `version()` → `10`  
 - Example `examples/mesh/`  
-- **Not** included (until `@v0.11.0`): provisioner role — see below; Level/vendor / friend/LPN still later  
+- **Not** included (until `@v0.11.0` / `@v0.12.0`): provisioner — see below; Gen Level / vendor — see `@v0.12.0`; friend/LPN still later  
 
 ## Scope (`@v0.11.0` — Mesh provisioner)
 
