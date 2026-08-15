@@ -81,8 +81,10 @@ Changelog: `@v0.1.0` STA+DHCP → `@v0.2.0` SoftAP → `@v0.3.0` scan → `@v0.4
 
 - `concurrent_supported` — 1 if SDK built with `CFG_WIFI_CONCURRENT` (`wlan_config.h`)  
 - `concurrent_set(enable)` / `concurrent()` — `wifi_management_concurrent_set` / `get` (AN158 §4.4.10 / §4.4.11)  
-- After `sta_init` or `ap_init`, then `concurrent_set(1)`, mix `sta_*` + `ap_*`  
+- Call **`sta_init` or `ap_init` once** to open management; then `concurrent_set(1)`; then mix `sta_*` + `ap_*`  
+- The other `*_init` after management is already open is **attach-only** (does not call `wifi_management_init` again)  
 - SoftAP uses **vif 1** while STA stays **vif 0** (`WIFI_VIF_INDEX_SOFTAP_MODE`)  
+- `ap_wait_ip` / `ap_ip_u32` / `ap_gateway_u32` / `ap_netmask_u32` / `ap_station_num` use the SoftAP vif (**1** when concurrent; **0** SoftAP-only)  
 - SoftAP channel follows STA when linked (SDK may rewrite the channel)  
 - Without `CFG_WIFI_CONCURRENT` → `supported` false / `concurrent_set` → `-1`  
 - `version()` → `5`  
