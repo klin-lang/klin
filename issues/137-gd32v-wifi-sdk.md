@@ -47,7 +47,7 @@ Default IP mode = **DHCP** (SDK management starts DHCP after assoc). Static IP �
 - `ap_stop` — `wifi_management_ap_stop` (does **not** `deinit`; `sta_stop` still deinit)  
 - Implementation: `@[link("ap_sdk.c")]` + `@[cimport]` (no `@[cinclude]`)  
 - Example `examples/softap/` — needs the official SDK to link an ELF  
-- SoftAP-only on this tag — do **not** mix `sta_*` and `ap_*` until `@v0.5.0` — see below  
+- SoftAP-only on this tag — do **not** mix `sta_*` and `ap_*` until `@v0.5.0` (`concurrent_set(1)`) — see below  
 
 Default AP IPv4 = SDK SoftAP (typically `192.168.4.1` + DHCPS). `ap_set_ip` / `ap_station_num` → `@v0.4.0`.
 
@@ -84,9 +84,9 @@ Changelog: `@v0.1.0` STA+DHCP → `@v0.2.0` SoftAP → `@v0.3.0` scan → `@v0.4
 - Call **`sta_init` or `ap_init` once** to open management; then `concurrent_set(1)`; then mix `sta_*` + `ap_*`  
 - The other `*_init` after management is already open is **attach-only** (does not call `wifi_management_init` again)  
 - SoftAP uses **vif 1** while STA stays **vif 0** (`WIFI_VIF_INDEX_SOFTAP_MODE`)  
-- `ap_wait_ip` / `ap_ip_u32` / `ap_gateway_u32` / `ap_netmask_u32` / `ap_station_num` use the SoftAP vif (**1** when concurrent; **0** SoftAP-only)  
+- `ap_wait_ip` / `ap_ip_u32` / `ap_gateway_u32` / `ap_netmask_u32` / `ap_log_ip_info` / `ap_station_num` use the SoftAP vif (**1** when concurrent; **0** SoftAP-only)  
 - SoftAP channel follows STA when linked (SDK may rewrite the channel)  
-- Without `CFG_WIFI_CONCURRENT` → `supported` false / `concurrent_set` → `-1`  
+- Without `CFG_WIFI_CONCURRENT` → `concurrent_supported` is false / `concurrent_set` → `-1`  
 - `version()` → `5`  
 - Example `examples/apsta/`  
 
