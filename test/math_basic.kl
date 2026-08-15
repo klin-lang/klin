@@ -70,4 +70,58 @@ fn main() {
     if math.e() > 2.0 {
         printf("e_ok\n")
     }
+    if math.sqr(3.0) == 9.0 {
+        printf("sqr_ok\n")
+    }
+    if math.cube(2.0) == 8.0 {
+        printf("cube_ok\n")
+    }
+    if math.sqr_i32(3) == 9 {
+        printf("sqr_i32_ok\n")
+    }
+    if math.cube_f32(2.0) == 8.0 {
+        printf("cube_f32_ok\n")
+    }
+    if math.cbrt(8.0) == 2.0 {
+        printf("cbrt_ok\n")
+    }
+    if math.cbrt(0.0 - 8.0) == 0.0 - 2.0 {
+        printf("cbrt_neg_ok\n")
+    }
+    if math.root(16.0, 2.0) == 4.0 {
+        printf("root_ok\n")
+    }
+    if math.sqrt_f32(9.0) == 3.0 {
+        printf("sqrt_f32_ok\n")
+    }
+    if math.abs_f32(0.0 - 2.0) == 2.0 {
+        printf("abs_f32_ok\n")
+    }
+    if math.pow_f32(2.0, 3.0) == 8.0 {
+        printf("pow_f32_ok\n")
+    }
+    if math.sin_f32(0.0) == 0.0 {
+        printf("sin_f32_ok\n")
+    }
+    if math.min_ieee_f32(1.0, 2.0) == 1.0 {
+        printf("min_ieee_f32_ok\n")
+    }
+    if math.pi_f32() > 3.0 {
+        printf("pi_f32_ok\n")
+    }
+    if math.di_f32() > 6.0 {
+        printf("di_f32_ok\n")
+    }
+    if math.e_f32() > 2.0 {
+        printf("e_f32_ok\n")
+    }
+    let { quot, rem } = math.div_i32(17, 5)
+    if quot == 3 {
+        if rem == 2 {
+            printf("div_i32_ok\n")
+        }
+    }
+    if math.div_u8(20, 6).quot == 3 {
+        printf("div_u8_ok\n")
+    }
 }

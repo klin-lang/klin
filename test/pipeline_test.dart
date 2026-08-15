@@ -1603,6 +1603,10 @@ fn main() {
     expect(c, contains('sin('));
     expect(c, contains('sqrt('));
     expect(c, contains('fabs('));
+    expect(c, contains('cbrt('));
+    expect(c, contains('sqrtf('));
+    expect(c, contains('sinf('));
+    expect(c, contains('powf('));
     expect(collectLinkAttrs(program), contains('-lm'));
   });
 
