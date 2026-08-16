@@ -42,7 +42,7 @@ HTTP/TLS is a different contract (headers, status, certs). Keeping it separate m
 
 - No Klin GC / hidden heap — bodies are caller buffers.  
 - No hidden Klin cert store — PEM from you only.  
-- Truncation if body > `out_max` (check `last_content_length`).  
+- Truncation if body > `out_max` (returns `out_max`; check `last_content_length`).  
 - Transport errors → `-1`; HTTP status via `last_status`.  
 
 ## Usage
