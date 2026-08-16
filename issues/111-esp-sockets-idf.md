@@ -84,3 +84,4 @@ klin get github/klin-lang/esp_sockets@v0.1.0
 - Dual Wi‑Fi+ETH: [113](113-esp-netif-dual-idf.md)  
 - Wi‑Fi / ETH: [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md)  
 - IoT later: [105](105-later-tracks-iot.md)  
+- VW553 twin (different engine): [143](143-gd32v-sockets-sdk.md) / [`gd32v_sockets`](https://github.com/klin-lang/gd32v_sockets)  
