@@ -1,7 +1,7 @@
 # 105 — Later tracks: IoT protocols / cloud edge
 
-**Status:** 💭 backlog ready (sockets + HTTP/TLS shipped; MQTT/OTA next — one at a time)  
-**Depends on:** [104](104-later-tracks-esp-network.md), [111](111-esp-sockets-idf.md), [112](112-esp-http-idf.md), [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md)
+**Status:** 💭 backlog (ESP MQTT/OTA still open; VW553 OTA → [145](145-gd32v-ota-sdk.md))  
+**Depends on:** [104](104-later-tracks-esp-network.md), [111](111-esp-sockets-idf.md), [112](112-esp-http-idf.md), [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md), [145](145-gd32v-ota-sdk.md)
 
 ## Verdict
 
@@ -9,7 +9,8 @@ Park **IoT-shaped** work above the thin network MVP (`esp_wifi` / `esp_eth`).
 This is a **maybe** queue: ship only when there is a concrete device + protocol need — not “IoT platform” scope creep.
 
 Do **not** fold MQTT / cloud SDKs into `machine_*` or into the current STA/W5500 tags.  
-Sockets ✅ [111](111-esp-sockets-idf.md); HTTP/TLS ✅ [112](112-esp-http-idf.md). IoT tracks (MQTT/OTA) may start.
+Sockets ✅ [111](111-esp-sockets-idf.md); HTTP/TLS ✅ [112](112-esp-http-idf.md).  
+VW553 OTA ✅ [145](145-gd32v-ota-sdk.md). ESP MQTT/OTA and VW553 MQTT still open.
 
 Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP done; later tags), [106](106-esp-ble-idf.md) (BLE), [108](108-esp-usb-idf.md) (USB OTG), [109](109-esp-camera-idf.md) (camera), [110](110-board-waveshare-pico-lcd-114.md) (Pico LCD), [104](104-later-tracks-esp-network.md) (Wi‑Fi W1–W3 ✅; dual ✅; sockets ✅; HTTP/TLS ✅; RMII ✅).
 
@@ -26,7 +27,7 @@ Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP done;
 | # | Track | Likely home | Notes |
 |---|---|---|---|
 | I1 | **MQTT** client | Separate package (e.g. thin FFI over ESP-IDF `mqtt` / eclipse-paho-style C) | Needs sockets + TLS from [104](104-later-tracks-esp-network.md). Publish/subscribe; buffers and client id **explicit**; no hidden reconnect heap in Klin. |
-| I2 | **OTA** update | Thin IDF wrapper package | Often uses HTTPS from [104](104-later-tracks-esp-network.md) N3. Partition / URL / hash checks explicit; not board-pack magic. |
+| I2 | **OTA** update | Thin IDF wrapper package (ESP) / [`gd32v_ota`](https://github.com/klin-lang/gd32v_ota) [145](145-gd32v-ota-sdk.md) (VW553) | Often uses HTTPS. Partition / URL / hash checks explicit; not board-pack magic. VW553 track started. |
 | I3 | **CoAP** | Later / low priority | Only if a desk project needs it. |
 | I4 | **Matter / Thread / Zigbee** | Far later | Heavy stacks; own decision when silicon + need exist — not MVP. |
 

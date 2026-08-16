@@ -34,7 +34,7 @@ Sockets sit **above** Wi‑Fi. Folding TCP into `gd32v_wifi` would hide the spli
 
 - Bringing up Wi‑Fi / DHCP (→ [137](137-gd32v-wifi-sdk.md))  
 - HTTP / TLS — [144](144-gd32v-http-sdk.md)  
-- MQTT / OTA  
+- MQTT / OTA — OTA → [145](145-gd32v-ota-sdk.md); MQTT still [105](105-later-tracks-iot.md)  
 - IPv6 / non-blocking select/poll MVP  
 - Changing the Klin compiler  
 - Using [`esp_sockets`](https://github.com/klin-lang/esp_sockets) on VW553 (wrong engine)

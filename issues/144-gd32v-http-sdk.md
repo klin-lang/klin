@@ -34,7 +34,7 @@ HTTP/TLS is a different contract (headers, status, certs). Keeping it separate m
 - Bringing up Wi‑Fi / DHCP (→ [137](137-gd32v-wifi-sdk.md))  
 - Hidden Klin CA store / default insecure HTTPS  
 - HTTP server  
-- MQTT / OTA  
+- MQTT / OTA — OTA → [145](145-gd32v-ota-sdk.md); MQTT still [105](105-later-tracks-iot.md)  
 - Changing the Klin compiler  
 - Using [`esp_http`](https://github.com/klin-lang/esp_http) on VW553 (wrong engine)
 
