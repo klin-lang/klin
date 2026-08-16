@@ -109,6 +109,7 @@ Changelog: … → `@v0.5.0` APSTA → `@v0.6.0` roaming
 - `wps_pbc` / `wps_pin(pin)` — `wifi_management_wps_start` blocked (AN158 §4.4.16). PIN length **4..=8**. After `sta_init`. Without `CFG_WPS` → `-1`  
 - `eap_tls_supported` — 1 if SDK built with `CFG_8021x_EAP_TLS`  
 - `sta_connect_eap_tls(ssid, identity, ca_cert, client_key, client_cert, client_key_password, phase1)` — `wifi_management_connect_with_eap_tls` blocked. PEM strings are **caller-owned** C strings; empty key password / phase1 → NULL. Without `CFG_8021x_EAP_TLS` → `-1`  
+- **Board note:** WPS / EAP-TLS need an **msdk_ffd** (or `msdk_ffd_threadx`) SDK image with full `libwpa_supplicant` (AN154). Default **msdk** links slim `libwpas` and does **not** provide these even if macros are toggled alone.  
 - `version()` → `7`  
 - Examples `examples/wps/` / `examples/eap_tls/`  
 
@@ -126,7 +127,7 @@ Changelog: … → `@v0.6.0` roaming → `@v0.7.0` WPS+EAP-TLS
 
 - No Klin GC / hidden heap — SSID/pass/PIN/PEM are C strings you pass in; scan SSID goes into a **caller** buffer.  
 - SDK heap / OSAL task / eloop / lwIP DHCP / SoftAP DHCPS / concurrent / roaming / WPS / EAP-TLS / scan result list malloc are **SDK contracts**, documented in the package README.  
-- APSTA needs explicit `concurrent_set(1)` and `CFG_WIFI_CONCURRENT`. WPS needs `CFG_WPS`; EAP-TLS needs `CFG_8021x_EAP_TLS`.  
+- APSTA needs explicit `concurrent_set(1)` and `CFG_WIFI_CONCURRENT`. WPS needs `CFG_WPS` + **msdk_ffd** (`libwpa_supplicant`); EAP-TLS needs `CFG_8021x_EAP_TLS` + **msdk_ffd**.  
 - Scan result table max **16** (fixed in C, documented).  
 - Errors are `i32` (0 = ok, same as `wifi_management_*`).  
 - Host `klin test` must not require the SDK tree.
