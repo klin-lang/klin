@@ -85,7 +85,7 @@ typed MMIO from SVD — with no runtime and no GC.
 
 ## Quick start
 
-**Homebrew** (prebuilt, no Dart):
+**Homebrew** (prebuilt, no Dart; macOS / Linux):
 
 ```sh
 brew install klin-lang/klin/klin
@@ -93,7 +93,14 @@ klin --version
 klin run examples/hello.kl          # from a clone
 ```
 
-Details and CLT notes: [docs/17-homebrew.md](docs/17-homebrew.md).
+**Linux tarball** (prebuilt, no Dart; **no apt / snap**):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/klin-lang/klin/main/scripts/install-linux.sh | bash
+klin --version
+```
+
+Details (manual extract, Scoop, CLT): [docs/17-homebrew.md](docs/17-homebrew.md).
 
 **Windows** (Scoop, prebuilt, no Dart):
 
