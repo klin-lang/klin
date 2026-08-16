@@ -1,6 +1,6 @@
 # 137 — GD32VW553 Wi‑Fi as a separate SDK package (`gd32v_wifi`)
 
-**Status:** 🔨 STA + SoftAP + scan + link + static + APSTA + roaming published [`@v0.6.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.6.0)  
+**Status:** 🔨 STA + SoftAP + scan + link + static + APSTA + roaming + WPS + EAP-TLS published [`@v0.7.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.7.0)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [136](136-machine-gd32v-gd32vw553.md)
 **Formerly:** `126` (renumbered to resolve duplicate issue numbers).
 
@@ -9,7 +9,7 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: [`klin-lang/gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.6.0` |
+| Where does the code live? | External: [`klin-lang/gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.7.0` |
 | Engine | **GigaDevice VW55x Wi‑Fi BLE SDK** (`wifi_management` / `wifi_net_ip` / lwIP / OSAL) — not MMIO, **not** ESP-IDF |
 | Relation to `machine_gd32v` | **Separate.** [136](136-machine-gd32v-gd32vw553.md) Pin…Adc twins stay MMIO. Same split as [`esp_wifi`](https://github.com/klin-lang/esp_wifi) vs `machine_esp` ([101](101-esp-wifi-idf.md)). |
 | BLE | Sibling [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [140](140-gd32v-ble-sdk.md) (advertise+GATT+scan/connect+gattc+jw-bond+uuid16+passkey+uuid128/multi+privacy+mesh+prov+level+friend+oob `@v0.14.0`) — same split as [106](106-esp-ble-idf.md) |
@@ -103,9 +103,19 @@ Changelog: … → `@v0.4.0` link+static → `@v0.5.0` APSTA
 
 Changelog: … → `@v0.5.0` APSTA → `@v0.6.0` roaming
 
+## Scope (`@v0.7.0` — WPS + EAP-TLS)
+
+- `wps_supported` — 1 if SDK built with `CFG_WPS`  
+- `wps_pbc` / `wps_pin(pin)` — `wifi_management_wps_start` blocked (AN158 §4.4.16). PIN length **4..=8**. After `sta_init`. Without `CFG_WPS` → `-1`  
+- `eap_tls_supported` — 1 if SDK built with `CFG_8021x_EAP_TLS`  
+- `sta_connect_eap_tls(ssid, identity, ca_cert, client_key, client_cert, client_key_password, phase1)` — `wifi_management_connect_with_eap_tls` blocked. PEM strings are **caller-owned** C strings; empty key password / phase1 → NULL. Without `CFG_8021x_EAP_TLS` → `-1`  
+- `version()` → `7`  
+- Examples `examples/wps/` / `examples/eap_tls/`  
+
+Changelog: … → `@v0.6.0` roaming → `@v0.7.0` WPS+EAP-TLS
+
 ## Out of scope (this tag)
 
-- WPS / EAP-TLS  
 - BLE — [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [140](140-gd32v-ble-sdk.md) (AN152), not this package  
 - Sockets / HTTP / MQTT  
 - Board pack / `klin init` — [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) [138](138-board-gd32vw553h-eval.md) (no radio API there)  
@@ -114,9 +124,9 @@ Changelog: … → `@v0.5.0` APSTA → `@v0.6.0` roaming
 
 ## Contract (prime rule)
 
-- No Klin GC / hidden heap — SSID/pass are C strings you pass in; scan SSID goes into a **caller** buffer.  
-- SDK heap / OSAL task / eloop / lwIP DHCP / SoftAP DHCPS / concurrent / roaming / scan result list malloc are **SDK contracts**, documented in the package README.  
-- APSTA needs explicit `concurrent_set(1)` and `CFG_WIFI_CONCURRENT`.  
+- No Klin GC / hidden heap — SSID/pass/PIN/PEM are C strings you pass in; scan SSID goes into a **caller** buffer.  
+- SDK heap / OSAL task / eloop / lwIP DHCP / SoftAP DHCPS / concurrent / roaming / WPS / EAP-TLS / scan result list malloc are **SDK contracts**, documented in the package README.  
+- APSTA needs explicit `concurrent_set(1)` and `CFG_WIFI_CONCURRENT`. WPS needs `CFG_WPS`; EAP-TLS needs `CFG_8021x_EAP_TLS`.  
 - Scan result table max **16** (fixed in C, documented).  
 - Errors are `i32` (0 = ok, same as `wifi_management_*`).  
 - Host `klin test` must not require the SDK tree.
@@ -224,6 +234,39 @@ fn main() {
 }
 ```
 
+## Usage (WPS)
+
+```klin
+import "github/klin-lang/gd32v_wifi" wifi
+
+fn main() {
+    let mut e = wifi.sta_init()
+    if wifi.wps_supported() {
+        e = wifi.wps_pbc()
+        // e = wifi.wps_pin("12345670")
+    }
+    e = wifi.sta_wait_ip(30000)
+}
+```
+
+## Usage (EAP-TLS)
+
+```klin
+import "github/klin-lang/gd32v_wifi" wifi
+
+fn main() {
+    let mut e = wifi.sta_init()
+    e = wifi.sta_connect_eap_tls(
+        "corp-ssid", "user@example.com",
+        "-----BEGIN CERTIFICATE-----\nCA\n-----END CERTIFICATE-----\n",
+        "-----BEGIN PRIVATE KEY-----\nKEY\n-----END PRIVATE KEY-----\n",
+        "-----BEGIN CERTIFICATE-----\nCLIENT\n-----END CERTIFICATE-----\n",
+        "", ""
+    )
+    e = wifi.sta_wait_ip(30000)
+}
+```
+
 ## Usage (roaming)
 
 ```klin
@@ -238,13 +281,13 @@ fn main() {
 ```
 
 ```sh
-klin get github/klin-lang/gd32v_wifi@v0.6.0
+klin get github/klin-lang/gd32v_wifi@v0.7.0
 ```
 
 ## Links
 
 - Package: https://github.com/klin-lang/gd32v_wifi  
-- Tag: [v0.6.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.6.0) (APSTA [v0.5.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.5.0), link+static [v0.4.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.4.0), scan [v0.3.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.3.0), SoftAP [v0.2.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.2.0), STA [v0.1.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0))  
+- Tag: [v0.7.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.7.0) (roaming [v0.6.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.6.0), APSTA [v0.5.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.5.0), link+static [v0.4.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.4.0), scan [v0.3.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.3.0), SoftAP [v0.2.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.2.0), STA [v0.1.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0))  
 - SDK: https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK  
 - AN158 Wi‑Fi Development Guide (GigaDevice)  
 - Chip MMIO: [136](136-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  

@@ -114,7 +114,7 @@ and register pointers differ. I2c is `I2cVw553` and Adc is `AdcVw553`
 
 ## Out of scope (this tag)
 
-- Wi‑Fi — [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [`@v0.6.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.6.0) [137](137-gd32v-wifi-sdk.md) (not this package; not `esp_wifi`)
+- Wi‑Fi — [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [`@v0.7.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.7.0) [137](137-gd32v-wifi-sdk.md) (not this package; not `esp_wifi`)
 - BLE — [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [`@v0.14.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.14.0) [140](140-gd32v-ble-sdk.md) (not this package; not `esp_ble`)
 - Board pack / `klin init` — [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) [`@v0.1.0`](https://github.com/klin-lang/gd32vw553h_eval/releases/tag/v0.1.0) [138](138-board-gd32vw553h-eval.md), [`gd32vw553h_start`](https://github.com/klin-lang/gd32vw553h_start) [`@v0.1.0`](https://github.com/klin-lang/gd32vw553h_start/releases/tag/v0.1.0) [139](139-board-gd32vw553h-start.md) (not this package)
 - Full Nuclei / GigaDevice wireless SDK vendoring
