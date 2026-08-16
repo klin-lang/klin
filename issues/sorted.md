@@ -95,10 +95,10 @@ building the core from scratch.
 | [134](134-machine-ch32v.md) | `machine_ch32v` CH32V003 QingKe Pin…Adc | ✅ `@v0.1.0` | 061, 062 |
 | [135](135-machine-gd32v.md) | `machine_gd32v` GD32VF103 Nuclei Pin…Adc | ✅ `@v0.2.0` | 061, 134 |
 | [136](136-machine-gd32v-gd32vw553.md) | `machine_gd32v` GD32VW553 Pin…Adc twins (`*_vw553`) | ✅ `@v0.8.0` | 061, 062, 135 |
-| [137](137-gd32v-wifi-sdk.md) | `gd32v_wifi` GD32VW553 STA + SoftAP + scan + link + static + APSTA + roaming (GigaDevice SDK, not `machine_*`) | 🔨 STA+SoftAP+scan+link+static+APSTA+roaming `@v0.6.0` | 021, 024, 049, 061, 062, 136 |
+| [137](137-gd32v-wifi-sdk.md) | `gd32v_wifi` GD32VW553 STA + SoftAP + scan + link + static + APSTA + roaming + WPS + EAP-TLS (GigaDevice SDK, not `machine_*`) | 🔨 STA+SoftAP+scan+link+static+APSTA+roaming+WPS+EAP-TLS `@v0.7.0` | 021, 024, 049, 061, 062, 136 |
 | [138](138-board-gd32vw553h-eval.md) | Board pack GD32VW553H-EVAL (pins + `klin init`) | 🔨 `@v0.1.0` ([repo](https://github.com/klin-lang/gd32vw553h_eval)) | 061, 062, 075, 136 |
 | [139](139-board-gd32vw553h-start.md) | Board pack GD32VW553 START (UART2 + RGB V4 + `klin init`) | 🔨 `@v0.1.0` ([repo](https://github.com/klin-lang/gd32vw553h_start)) | 061, 062, 075, 136 |
-| [140](140-gd32v-ble-sdk.md) | `gd32v_ble` GD32VW553 advertise + GATT + central + gattc + jw-bond + UUID16 + passkey + UUID128/multi + privacy + Mesh OnOff + provisioner + Level/vendor + Friend/LPN + interactive OOB (GigaDevice AN152, not `machine_*`) | 🔨 advertise+GATT+scan/connect+gattc+jw-bond+uuid16+passkey+uuid128/multi+privacy+mesh+prov+level+friend+oob `@v0.14.0` | 021, 024, 049, 061, 062, 136, 137 |
+| [140](140-gd32v-ble-sdk.md) | `gd32v_ble` GD32VW553 advertise + GATT + central + gattc + jw-bond + UUID16 + passkey + UUID128/multi + privacy + Mesh OnOff + provisioner + Level/vendor + Friend/LPN + interactive OOB + string OOB / friendship params / vendor byte (GigaDevice AN152, not `machine_*`) | 🔨 advertise+GATT+scan/connect+gattc+jw-bond+uuid16+passkey+uuid128/multi+privacy+mesh+prov+level+friend+oob+string+friendparams+vndbyte `@v0.15.0` | 021, 024, 049, 061, 062, 136, 137 |
 | [141](141-machine-tinyavr.md) | `machine_tinyavr` tinyAVR 0/1/2-series Pin…Adc (ATtiny1624 MVP) | 💭 | 061, 062, 021 |
 | [142](142-machine-avr-atmega32u4.md) | `machine_avr` ATmega32U4 (Leonardo / Micro / Pro Micro) | ✅ `@v0.3.0` | 061, 107 |
 | [143](143-gd32v-sockets-sdk.md) | `gd32v_sockets` GD32VW553 LwIP BSD sockets (TCP/UDP; after `gd32v_wifi` IP) | 🔨 `@v0.1.0` ready ([repo](https://github.com/klin-lang/gd32v_sockets)) | 021, 024, 049, 062, 137 |
@@ -160,7 +160,7 @@ building the core from scratch.
 | [127](127-docs-generics-fn.md) | Map: generics are `$fn`, not `[T]` in the compiler | ✅ | 116, 026, 034 |
 | [128](128-fmt-comments.md) | `klin fmt` keeps `//` comments | ✅ | 033 |
 | [129](129-enum-match-exhaustive.md) | Exhaustive `match` on enum (checker) | ✅ | 072, 014 |
-| [130](130-winget-scoop-windows.md) | Windows package channels: WinGet + Scoop (wrap Release `.zip`) | 💭 | 076, 067 |
+| [130](130-winget-scoop-windows.md) | Windows package channels: WinGet + Scoop (wrap Release `.zip`) | 🔨 | 076, 067 |
 | [131](131-linux-install-docs.md) | Linux install docs (tarball) + no apt/snap note | ✅ | 076, 067 |
 | [132](132-match-else-or.md) | `match { else { error(n) } } or { }` — `error` as `!T` value | ✅ | 009, 014 |
 | [133](133-docs-language-surface.md) | Page: what is the language (agents: not “no generics”) | ✅ | 116, 127, 125 |
