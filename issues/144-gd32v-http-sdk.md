@@ -1,23 +1,7 @@
 # 144 — GD32VW553 HTTP(+TLS PEM) as a separate SDK package (`gd32v_http`)
 
-**Status:** 🔨 Klin surface `@v0.1.0` ready (GET/POST + TLS PEM; host `klin test` PASS) — **blocked on empty GitHub repo** [`klin-lang/gd32v_http`](https://github.com/klin-lang/gd32v_http)  
+**Status:** ✅ [`gd32v_http@v0.1.0`](https://github.com/klin-lang/gd32v_http/releases/tag/v0.1.0) published (GET/POST + TLS PEM; host `klin test` PASS)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [137](137-gd32v-wifi-sdk.md) (IP first), [143](143-gd32v-sockets-sdk.md) (sockets sibling; not a hard link dep), [062](062-targets-esp-rp.md)
-
-## Publish (maintainer — one click)
-
-PATs available to cloud agents **cannot** `createRepository` under `klin-lang`
-(403). Create **one empty public repo** (no README / .gitignore / license):
-
-1. Open https://github.com/new  
-2. Owner: **klin-lang** · Name: **`gd32v_http`**  
-3. Description: `Klin GD32VW553 HTTP(+TLS PEM) client package`  
-4. Public · **do not** initialize with README/license/gitignore  
-5. Create repository  
-
-A background waiter will then push `main` + tag `v0.1.0` + GitHub Release.
-After that: `klin get github/klin-lang/gd32v_http@v0.1.0`.
-
-Offline backup: git bundle `gd32v_http-v0.1.0.bundle` (agent artifacts).
 
 ## Verdict
 

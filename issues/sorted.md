@@ -101,8 +101,8 @@ building the core from scratch.
 | [140](140-gd32v-ble-sdk.md) | `gd32v_ble` GD32VW553 advertise + GATT + central + gattc + jw-bond + UUID16 + passkey + UUID128/multi + privacy + Mesh OnOff + provisioner + Level/vendor + Friend/LPN + interactive OOB + string OOB / friendship params / vendor byte (GigaDevice AN152, not `machine_*`) | 🔨 advertise+GATT+scan/connect+gattc+jw-bond+uuid16+passkey+uuid128/multi+privacy+mesh+prov+level+friend+oob+string+friendparams+vndbyte `@v0.15.0` | 021, 024, 049, 061, 062, 136, 137 |
 | [141](141-machine-tinyavr.md) | `machine_tinyavr` tinyAVR 0/1/2-series Pin…Adc (ATtiny1624 MVP) | 💭 | 061, 062, 021 |
 | [142](142-machine-avr-atmega32u4.md) | `machine_avr` ATmega32U4 (Leonardo / Micro / Pro Micro) | ✅ `@v0.3.0` | 061, 107 |
-| [143](143-gd32v-sockets-sdk.md) | `gd32v_sockets` GD32VW553 LwIP BSD sockets (TCP/UDP; after `gd32v_wifi` IP) | 🔨 `@v0.1.0` ready — need empty [repo](https://github.com/klin-lang/gd32v_sockets) | 021, 024, 049, 062, 137 |
-| [144](144-gd32v-http-sdk.md) | `gd32v_http` GD32VW553 HTTP(+TLS PEM) client (after IP; no IDF crt bundle) | 🔨 `@v0.1.0` ready — need empty [repo](https://github.com/klin-lang/gd32v_http) | 021, 024, 049, 062, 137, 143 |
+| [143](143-gd32v-sockets-sdk.md) | `gd32v_sockets` GD32VW553 LwIP BSD sockets (TCP/UDP; after `gd32v_wifi` IP) | ✅ `@v0.1.0` | 021, 024, 049, 062, 137 |
+| [144](144-gd32v-http-sdk.md) | `gd32v_http` GD32VW553 HTTP(+TLS PEM) client (after IP; no IDF crt bundle) | ✅ `@v0.1.0` | 021, 024, 049, 062, 137, 143 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
 | [098](098-board-adafruit-rp2040-can-feather.md) | Board pack Adafruit RP2040 CAN Feather (MCP25625) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/adafruit_rp2040_can_feather)) | 061, 062, 075 |
