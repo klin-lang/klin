@@ -234,9 +234,9 @@ On the **`mesh_enable` node** (not provisioner):
 
 ## Scope (`@v0.15.0` — Mesh extras)
 
-- String OOB: auth **4** output string / **5** input string; actions **3** display (`mesh_oob_string`) / **4** enter (`mesh_oob_input_string`); node + provisioner advertise `DISPLAY_STRING` / `ENTER_STRING`  
-- Friendship param **readouts** (after establish): `mesh_lpn_queue_size` / `mesh_lpn_recv_window`; `mesh_friend_recv_delay` / `mesh_friend_poll_timeout` — from LPN/Friend callbacks; Friend **queue depth** stays SDK compile-time CONFIG (no runtime setter)  
-- Second vendor model (cid `0x05f1`, id `0x0001`): `mesh_vnd_byte` / `mesh_vnd_byte_set` / `mesh_vnd_byte_changed` (SET opcode `0x10`)  
+- String OOB (provisioner auth + node caps): auth **4** output string / **5** input string; actions **3** display (`mesh_oob_string`) / **4** enter (`mesh_oob_input_string`); node + provisioner advertise `DISPLAY_STRING` / `ENTER_STRING`  
+- Friendship param **readouts** after establish on a **`mesh_enable` node** (not provisioner): `mesh_lpn_queue_size` / `mesh_lpn_recv_window`; `mesh_friend_recv_delay` / `mesh_friend_poll_timeout` — from LPN/Friend callbacks; Friend **queue depth** stays SDK compile-time CONFIG (no runtime setter)  
+- Second vendor model on the **`mesh_enable` composition** (cid `0x05f1`, id `0x0001`): `mesh_vnd_byte` / `mesh_vnd_byte_set` / `mesh_vnd_byte_changed` (SET opcode `0x10`)  
 - `version()` → `15`  
 - Examples updated: `mesh_oob` / `mesh_friend` / `mesh_level`  
 - **Not** included (until later): more vendor models; runtime Friend queue-size knobs (SDK has none)
@@ -254,7 +254,7 @@ On the **`mesh_enable` node** (not provisioner):
 - No Klin GC / hidden heap — advertise name is a C string you pass in; GATT payloads are caller buffers + fixed per-slot 20-byte statics in C (max 4 slots); scan results are a fixed 16-row static table; GATT client uses a fixed 20-byte client buffer; bond keys live in **SDK flash storage**; passkey is an explicit `i32` PIN; 128-bit UUIDs are explicit 16-byte LE buffers. UUID table frozen at `init`. Unprov UUID table max 8. Static OOB is a fixed 16-byte buffer. OOB string buffer is fixed 17 bytes (16 + NUL).  
 - `privacy_enable` only when radio is idle (not advertising / scanning / connected).  
 - Mesh needs explicit SDK mesh + BLE_MAX; provisioner needs PROVISIONER+CDB; Friend/LPN need LOW_POWER / FRIEND; mesh stack buffers are **SDK contracts**.  
-- Interactive OOB: no Klin callbacks — poll `mesh_oob_action` / `mesh_prov_busy` after `mesh_prov_*_begin`.  
+- Interactive OOB: no Klin callbacks — poll `mesh_oob_action` / `mesh_prov_busy` after `mesh_prov_*_begin` (actions **1**/**2** number; **3**/**4** string via `mesh_oob_string` / `mesh_oob_input_string`).  
 - `mesh_enable` and `mesh_provisioner_enable` are mutually exclusive.  
 - SDK heap / OSAL BLE task / GAP / GATTS / GATTC / security / privacy / mesh / scan events are **SDK contracts**, documented in the package README.  
 - Errors are `i32` (0 = ok).  
