@@ -89,8 +89,8 @@ cross-compilation):
 | Windows x64 / arm64 | `klin-windows-amd64.zip` / `klin-windows-arm64.zip` |
 
 Each asset has `.sha256`. Homebrew covers macOS/Linux; Windows via **Scoop**
-(below) or the raw `.zip` from Release (WinGet — future, see
-[130](../issues/130-winget-scoop-windows.md)). On Windows the host C compiler
+or **WinGet** (below) or the raw `.zip` from Release
+([130](../issues/130-winget-scoop-windows.md)). On Windows the host C compiler
 for `klin run` is MSVC / clang / mingw.
 
 ## Linux (Release tarball, no Homebrew)
@@ -135,11 +135,14 @@ For arm64, replace `amd64` with `arm64` (`uname -m` → `aarch64`).
 `klin run` still needs a host C compiler on `PATH` (`gcc` / `clang` / `tcc`);
 `--emit-c` does not.
 
-## Windows (Scoop)
+## Windows (Scoop / WinGet)
 
-Prebuilt, no Dart. Bucket: [`klin-lang/scoop-klin`](https://github.com/klin-lang/scoop-klin)
-(wraps the `klin-windows-*.zip` Release assets; `stdlib\` + `templates\` ship
-beside `klin.exe`).
+Prebuilt, no Dart. Both channels wrap the `klin-windows-*.zip` Release assets
+(`stdlib\` + `templates\` ship beside `klin.exe`).
+
+### Scoop
+
+Bucket: [`klin-lang/scoop-klin`](https://github.com/klin-lang/scoop-klin).
 
 ```powershell
 scoop bucket add klin https://github.com/klin-lang/scoop-klin
@@ -152,6 +155,27 @@ Upgrade after a new `v*` release (the manifest auto-updates via
 
 ```powershell
 scoop update klin
+```
+
+### WinGet
+
+Manifests for `klin-lang.klin` live in this repo under
+[`winget/manifests/k/klin-lang/klin/`](../winget/manifests/k/klin-lang/klin/)
+(copy into [`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs);
+upstream submit is a maintainer action — see
+[130](../issues/130-winget-scoop-windows.md)).
+
+Once published in the community repo:
+
+```powershell
+winget install klin-lang.klin
+klin --version
+```
+
+Local test from a clone (before upstream merge):
+
+```powershell
+winget install --manifest .\winget\manifests\k\klin-lang\klin\0.1.3\
 ```
 
 `klin run` still needs a host C compiler on `PATH` (MSVC / clang / mingw);

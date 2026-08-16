@@ -100,13 +100,15 @@ curl -fsSL https://raw.githubusercontent.com/klin-lang/klin/main/scripts/install
 klin --version
 ```
 
-Details (manual extract, Scoop, CLT): [docs/17-homebrew.md](docs/17-homebrew.md).
+Details (manual extract, Scoop, WinGet, CLT): [docs/17-homebrew.md](docs/17-homebrew.md).
 
-**Windows** (Scoop, prebuilt, no Dart):
+**Windows** (Scoop or WinGet, prebuilt, no Dart):
 
 ```powershell
 scoop bucket add klin https://github.com/klin-lang/scoop-klin
 scoop install klin
+# or, once published to microsoft/winget-pkgs:
+# winget install klin-lang.klin
 klin --version
 ```
 

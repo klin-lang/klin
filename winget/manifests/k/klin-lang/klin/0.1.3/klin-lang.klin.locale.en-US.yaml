@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: klin-lang.klin
+PackageVersion: 0.1.3
+PackageLocale: en-US
+Publisher: klin-lang
+PublisherUrl: https://github.com/klin-lang
+PublisherSupportUrl: https://github.com/klin-lang/klin/issues
+Author: Marek Krzyżowski
+PackageName: Klin
+PackageUrl: https://github.com/klin-lang/klin
+License: MIT
+LicenseUrl: https://github.com/klin-lang/klin/blob/HEAD/LICENSE
+ShortDescription: Systems language that compiles to C
+Description: |-
+  Klin is a systems language compiled to readable C. This package installs the
+  Klin frontend (klin.exe) plus stdlib\ and templates\ beside the binary.
+  klin run still needs a host C compiler on PATH (MSVC / clang / mingw);
+  --emit-c does not.
+Moniker: klin
+Tags:
+  - compiler
+  - systems
+  - c
+  - embedded
+ReleaseNotesUrl: https://github.com/klin-lang/klin/releases/tag/v0.1.3
+InstallationNotes: |-
+  stdlib\ and templates\ must stay next to klin.exe. klin run needs a host C
+  compiler (MSVC / clang / mingw); --emit-c does not.
+Documentations:
+  - DocumentLabel: Install
+    DocumentUrl: https://github.com/klin-lang/klin/blob/HEAD/docs/17-homebrew.md
+  - DocumentLabel: CLI
+    DocumentUrl: https://github.com/klin-lang/klin/blob/HEAD/docs/06-cli.md
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0
