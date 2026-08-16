@@ -73,3 +73,4 @@ klin get github/klin-lang/esp_http@v0.1.0
 - Dual Wi‑Fi+ETH: [113](113-esp-netif-dual-idf.md)  
 - Sockets: [111](111-esp-sockets-idf.md)  
 - IoT later: [105](105-later-tracks-iot.md)  
+- VW553 twin (different engine; PEM only, no crt bundle): [144](144-gd32v-http-sdk.md) / [`gd32v_http`](https://github.com/klin-lang/gd32v_http)  

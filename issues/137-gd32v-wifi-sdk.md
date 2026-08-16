@@ -107,7 +107,9 @@ Changelog: … → `@v0.5.0` APSTA → `@v0.6.0` roaming
 
 - WPS / EAP-TLS  
 - BLE — [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [140](140-gd32v-ble-sdk.md) (AN152), not this package  
-- Sockets / HTTP / MQTT  
+- Sockets / HTTP — [143](143-gd32v-sockets-sdk.md) / [144](144-gd32v-http-sdk.md) (`gd32v_sockets` / `gd32v_http`; not this package)  
+- MQTT  
+
 - Board pack / `klin init` — [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) [138](138-board-gd32vw553h-eval.md) (no radio API there)  
 - Vendoring `GD32VW55x_WiFi_BLE_SDK`  
 - Using [`esp_wifi`](https://github.com/klin-lang/esp_wifi) on VW553 (wrong engine)
@@ -250,4 +252,5 @@ klin get github/klin-lang/gd32v_wifi@v0.6.0
 - Chip MMIO: [136](136-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
 - Board pack: [138](138-board-gd32vw553h-eval.md) / [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval)  
 - ESP radio sibling (different engine): [101](101-esp-wifi-idf.md)  
+- Sockets / HTTP (after IP): [143](143-gd32v-sockets-sdk.md) / [144](144-gd32v-http-sdk.md)  
 - Catalog: [061](061-micropython-machine-api.md), targets [062](062-targets-esp-rp.md)  
