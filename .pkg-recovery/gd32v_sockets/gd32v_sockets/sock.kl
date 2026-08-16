@@ -1,0 +1,114 @@
+/// GD32VW55x LwIP BSD sockets — thin Klin surface over `sock_sdk.c`.
+/// Does **not** bring up Wi‑Fi — use [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi)
+/// first for an IP. Not [`esp_sockets`](https://github.com/klin-lang/esp_sockets) (ESP-IDF).
+/// Caller owns all buffers; DNS (`connect_host`) is an LwIP/SDK cost.
+module gd32v_sockets
+
+@[link("sock_sdk.c")]
+@[cimport, codename("klin_gd32v_sock_tcp")]
+fn klin_gd32v_sock_tcp(): i32
+
+@[cimport, codename("klin_gd32v_sock_udp")]
+fn klin_gd32v_sock_udp(): i32
+
+@[cimport, codename("klin_gd32v_sock_connect_ipv4")]
+fn klin_gd32v_sock_connect_ipv4(fd: i32, ip: u32, port: i32): i32
+
+@[cimport, codename("klin_gd32v_sock_connect_host")]
+fn klin_gd32v_sock_connect_host(fd: i32, host: str, port: i32): i32
+
+@[cimport, codename("klin_gd32v_sock_bind")]
+fn klin_gd32v_sock_bind(fd: i32, port: i32): i32
+
+@[cimport, codename("klin_gd32v_sock_listen")]
+fn klin_gd32v_sock_listen(fd: i32, backlog: i32): i32
+
+@[cimport, codename("klin_gd32v_sock_accept")]
+fn klin_gd32v_sock_accept(fd: i32): i32
+
+@[cimport, codename("klin_gd32v_sock_send")]
+fn klin_gd32v_sock_send(fd: i32, buf: *u8, len: i32): i32
+
+@[cimport, codename("klin_gd32v_sock_recv")]
+fn klin_gd32v_sock_recv(fd: i32, buf: *mut u8, max_len: i32): i32
+
+@[cimport, codename("klin_gd32v_sock_sendto")]
+fn klin_gd32v_sock_sendto(fd: i32, buf: *u8, len: i32, ip: u32, port: i32): i32
+
+@[cimport, codename("klin_gd32v_sock_recvfrom")]
+fn klin_gd32v_sock_recvfrom(fd: i32, buf: *mut u8, max_len: i32, out_ip: *mut u32, out_port: *mut i32): i32
+
+@[cimport, codename("klin_gd32v_sock_close")]
+fn klin_gd32v_sock_close(fd: i32): i32
+
+@[cimport, codename("klin_gd32v_sock_set_recv_timeout_ms")]
+fn klin_gd32v_sock_set_recv_timeout_ms(fd: i32, ms: i32): i32
+
+/// Success for bind / connect / listen / close / timeout setters.
+pub fn err_ok(): i32 {
+    return 0
+}
+
+/// Pack `a.b.c.d` into lwIP `u32` order (little-endian host on VW553).
+pub fn ipv4(a: u32, b: u32, c: u32, d: u32): u32 {
+    return a | (b << 8) | (c << 16) | (d << 24)
+}
+
+/// TCP socket. Returns fd ≥ 0, or `-1`.
+pub fn tcp(): i32 {
+    return klin_gd32v_sock_tcp()
+}
+
+/// UDP socket. Returns fd ≥ 0, or `-1`.
+pub fn udp(): i32 {
+    return klin_gd32v_sock_udp()
+}
+
+pub fn connect_ipv4(fd: i32, ip: u32, port: i32): i32 {
+    return klin_gd32v_sock_connect_ipv4(fd, ip, port)
+}
+
+/// TCP connect with DNS (`getaddrinfo`). Returns `0` or `-1`.
+pub fn connect_host(fd: i32, host: str, port: i32): i32 {
+    return klin_gd32v_sock_connect_host(fd, host, port)
+}
+
+pub fn bind(fd: i32, port: i32): i32 {
+    return klin_gd32v_sock_bind(fd, port)
+}
+
+pub fn listen(fd: i32, backlog: i32): i32 {
+    return klin_gd32v_sock_listen(fd, backlog)
+}
+
+/// Returns accepted fd ≥ 0, or `-1`.
+pub fn accept(fd: i32): i32 {
+    return klin_gd32v_sock_accept(fd)
+}
+
+/// Send caller buffer. Returns bytes sent, or `-1`.
+pub fn send(fd: i32, buf: *u8, len: i32): i32 {
+    return klin_gd32v_sock_send(fd, buf, len)
+}
+
+/// Recv into caller buffer. Returns bytes, `0` on peer close, or `-1`.
+pub fn recv(fd: i32, buf: *mut u8, max_len: i32): i32 {
+    return klin_gd32v_sock_recv(fd, buf, max_len)
+}
+
+pub fn sendto(fd: i32, buf: *u8, len: i32, ip: u32, port: i32): i32 {
+    return klin_gd32v_sock_sendto(fd, buf, len, ip, port)
+}
+
+pub fn recvfrom(fd: i32, buf: *mut u8, max_len: i32, out_ip: *mut u32, out_port: *mut i32): i32 {
+    return klin_gd32v_sock_recvfrom(fd, buf, max_len, out_ip, out_port)
+}
+
+pub fn close(fd: i32): i32 {
+    return klin_gd32v_sock_close(fd)
+}
+
+/// `SO_RCVTIMEO` in ms (`0` = blocking). Returns `0` or `-1`.
+pub fn set_recv_timeout_ms(fd: i32, ms: i32): i32 {
+    return klin_gd32v_sock_set_recv_timeout_ms(fd, ms)
+}

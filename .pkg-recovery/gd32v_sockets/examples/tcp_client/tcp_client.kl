@@ -1,0 +1,26 @@
+// GD32VW553 TCP client via klin-lang/gd32v_sockets @v0.1.0.
+// Bring up Wi‑Fi IP with gd32v_wifi first (not shown). Needs LwIP from SDK.
+//   make emit KLIN=/path/to/klin/bin/klin.dart
+import "../../gd32v_sockets" sock
+
+fn main() {
+    let fd = sock.tcp()
+    if fd < 0 {
+        return
+    }
+    let mut e = sock.connect_host(fd, "example.com", 80)
+    if e != sock.err_ok() {
+        let _ = sock.close(fd)
+        return
+    }
+    let mut hi: [5]u8
+    hi[0] = 71
+    hi[1] = 69
+    hi[2] = 84
+    hi[3] = 32
+    hi[4] = 47
+    let _n = sock.send(fd, cast(*u8, &hi[0]), 5)
+    let mut buf: [128]u8
+    let _r = sock.recv(fd, cast(*mut u8, &buf[0]), 128)
+    let _ = sock.close(fd)
+}

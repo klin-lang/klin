@@ -1,0 +1,59 @@
+/// GD32VW55x HTTP(+TLS PEM) client — thin Klin surface over `http_sdk.c`.
+/// Does **not** bring up Wi‑Fi — use [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi)
+/// first for an IP. Sibling of [`gd32v_sockets`](https://github.com/klin-lang/gd32v_sockets).
+/// Not [`esp_http`](https://github.com/klin-lang/esp_http) (ESP-IDF).
+/// Response body → **caller** buffer. TLS: explicit PEM only (no IDF-style crt bundle).
+module gd32v_http
+
+@[link("http_sdk.c")]
+@[cimport, codename("klin_gd32v_http_get")]
+fn klin_gd32v_http_get(url: str, out_body: *mut u8, out_cap: i32): i32
+
+@[cimport, codename("klin_gd32v_http_post")]
+fn klin_gd32v_http_post(url: str, body: *u8, body_len: i32, out_body: *mut u8, out_cap: i32): i32
+
+@[cimport, codename("klin_gd32v_http_get_tls_pem")]
+fn klin_gd32v_http_get_tls_pem(url: str, ca_pem: str, out_body: *mut u8, out_cap: i32): i32
+
+@[cimport, codename("klin_gd32v_http_post_tls_pem")]
+fn klin_gd32v_http_post_tls_pem(url: str, ca_pem: str, body: *u8, body_len: i32, out_body: *mut u8, out_cap: i32): i32
+
+@[cimport, codename("klin_gd32v_http_last_status")]
+fn klin_gd32v_http_last_status(): i32
+
+@[cimport, codename("klin_gd32v_http_last_content_length")]
+fn klin_gd32v_http_last_content_length(): i32
+
+pub fn err_ok(): i32 {
+    return 0
+}
+
+/// Last HTTP status after a successful header fetch (else `0`).
+pub fn last_status(): i32 {
+    return klin_gd32v_http_last_status()
+}
+
+/// Last Content-Length (`-1` if unknown / not present).
+pub fn last_content_length(): i32 {
+    return klin_gd32v_http_last_content_length()
+}
+
+/// HTTP GET into caller buffer. Returns bytes written, or `-1`.
+pub fn get(url: str, out: *mut u8, out_max: i32): i32 {
+    return klin_gd32v_http_get(url, out, out_max)
+}
+
+/// HTTP POST; body is caller buffer. Returns response body bytes, or `-1`.
+pub fn post(url: str, body: *u8, body_len: i32, out: *mut u8, out_max: i32): i32 {
+    return klin_gd32v_http_post(url, body, body_len, out, out_max)
+}
+
+/// HTTPS GET with caller PEM CA/server cert (NUL-terminated C string).
+pub fn get_tls_pem(url: str, cert_pem: str, out: *mut u8, out_max: i32): i32 {
+    return klin_gd32v_http_get_tls_pem(url, cert_pem, out, out_max)
+}
+
+/// HTTPS POST with caller PEM.
+pub fn post_tls_pem(url: str, cert_pem: str, body: *u8, body_len: i32, out: *mut u8, out_max: i32): i32 {
+    return klin_gd32v_http_post_tls_pem(url, cert_pem, body, body_len, out, out_max)
+}

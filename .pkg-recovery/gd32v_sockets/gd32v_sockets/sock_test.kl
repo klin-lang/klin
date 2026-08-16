@@ -1,0 +1,76 @@
+module gd32v_sockets
+
+import testing
+
+fn test_tcp_connect_send_recv() {
+    let mut fd: i32
+    let mut hi: [5]u8
+    let mut buf: [64]u8
+    let mut n: i32
+
+    fd = tcp()
+    testing.assert(fd >= 0)
+    testing.assert_eq_i32(connect_ipv4(fd, ipv4(192, 168, 1, 10), 8080), 0)
+    hi[0] = 104
+    hi[1] = 101
+    hi[2] = 108
+    hi[3] = 108
+    hi[4] = 111
+    testing.assert_eq_i32(send(fd, cast(*u8, &hi[0]), 5), 5)
+    n = recv(fd, cast(*mut u8, &buf[0]), 64)
+    testing.assert(n > 0)
+    testing.assert_eq_i32(set_recv_timeout_ms(fd, 1000), 0)
+    testing.assert_eq_i32(close(fd), 0)
+}
+
+fn test_tcp_connect_host() {
+    let mut fd: i32
+
+    fd = tcp()
+    testing.assert(fd >= 0)
+    testing.assert_eq_i32(connect_host(fd, "example.com", 80), 0)
+    testing.assert_eq_i32(close(fd), 0)
+}
+
+fn test_udp_bind_sendto() {
+    let mut u: i32
+    let mut hi: [5]u8
+    let mut buf: [64]u8
+    let mut rip: u32
+    let mut rport: i32
+    let mut n: i32
+
+    u = udp()
+    testing.assert(u >= 0)
+    testing.assert_eq_i32(bind(u, 9000), 0)
+    hi[0] = 104
+    hi[1] = 101
+    hi[2] = 108
+    hi[3] = 108
+    hi[4] = 111
+    testing.assert_eq_i32(sendto(u, cast(*u8, &hi[0]), 5, ipv4(192, 168, 1, 1), 9000), 5)
+    rip = 0
+    rport = 0
+    n = recvfrom(u, cast(*mut u8, &buf[0]), 64, cast(*mut u32, &rip), cast(*mut i32, &rport))
+    testing.assert(n > 0)
+    testing.assert_eq_i32(close(u), 0)
+}
+
+fn test_listen_accept() {
+    let mut fd: i32
+    let mut cfd: i32
+
+    fd = tcp()
+    testing.assert(fd >= 0)
+    testing.assert_eq_i32(bind(fd, 8080), 0)
+    testing.assert_eq_i32(listen(fd, 2), 0)
+    cfd = accept(fd)
+    testing.assert(cfd >= 0)
+    testing.assert_eq_i32(close(cfd), 0)
+    testing.assert_eq_i32(close(fd), 0)
+}
+
+fn test_bad_fd() {
+    testing.assert_eq_i32(connect_ipv4(0 - 1, ipv4(1, 2, 3, 4), 80), 0 - 1)
+    testing.assert_eq_i32(close(0 - 1), 0 - 1)
+}

@@ -1,0 +1,39 @@
+// emit-c / host smoke for gd32v_sockets (stubs without LwIP).
+import "../../gd32v_sockets" sock
+
+fn main() {
+    let fd = sock.tcp()
+    if fd < 0 {
+        return
+    }
+    let mut e = sock.connect_ipv4(fd, sock.ipv4(192, 168, 1, 10), 8080)
+    if e != sock.err_ok() {
+        return
+    }
+    let mut hi: [5]u8
+    hi[0] = 104
+    hi[1] = 101
+    hi[2] = 108
+    hi[3] = 108
+    hi[4] = 111
+    let _n = sock.send(fd, cast(*u8, &hi[0]), 5)
+    let mut buf: [64]u8
+    let _r = sock.recv(fd, cast(*mut u8, &buf[0]), 64)
+    let _t = sock.set_recv_timeout_ms(fd, 1000)
+    let _c = sock.close(fd)
+
+    let u = sock.udp()
+    if u < 0 {
+        return
+    }
+    e = sock.bind(u, 9000)
+    if e != sock.err_ok() {
+        return
+    }
+    let _s = sock.sendto(u, cast(*u8, &hi[0]), 5, sock.ipv4(192, 168, 1, 1), 9000)
+    let mut rip: u32 = 0
+    let mut rport: i32 = 0
+    let _rf = sock.recvfrom(u, cast(*mut u8, &buf[0]), 64, cast(*mut u32, &rip), cast(*mut i32, &rport))
+    let _uc = sock.close(u)
+    let _v = sock.version()
+}

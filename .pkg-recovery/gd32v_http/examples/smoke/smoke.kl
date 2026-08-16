@@ -1,0 +1,27 @@
+// emit-c / host smoke for gd32v_http (stubs without LwIP).
+import "../../gd32v_http" http
+
+fn main() {
+    let mut buf: [64]u8
+    let n = http.get("http://example.com/", cast(*mut u8, &buf[0]), 64)
+    if n < 0 {
+        return
+    }
+    let _st = http.last_status()
+    let _cl = http.last_content_length()
+
+    let mut body: [4]u8
+    body[0] = 112
+    body[1] = 105
+    body[2] = 110
+    body[3] = 103
+    let p = http.post("http://example.com/api", cast(*u8, &body[0]), 4, cast(*mut u8, &buf[0]), 64)
+    if p < 0 {
+        return
+    }
+    let t = http.get_tls_pem("https://example.com/", "pem", cast(*mut u8, &buf[0]), 64)
+    if t < 0 {
+        return
+    }
+    let _v = http.version()
+}

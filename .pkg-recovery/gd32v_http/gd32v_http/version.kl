@@ -1,0 +1,5 @@
+module gd32v_http
+
+pub fn version(): i32 {
+    return 1
+}

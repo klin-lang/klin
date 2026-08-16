@@ -1,0 +1,14 @@
+// Hardware sketch: HTTP GET after gd32v_wifi STA IP (bring-up not shown).
+// Needs GD32VW55x_WiFi_BLE_SDK + LwIP on the include/link path.
+//   make emit KLIN=/path/to/klin/bin/klin.dart
+import "../../gd32v_http" http
+
+fn main() {
+    let mut buf: [512]u8
+    let n = http.get("http://example.com/", cast(*mut u8, &buf[0]), 512)
+    if n < 0 {
+        return
+    }
+    let _st = http.last_status()
+    let _cl = http.last_content_length()
+}

@@ -1,0 +1,35 @@
+module gd32v_http
+
+import testing
+
+fn test_get_host_stub() {
+    let mut buf: [64]u8
+    let n = get("http://example.com/", cast(*mut u8, &buf[0]), 64)
+    testing.assert(n > 0)
+    testing.assert_eq_i32(last_status(), 200)
+    testing.assert_eq_i32(last_content_length(), 2)
+}
+
+fn test_post_host_stub() {
+    let mut body: [4]u8
+    let mut buf: [64]u8
+    let mut n: i32
+    body[0] = 112
+    body[1] = 105
+    body[2] = 110
+    body[3] = 103
+    n = post("http://example.com/api", cast(*u8, &body[0]), 4, cast(*mut u8, &buf[0]), 64)
+    testing.assert(n > 0)
+    testing.assert_eq_i32(last_status(), 200)
+}
+
+fn test_get_tls_pem_host_stub() {
+    let mut buf: [64]u8
+    let n = get_tls_pem("https://example.com/", "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n", cast(*mut u8, &buf[0]), 64)
+    testing.assert(n > 0)
+    testing.assert_eq_i32(last_status(), 200)
+}
+
+fn test_bad_out() {
+    testing.assert_eq_i32(get("http://example.com/", cast(*mut u8, 0), 0), 0 - 1)
+}

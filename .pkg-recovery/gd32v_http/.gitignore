@@ -1,0 +1,4 @@
+out/
+examples/**/out/
+*.elf
+.DS_Store
