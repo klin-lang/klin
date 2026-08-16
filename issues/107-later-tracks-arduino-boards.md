@@ -32,7 +32,7 @@ slice (chip `machine_*` first, then thin board pack / `klin init` if useful).
 
 | # | Board | SoC | Likely Klin home | What is needed |
 |---|---|---|---|---|
-| A | **Leonardo** (also Micro / Pro Micro) | **ATmega32U4** | Extend [`machine_avr`](https://github.com/klin-lang/machine_avr) | **Implementation issue:** [142](142-machine-avr-atmega32u4.md) 🔨 patch ready (`patches/machine_avr-v0.3.0-atmega32u4.patch`). **Closest win.** New pin / port map (32U4 ≠ 328P); Pin…Adc MMIO like 328P. Native **USB device** (CDC/HID) is separate — USB stack or thin `@[link]` later; MVP can be GPIO + UART without HID. Toolchain: existing `avr-gcc`. Flash: `avrdude` (Caterina / DFU). |
+| A | **Leonardo** (also Micro / Pro Micro) | **ATmega32U4** | Extend [`machine_avr`](https://github.com/klin-lang/machine_avr) | ✅ [142](142-machine-avr-atmega32u4.md) / [`@v0.3.0`](https://github.com/klin-lang/machine_avr/releases/tag/v0.3.0). USB CDC/HID later. |
 | B | **Uno R4** Minima | **Renesas RA4M1** (Cortex-M4 @ 48 MHz, 256 KB flash / 32 KB SRAM, 5 V I/O) | **New** `machine_ra` / `machine_renesas` (not `machine_avr`, not STM32) | First **Renesas RA** port: clock (HOCO/PLL), IOPORT + PFS pinmux, GPT/AGT PWM, SCI UART, IIC, SPI, ADC14, optional DAC12. Startup + linker for RA4M1. Flash: CMSIS-DAP / `bossac`-class or Renesas tools — document explicitly. Optional: FSP as C engine behind Klin FFI (like IDF for ESP) **or** pure MMIO — pick one and keep costs visible. |
 | B2 | **Uno R4 WiFi** | RA4M1 + **ESP32-S3** co-processor (radio) | Same `machine_ra` + [`esp_wifi`](https://github.com/klin-lang/esp_wifi) / [`esp_ble`](https://github.com/klin-lang/esp_ble) on the S3 side | Board pack must describe **two** chips and how they talk (Arduino uses a serial bridge). Do not pretend Wi‑Fi lives inside RA4M1 MMIO. |
 | C | **Due** | **Atmel SAM3X8E** (Cortex-M3 @ 84 MHz, 512 KB flash / 96 KB SRAM, **3.3 V only**) | **New** `machine_sam` / `machine_sam3x` | New Arm family: PMC clocks, PIO, PWM, UART/USART, TWI, SPI, ADC12, DAC. Startup/vectors for SAM3X. Flash: `bossac` / native USB. **Not** compatible with 5 V Uno shields. No Klin SAM port today. |
@@ -42,7 +42,7 @@ slice (chip `machine_*` first, then thin board pack / `klin init` if useful).
 
 ## Suggested ship order (technical, not calendar)
 
-1. **A Leonardo Pin…** — smallest delta on existing `machine_avr` → [142](142-machine-avr-atmega32u4.md).  
+1. ~~**A Leonardo Pin…**~~ — ✅ [142](142-machine-avr-atmega32u4.md) / `machine_avr@v0.3.0`.  
 2. **B Uno R4 Minima Pin…** — unlocks Renesas RA family (needed again for C33).  
 3. **D STM32H7 Pin… (M7)** — unlocks both Giga and Portenta H7.  
 4. **C Due** — new SAM3X family (no reuse).  
