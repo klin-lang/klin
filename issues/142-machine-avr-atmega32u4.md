@@ -1,7 +1,6 @@
 # 142 — `machine_avr`: ATmega32U4 (Leonardo / Micro / Pro Micro)
 
-**Status:** 🔨 implementation ready (awaiting merge/tag on
-[`machine_avr`](https://github.com/klin-lang/machine_avr); agent had no push)  
+**Status:** ✅ done — [`machine_avr@v0.3.0`](https://github.com/klin-lang/machine_avr/releases/tag/v0.3.0)  
 **Depends on:** [061](061-micropython-machine-api.md), [107](107-later-tracks-arduino-boards.md), [`machine_avr`](https://github.com/klin-lang/machine_avr)
 
 Spun out from queue row **A** in [107](107-later-tracks-arduino-boards.md).
@@ -11,27 +10,19 @@ Spun out from queue row **A** in [107](107-later-tracks-arduino-boards.md).
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | Extend existing [`klin-lang/machine_avr`](https://github.com/klin-lang/machine_avr) |
+| Where does the code live? | [`klin-lang/machine_avr`](https://github.com/klin-lang/machine_avr) `@v0.3.0` |
 | Boards | Arduino **Leonardo**, **Micro**, **Pro Micro** (and 32U4 clones) |
 | Chip | **ATmega32U4** |
-| Why here? | Same **classic megaAVR** generation as 328P / 2560 — closest win |
+| Why here? | Same **classic megaAVR** generation as 328P / 2560 |
 | Why not `machine_tinyavr`? | 32U4 is not AVRxt / UPDI tinyAVR ([141](141-machine-tinyavr.md)) |
 
 **32U4 ≠ 328P** pin / port map. Twin factories (`*_32u4`) — no `#ifdef`
-mega-driver. Do not confuse with Nano Every (ATmega4809) or tinyAVR.
+mega-driver.
 
-## Implementation (ready)
-
-Patch (apply on `machine_avr` `main`):  
-[`patches/machine_avr-v0.3.0-atmega32u4.patch`](../patches/machine_avr-v0.3.0-atmega32u4.patch)
+## Published
 
 ```sh
-cd machine_avr
-git apply /path/to/klin/patches/machine_avr-v0.3.0-atmega32u4.patch
-# or: git am < patch
-klin test machine_avr/          # host tests PASS
-cd examples/blink_leonardo && make emit
-# tag v0.3.0 when merged
+klin get github/klin-lang/machine_avr@v0.3.0
 ```
 
 | API | Notes |
@@ -44,23 +35,17 @@ cd examples/blink_leonardo && make emit
 | `spi_out_32u4` | soft NSS |
 | `adc_out_32u4` | A0 = PF7 ch 7 |
 | examples | `blink_leonardo`, `pwm_leonardo`, `uart_leonardo`, `adc_leonardo` |
-| `version()` | **3** → publish as `@v0.3.0` |
+| `version()` | **3** |
 
-## Out of scope (MVP)
+Upstream: [machine_avr#2](https://github.com/klin-lang/machine_avr/pull/2).  
+Historical apply patch (already merged): [`patches/machine_avr-v0.3.0-atmega32u4.patch`](../patches/machine_avr-v0.3.0-atmega32u4.patch).
 
-- Native **USB device** (CDC / HID / MIDI) — separate later tag
-- Wiring / `.ino` / Arduino core compatibility
-- ATmega4809 (Nano Every) — not 32U4
-- tinyAVR / AVR Dx — [141](141-machine-tinyavr.md)
-- Board pack / `klin init` until tag is published ([075](075-board-pack-init-host.md))
+## Out of scope (still)
 
-## Suggested ship slices
-
-1. ~~**Pin** + blink~~ — in patch  
-2. ~~**Pwm** / **Rc** / **Uart** / **I2c** / **Spi** / **Adc**~~ — in patch  
-3. Merge + tag `v0.3.0` on `machine_avr`  
-4. Optional thin board notes in [docs/arduino.md](../docs/arduino.md) after tag  
-5. USB CDC/HID — only after Pin…Adc ships
+- Native **USB device** (CDC / HID / MIDI) — later tag
+- Wiring / `.ino`
+- ATmega4809 / tinyAVR — [141](141-machine-tinyavr.md)
+- Board pack / `klin init` ([075](075-board-pack-init-host.md))
 
 ## Links
 
