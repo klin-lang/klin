@@ -1,6 +1,6 @@
 # 143 — GD32VW553 LwIP sockets as a separate SDK package (`gd32v_sockets`)
 
-**Status:** 🔨 Klin surface `@v0.1.0` ready (TCP/UDP BSD) — publish when empty [`klin-lang/gd32v_sockets`](https://github.com/klin-lang/gd32v_sockets) exists  
+**Status:** ✅ [`gd32v_sockets@v0.1.0`](https://github.com/klin-lang/gd32v_sockets/releases/tag/v0.1.0) published (TCP/UDP BSD; host `klin test` PASS)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [137](137-gd32v-wifi-sdk.md) (IP first), [062](062-targets-esp-rp.md)
 
 ## Verdict
