@@ -120,7 +120,7 @@ Changelog: … → `@v0.6.0` roaming → `@v0.7.0` WPS+EAP-TLS
 - BLE — [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [140](140-gd32v-ble-sdk.md) (AN152), not this package  
 - Sockets / HTTP — [143](143-gd32v-sockets-sdk.md) / [144](144-gd32v-http-sdk.md) (`gd32v_sockets` / `gd32v_http`; not this package)  
 - OTA — [145](145-gd32v-ota-sdk.md) (`gd32v_ota`)  
-- MQTT — [105](105-later-tracks-iot.md)  
+- MQTT — [146](146-gd32v-mqtt-sdk.md) (`gd32v_mqtt` client)  
 
 - Board pack / `klin init` — [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) [138](138-board-gd32vw553h-eval.md) (no radio API there)  
 - Vendoring `GD32VW55x_WiFi_BLE_SDK`  
