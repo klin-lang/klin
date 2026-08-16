@@ -1,6 +1,6 @@
 # 137 — GD32VW553 Wi‑Fi as a separate SDK package (`gd32v_wifi`)
 
-**Status:** 🔨 STA + SoftAP + scan + link + static + APSTA published [`@v0.5.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.5.0)  
+**Status:** 🔨 STA + SoftAP + scan + link + static + APSTA + roaming published [`@v0.6.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.6.0)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [136](136-machine-gd32v-gd32vw553.md)
 **Formerly:** `126` (renumbered to resolve duplicate issue numbers).
 
@@ -9,7 +9,7 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: [`klin-lang/gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.5.0` |
+| Where does the code live? | External: [`klin-lang/gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) `@v0.6.0` |
 | Engine | **GigaDevice VW55x Wi‑Fi BLE SDK** (`wifi_management` / `wifi_net_ip` / lwIP / OSAL) — not MMIO, **not** ESP-IDF |
 | Relation to `machine_gd32v` | **Separate.** [136](136-machine-gd32v-gd32vw553.md) Pin…Adc twins stay MMIO. Same split as [`esp_wifi`](https://github.com/klin-lang/esp_wifi) vs `machine_esp` ([101](101-esp-wifi-idf.md)). |
 | BLE | Sibling [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [140](140-gd32v-ble-sdk.md) (advertise+GATT+scan/connect+gattc+jw-bond+uuid16+passkey+uuid128/multi+privacy+mesh+prov+level+friend+oob `@v0.14.0`) — same split as [106](106-esp-ble-idf.md) |
@@ -92,9 +92,20 @@ Changelog: `@v0.1.0` STA+DHCP → `@v0.2.0` SoftAP → `@v0.3.0` scan → `@v0.4
 
 Changelog: … → `@v0.4.0` link+static → `@v0.5.0` APSTA
 
+## Scope (`@v0.6.0` — roaming)
+
+- `roaming_set(enable, rssi_th)` — `wifi_management_roaming_set` after `sta_init`  
+- `rssi_th` is int8 dBm (e.g. `-70`); when enabling, `0` keeps the prior threshold (SDK behavior)  
+- `roaming` / `roaming_rssi_th` — enable flag + current threshold  
+- Engine: SDK preroam when RSSI drops below threshold (same ESS / BSSID switch is an **SDK contract**)  
+- `version()` → `6`  
+- Example `examples/roaming/`  
+
+Changelog: … → `@v0.5.0` APSTA → `@v0.6.0` roaming
+
 ## Out of scope (this tag)
 
-- Roaming / WPS / EAP-TLS  
+- WPS / EAP-TLS  
 - BLE — [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) [140](140-gd32v-ble-sdk.md) (AN152), not this package  
 - Sockets / HTTP / MQTT  
 - Board pack / `klin init` — [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval) [138](138-board-gd32vw553h-eval.md) (no radio API there)  
@@ -104,7 +115,7 @@ Changelog: … → `@v0.4.0` link+static → `@v0.5.0` APSTA
 ## Contract (prime rule)
 
 - No Klin GC / hidden heap — SSID/pass are C strings you pass in; scan SSID goes into a **caller** buffer.  
-- SDK heap / OSAL task / eloop / lwIP DHCP / SoftAP DHCPS / concurrent / scan result list malloc are **SDK contracts**, documented in the package README.  
+- SDK heap / OSAL task / eloop / lwIP DHCP / SoftAP DHCPS / concurrent / roaming / scan result list malloc are **SDK contracts**, documented in the package README.  
 - APSTA needs explicit `concurrent_set(1)` and `CFG_WIFI_CONCURRENT`.  
 - Scan result table max **16** (fixed in C, documented).  
 - Errors are `i32` (0 = ok, same as `wifi_management_*`).  
@@ -213,14 +224,27 @@ fn main() {
 }
 ```
 
+## Usage (roaming)
+
+```klin
+import "github/klin-lang/gd32v_wifi" wifi
+
+fn main() {
+    let mut e = wifi.sta_init()
+    e = wifi.roaming_set(1, 0 - 70)
+    e = wifi.sta_connect("myssid", "mypass")
+    e = wifi.sta_wait_ip(20000)
+}
+```
+
 ```sh
-klin get github/klin-lang/gd32v_wifi@v0.5.0
+klin get github/klin-lang/gd32v_wifi@v0.6.0
 ```
 
 ## Links
 
 - Package: https://github.com/klin-lang/gd32v_wifi  
-- Tag: [v0.5.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.5.0) (link+static [v0.4.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.4.0), scan [v0.3.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.3.0), SoftAP [v0.2.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.2.0), STA [v0.1.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0))  
+- Tag: [v0.6.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.6.0) (APSTA [v0.5.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.5.0), link+static [v0.4.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.4.0), scan [v0.3.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.3.0), SoftAP [v0.2.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.2.0), STA [v0.1.0](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.1.0))  
 - SDK: https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK  
 - AN158 Wi‑Fi Development Guide (GigaDevice)  
 - Chip MMIO: [136](136-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
