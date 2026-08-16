@@ -219,9 +219,9 @@ On the **`mesh_enable` node** (not provisioner):
 
 ## Scope (`@v0.14.0` — Mesh interactive OOB)
 
-- `mesh_oob_auth_set(mode)` / `mesh_oob_auth` — provisioner auth: **0** none (default), **1** output (`DISPLAY_NUMBER`), **2** input (`ENTER_NUMBER`), **3** static  
+- `mesh_oob_auth_set(mode)` / `mesh_oob_auth` — provisioner auth: **0** none (default), **1** output (`DISPLAY_NUMBER` on device → provisioner **enters**), **2** input (`ENTER_NUMBER` on device → provisioner **displays**), **3** static  
 - `mesh_oob_static_set(data, len)` — static OOB bytes (**1..=16**); before `mesh_enable` (node) or `auth_set(3)`  
-- `mesh_oob_action` — **0** idle / **1** display `mesh_oob_number` / **2** enter via `mesh_oob_input_number`  
+- `mesh_oob_action` — **0** idle / **1** display `mesh_oob_number` (typical for auth **2**) / **2** enter via `mesh_oob_input_number` (typical for auth **1**; number comes from the peer device, not from `mesh_oob_number`)  
 - `mesh_oob_input_number` / `mesh_oob_changed` — inject (`bt_mesh_input_number`) + poll-and-clear  
 - Node composition advertises **DISPLAY_NUMBER** + **ENTER_NUMBER** (plus optional static)  
 - Non-blocking provision: `mesh_prov_adv_begin` / `mesh_prov_gatt_begin` / `mesh_prov_busy` (needed for interactive OOB; blocking `mesh_prov_adv`/`gatt` remain for none/static)  
@@ -263,11 +263,13 @@ fn main() {
     if e != ble.err_ok() {
         return
     }
+    // Mode 1 = output: device DISPLAY_NUMBER → provisioner action 2 (enter).
     e = ble.mesh_oob_auth_set(1)
     e = ble.mesh_prov_adv_begin(0, 2)
     while ble.mesh_prov_busy() {
         if ble.mesh_oob_action() == 2 {
-            e = ble.mesh_oob_input_number(ble.mesh_oob_number())
+            // Pass the number shown on the unprovisioned device (not mesh_oob_number).
+            e = ble.mesh_oob_input_number(123456)
         }
     }
 }
