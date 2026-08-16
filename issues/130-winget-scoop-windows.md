@@ -1,6 +1,6 @@
 # 130 — Windows package channels: WinGet + Scoop
 
-**Status:** 🔨 Scoop ✅ live ([`klin-lang/scoop-klin`](https://github.com/klin-lang/scoop-klin)); WinGet 💭 planned
+**Status:** 🔨 Scoop ✅ live ([`klin-lang/scoop-klin`](https://github.com/klin-lang/scoop-klin)); WinGet manifests prepared in-repo (upstream `winget-pkgs` submit still maintainer)
 **Depends on:** [076](076-release-windows-arm.md), [067](067-homebrew.md)
 
 ## Goal
@@ -20,7 +20,9 @@ new build work, only packaging manifests + docs.
 ## WinGet
 
 - Manifest set (`installer` + `locale` + `version`) under
-  `klin-lang.klin` in the community
+  `klin-lang.klin` — prepared in-repo at
+  [`winget/manifests/k/klin-lang/klin/`](../winget/manifests/k/klin-lang/klin/)
+  for copy into the community
   [`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs) repo.
 - `InstallerType: zip` with a nested portable `klin.exe`; declare `stdlib\` and
   `templates\` are unpacked next to the binary (must stay beside `klin.exe`,
@@ -30,7 +32,15 @@ new build work, only packaging manifests + docs.
 - Submitting to `winget-pkgs` is a maintainer action (PR + CI validation);
   agent prepares the manifest, not the upstream PR.
 
-### WinGet publish procedure (step-by-step, deferred)
+### WinGet manifests (in this repo)
+
+Prepared under
+[`winget/manifests/k/klin-lang/klin/0.1.3/`](../winget/manifests/k/klin-lang/klin/0.1.3/)
+for `PackageIdentifier: klin-lang.klin` (x64 + arm64, SHA256 from Release
+`v0.1.3` sidecars). Copy that folder into `microsoft/winget-pkgs` when
+submitting.
+
+### WinGet publish procedure (step-by-step)
 
 Prereq: a published GitHub Release with `klin-windows-amd64.zip` /
 `klin-windows-arm64.zip` + their `.sha256` (produced by
@@ -129,9 +139,10 @@ on `PATH` (MSVC / clang / mingw on Windows). `--emit-c` does not.
 
 - [x] Scoop manifest `klin.json` (x64 + arm64, hashes from Release) in bucket
       repo [`klin-lang/scoop-klin`](https://github.com/klin-lang/scoop-klin).
-- [ ] WinGet manifest set for `klin-lang.klin` (x64 + arm64) prepared.
-- [x] Docs: Scoop install in [docs/17-homebrew.md](../docs/17-homebrew.md) +
-      README (WinGet still pending).
+- [x] WinGet manifest set for `klin-lang.klin` (x64 + arm64) prepared in
+      [`winget/manifests/k/klin-lang/klin/0.1.3/`](../winget/manifests/k/klin-lang/klin/0.1.3/).
+- [x] Docs: Scoop + WinGet install in
+      [docs/17-homebrew.md](../docs/17-homebrew.md) + README.
 - [ ] `winget install` / `scoop install` yield a working `klin --version`
-      (Scoop manifest validated: valid JSON + reachable URLs; Windows run
-      pending).
+      (Scoop manifest validated: valid JSON + reachable URLs; WinGet pending
+      upstream merge to `microsoft/winget-pkgs`; Windows run pending).
