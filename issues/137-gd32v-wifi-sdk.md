@@ -242,9 +242,16 @@ import "github/klin-lang/gd32v_wifi" wifi
 
 fn main() {
     let mut e = wifi.sta_init()
-    if wifi.wps_supported() {
-        e = wifi.wps_pbc()
-        // e = wifi.wps_pin("12345670")
+    if e != wifi.err_ok() {
+        return
+    }
+    if !wifi.wps_supported() {
+        return
+    }
+    e = wifi.wps_pbc()
+    // e = wifi.wps_pin("12345670")
+    if e != wifi.err_ok() {
+        return
     }
     e = wifi.sta_wait_ip(30000)
 }
@@ -257,6 +264,12 @@ import "github/klin-lang/gd32v_wifi" wifi
 
 fn main() {
     let mut e = wifi.sta_init()
+    if e != wifi.err_ok() {
+        return
+    }
+    if !wifi.eap_tls_supported() {
+        return
+    }
     e = wifi.sta_connect_eap_tls(
         "corp-ssid", "user@example.com",
         "-----BEGIN CERTIFICATE-----\nCA\n-----END CERTIFICATE-----\n",
@@ -264,6 +277,9 @@ fn main() {
         "-----BEGIN CERTIFICATE-----\nCLIENT\n-----END CERTIFICATE-----\n",
         "", ""
     )
+    if e != wifi.err_ok() {
+        return
+    }
     e = wifi.sta_wait_ip(30000)
 }
 ```
