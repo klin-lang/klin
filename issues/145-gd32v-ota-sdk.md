@@ -34,7 +34,7 @@ OTA is flash + boot flags + reboot. Folding it into HTTP would hide erase/write 
 ## Out of scope
 
 - Bringing up Wi‑Fi / DHCP (→ [137](137-gd32v-wifi-sdk.md))  
-- MQTT (→ [105](105-later-tracks-iot.md) I1)  
+- MQTT (→ [146](146-gd32v-mqtt-sdk.md))  
 - BLE DFU (`app_dfu_srv` / Courier)  
 - Secure-boot policy / certificate provisioning (AN260 MBL verifies after reboot)  
 - Hidden Klin CA store / `VERIFY_NONE` as the only Klin default for PEM path — PEM path requires caller cert  
