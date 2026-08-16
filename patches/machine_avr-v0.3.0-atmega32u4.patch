@@ -1,0 +1,735 @@
+From 9fff588cd0806f83f9b18a037b6d7ea84136f332 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Sun, 16 Aug 2026 00:07:39 +0000
+Subject: [PATCH] =?UTF-8?q?feat:=20ATmega32U4=20Pin=E2=80=A6Adc=20for=20Le?=
+ =?UTF-8?q?onardo=20/=20Micro=20/=20Pro=20Micro?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add Port32U4 twins (pin/pwm/rc/uart/i2c/spi/adc), examples
+blink/pwm/uart/adc_leonardo, bump version() to 3. USB CDC later.
+---
+ README.md                        | 61 +++++++++++++++++++++++---------
+ examples/adc_leonardo/Makefile   | 19 ++++++++++
+ examples/adc_leonardo/adc.kl     | 17 +++++++++
+ examples/blink_leonardo/Makefile | 25 +++++++++++++
+ examples/blink_leonardo/blink.kl |  9 +++++
+ examples/pwm_leonardo/Makefile   | 19 ++++++++++
+ examples/pwm_leonardo/pwm.kl     | 29 +++++++++++++++
+ examples/uart_leonardo/Makefile  | 19 ++++++++++
+ examples/uart_leonardo/uart.kl   | 32 +++++++++++++++++
+ machine_avr/adc.kl               | 24 +++++++++++++
+ machine_avr/i2c.kl               | 26 ++++++++++++++
+ machine_avr/pin.kl               | 31 ++++++++++++++--
+ machine_avr/pin_test.kl          | 18 ++++++++--
+ machine_avr/pwm.kl               | 53 ++++++++++++++++++++++++++-
+ machine_avr/rc.kl                | 16 +++++++++
+ machine_avr/spi.kl               | 42 ++++++++++++++++++++++
+ machine_avr/uart.kl              | 36 +++++++++++++++++++
+ machine_avr/version.kl           |  2 +-
+ 18 files changed, 455 insertions(+), 23 deletions(-)
+ create mode 100644 examples/adc_leonardo/Makefile
+ create mode 100644 examples/adc_leonardo/adc.kl
+ create mode 100644 examples/blink_leonardo/Makefile
+ create mode 100644 examples/blink_leonardo/blink.kl
+ create mode 100644 examples/pwm_leonardo/Makefile
+ create mode 100644 examples/pwm_leonardo/pwm.kl
+ create mode 100644 examples/uart_leonardo/Makefile
+ create mode 100644 examples/uart_leonardo/uart.kl
+
+diff --git a/README.md b/README.md
+index 7a72cfa..3fa3f65 100644
+--- a/README.md
++++ b/README.md
+@@ -8,44 +8,53 @@ classic `PORTx` / Timer / USART / TWI / SPI / ADC MMIO explicitly.
+ 
+ For **ATxmega** (different PORT map @ `0x0600`), see
+ [`machine_xmega`](https://github.com/klin-lang/machine_xmega).
++For modern **tinyAVR** (AVRxt + UPDI), see Klin issue
++[141](https://github.com/klin-lang/klin/blob/main/issues/141-machine-tinyavr.md)
++(`machine_tinyavr` — not this package).
+ 
+ Decision / catalog: [Klin issue 061](https://github.com/klin-lang/klin/blob/main/issues/061-micropython-machine-api.md).
++Leonardo plan: [Klin issue 142](https://github.com/klin-lang/klin/blob/main/issues/142-machine-avr-atmega32u4.md).
+ 
+ ## Status
+ 
+ | API | Status |
+ |---|---|
+-| `Pin` ATmega328P (`pin_out` / `pin_in`) | ✅ MVP |
+-| `Pin` ATmega2560 (`pin_out_2560` / `pin_in_2560`) | ✅ MVP |
+-| `Pwm` | ✅ Timer1/Timer2 (`pwm_out`) |
+-| `Rc` | ✅ servo helper on `Pwm` (`rc_out`) |
+-| `Uart` | ✅ USART0 (`uart_out`) |
+-| `I2c` | ✅ TWI master (`i2c_out`) |
+-| `Spi` | ✅ SPI master soft NSS (`spi_out`) |
+-| `Adc` | ✅ 10-bit ADC (`adc_out`) |
+-| `Dac` | ❌ not available on ATmega328P / ATmega2560 |
+-| `Signal` / `I2S` / `RTC` / `Timer` / `WDT` / `SDCard` / `USBDevice` | ⏳ later |
+-| tinyAVR / AVR Dx | later (different IO) |
+-
+-`version()` is `2` (`@v0.2.0`).
++| `Pin` ATmega328P (`pin_out` / `pin_in`) | ✅ |
++| `Pin` ATmega2560 (`pin_out_2560` / `pin_in_2560`) | ✅ |
++| `Pin` ATmega32U4 (`pin_out_32u4` / `pin_in_32u4`) | ✅ |
++| `Pwm` 328P (`pwm_out`) | ✅ Timer1/Timer2 |
++| `Pwm` 32U4 (`pwm_out_32u4`) | ✅ Timer1/Timer3 |
++| `Rc` (`rc_out` / `rc_out_32u4`) | ✅ |
++| `Uart` 328P USART0 (`uart_out`) | ✅ |
++| `Uart` 32U4 USART1 (`uart_out_32u4`) | ✅ (not USB CDC) |
++| `I2c` (`i2c_out` / `i2c_out_32u4`) | ✅ TWI master |
++| `Spi` (`spi_out` / `spi_out_32u4`) | ✅ soft NSS |
++| `Adc` (`adc_out` / `adc_out_32u4`) | ✅ 10-bit |
++| `Dac` | ❌ not on 328P / 2560 / 32U4 |
++| `USBDevice` (32U4 CDC/HID) | ⏳ later |
++
++`version()` is `3` (`@v0.3.0`).
+ 
+ No runtime chip detect. Arduino-style `D13` mapping is board-level — this
+ package uses **port letter + bit** (Uno LED = `Port.B`, 5; Mega LED =
+-`Port2560.B`, 7). Clocks are explicit (`*_clk_hz`).
++`Port2560.B`, 7; Leonardo LED = `Port32U4.C`, 7). Clocks are explicit
++(`*_clk_hz`).
+ 
+ ## Requirements
+ 
+ - [Klin](https://github.com/klin-lang/klin) compiler (`klin` or `dart run path/to/bin/klin.dart`)
+-- For board images: `avr-gcc` + device CRT / linker (`atmega328p` / `atmega2560`)
++- For board images: `avr-gcc` + device CRT / linker (`atmega328p` / `atmega2560` / `atmega32u4`)
++- Flash Leonardo with `avrdude` (Caterina); DFU optional
+ 
+ ## Layout
+ 
+ ```text
+ machine_avr/             # module machine_avr (directory package)
+-  version.kl             # version() → 2
++  version.kl             # version() → 3
+   pin.kl / pwm.kl / rc.kl / uart.kl / i2c.kl / spi.kl / adc.kl
+   *_test.kl              # skipped on import
+ examples/blink_uno/ … adc_uno/
++examples/blink_leonardo/ … adc_leonardo/
+ ```
+ 
+ ## Usage — ATmega328P (Uno / Nano / Pro Mini)
+@@ -81,8 +90,23 @@ fn main() {
+ }
+ ```
+ 
++## Usage — ATmega32U4 (Leonardo / Micro / Pro Micro)
++
++```klin
++import "github/klin-lang/machine_avr" machine
++
++fn main() {
++    let led = machine.pin_out_32u4(machine.Port32U4.C, 7)  // D13
++    let pwm = machine.pwm_out_32u4(machine.Port32U4.B, 5, 1, 1, 16000000) // D9
++    let u = machine.uart_out_32u4(
++        machine.Port32U4.D, 3, machine.Port32U4.D, 2, 16000000, 9600) // Serial1
++    let adc = machine.adc_out_32u4(machine.Port32U4.F, 7, 7) // A0
++    led.toggle()
++}
++```
++
+ ```sh
+-klin get github/klin-lang/machine_avr@v0.2.0
++klin get github/klin-lang/machine_avr@v0.3.0
+ ```
+ 
+ ## Examples
+@@ -91,6 +115,9 @@ klin get github/klin-lang/machine_avr@v0.2.0
+ cd examples/blink_uno   # also: pwm_uno, rc_uno, uart_uno, i2c_uno, spi_uno, adc_uno
+ make emit KLIN=/path/to/klin/bin/klin.dart
+ # → out/*.c
++
++cd examples/blink_leonardo  # also: pwm_leonardo, uart_leonardo, adc_leonardo
++make emit KLIN=/path/to/klin/bin/klin.dart
+ ```
+ 
+ Linking a flashable ELF needs your board’s startup and linker script
+diff --git a/examples/adc_leonardo/Makefile b/examples/adc_leonardo/Makefile
+new file mode 100644
+index 0000000..5a3efe5
+--- /dev/null
++++ b/examples/adc_leonardo/Makefile
+@@ -0,0 +1,19 @@
++# ATmega32U4 ADC (Leonardo A0 = PF7).
++
++KLIN ?= klin
++
++.PHONY: all emit clean
++
++all: emit
++
++emit: out/adc.c
++
++out/adc.c out/adc.link: adc.kl $(wildcard ../../machine_avr/*.kl)
++	@mkdir -p out
++	@case "$(KLIN)" in \
++	  *.dart) dart run "$(KLIN)" --emit-c adc.kl ;; \
++	  *) "$(KLIN)" --emit-c adc.kl ;; \
++	esac
++
++clean:
++	rm -rf out
+diff --git a/examples/adc_leonardo/adc.kl b/examples/adc_leonardo/adc.kl
+new file mode 100644
+index 0000000..27fc563
+--- /dev/null
++++ b/examples/adc_leonardo/adc.kl
+@@ -0,0 +1,17 @@
++// Leonardo A0 = PF7 / ADC7.
++import "../../machine_avr" machine
++
++fn main() {
++    let adc = machine.adc_out_32u4(machine.Port32U4.F, 7, 7)
++    let mut v: i32 = 0
++    while true {
++        v = adc.read_u16()
++        let mut i: i32 = 0
++        while i < 20000 {
++            i = i + 1
++        }
++        if v < 0 {
++            break
++        }
++    }
++}
+diff --git a/examples/blink_leonardo/Makefile b/examples/blink_leonardo/Makefile
+new file mode 100644
+index 0000000..cd89812
+--- /dev/null
++++ b/examples/blink_leonardo/Makefile
+@@ -0,0 +1,25 @@
++# ATmega32U4 blink (Leonardo / Micro / Pro Micro): Klin --emit-c.
++#
++#   make emit KLIN=/path/to/klin/bin/klin.dart
++#   → out/blink.c
++#
++# Flash with avr-gcc CRT for atmega32u4 + avrdude (Caterina).
++# LED D13 = PC7 (not PB5 like Uno).
++
++KLIN ?= klin
++
++.PHONY: all emit clean
++
++all: emit
++
++emit: out/blink.c
++
++out/blink.c out/blink.link: blink.kl $(wildcard ../../machine_avr/*.kl)
++	@mkdir -p out
++	@case "$(KLIN)" in \
++	  *.dart) dart run "$(KLIN)" --emit-c blink.kl ;; \
++	  *) "$(KLIN)" --emit-c blink.kl ;; \
++	esac
++
++clean:
++	rm -rf out
+diff --git a/examples/blink_leonardo/blink.kl b/examples/blink_leonardo/blink.kl
+new file mode 100644
+index 0000000..8cf8d08
+--- /dev/null
++++ b/examples/blink_leonardo/blink.kl
+@@ -0,0 +1,9 @@
++// Leonardo / Micro / Pro Micro: D13 LED = PC7.
++import "../../machine_avr" machine
++
++fn main() {
++    let led = machine.pin_out_32u4(machine.Port32U4.C, 7)
++    while true {
++        led.toggle()
++    }
++}
+diff --git a/examples/pwm_leonardo/Makefile b/examples/pwm_leonardo/Makefile
+new file mode 100644
+index 0000000..ae0eab2
+--- /dev/null
++++ b/examples/pwm_leonardo/Makefile
+@@ -0,0 +1,19 @@
++# ATmega32U4 Timer1 PWM (Leonardo D9).
++
++KLIN ?= klin
++
++.PHONY: all emit clean
++
++all: emit
++
++emit: out/pwm.c
++
++out/pwm.c out/pwm.link: pwm.kl $(wildcard ../../machine_avr/*.kl)
++	@mkdir -p out
++	@case "$(KLIN)" in \
++	  *.dart) dart run "$(KLIN)" --emit-c pwm.kl ;; \
++	  *) "$(KLIN)" --emit-c pwm.kl ;; \
++	esac
++
++clean:
++	rm -rf out
+diff --git a/examples/pwm_leonardo/pwm.kl b/examples/pwm_leonardo/pwm.kl
+new file mode 100644
+index 0000000..656b921
+--- /dev/null
++++ b/examples/pwm_leonardo/pwm.kl
+@@ -0,0 +1,29 @@
++// Leonardo D9 = PB5 / OC1A (Timer1 channel A). F_CPU = 16_000_000.
++import "../../machine_avr" machine
++
++fn main() {
++    let pwm = machine.pwm_out_32u4(machine.Port32U4.B, 5, 1, 1, 16000000)
++    pwm.freq(1000)
++    let mut duty: i32 = 0
++    let mut up = true
++    while true {
++        pwm.duty_u16(duty)
++        if up {
++            duty = duty + 2048
++            if duty >= 65535 {
++                duty = 65535
++                up = false
++            }
++        } else {
++            duty = duty - 2048
++            if duty <= 0 {
++                duty = 0
++                up = true
++            }
++        }
++        let mut i: i32 = 0
++        while i < 20000 {
++            i = i + 1
++        }
++    }
++}
+diff --git a/examples/uart_leonardo/Makefile b/examples/uart_leonardo/Makefile
+new file mode 100644
+index 0000000..796396d
+--- /dev/null
++++ b/examples/uart_leonardo/Makefile
+@@ -0,0 +1,19 @@
++# ATmega32U4 USART1 example (Leonardo Serial1).
++
++KLIN ?= klin
++
++.PHONY: all emit clean
++
++all: emit
++
++emit: out/uart.c
++
++out/uart.c out/uart.link: uart.kl $(wildcard ../../machine_avr/*.kl)
++	@mkdir -p out
++	@case "$(KLIN)" in \
++	  *.dart) dart run "$(KLIN)" --emit-c uart.kl ;; \
++	  *) "$(KLIN)" --emit-c uart.kl ;; \
++	esac
++
++clean:
++	rm -rf out
+diff --git a/examples/uart_leonardo/uart.kl b/examples/uart_leonardo/uart.kl
+new file mode 100644
+index 0000000..05ae5b8
+--- /dev/null
++++ b/examples/uart_leonardo/uart.kl
+@@ -0,0 +1,32 @@
++// Leonardo HardwareSerial1: TX=PD3 (D1), RX=PD2 (D0). F_CPU = 16_000_000.
++// USB CDC Serial is not this USART.
++import "../../machine_avr" machine
++
++fn main() {
++    let u = machine.uart_out_32u4(
++        machine.Port32U4.D,
++        3,
++        machine.Port32U4.D,
++        2,
++        16000000,
++        9600
++    )
++    let mut msg: [6]u8
++    msg[0] = 104
++    msg[1] = 101
++    msg[2] = 108
++    msg[3] = 108
++    msg[4] = 111
++    msg[5] = 10
++    while true {
++        u.write(msg)
++        if u.any() {
++            let b = u.read_u8()
++            u.write_u8(b)
++        }
++        let mut i: i32 = 0
++        while i < 20000 {
++            i = i + 1
++        }
++    }
++}
+diff --git a/machine_avr/adc.kl b/machine_avr/adc.kl
+index 3f28acf..fa8db9a 100644
+--- a/machine_avr/adc.kl
++++ b/machine_avr/adc.kl
+@@ -65,3 +65,27 @@ pub fn (a: Adc) read_u16(): i32 {
+ pub fn (a: Adc) deinit() {
+     *(a.adcsra) = 0
+ }
++
++/// ATmega32U4 ADC. Leonardo A0 = PF7 channel 7: `adc_out_32u4(Port32U4.F, 7, 7)`.
++pub fn adc_out_32u4(port: Port32U4, num: i32, channel: i32): Adc {
++    let p = pin_in_32u4(port, num)
++    if p.mask == 0 {
++    }
++    let mut ch = channel
++    if ch < 0 {
++        ch = 0
++    }
++    if ch > 8 {
++        ch = 8
++    }
++
++    let admux = cast(*mut volatile u8, 0x7C)
++    let adcsra = cast(*mut volatile u8, 0x7A)
++    let adcl = cast(*mut volatile u8, 0x78)
++    let adch = cast(*mut volatile u8, 0x79)
++
++    *admux = i32_to_u8(64 | (ch & 15))
++    *adcsra = 135
++
++    return Adc{ admux: admux, adcsra: adcsra, adcl: adcl, adch: adch, channel: ch }
++}
+diff --git a/machine_avr/i2c.kl b/machine_avr/i2c.kl
+index dfc90c3..f19cd0b 100644
+--- a/machine_avr/i2c.kl
++++ b/machine_avr/i2c.kl
+@@ -138,3 +138,29 @@ pub fn (bus: I2c) write_readfrom_into(addr: i32, w: i32, buf: []u8) {
+ pub fn (bus: I2c) deinit() {
+     *(bus.twcr) = 0
+ }
++
++/// ATmega32U4 TWI. Leonardo: SDA=PD1 (D2), SCL=PD0 (D3).
++pub fn i2c_out_32u4(
++    sda_port: Port32U4,
++    sda_num: i32,
++    scl_port: Port32U4,
++    scl_num: i32,
++    i2c_clk_hz: i32,
++    freq_hz: i32
++): I2c {
++    let sda = pin_in_32u4(sda_port, sda_num)
++    let scl = pin_in_32u4(scl_port, scl_num)
++    sda.high()
++    scl.high()
++
++    let twbr = cast(*mut volatile u8, 0xB8)
++    let twsr = cast(*mut volatile u8, 0xB9)
++    let twdr = cast(*mut volatile u8, 0xBB)
++    let twcr = cast(*mut volatile u8, 0xBC)
++
++    *twsr = 0
++    *twbr = i32_to_u8(i2c_twbr(i2c_clk_hz, freq_hz))
++    *twcr = 4
++
++    return I2c{ twbr: twbr, twsr: twsr, twdr: twdr, twcr: twcr }
++}
+diff --git a/machine_avr/pin.kl b/machine_avr/pin.kl
+index f2d9381..83591bf 100644
+--- a/machine_avr/pin.kl
++++ b/machine_avr/pin.kl
+@@ -1,5 +1,6 @@
+-// megaAVR Pin (MMIO). ATmega328P + ATmega2560 — classic PORTx/DDRx/PINx.
+-// Memory addresses match avr-libc (iom328p / iomxx0_1). No hidden init.
++// megaAVR Pin (MMIO). ATmega328P + ATmega2560 + ATmega32U4 —
++// classic PORTx/DDRx/PINx. Memory addresses match avr-libc
++// (iom328p / iomxx0_1 / iom32u4). No hidden init.
+ module machine_avr
+ 
+ // ATmega328P ports (Uno / Nano / Pro Mini).
+@@ -24,6 +25,16 @@ pub enum Port2560: i32 {
+     L = 10
+ }
+ 
++// ATmega32U4 ports (Leonardo / Micro / Pro Micro).
++// Data-space PINB=0x23 … PINF=0x2F (avr-libc IO + 0x20).
++pub enum Port32U4: i32 {
++    B = 0
++    C = 1
++    D = 2
++    E = 3
++    F = 4
++}
++
+ pub struct Pin {
+     port: *mut volatile u8
+     pin: *mut volatile u8
+@@ -56,6 +67,11 @@ fn pin_base_2560(port: Port2560): i32 {
+     return 0x100 + (p - 7) * 3
+ }
+ 
++// PIN register base for 32U4: B@0x23 … F@0x2F.
++fn pin_base_32u4(port: Port32U4): i32 {
++    return 0x23 + cast(i32, port) * 3
++}
++
+ fn make_pin(base: i32, num: i32, as_output: i32): Pin {
+     let mask = pin_bit_mask(num)
+     let pin = cast(*mut volatile u8, base)
+@@ -90,6 +106,17 @@ pub fn pin_in_2560(port: Port2560, num: i32): Pin {
+     return make_pin(pin_base_2560(port), num, 0)
+ }
+ 
++// ATmega32U4 — configure port/num as output.
++// Leonardo LED D13 = Port32U4.C, 7.
++pub fn pin_out_32u4(port: Port32U4, num: i32): Pin {
++    return make_pin(pin_base_32u4(port), num, 1)
++}
++
++// ATmega32U4 — configure port/num as input.
++pub fn pin_in_32u4(port: Port32U4, num: i32): Pin {
++    return make_pin(pin_base_32u4(port), num, 0)
++}
++
+ pub fn (p: Pin) high() {
+     *(p.port) = *(p.port) | p.mask
+ }
+diff --git a/machine_avr/pin_test.kl b/machine_avr/pin_test.kl
+index bc01dd0..fe189db 100644
+--- a/machine_avr/pin_test.kl
++++ b/machine_avr/pin_test.kl
+@@ -4,8 +4,8 @@ import testing
+ 
+ // Host-safe checks only (no MMIO). Skipped on package import (*_test.kl).
+ 
+-fn test_version_is_two() {
+-    testing.assert_eq_i32(version(), 2)
++fn test_version_is_three() {
++    testing.assert_eq_i32(version(), 3)
+ }
+ 
+ fn test_port_328_indices() {
+@@ -21,3 +21,17 @@ fn test_port_2560_indices() {
+     testing.assert_eq_i32(cast(i32, Port2560.H), 7)
+     testing.assert_eq_i32(cast(i32, Port2560.L), 10)
+ }
++
++fn test_port_32u4_indices() {
++    testing.assert_eq_i32(cast(i32, Port32U4.B), 0)
++    testing.assert_eq_i32(cast(i32, Port32U4.C), 1)
++    testing.assert_eq_i32(cast(i32, Port32U4.D), 2)
++    testing.assert_eq_i32(cast(i32, Port32U4.E), 3)
++    testing.assert_eq_i32(cast(i32, Port32U4.F), 4)
++}
++
++fn test_pin_base_32u4_data_space() {
++    testing.assert_eq_i32(pin_base_32u4(Port32U4.B), 0x23)
++    testing.assert_eq_i32(pin_base_32u4(Port32U4.C), 0x26)
++    testing.assert_eq_i32(pin_base_32u4(Port32U4.F), 0x2F)
++}
+diff --git a/machine_avr/pwm.kl b/machine_avr/pwm.kl
+index 8e69e25..50bdfed 100644
+--- a/machine_avr/pwm.kl
++++ b/machine_avr/pwm.kl
+@@ -95,7 +95,7 @@ fn pwm_read_top(p: Pwm): i32 {
+     return (hi << 8) | lo
+ }
+ 
+-/// Configure pin as Timer PWM output.
++/// Configure pin as Timer PWM output (ATmega328P).
+ pub fn pwm_out(port: Port, num: i32, tim: i32, ch: i32, tim_clk_hz: i32): Pwm {
+     let pin = pin_out(port, num)
+     if pin.mask == 0 {
+@@ -106,6 +106,25 @@ pub fn pwm_out(port: Port, num: i32, tim: i32, ch: i32, tim_clk_hz: i32): Pwm {
+     return pwm_out_t1(ch, tim_clk_hz)
+ }
+ 
++/// ATmega32U4 Timer1 / Timer3 PWM.
++/// `tim=1` → Timer1 (PB5=OC1A D9, PB6=OC1B D10); `tim=3` → Timer3 (PC6=OC3A D5).
++/// `ch=1` → compare A, `ch=2` → compare B.
++pub fn pwm_out_32u4(
++    port: Port32U4,
++    num: i32,
++    tim: i32,
++    ch: i32,
++    tim_clk_hz: i32
++): Pwm {
++    let pin = pin_out_32u4(port, num)
++    if pin.mask == 0 {
++    }
++    if tim == 3 {
++        return pwm_out_t3(ch, tim_clk_hz)
++    }
++    return pwm_out_t1(ch, tim_clk_hz)
++}
++
+ fn pwm_out_t1(ch: i32, tim_clk_hz: i32): Pwm {
+     let tccra = cast(*mut volatile u8, 0x80)
+     let tccrb = cast(*mut volatile u8, 0x81)
+@@ -166,6 +185,38 @@ fn pwm_out_t2(ch: i32, tim_clk_hz: i32): Pwm {
+     return pwm
+ }
+ 
++fn pwm_out_t3(ch: i32, tim_clk_hz: i32): Pwm {
++    let tccra = cast(*mut volatile u8, 0x90)
++    let tccrb = cast(*mut volatile u8, 0x91)
++    let icr_l = cast(*mut volatile u8, 0x96)
++    let icr_h = cast(*mut volatile u8, 0x97)
++    let mut ocr_l = cast(*mut volatile u8, 0x98)
++    let mut ocr_h = cast(*mut volatile u8, 0x99)
++    let mut com: u8 = 128
++    if ch == 2 {
++        ocr_l = cast(*mut volatile u8, 0x9A)
++        ocr_h = cast(*mut volatile u8, 0x9B)
++        com = 32
++    }
++    // mode 14 Fast PWM ICR3: WGM31|WGM32|WGM33; COM clear-on-match
++    *tccra = com | 2
++    *tccrb = 24
++    let pwm = Pwm{
++        tccra: tccra,
++        tccrb: tccrb,
++        ocr_l: ocr_l,
++        ocr_h: ocr_h,
++        top_l: icr_l,
++        top_h: icr_h,
++        com_mask: com,
++        tim: 3,
++        tim_clk_hz: tim_clk_hz
++    }
++    pwm.freq(1000)
++    pwm.duty_u16(0)
++    return pwm
++}
++
+ pub fn (p: Pwm) freq(hz: i32) {
+     let mut f = hz
+     if f < 1 {
+diff --git a/machine_avr/rc.kl b/machine_avr/rc.kl
+index d096e51..a35ee98 100644
+--- a/machine_avr/rc.kl
++++ b/machine_avr/rc.kl
+@@ -131,3 +131,19 @@ pub fn (r: Rc) out_f32(pos: f32, k: i32) {
+ pub fn (r: Rc) deinit() {
+     r.pwm.deinit()
+ }
++
++/// ATmega32U4 RC / servo on `pwm_out_32u4`.
++/// Leonardo D9 = PB5 OC1A: `rc_out_32u4(Port32U4.B, 5, 1, 1, 16000000, 50, 1000, 2000)`.
++pub fn rc_out_32u4(
++    port: Port32U4,
++    num: i32,
++    tim: i32,
++    ch: i32,
++    tim_clk_hz: i32,
++    freq_hz: i32,
++    us_min: i32,
++    us_max: i32
++): Rc {
++    let pwm = pwm_out_32u4(port, num, tim, ch, tim_clk_hz)
++    return rc_from_pwm(pwm, freq_hz, us_min, us_max)
++}
+diff --git a/machine_avr/spi.kl b/machine_avr/spi.kl
+index 9046ba2..69f0760 100644
+--- a/machine_avr/spi.kl
++++ b/machine_avr/spi.kl
+@@ -136,3 +136,45 @@ pub fn (s: Spi) write_readinto(wbuf: []u8, rbuf: []u8) {
+ pub fn (s: Spi) deinit() {
+     *(s.spcr) = 0
+ }
++
++/// ATmega32U4 SPI. Leonardo: SCK=PB1 (D15), MOSI=PB2 (D16), MISO=PB3 (D14).
++pub fn spi_out_32u4(
++    sck_port: Port32U4,
++    sck_num: i32,
++    mosi_port: Port32U4,
++    mosi_num: i32,
++    miso_port: Port32U4,
++    miso_num: i32,
++    spi_clk_hz: i32,
++    baud_hz: i32,
++    mode: i32
++): Spi {
++    let sck = pin_out_32u4(sck_port, sck_num)
++    let mosi = pin_out_32u4(mosi_port, mosi_num)
++    let miso = pin_in_32u4(miso_port, miso_num)
++    if sck.mask == 0 {
++    }
++    if mosi.mask == 0 {
++    }
++    if miso.mask == 0 {
++    }
++
++    let spcr = cast(*mut volatile u8, 0x4C)
++    let spsr = cast(*mut volatile u8, 0x4D)
++    let spdr = cast(*mut volatile u8, 0x4E)
++
++    let bits = spi_rate_bits(spi_clk_hz, baud_hz)
++    let spi2x = (bits >> 2) & 1
++    let spr = bits & 3
++    let mut m = mode
++    if m < 0 {
++        m = 0
++    }
++    if m > 3 {
++        m = 3
++    }
++    *spcr = i32_to_u8(80 | ((m & 3) << 2) | spr)
++    *spsr = i32_to_u8(spi2x)
++
++    return Spi{ spcr: spcr, spsr: spsr, spdr: spdr }
++}
+diff --git a/machine_avr/uart.kl b/machine_avr/uart.kl
+index b42f942..e339fb9 100644
+--- a/machine_avr/uart.kl
++++ b/machine_avr/uart.kl
+@@ -98,3 +98,39 @@ pub fn (u: Uart) write(buf: []u8) {
+ pub fn (u: Uart) deinit() {
+     *(u.ucsrb) = 0
+ }
++
++/// ATmega32U4 USART1 (MMIO). Leonardo HardwareSerial1: TX=PD3 (D1), RX=PD2 (D0).
++/// USB CDC Serial is separate — not this factory.
++pub fn uart_out_32u4(
++    tx_port: Port32U4,
++    tx_num: i32,
++    rx_port: Port32U4,
++    rx_num: i32,
++    uart_clk_hz: i32,
++    baud: i32
++): Uart {
++    let tx = pin_out_32u4(tx_port, tx_num)
++    let rx = pin_in_32u4(rx_port, rx_num)
++    if tx.mask == 0 {
++    }
++    if rx.mask == 0 {
++    }
++
++    let ubrr = uart_ubrr(uart_clk_hz, baud)
++    let ubrrl = cast(*mut volatile u8, 0xCC)
++    let ubrrh = cast(*mut volatile u8, 0xCD)
++    let ucsrc = cast(*mut volatile u8, 0xCA)
++    let ucsrb = cast(*mut volatile u8, 0xC9)
++    let ucsra = cast(*mut volatile u8, 0xC8)
++    let udr = cast(*mut volatile u8, 0xCE)
++
++    *ubrrh = u16_hi(ubrr)
++    *ubrrl = u16_lo(ubrr)
++    // UCSZ11|UCSZ10 = 8-bit
++    *ucsrc = 6
++    // TXEN1|RXEN1
++    *ucsrb = 24
++    *ucsra = 0
++
++    return Uart{ ucsra: ucsra, ucsrb: ucsrb, udr: udr }
++}
+diff --git a/machine_avr/version.kl b/machine_avr/version.kl
+index 3c05854..777bd3d 100644
+--- a/machine_avr/version.kl
++++ b/machine_avr/version.kl
+@@ -1,5 +1,5 @@
+ module machine_avr
+ 
+ pub fn version(): i32 {
+-    return 2
++    return 3
+ }
+-- 
+2.43.0
+

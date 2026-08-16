@@ -1,6 +1,7 @@
 # 142 — `machine_avr`: ATmega32U4 (Leonardo / Micro / Pro Micro)
 
-**Status:** 💭 planned  
+**Status:** 🔨 implementation ready (awaiting merge/tag on
+[`machine_avr`](https://github.com/klin-lang/machine_avr); agent had no push)  
 **Depends on:** [061](061-micropython-machine-api.md), [107](107-later-tracks-arduino-boards.md), [`machine_avr`](https://github.com/klin-lang/machine_avr)
 
 Spun out from queue row **A** in [107](107-later-tracks-arduino-boards.md).
@@ -16,31 +17,50 @@ Spun out from queue row **A** in [107](107-later-tracks-arduino-boards.md).
 | Why here? | Same **classic megaAVR** generation as 328P / 2560 — closest win |
 | Why not `machine_tinyavr`? | 32U4 is not AVRxt / UPDI tinyAVR ([141](141-machine-tinyavr.md)) |
 
-**32U4 ≠ 328P** pin / port map. Use twin factories (e.g. `pin_out_32u4`) —
-no `#ifdef` mega-driver. Do not confuse with Nano Every (ATmega4809) or tinyAVR.
+**32U4 ≠ 328P** pin / port map. Twin factories (`*_32u4`) — no `#ifdef`
+mega-driver. Do not confuse with Nano Every (ATmega4809) or tinyAVR.
 
-## Scope (MVP)
+## Implementation (ready)
 
-- Pin…Adc on ATmega32U4 MMIO, same API shape as 328P where the silicon allows
-- Pwm / Rc / Uart / I2c / Spi factories for 32U4 (parity with 328P `@v0.2.0` as far as hardware matches)
-- Examples: `blink_leonardo` (or Micro) — document Arduino digital pin → port/bit
-- Toolchain: existing `avr-gcc`; flash via `avrdude` (**Caterina** bootloader; DFU optional note)
-- Host-safe `*_test.kl` for new modules
+Patch (apply on `machine_avr` `main`):  
+[`patches/machine_avr-v0.3.0-atmega32u4.patch`](../patches/machine_avr-v0.3.0-atmega32u4.patch)
+
+```sh
+cd machine_avr
+git apply /path/to/klin/patches/machine_avr-v0.3.0-atmega32u4.patch
+# or: git am < patch
+klin test machine_avr/          # host tests PASS
+cd examples/blink_leonardo && make emit
+# tag v0.3.0 when merged
+```
+
+| API | Notes |
+|---|---|
+| `Port32U4` + `pin_out_32u4` / `pin_in_32u4` | D13 LED = **PC7** |
+| `pwm_out_32u4` | Timer1 + Timer3 (`tim` 1 or 3) |
+| `rc_out_32u4` | on top of PWM |
+| `uart_out_32u4` | **USART1** (Serial1: TX PD3, RX PD2) — not USB CDC |
+| `i2c_out_32u4` | TWI; Leonardo SDA=PD1, SCL=PD0 |
+| `spi_out_32u4` | soft NSS |
+| `adc_out_32u4` | A0 = PF7 ch 7 |
+| examples | `blink_leonardo`, `pwm_leonardo`, `uart_leonardo`, `adc_leonardo` |
+| `version()` | **3** → publish as `@v0.3.0` |
 
 ## Out of scope (MVP)
 
-- Native **USB device** (CDC / HID / MIDI) — separate later tag or thin `@[link]` package; MVP is GPIO + buses without HID
+- Native **USB device** (CDC / HID / MIDI) — separate later tag
 - Wiring / `.ino` / Arduino core compatibility
 - ATmega4809 (Nano Every) — not 32U4
 - tinyAVR / AVR Dx — [141](141-machine-tinyavr.md)
-- Board pack / `klin init` until Pin MVP exists ([075](075-board-pack-init-host.md))
+- Board pack / `klin init` until tag is published ([075](075-board-pack-init-host.md))
 
 ## Suggested ship slices
 
-1. **Pin** + blink on Leonardo/Micro D13 (or documented LED pin)
-2. **Pwm** / **Rc** / **Uart** / **I2c** / **Spi** / **Adc** on 32U4
-3. Optional thin board notes in [docs/arduino.md](../docs/arduino.md)
-4. USB CDC/HID — only after Pin…Adc ships
+1. ~~**Pin** + blink~~ — in patch  
+2. ~~**Pwm** / **Rc** / **Uart** / **I2c** / **Spi** / **Adc**~~ — in patch  
+3. Merge + tag `v0.3.0` on `machine_avr`  
+4. Optional thin board notes in [docs/arduino.md](../docs/arduino.md) after tag  
+5. USB CDC/HID — only after Pin…Adc ships
 
 ## Links
 
