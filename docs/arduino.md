@@ -20,7 +20,7 @@ Catalog: [061](../issues/061-micropython-machine-api.md)
 |---|---|---|
 | **Uno** / Uno clones / **Nano** / Pro Mini / many “328P” boards | ATmega328P | Pin…Adc + Pwm / Uart / I2c / Spi ✅ |
 | **Mega** 2560 | ATmega2560 | Pin ✅; Pwm…Adc factories later |
-| **Leonardo** / Micro / Pro Micro | ATmega32U4 | Planned → [142](../issues/142-machine-avr-atmega32u4.md) (extend `machine_avr`) |
+| **Leonardo** / Micro / Pro Micro | ATmega32U4 | 🔨 patch ready → [142](../issues/142-machine-avr-atmega32u4.md) (`pin_out_32u4` …; D13 = **PC7**; tag `@v0.3.0` on merge) |
 | **Nano Every** | ATmega4809 (megaAVR 0-series) | Later (not 328P) |
 
 Examples: `blink_uno` (D13 = PB5), `blink_mega` (D13 = PB7).

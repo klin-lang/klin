@@ -100,7 +100,7 @@ building the core from scratch.
 | [139](139-board-gd32vw553h-start.md) | Board pack GD32VW553 START (UART2 + RGB V4 + `klin init`) | 🔨 `@v0.1.0` ([repo](https://github.com/klin-lang/gd32vw553h_start)) | 061, 062, 075, 136 |
 | [140](140-gd32v-ble-sdk.md) | `gd32v_ble` GD32VW553 advertise + GATT + central + gattc + jw-bond + UUID16 + passkey + UUID128/multi + privacy + Mesh OnOff + provisioner + Level/vendor + Friend/LPN (GigaDevice AN152, not `machine_*`) | 🔨 advertise+GATT+scan/connect+gattc+jw-bond+uuid16+passkey+uuid128/multi+privacy+mesh+prov+level+friend `@v0.13.0` | 021, 024, 049, 061, 062, 136, 137 |
 | [141](141-machine-tinyavr.md) | `machine_tinyavr` tinyAVR 0/1/2-series Pin…Adc (ATtiny1624 MVP) | 💭 | 061, 062, 021 |
-| [142](142-machine-avr-atmega32u4.md) | `machine_avr` ATmega32U4 (Leonardo / Micro / Pro Micro) | 💭 | 061, 107 |
+| [142](142-machine-avr-atmega32u4.md) | `machine_avr` ATmega32U4 (Leonardo / Micro / Pro Micro) | 🔨 patch ready → `@v0.3.0` | 061, 107 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
 | [098](098-board-adafruit-rp2040-can-feather.md) | Board pack Adafruit RP2040 CAN Feather (MCP25625) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/adafruit_rp2040_can_feather)) | 061, 062, 075 |
