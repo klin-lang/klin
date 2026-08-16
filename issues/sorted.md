@@ -103,6 +103,7 @@ building the core from scratch.
 | [142](142-machine-avr-atmega32u4.md) | `machine_avr` ATmega32U4 (Leonardo / Micro / Pro Micro) | ✅ `@v0.3.0` | 061, 107 |
 | [143](143-gd32v-sockets-sdk.md) | `gd32v_sockets` GD32VW553 LwIP BSD sockets (TCP/UDP; after `gd32v_wifi` IP) | ✅ `@v0.1.0` | 021, 024, 049, 062, 137 |
 | [144](144-gd32v-http-sdk.md) | `gd32v_http` GD32VW553 HTTP(+TLS PEM) client (after IP; no IDF crt bundle) | ✅ `@v0.1.0` | 021, 024, 049, 062, 137, 143 |
+| [145](145-gd32v-ota-sdk.md) | `gd32v_ota` GD32VW553 OTA/FOTA (ping‑pong MSDK + HTTP(S) PEM download) | ✅ `@v0.1.0` | 021, 024, 049, 062, 105, 137, 144 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
 | [098](098-board-adafruit-rp2040-can-feather.md) | Board pack Adafruit RP2040 CAN Feather (MCP25625) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/adafruit_rp2040_can_feather)) | 061, 062, 075 |
@@ -112,7 +113,7 @@ building the core from scratch.
 | [102](102-esp-eth-idf.md) | ESP Ethernet thin IDF package (`esp_eth` W5500 + RMII) | ✅ `@v0.2.0` ([repo](https://github.com/klin-lang/esp_eth)) | 021, 024, 049, 061, 062, 101 |
 | [103](103-later-tracks-ble-usb-camera-lcd.md) | Later tracks A–D MVP done (BLE/USB/camera/Pico LCD); leftover tags | ✅ MVP (later tags elsewhere) | 061, 062, 101, 102, 106, 108, 109, 110 |
 | [104](104-later-tracks-esp-network.md) | Later tracks: ESP network (Wi‑Fi W1–W3 ✅; N1 dual ✅; sockets ✅; HTTP/TLS ✅; RMII ✅) | 🔨 Wi‑Fi+N1–N3+E1 ✅; ETH E2+ backlog | 101, 102, 062, 111, 112, 113 |
-| [105](105-later-tracks-iot.md) | Later tracks: IoT (MQTT / OTA…) | 💭 maybe backlog (sockets+HTTP ✅; ready for MQTT) | 104, 101, 102, 111, 112 |
+| [105](105-later-tracks-iot.md) | Later tracks: IoT (MQTT / OTA…) | 💭 (VW553 OTA → [145](145-gd32v-ota-sdk.md); MQTT still open) | 104, 101, 102, 111, 112, 145 |
 | [106](106-esp-ble-idf.md) | ESP BLE thin IDF package (`esp_ble` GATT + bond + UUID16/128 + privacy + Mesh OnOff) | ✅ `@v0.10.0` ([repo](https://github.com/klin-lang/esp_ble)) | 021, 024, 049, 061, 062, 101 |
 | [107](107-later-tracks-arduino-boards.md) | Later tracks: Arduino boards (Leonardo → [142](142-machine-avr-atmega32u4.md); Uno R4 / Due / Giga / Portenta) | 💭 backlog (one family at a time) | 061, 062, 075 |
 | [108](108-esp-usb-idf.md) | ESP USB OTG thin IDF package (`esp_usb` TinyUSB device CDC) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_usb)) | 021, 024, 049, 061, 062 |
