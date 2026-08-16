@@ -160,19 +160,23 @@ scoop update klin
 ### WinGet
 
 Manifests for `klin-lang.klin` live in this repo under
-[`winget/manifests/k/klin-lang/klin/`](../winget/manifests/k/klin-lang/klin/)
-(copy into [`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs);
-upstream submit is a maintainer action — see
-[130](../issues/130-winget-scoop-windows.md)).
+[`winget/manifests/k/klin-lang/klin/`](../winget/manifests/k/klin-lang/klin/).
+Public `winget install` works only after a maintainer submits them to
+[`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs).
 
-Once published in the community repo:
+**`winget` does not run on macOS/Linux.** Full submit checklist (PAT,
+`wingetcreate submit`, manual PR, later versions):
+[issues/130-winget-scoop-windows.md](../issues/130-winget-scoop-windows.md)
+→ section *Maintainer submit checklist (Windows only)*.
+
+Once published:
 
 ```powershell
 winget install klin-lang.klin
 klin --version
 ```
 
-Local test from a clone (before upstream merge):
+Local test from a clone on Windows (before upstream merge):
 
 ```powershell
 winget install --manifest .\winget\manifests\k\klin-lang\klin\0.1.3\

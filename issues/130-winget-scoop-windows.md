@@ -40,69 +40,73 @@ for `PackageIdentifier: klin-lang.klin` (x64 + arm64, SHA256 from Release
 `v0.1.3` sidecars). Copy that folder into `microsoft/winget-pkgs` when
 submitting.
 
-### WinGet publish procedure (step-by-step)
+### Maintainer submit checklist (Windows only)
 
-Prereq: a published GitHub Release with `klin-windows-amd64.zip` /
-`klin-windows-arm64.zip` + their `.sha256` (produced by
-[release.yml](../.github/workflows/release.yml) on tag `v*`).
+`winget` / `wingetcreate` do **not** run on macOS or Linux. Do this when you
+have a Windows machine (or VM). Manifests for `0.1.3` are already in this
+repo — you do **not** need `wingetcreate new` for the first publish.
 
-1. **Generate the manifest** from the published asset (easiest via
-   `wingetcreate`):
-   ```powershell
-   winget install Microsoft.WingetCreate
-   wingetcreate new https://github.com/klin-lang/klin/releases/download/vX.Y.Z/klin-windows-amd64.zip
-   ```
-   `wingetcreate` downloads the asset, computes `InstallerSha256`, and prompts
-   for metadata under `PackageIdentifier: klin-lang.klin`. Add the arm64
-   installer entry too (second `InstallerUrl`).
+Prereq: GitHub account that can fork
+[`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs), plus a
+[PAT](https://github.com/settings/tokens) with `public_repo` (for
+`wingetcreate submit`).
 
-2. **Installer manifest shape** (`zip` + nested portable `klin.exe`; `stdlib\`
-   and `templates\` ship beside it in the archive, resolved next to the real
-   binary per [`lib/project.dart`](../lib/project.dart)):
-   ```yaml
-   PackageIdentifier: klin-lang.klin
-   PackageVersion: X.Y.Z
-   Installers:
-     - Architecture: x64
-       InstallerType: zip
-       NestedInstallerType: portable
-       NestedInstallerFiles:
-         - RelativeFilePath: klin.exe
-           PortableCommandAlias: klin
-       InstallerUrl: https://github.com/klin-lang/klin/releases/download/vX.Y.Z/klin-windows-amd64.zip
-       InstallerSha256: <from klin-windows-amd64.sha256>
-     - Architecture: arm64
-       InstallerType: zip
-       NestedInstallerType: portable
-       NestedInstallerFiles:
-         - RelativeFilePath: klin.exe
-           PortableCommandAlias: klin
-       InstallerUrl: https://github.com/klin-lang/klin/releases/download/vX.Y.Z/klin-windows-arm64.zip
-       InstallerSha256: <from klin-windows-arm64.sha256>
-   ManifestType: installer
-   ManifestVersion: 1.6.0
-   ```
+#### A — preferred: submit prepared manifests
 
-3. **Validate + test locally** before submitting:
-   ```powershell
-   winget validate --manifest .\manifests\k\klin-lang\klin\X.Y.Z\
-   winget install --manifest .\manifests\k\klin-lang\klin\X.Y.Z\
-   klin --version
-   ```
+```powershell
+# 1. Tools
+winget install Microsoft.WingetCreate
 
-4. **Submit (maintainer action)** — open a PR to
-   [`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs) (or
-   `wingetcreate submit --token <PAT>`). Microsoft CI validates; moderators
-   merge. Only then does `winget install klin-lang.klin` work publicly.
+# 2. Clone Klin (or use an existing checkout on main)
+git clone https://github.com/klin-lang/klin.git
+cd klin\winget\manifests\k\klin-lang\klin\0.1.3
 
-5. **New versions:**
-   ```powershell
-   wingetcreate update klin-lang.klin --version X.Y.(Z+1) --urls <amd64.zip> <arm64.zip>
-   ```
-   then submit another PR.
+# 3. Validate + optional local install smoke test
+winget validate --manifest .
+winget install --manifest .
+klin --version
 
-Gotcha: the SHA256 comes from the published `.sha256` sidecar — never
-hand-compute. `klin run` still needs a host C compiler (MSVC/clang/mingw);
+# 4. Open PR to microsoft/winget-pkgs (forks + pushes for you)
+wingetcreate submit --token <PAT> .
+```
+
+Microsoft CI + moderators merge. Only then does public install work:
+
+```powershell
+winget install klin-lang.klin
+```
+
+#### B — manual PR (no wingetcreate submit)
+
+1. Fork [`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs).
+2. Copy this repo’s
+   [`winget/manifests/k/klin-lang/klin/0.1.3/`](../winget/manifests/k/klin-lang/klin/0.1.3/)
+   into the same path in the fork (`manifests/k/klin-lang/klin/0.1.3/`).
+3. Commit + open a PR (title e.g. `New package: klin-lang.klin version 0.1.3`).
+
+#### C — later versions (after first merge)
+
+```powershell
+wingetcreate update klin-lang.klin --version X.Y.Z `
+  --urls https://github.com/klin-lang/klin/releases/download/vX.Y.Z/klin-windows-amd64.zip `
+         https://github.com/klin-lang/klin/releases/download/vX.Y.Z/klin-windows-arm64.zip
+wingetcreate submit --token <PAT>
+```
+
+Or bump the YAML under `winget/manifests/…` in this repo (SHA256 from the
+Release `.sha256` sidecars — never hand-compute), then submit again.
+
+#### Regenerating from scratch (only if needed)
+
+```powershell
+wingetcreate new https://github.com/klin-lang/klin/releases/download/vX.Y.Z/klin-windows-amd64.zip
+```
+
+Shape must stay `InstallerType: zip` + nested portable `klin.exe` (x64 +
+arm64); `stdlib\` and `templates\` stay beside the exe (see
+[`lib/project.dart`](../lib/project.dart)).
+
+Gotcha: `klin run` still needs a host C compiler (MSVC/clang/mingw);
 `--emit-c` does not.
 
 ## Scoop — ✅ done
