@@ -1,6 +1,6 @@
 # 140 — GD32VW553 BLE as a separate SDK package (`gd32v_ble`)
 
-**Status:** 🔨 advertise + GATT + central + GATT client + Just Works bonding + UUID16 + passkey + UUID128/multi + privacy + Mesh OnOff + Mesh provisioner + Gen Level/vendor + Friend/LPN + interactive OOB published [`@v0.14.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.14.0)  
+**Status:** 🔨 advertise + GATT + central + GATT client + Just Works bonding + UUID16 + passkey + UUID128/multi + privacy + Mesh OnOff + Mesh provisioner + Gen Level/vendor + Friend/LPN + interactive OOB + string OOB / friendship params / vendor byte published [`@v0.15.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.15.0)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [136](136-machine-gd32v-gd32vw553.md), [137](137-gd32v-wifi-sdk.md)
 **Formerly:** `130` (renumbered to resolve duplicate issue numbers).
 
@@ -9,7 +9,7 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: [`klin-lang/gd32v_ble`](https://github.com/klin-lang/gd32v_ble) `@v0.14.0` |
+| Where does the code live? | External: [`klin-lang/gd32v_ble`](https://github.com/klin-lang/gd32v_ble) `@v0.15.0` |
 | Engine | **GigaDevice VW55x BLE SDK** (AN152 stack + `MSDK/ble/app` managers + `ble_gatts_*` / `ble_scan_*` / `ble_conn_*` / `ble_gattc_*` / `app_sec_*` / `ble_adp_privacy_recfg` / `bt_mesh_*` / CDB) — not MMIO, **not** ESP-IDF NimBLE |
 | Relation to `machine_gd32v` | **Separate.** Pin…Adc twins stay MMIO ([136](136-machine-gd32v-gd32vw553.md)). Same split as [`esp_ble`](https://github.com/klin-lang/esp_ble) vs `machine_esp` ([106](106-esp-ble-idf.md)). |
 | Relation to `gd32v_wifi` | Sibling radio package ([137](137-gd32v-wifi-sdk.md)). Not the same Klin module. |
@@ -41,8 +41,10 @@ BLE_MAX — same class as SDK `light_demo` / `vnd_module`; not NimBLE
 `CONFIG_BT_NIMBLE_MESH`). Friend / LPN use `bt_mesh_lpn_*` /
 `bt_mesh_friend_terminate` when `CONFIG_BT_MESH_LOW_POWER` /
 `CONFIG_BT_MESH_FRIEND`.
-Interactive OOB uses `bt_mesh_auth_method_set_*` / `bt_mesh_input_number`
-(provisioner capabilities + non-blocking `mesh_prov_*_begin`).
+Interactive OOB uses `bt_mesh_auth_method_set_*` / `bt_mesh_input_number` /
+`bt_mesh_input_string` (provisioner capabilities + non-blocking `mesh_prov_*_begin`).
+Friendship param readouts come from LPN/Friend established callbacks (queue depth
+remains SDK compile-time CONFIG). Vendor byte is a second `BT_MESH_MODEL_VND` (id `0x0001`).
 Provisioner uses CDB (`bt_mesh_cdb_create` / `bt_mesh_provision_adv|gatt`) when
 `CONFIG_BT_MESH_PROVISIONER` + `CONFIG_BT_MESH_CDB` (SDK `provisioner` example).
 `BLE_GAP_ADV_PROP_UNDIR_CONN` is GigaDevice `ble_gap.h`, not NimBLE.
@@ -228,11 +230,20 @@ On the **`mesh_enable` node** (not provisioner):
 - Engine: `bt_mesh_auth_method_set_{none,output,input,static}` in provisioner `capabilities`  
 - `version()` → `14`  
 - Example `examples/mesh_oob/`  
-- **Not** included (until later): Friend queue tuning beyond SDK defaults; extra vendor models; string OOB  
+- **Not** included (until `@v0.15.0`): string OOB / friendship param readouts / vendor byte — see below  
+
+## Scope (`@v0.15.0` — Mesh extras)
+
+- String OOB (provisioner auth + node caps): auth **4** output string / **5** input string; actions **3** display (`mesh_oob_string`) / **4** enter (`mesh_oob_input_string`); node + provisioner advertise `DISPLAY_STRING` / `ENTER_STRING`  
+- Friendship param **readouts** after establish on a **`mesh_enable` node** (not provisioner): `mesh_lpn_queue_size` / `mesh_lpn_recv_window`; `mesh_friend_recv_delay` / `mesh_friend_poll_timeout` — from LPN/Friend callbacks; Friend **queue depth** stays SDK compile-time CONFIG (no runtime setter)  
+- Second vendor model on the **`mesh_enable` composition** (cid `0x05f1`, id `0x0001`): `mesh_vnd_byte` / `mesh_vnd_byte_set` / `mesh_vnd_byte_changed` (SET opcode `0x10`)  
+- `version()` → `15`  
+- Examples updated: `mesh_oob` / `mesh_friend` / `mesh_level`  
+- **Not** included (until later): more vendor models; runtime Friend queue-size knobs (SDK has none)
 
 ## Out of scope (this tag)
 
-- Friend queue tuning beyond SDK defaults / string OOB / extra vendor models  
+- Runtime Friend queue-size setters (SDK CONFIG only) / further vendor models  
 - Wi‑Fi — [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [137](137-gd32v-wifi-sdk.md)  
 - Board packs — [138](138-board-gd32vw553h-eval.md) / [139](139-board-gd32vw553h-start.md) (no radio API)  
 - Vendoring `GD32VW55x_WiFi_BLE_SDK`  
@@ -240,10 +251,10 @@ On the **`mesh_enable` node** (not provisioner):
 
 ## Contract (prime rule)
 
-- No Klin GC / hidden heap — advertise name is a C string you pass in; GATT payloads are caller buffers + fixed per-slot 20-byte statics in C (max 4 slots); scan results are a fixed 16-row static table; GATT client uses a fixed 20-byte client buffer; bond keys live in **SDK flash storage**; passkey is an explicit `i32` PIN; 128-bit UUIDs are explicit 16-byte LE buffers. UUID table frozen at `init`. Unprov UUID table max 8. Static OOB is a fixed 16-byte buffer.  
+- No Klin GC / hidden heap — advertise name is a C string you pass in; GATT payloads are caller buffers + fixed per-slot 20-byte statics in C (max 4 slots); scan results are a fixed 16-row static table; GATT client uses a fixed 20-byte client buffer; bond keys live in **SDK flash storage**; passkey is an explicit `i32` PIN; 128-bit UUIDs are explicit 16-byte LE buffers. UUID table frozen at `init`. Unprov UUID table max 8. Static OOB is a fixed 16-byte buffer. OOB string buffer is fixed 17 bytes (16 + NUL).  
 - `privacy_enable` only when radio is idle (not advertising / scanning / connected).  
 - Mesh needs explicit SDK mesh + BLE_MAX; provisioner needs PROVISIONER+CDB; Friend/LPN need LOW_POWER / FRIEND; mesh stack buffers are **SDK contracts**.  
-- Interactive OOB: no Klin callbacks — poll `mesh_oob_action` / `mesh_prov_busy` after `mesh_prov_*_begin`.  
+- Interactive OOB: no Klin callbacks — poll `mesh_oob_action` / `mesh_prov_busy` after `mesh_prov_*_begin` (actions **1**/**2** number; **3**/**4** string via `mesh_oob_string` / `mesh_oob_input_string`).  
 - `mesh_enable` and `mesh_provisioner_enable` are mutually exclusive.  
 - SDK heap / OSAL BLE task / GAP / GATTS / GATTC / security / privacy / mesh / scan events are **SDK contracts**, documented in the package README.  
 - Errors are `i32` (0 = ok).  
@@ -263,26 +274,25 @@ fn main() {
     if e != ble.err_ok() {
         return
     }
-    // Mode 1 = output: device DISPLAY_NUMBER → provisioner action 2 (enter).
-    e = ble.mesh_oob_auth_set(1)
+    // Mode 4 = output string: device DISPLAY_STRING → provisioner action 4 (enter).
+    e = ble.mesh_oob_auth_set(4)
     e = ble.mesh_prov_adv_begin(0, 2)
     while ble.mesh_prov_busy() {
-        if ble.mesh_oob_action() == 2 {
-            // Pass the number shown on the unprovisioned device (not mesh_oob_number).
-            e = ble.mesh_oob_input_number(123456)
+        if ble.mesh_oob_action() == 4 {
+            e = ble.mesh_oob_input_string("AB12")
         }
     }
 }
 ```
 
 ```sh
-klin get github/klin-lang/gd32v_ble@v0.14.0
+klin get github/klin-lang/gd32v_ble@v0.15.0
 ```
 
 ## Links
 
 - Package: https://github.com/klin-lang/gd32v_ble  
-- Tag: [v0.14.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.14.0) (Friend/LPN [v0.13.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.13.0), Level/vendor [v0.12.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.12.0), provisioner [v0.11.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.11.0), Mesh OnOff [v0.10.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.10.0), privacy [v0.9.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.9.0), UUID128/multi [v0.8.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.8.0), passkey [v0.7.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.7.0), UUID16 [v0.6.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.6.0), bonding [v0.5.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.5.0), GATT client [v0.4.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.4.0), central [v0.3.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.3.0), GATT [v0.2.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.2.0), advertise [v0.1.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.1.0))  
+- Tag: [v0.15.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.15.0) (interactive OOB [v0.14.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.14.0), Friend/LPN [v0.13.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.13.0), Level/vendor [v0.12.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.12.0), provisioner [v0.11.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.11.0), Mesh OnOff [v0.10.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.10.0), privacy [v0.9.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.9.0), UUID128/multi [v0.8.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.8.0), passkey [v0.7.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.7.0), UUID16 [v0.6.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.6.0), bonding [v0.5.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.5.0), GATT client [v0.4.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.4.0), central [v0.3.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.3.0), GATT [v0.2.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.2.0), advertise [v0.1.0](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.1.0))  
 - SDK: https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK  
 - AN152 BLE Development Guide (GigaDevice)  
 - Chip MMIO: [136](136-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
