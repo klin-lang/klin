@@ -1,0 +1,65 @@
+/// XPT2046 SPI chip driver. No MCU types — the app supplies `Wire`.
+/// Not Adafruit TouchScreen / Arduino. No heap, no IRQ magic, no SD.
+module klin_xpt2046
+
+/// One SPI transaction: CS low, write 8-bit `cmd`, read 16 MISO bits, CS high.
+/// Return the raw 16-bit word (MSB first). Driver applies `adc12`.
+pub struct Wire {
+    ctx: *mut u8
+    xfer: fn(*mut u8,i32):i32
+}
+
+pub struct Dev {
+    wire: Wire
+}
+
+/// One sample. `x` / `y` / `z` are 12-bit ADC counts (`0..4095`).
+pub struct Sample {
+    x: i32
+    y: i32
+    z: i32
+}
+
+fn xfer(dev: Dev, cmd: i32): i32 {
+    let f = dev.wire.xfer
+    return f(dev.wire.ctx, cmd)
+}
+
+fn read12(dev: Dev, cmd: i32): i32 {
+    return adc12(xfer(dev, cmd))
+}
+
+/// Store the wire. No hidden init cost beyond that.
+pub fn attach(wire: Wire): Dev {
+    return Dev{ wire: wire }
+}
+
+/// Always read X/Y/Z (power down after the last conversion).
+pub fn (dev: Dev) raw(): Sample {
+    let z1 = read12(dev, cmd_z1_keep())
+    let z2 = read12(dev, cmd_z2_keep())
+    let z = z1 + 4095 - z2
+    let y0 = read12(dev, cmd_y_keep())
+    let x0 = read12(dev, cmd_x_keep())
+    let y1 = read12(dev, cmd_y_keep())
+    let x1 = read12(dev, cmd_x())
+    return Sample{ x: (x0 + x1) / 2, y: (y0 + y1) / 2, z: z }
+}
+
+/// `1` if pressed (`z >= z_thresh`), else `0`.
+pub fn (dev: Dev) pressed(z_thresh: i32): i32 {
+    let s = dev.raw()
+    if s.z >= z_thresh {
+        return 1
+    }
+    return 0
+}
+
+/// Like `raw`, but clears `x`/`y` to `0` when `z < z_thresh`.
+pub fn (dev: Dev) read(z_thresh: i32): Sample {
+    let s = dev.raw()
+    if s.z < z_thresh {
+        return Sample{ x: 0, y: 0, z: s.z }
+    }
+    return s
+}

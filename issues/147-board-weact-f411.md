@@ -19,7 +19,7 @@
 - `make` → `main.elf`; `make flash` → ROM DFU; `make flash-swd` → ST-Link
 - README: BOOT0 + USB-C is device USB, not ST-Link
 
-**Out of scope:** USB CDC `Serial`, G-176 / SD (→ [`klin_st7735`](https://github.com/klin-lang/klin_st7735) example), HSE 25 MHz PLL (HSI 16 MHz is enough), a published `weact_f411ce` pin pack (later, if needed).
+**Out of scope:** USB CDC `Serial`, G-176 / SD (→ [`klin_st7735`](https://github.com/klin-lang/klin_st7735) example; FatFs → [150](150-sd-spi-fatfs.md)), touch XPT2046 (→ [149](149-klin-xpt2046.md)), HSE 25 MHz PLL (HSI 16 MHz is enough), a published `weact_f411ce` pin pack (later, if needed). Black Pill shop pages listing **SDIO** mean the F411 peripheral — **not** an onboard microSD slot.
 
 ## Usage
 
@@ -38,3 +38,5 @@ make flash
 - Shop (example): [Elektroweb J-094](https://elektroweb.pl/pl/stm32/778-mikrokontroler-stm32f411ceu6-stm32-blackpill.html)
 - Nucleo: [096](096-board-nucleo-f411re.md)
 - `klin init`: [075](075-board-pack-init-host.md)
+- Touch chip driver: [149](149-klin-xpt2046.md)
+- SD / FatFs later: [150](150-sd-spi-fatfs.md)

@@ -1,0 +1,54 @@
+module klin_xpt2046
+
+/// 12-bit, differential, power-down bits as used by common XPT2046 sketches.
+pub fn cmd_y(): i32 {
+    return 0x90
+}
+
+pub fn cmd_z1(): i32 {
+    return 0xB0
+}
+
+pub fn cmd_z2(): i32 {
+    return 0xC0
+}
+
+pub fn cmd_x(): i32 {
+    return 0xD0
+}
+
+/// Keep ADC on between conversions in one sample block (PD1:PD0 = 01).
+fn cmd_y_keep(): i32 {
+    return 0x91
+}
+
+fn cmd_z1_keep(): i32 {
+    return 0xB1
+}
+
+fn cmd_z2_keep(): i32 {
+    return 0xC1
+}
+
+fn cmd_x_keep(): i32 {
+    return 0xD1
+}
+
+/// Default press threshold (same ballpark as Arduino `XPT2046_Touchscreen`).
+pub fn default_z_thresh(): i32 {
+    return 400
+}
+
+/// Shift a 16-bit SPI word down to the 12-bit ADC value.
+pub fn adc12(raw16: i32): i32 {
+    return (raw16 >> 3) & 4095
+}
+
+/// Linear map for app-side calibration (no heap, no float).
+pub fn map(v: i32, in0: i32, in1: i32, out0: i32, out1: i32): i32 {
+    let din = in1 - in0
+    if din == 0 {
+        return out0
+    }
+    return out0 + ((v - in0) * (out1 - out0)) / din
+}

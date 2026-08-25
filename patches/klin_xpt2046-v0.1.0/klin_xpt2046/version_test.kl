@@ -1,0 +1,121 @@
+module klin_xpt2046
+import testing
+
+struct Rec {
+    cmds: [16]i32
+    n: i32
+    replies: [16]i32
+    ri: i32
+}
+
+fn rec_xfer(ctx: *mut u8, cmd: i32): i32 {
+    let r = cast(*mut Rec, ctx)
+    if (*r).n < 16 {
+        (*r).cmds[(*r).n] = cmd
+    }
+    (*r).n = (*r).n + 1
+    if (*r).ri < 16 {
+        let out = (*r).replies[(*r).ri]
+        (*r).ri = (*r).ri + 1
+        return out
+    }
+    return 0
+}
+
+fn mock_wire(rec: *mut Rec): Wire {
+    return Wire{ ctx: cast(*mut u8, rec), xfer: rec_xfer }
+}
+
+fn pack12(v: i32): i32 {
+    return (v & 4095) << 3
+}
+
+fn test_version() {
+    testing.assert_eq_i32(version(), 1)
+}
+
+fn test_adc12() {
+    testing.assert_eq_i32(adc12(0), 0)
+    testing.assert_eq_i32(adc12(0x7FF8), 4095)
+    testing.assert_eq_i32(adc12(pack12(1000)), 1000)
+}
+
+fn test_map() {
+    testing.assert_eq_i32(map(0, 0, 100, 0, 128), 0)
+    testing.assert_eq_i32(map(100, 0, 100, 0, 128), 128)
+    testing.assert_eq_i32(map(50, 0, 100, 0, 160), 80)
+    testing.assert_eq_i32(map(1, 1, 1, 10, 20), 10)
+}
+
+fn test_cmds() {
+    testing.assert_eq_i32(cmd_y(), 0x90)
+    testing.assert_eq_i32(cmd_z1(), 0xB0)
+    testing.assert_eq_i32(cmd_z2(), 0xC0)
+    testing.assert_eq_i32(cmd_x(), 0xD0)
+    testing.assert_eq_i32(default_z_thresh(), 400)
+}
+
+fn test_raw_sequence() {
+    let mut rec = Rec{
+        cmds: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        n: 0,
+        replies: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ri: 0
+    }
+    // z1=500, z2=100 → z = 500+4095-100 = 4495; x≈200, y≈300
+    rec.replies[0] = pack12(500)
+    rec.replies[1] = pack12(100)
+    rec.replies[2] = pack12(300)
+    rec.replies[3] = pack12(200)
+    rec.replies[4] = pack12(300)
+    rec.replies[5] = pack12(200)
+    let t = attach(mock_wire(&rec))
+    let s = t.raw()
+    testing.assert_eq_i32(rec.cmds[0], 0xB1)
+    testing.assert_eq_i32(rec.cmds[1], 0xC1)
+    testing.assert_eq_i32(rec.cmds[2], 0x91)
+    testing.assert_eq_i32(rec.cmds[3], 0xD1)
+    testing.assert_eq_i32(rec.cmds[4], 0x91)
+    testing.assert_eq_i32(rec.cmds[5], 0xD0)
+    testing.assert_eq_i32(s.x, 200)
+    testing.assert_eq_i32(s.y, 300)
+    testing.assert_eq_i32(s.z, 4495)
+}
+
+fn test_read_clears_when_up() {
+    let mut rec = Rec{
+        cmds: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        n: 0,
+        replies: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ri: 0
+    }
+    // z1=10, z2=4000 → z = 10+4095-4000 = 105 (< 400)
+    rec.replies[0] = pack12(10)
+    rec.replies[1] = pack12(4000)
+    rec.replies[2] = pack12(111)
+    rec.replies[3] = pack12(222)
+    rec.replies[4] = pack12(111)
+    rec.replies[5] = pack12(222)
+    let t = attach(mock_wire(&rec))
+    let s = t.read(default_z_thresh())
+    testing.assert_eq_i32(s.x, 0)
+    testing.assert_eq_i32(s.y, 0)
+    testing.assert_eq_i32(s.z, 105)
+}
+
+fn test_pressed() {
+    let mut rec = Rec{
+        cmds: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        n: 0,
+        replies: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ri: 0
+    }
+    rec.replies[0] = pack12(500)
+    rec.replies[1] = pack12(100)
+    rec.replies[2] = pack12(1)
+    rec.replies[3] = pack12(2)
+    rec.replies[4] = pack12(1)
+    rec.replies[5] = pack12(2)
+    let t = attach(mock_wire(&rec))
+    testing.assert_eq_i32(t.pressed(400), 1)
+}

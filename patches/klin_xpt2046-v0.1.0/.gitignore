@@ -1,0 +1,4 @@
+out/
+*.elf
+*.o
+.DS_Store
