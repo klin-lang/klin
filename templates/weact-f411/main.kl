@@ -1,0 +1,15 @@
+// WeAct STM32F411CE Black Pill — on-board LED is PC13 (active low).
+// Scaffold from `klin init weact-f411`. Run `klin get` once, then `make`.
+import "github/klin-lang/machine_stm32" machine
+
+@[link("board/startup.s")]
+fn main() {
+  let led = machine.pin_out(machine.Port.C, 13)
+  while true {
+    led.toggle()
+    let mut i: i32 = 0
+    while i < 500000 {
+      i = i + 1
+    }
+  }
+}

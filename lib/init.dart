@@ -11,6 +11,7 @@ const knownInitBoards = <String>[
   'waveshare-esp32-s3-pico',
   'gd32vw553h-eval',
   'gd32vw553h-start',
+  'weact-f411',
 ];
 
 /// Possible `templates/` locations under [roots] (repo layout + Homebrew

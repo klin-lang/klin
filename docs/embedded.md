@@ -42,6 +42,7 @@ on Nucleo, the SVD). Compile / `make` stay offline after that.
 | `waveshare-esp32-s3-pico` | ESP32-S3 | ESP-IDF v5.x | D10 LED via `machine_esp` + IDF |
 | `gd32vw553h-eval` | GD32VW553 | `riscv64-unknown-elf-gcc` | LED1 (PA4) via `machine_gd32v` + board pack |
 | `gd32vw553h-start` | GD32VW553 | `riscv64-unknown-elf-gcc` | RGB red (PB0) via `machine_gd32v` + board pack |
+| `weact-f411` | STM32F411CE | `arm-none-eabi-gcc` | PC13 LED via `machine_stm32`; `make flash` (dfu-util) |
 
 Unknown id → error. Templates ship **in the Klin install**
 (`templates/`, `$KLIN_TEMPLATES`, or `share/klin/templates` next to
@@ -91,6 +92,17 @@ of `boot2_*.S`. Arm core only.
 ```sh
 klin init nucleo-f411 my_nucleo
 cd my_nucleo && klin get && make
+```
+
+**WeAct Black Pill F411CE** — same `get` + `make`, Cortex-M4. USB-C is
+device USB (ROM DFU), not ST-Link. After `make`, hold BOOT0 and tap NRST,
+then `make flash` (`dfu-util`). SWD: `make flash-swd`. Klin does not flash;
+the Makefile only runs those tools ([147](../issues/147-board-weact-f411.md)).
+
+```sh
+klin init weact-f411 my_pill
+cd my_pill && klin get && make
+make flash
 ```
 
 **Waveshare RP2350-LCD-0.96** — same Arm GNU recipe; the app toggles

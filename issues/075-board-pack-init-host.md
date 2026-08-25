@@ -1,6 +1,6 @@
 # 075 — Board pack / `klin init` vs host (laptop): linker & startup
 
-**Status:** 🔨 MCU `klin init` ✅ (`nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`, `waveshare-esp32-s3-pico`, `gd32vw553h-eval`, `gd32vw553h-start`; host-init still 💭)  
+**Status:** 🔨 MCU `klin init` ✅ (`nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`, `waveshare-esp32-s3-pico`, `gd32vw553h-eval`, `gd32vw553h-start`, `weact-f411`; host-init still 💭)  
 **Depends on:** [010](010-bare-metal.md), [054](054-embedded-project-layout.md), [053](053-device-board-assets.md); optionally [074](074-board-ioc-klin-mod.md)
 
 ## Verdict in brief
@@ -162,7 +162,8 @@ lower priority.
 - [x] additional boards: `pico`, `pico2`, `waveshare-rp2350-lcd-096`,
       `waveshare-esp32-s3-pico` (ESP-IDF scaffold; no freestanding ld/startup),
       `gd32vw553h-eval` (RISC-V freestanding + board pack [138](138-board-gd32vw553h-eval.md)),
-      `gd32vw553h-start` (RISC-V freestanding + board pack [139](139-board-gd32vw553h-start.md))
+      `gd32vw553h-start` (RISC-V freestanding + board pack [139](139-board-gd32vw553h-start.md)),
+      `weact-f411` (F411CE PC13 blink + `make flash` [147](147-board-weact-f411.md))
 - [ ] (optional, low priority) `klin init` host → `hello` + mod
 
 ## Implementation notes
@@ -176,7 +177,8 @@ lower priority.
   [095](095-board-waveshare-rp2350-lcd-096.md)), `waveshare-esp32-s3-pico`
   (ESP-IDF + D10 blink + board pack [100](100-board-waveshare-esp32-s3-pico.md)),
   `gd32vw553h-eval` (VW553 LED1 + board pack [138](138-board-gd32vw553h-eval.md)),
-  `gd32vw553h-start` (VW553 RGB red + board pack [139](139-board-gd32vw553h-start.md)).
+  `gd32vw553h-start` (VW553 RGB red + board pack [139](139-board-gd32vw553h-start.md)),
+  `weact-f411` (Black Pill PC13 + `dfu-util` [147](147-board-weact-f411.md)).
 - ESP scaffolds use **IDF** (`main/app_main.c`, `sdkconfig.defaults`, `idf.py`)
   instead of `board/startup.s` + `linker.ld` — still layer B (one-time copy);
   packages via `klin get`.
@@ -196,7 +198,8 @@ lower priority.
   [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval)
   ([138](138-board-gd32vw553h-eval.md)),
   [`gd32vw553h_start`](https://github.com/klin-lang/gd32vw553h_start)
-  ([139](139-board-gd32vw553h-start.md)).
+  ([139](139-board-gd32vw553h-start.md)),
+  WeAct Black Pill (`klin init weact-f411`, [147](147-board-weact-f411.md)).
 
 ## Related
 

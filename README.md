@@ -75,7 +75,7 @@ already exists.
 
 STM32 was the **first** freestanding demo (an LED, no libc). It is not
 the only target. Walkthrough: [docs/embedded.md](docs/embedded.md)
-(`klin init pico` / Nucleo / ESP / VW553). AVR / Arduino FAQ:
+(`klin init pico` / Nucleo / WeAct F411 / ESP / VW553). AVR / Arduino FAQ:
 [docs/arduino.md](docs/arduino.md). Board trees:
 [`templates/`](templates/), [`examples/stm32/`](examples/stm32/).
 Typed registers from SVD: [docs/device.md](docs/device.md).

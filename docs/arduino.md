@@ -56,6 +56,7 @@ Board packs Klin already has that are *Arduino-adjacent* (same chips, other bran
 - Waveshare ESP32-S3-Pico → [`waveshare_esp32_s3_pico`](https://github.com/klin-lang/waveshare_esp32_s3_pico) [100](../issues/100-board-waveshare-esp32-s3-pico.md)
 - Adafruit RP2040 CAN Feather → [`adafruit_rp2040_can_feather`](https://github.com/klin-lang/adafruit_rp2040_can_feather) [098](../issues/098-board-adafruit-rp2040-can-feather.md)
 - Nucleo-F411RE (STM32, not Arduino brand) → [`nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re) [096](../issues/096-board-nucleo-f411re.md)
+- WeAct Black Pill F411CE → `klin init weact-f411` (`make flash` = `dfu-util`, same tool STM32duino uses) [147](../issues/147-board-weact-f411.md)
 
 ## Out of scope (for now)
 
