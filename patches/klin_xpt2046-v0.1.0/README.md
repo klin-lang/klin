@@ -17,17 +17,16 @@ FatFs is a [later package](https://github.com/klin-lang/klin/blob/main/issues/15
 
 ## Install
 
-When published:
-
 ```sh
 klin get github/klin-lang/klin_xpt2046@v0.1.0
 ```
 
-Until the external repo exists, use this seed from the Klin tree:
+Repo: https://github.com/klin-lang/klin_xpt2046  
+Local (this mirror or a sibling checkout): `-I` the package root.
 
 ```sh
-klin test -I patches/klin_xpt2046-v0.1.0 klin_xpt2046
-klin run -I patches/klin_xpt2046-v0.1.0 patches/klin_xpt2046-v0.1.0/examples/host_smoke.kl
+klin test klin_xpt2046
+klin run -I. examples/host_smoke.kl
 ```
 
 ## API (`@v0.1.0`)

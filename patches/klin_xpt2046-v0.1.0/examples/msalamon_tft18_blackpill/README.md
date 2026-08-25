@@ -8,11 +8,11 @@ on a WeAct-style
 | Piece | Package |
 |---|---|
 | ST7735S LCD | [`klin_st7735`](https://github.com/klin-lang/klin_st7735) |
-| XPT2046 touch | this seed (`klin_xpt2046`) |
-| SPI SD slot on the module | later — [150](../../../issues/150-sd-spi-fatfs.md); keep `SD_CS` HIGH |
+| XPT2046 touch | this package (`klin_xpt2046`) |
+| SPI SD slot on the module | later — [150](https://github.com/klin-lang/klin/blob/main/issues/150-sd-spi-fatfs.md); keep `SD_CS` HIGH |
 | Black Pill SDIO | chip peripheral only — **no** onboard slot; not this example |
 
-Scaffold: `klin init weact-f411` ([147](../../../issues/147-board-weact-f411.md)).
+Scaffold: `klin init weact-f411` ([147](https://github.com/klin-lang/klin/blob/main/issues/147-board-weact-f411.md)).
 
 ## Wiring (SPI1 shared; separate CS)
 
@@ -48,10 +48,9 @@ touch SPI, wire that bus instead and keep the same `Wire` shape.
 ```sh
 klin get github/klin-lang/machine_stm32@v0.5.0
 klin get github/klin-lang/klin_st7735@v0.3.0
-# from the Klin repo root (seed not published yet):
-dart run bin/klin.dart --emit-c \
-  -I patches/klin_xpt2046-v0.1.0 \
-  patches/klin_xpt2046-v0.1.0/examples/msalamon_tft18_blackpill/hello_touch.kl
+klin get github/klin-lang/klin_xpt2046@v0.1.0
+# from this package root:
+klin --emit-c -I. examples/msalamon_tft18_blackpill/hello_touch.kl
 ```
 
 Linking an ELF needs `arm-none-eabi-gcc` + `klin init weact-f411` startup /
