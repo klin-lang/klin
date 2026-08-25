@@ -107,6 +107,7 @@ building the core from scratch.
 | [146](146-gd32v-mqtt-sdk.md) | `gd32v_mqtt` GD32VW553 MQTT 3.1.1 **client** (QoS0 pub/sub; TLS PEM) | ✅ `@v0.1.0` | 021, 024, 049, 062, 105, 137, 143 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
+| [147](147-board-weact-f411.md) | Board scaffold WeAct Black Pill F411CE (`klin init weact-f411` + `make flash`) | 🔨 template | 061, 075, 096 |
 | [098](098-board-adafruit-rp2040-can-feather.md) | Board pack Adafruit RP2040 CAN Feather (MCP25625) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/adafruit_rp2040_can_feather)) | 061, 062, 075 |
 | [099](099-machine-esp-esp32-s3.md) | `machine_esp` ESP32-S3 Pin…Adc+Rmt (`*_s3`) | ✅ `@v0.5.0`/`@v0.6.0`/`@v0.7.0` ([repo](https://github.com/klin-lang/machine_esp)) | 061, 062 |
 | [100](100-board-waveshare-esp32-s3-pico.md) | Board pack Waveshare ESP32-S3-Pico | ✅ `@v0.3.0` ([repo](https://github.com/klin-lang/waveshare_esp32_s3_pico)) | 061, 062, 099 |

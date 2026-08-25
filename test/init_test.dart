@@ -235,6 +235,36 @@ void main() {
     expect(makefile, contains('board/linker.ld'));
   });
 
+  test('scaffold weact-f411', () {
+    final dest = p.join(tmp.path, 'weact_blink');
+    final created = scaffoldBoardInit(
+      boardId: 'weact-f411',
+      destDir: dest,
+      packageRoot: packageRoot,
+    );
+    expect(
+      created,
+      containsAll([
+        'main.kl',
+        'Makefile',
+        'klin.mod',
+        'README.md',
+        'board/startup.s',
+        'board/linker.ld',
+      ]),
+    );
+    final main = File(p.join(dest, 'main.kl')).readAsStringSync();
+    expect(main, contains('machine_stm32'));
+    expect(main, contains('Port.C'));
+    expect(main, contains('board/startup.s'));
+    final mod = File(p.join(dest, 'klin.mod')).readAsStringSync();
+    expect(mod, contains('machine_stm32'));
+    final makefile = File(p.join(dest, 'Makefile')).readAsStringSync();
+    expect(makefile, contains('arm-none-eabi-gcc'));
+    expect(makefile, contains('dfu-util'));
+    expect(makefile, contains('st-flash'));
+  });
+
   test('scaffold pico and pico2', () {
     final pico = scaffoldBoardInit(
       boardId: 'pico',
