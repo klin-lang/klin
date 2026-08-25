@@ -105,6 +105,7 @@ building the core from scratch.
 | [144](144-gd32v-http-sdk.md) | `gd32v_http` GD32VW553 HTTP(+TLS PEM) client (after IP; no IDF crt bundle) | ✅ `@v0.1.0` | 021, 024, 049, 062, 137, 143 |
 | [145](145-gd32v-ota-sdk.md) | `gd32v_ota` GD32VW553 OTA/FOTA (ping‑pong MSDK + HTTP(S) PEM download) | ✅ `@v0.1.0` | 021, 024, 049, 062, 105, 137, 144 |
 | [146](146-gd32v-mqtt-sdk.md) | `gd32v_mqtt` GD32VW553 MQTT 3.1.1 **client** (QoS0 pub/sub; TLS PEM) | ✅ `@v0.1.0` | 021, 024, 049, 062, 105, 137, 143 |
+| [148](148-klin-flash.md) | `klin flash` thin wrapper vs board `make flash` (no flasher in compiler) | 💭 | 010, 075, 147 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |
 | [147](147-board-weact-f411.md) | Board scaffold WeAct Black Pill F411CE (`klin init weact-f411` + `make flash`) | 🔨 template | 061, 075, 096 |
