@@ -9,7 +9,9 @@ Shop example: [Elektroweb J-094](https://elektroweb.pl/pl/stm32/778-mikrokontrol
 Touch (XPT2046): [`klin_xpt2046@v0.1.0`](https://github.com/klin-lang/klin_xpt2046)
 ([149](../../issues/149-klin-xpt2046.md)); msalamon 1.8″ + touch example:
 [`examples/msalamon_tft18_blackpill/`](https://github.com/klin-lang/klin_xpt2046/tree/main/examples/msalamon_tft18_blackpill).
-SD / FatFs later: [150](../../issues/150-sd-spi-fatfs.md) (Black Pill **SDIO** ≠ onboard slot).
+SD / FatFs: [`klin_sd_spi@v0.1.0`](https://github.com/klin-lang/klin_sd_spi) +
+[`klin_fatfs@v0.1.0`](https://github.com/klin-lang/klin_fatfs)
+([150](../../issues/150-sd-spi-fatfs.md); Black Pill **SDIO** ≠ onboard slot).
 
 Issue: [147](../../issues/147-board-weact-f411.md). Layout: [075](../../issues/075-board-pack-init-host.md).
 
