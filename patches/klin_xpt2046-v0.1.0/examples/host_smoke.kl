@@ -1,0 +1,10 @@
+module app
+import klin_xpt2046 touch
+
+fn main() {
+    printf("klin_xpt2046 %d\n", touch.version())
+    printf("z_thresh %d\n", touch.default_z_thresh())
+    printf("adc12 %d\n", touch.adc12(0x07D0 << 3))
+    printf("map %d\n", touch.map(50, 0, 100, 0, 128))
+    printf("cmd_x %d\n", touch.cmd_x())
+}

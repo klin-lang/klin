@@ -1,0 +1,39 @@
+/// msalamon 1.8″ ST7735S + XPT2046 on Black Pill — LCD fill + touch pixel.
+/// SD_CS stays HIGH (FatFs → issue 150). Calibration left to the app.
+module app
+import "github/klin-lang/klin_st7735" lcd
+import klin_xpt2046 touch
+
+@[link("startup.s")]
+fn main() {
+    let mut bus = bus_spi1()
+    bus.lcd_cs.high()
+    bus.t_cs.high()
+    bus.sd_cs.high()
+
+    let tft = attach_tft(&bus)
+    let tp = attach_touch(&bus)
+    tft.fill(lcd.color_black())
+
+    let title: [5]i32 = [116, 111, 117, 99, 104]
+    tft.draw_text(0, 0, title[:], lcd.color_white(), lcd.color_black())
+
+    let thresh = touch.default_z_thresh()
+    while true {
+        let s = tp.read(thresh)
+        if s.z >= thresh {
+            // Crude map — measure your panel corners and replace in0/in1.
+            let x = touch.map(s.x, 200, 3800, 0, 127)
+            let y = touch.map(s.y, 200, 3800, 0, 159)
+            if x >= 0 {
+                if x < 128 {
+                    if y >= 0 {
+                        if y < 160 {
+                            tft.pixel(x, y, lcd.color_green())
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

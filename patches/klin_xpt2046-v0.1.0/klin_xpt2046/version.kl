@@ -1,0 +1,6 @@
+module klin_xpt2046
+
+/// Package version for `v0.1.0`.
+pub fn version(): i32 {
+    return 1
+}
