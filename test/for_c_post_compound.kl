@@ -1,0 +1,10 @@
+fn main() {
+    let mut n = 0
+    for i := 0; i < 4; i += 2 {
+        n = n + i
+    }
+    for j := 5; j > 0; j -= 2 {
+        n = n + j
+    }
+    printf("%d\n", n)
+}

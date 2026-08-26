@@ -802,6 +802,35 @@ fn main() {
     expect(formatSource(once), once);
   });
 
+  test('golden: for_c_post_compound.kl — += / -= in post (issue 152)',
+      () async {
+    final result = await _compileAndRun('test/for_c_post_compound.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+      result.stdout,
+      await File('test/for_c_post_compound.out').readAsString(),
+    );
+
+    final source = File('test/for_c_post_compound.kl').readAsStringSync();
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'test/for_c_post_compound.kl');
+    expect(c, contains('i += 2'));
+    expect(c, contains('j -= 2'));
+  });
+
+  test('error: for post rejects *= (issue 152)', () {
+    expect(
+      () => Parser(Lexer('''
+fn main() {
+    for i := 0; i < 3; i *= 2 { }
+}
+''').tokenize()).parse(),
+      throwsA(predicate((e) =>
+          e is ParseError && e.toString().contains('expected `=`, `+=`, or `-=`'))),
+    );
+  });
+
   test('golden: for_c_init_assign.kl — = assigns existing mut (issue 151)',
       () async {
     final result = await _compileAndRun('test/for_c_init_assign.kl', tmp);
