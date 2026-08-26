@@ -464,6 +464,7 @@ void _emitStmt(
     case ForCStmt(
         :final initName,
         :final initExpr,
+        :final initDecl,
         :final cond,
         :final postName,
         :final postExpr,
@@ -474,11 +475,15 @@ void _emitStmt(
       _line(buf, pos.line, sourcePath);
       final initPart = () {
         if (initName == null || initExpr == null) return '';
+        final rhs = _emitExpr(initExpr, ctx);
+        if (!initDecl) {
+          return '$initName = $rhs';
+        }
         final ty = resolvedInitType;
         if (ty is! PrimType) {
           throw StateError('emit: missing type for initializer `$initName`');
         }
-        return '${ty.kind.cType} $initName = ${_emitExpr(initExpr, ctx)}';
+        return '${ty.kind.cType} $initName = $rhs';
       }();
       final condPart = cond == null ? '' : _emitExpr(cond, ctx);
       final postPart = (postName != null && postExpr != null)

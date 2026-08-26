@@ -793,6 +793,77 @@ fn main() {
     expect(formatSource(once), once);
   });
 
+  test('klin fmt: preserves = in for-init assign (issue 151)', () {
+    final ugly = File('test/fmt_for_c_init_assign.kl').readAsStringSync();
+    final expected =
+        File('test/fmt_for_c_init_assign.fmt.kl').readAsStringSync();
+    final once = formatSource(ugly);
+    expect(once, expected);
+    expect(formatSource(once), once);
+  });
+
+  test('golden: for_c_init_assign.kl — = assigns existing mut (issue 151)',
+      () async {
+    final result = await _compileAndRun('test/for_c_init_assign.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+      result.stdout,
+      await File('test/for_c_init_assign.out').readAsString(),
+    );
+
+    final source = File('test/for_c_init_assign.kl').readAsStringSync();
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'test/for_c_init_assign.kl');
+    expect(c, contains('for (i = 1;'));
+    expect(c, isNot(contains('int32_t i = 1')));
+  });
+
+  test('error: for-init := when name already in scope (issue 151)', () {
+    const source = '''
+fn main() {
+    x := 9
+    for x := 10; x < 20; x = x + 1 { }
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError && e.toString().contains('already in scope'))),
+    );
+  });
+
+  test('error: for-init = without prior binding (issue 151)', () {
+    const source = '''
+fn main() {
+    for i = 0; i < 3; i = i + 1 { }
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError && e.toString().contains('unknown variable `i`'))),
+    );
+  });
+
+  test('error: for-init = to immutable (issue 151)', () {
+    const source = '''
+fn main() {
+    let i = 0
+    for i = 1; i < 3; i = i + 1 { }
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError &&
+          e.toString().contains('immutable variable `i`'))),
+    );
+  });
+
   test('error: := without initializer', () {
     expect(
       () => Parser(Lexer('fn main() { x := }').tokenize()).parse(),

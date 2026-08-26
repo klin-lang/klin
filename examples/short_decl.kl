@@ -1,9 +1,15 @@
 // `:=` is sugar for `let mut` (issue 055).
+// C-`for` init: `:=` declares, `=` assigns (issue 151).
 fn main() {
     n := 1
     n = n + 2
     for i := 0; i < 3; i = i + 1 {
         n = n + i
+    }
+    // Assign-init: reuse outer mut `k` (does not declare a new binding).
+    k := 0
+    for k = 1; k < 3; k = k + 1 {
+        n = n + k
     }
     printf("%d\n", n)
 }
