@@ -58,6 +58,7 @@ building the core from scratch.
 | [047](047-directory-modules.md) | Directory = one module (like Go/V) | ✅ | 006, 020 |
 | [055](055-short-decl.md) | `:=` shorthand (= `let mut`) | ✅ | 002 |
 | [151](151-for-c-init-decl-vs-assign.md) | C-`for` init: `:=` declares, `=` assigns (no shadow) | ✅ | 003, 055 |
+| [152](152-for-c-post-compound.md) | C-`for` post: `+=` / `-=` | ✅ | 003, 151 |
 | [057](057-allocator.md) | `Allocator` (explicit allocator, D1) — `stdlib/mem` | ✅ | 007, 008 |
 
 ---

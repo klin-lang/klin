@@ -1335,6 +1335,7 @@ final class Checker {
           :final cond,
           :final postName,
           :final postExpr,
+          :final postCompoundOp,
           :final body,
           :final pos
         ):
@@ -1387,9 +1388,25 @@ final class Checker {
               postExpr.pos,
             );
           }
-          final postTy = _inferExpr(postExpr);
-          _expectAssignable(sym.type, postTy, postExpr.pos);
-          _materialize(postExpr, sym.type);
+          if (postCompoundOp != null) {
+            if (postExpr is OrExpr ||
+                postExpr is PropagateExpr ||
+                postExpr is MatchExpr) {
+              throw CheckError(
+                'compound assignment values must be plain expressions',
+                postExpr.pos,
+              );
+            }
+            final target = NameExpr(postName, postExpr.pos);
+            target.resolvedType = sym.type;
+            final resultType =
+                _inferBinary(target, postCompoundOp, postExpr, postExpr.pos);
+            _expectAssignable(sym.type, resultType, postExpr.pos);
+          } else {
+            final postTy = _inferExpr(postExpr);
+            _expectAssignable(sym.type, postTy, postExpr.pos);
+            _materialize(postExpr, sym.type);
+          }
         }
         _loopDepth++;
         _checkBlock(body);

@@ -43,8 +43,10 @@ final class ParseErrors implements Exception {
 ///   if      := "if" expr block ("else" (if | block))?
 ///   while   := "while" expr block
 ///   for     := "for" ident "in" expr "..<" expr block
-///            | "for" [ident (":=" | "=") expr] ";" [expr] ";" [ident "=" expr] block
-///              (`:=` declares; `=` assigns to existing mut)
+///            | "for" [ident (":=" | "=") expr] ";" [expr] ";"
+///              [ident ("=" | "+=" | "-=") expr] block
+///              (`:=` declares; `=` assigns to existing mut;
+///               post allows `=` / `+=` / `-=`)
 ///   return  := "return" expr?
 ///   call    := ident "(" (expr ("," expr)*)? ")"
 ///   expr    := equality
@@ -923,9 +925,18 @@ final class Parser {
 
     String? postName;
     Expr? postExpr;
+    String? postCompoundOp;
     if (!_check(TokenKind.lBrace)) {
       final name = _expect(TokenKind.ident, 'expected name in post expression');
-      _expect(TokenKind.equal, 'expected `=`');
+      if (_check(TokenKind.plusEqual)) {
+        _advance();
+        postCompoundOp = '+';
+      } else if (_check(TokenKind.minusEqual)) {
+        _advance();
+        postCompoundOp = '-';
+      } else {
+        _expect(TokenKind.equal, 'expected `=`, `+=`, or `-=`');
+      }
       postName = name.lexeme;
       // `for ; ; i = j {` — bare `j` must not eat the body `{` as struct lit.
       postExpr = _headerExpr();
@@ -939,6 +950,7 @@ final class Parser {
       cond: cond,
       postName: postName,
       postExpr: postExpr,
+      postCompoundOp: postCompoundOp,
       body: body,
       pos: forTok.pos,
     );
