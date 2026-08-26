@@ -21,7 +21,8 @@ In Klin default immutability is `let`; `:=` is solely a shorthand for a mutable 
 
 - `:=` token in lexer
 - `name := expr` → `LetStmt(isMut: true, …)` (initializer required)
-- in C-`for`: `for i := 0; …` alongside existing `for i = 0; …`
+- in C-`for`: `for i := 0; …` declares (see [151](151-for-c-init-decl-vs-assign.md);
+  `for i = 0` is assignment to an existing mut, not a second declaration form)
 - `klin fmt` preserves `:=` (does not expand to `let mut`)
 - no type annotation with `:=` in MVP (`x: i32 := 1` — out of scope;
   use `let mut x: i32 = 1`)

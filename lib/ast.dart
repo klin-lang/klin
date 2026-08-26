@@ -513,25 +513,31 @@ final class ForRangeStmt extends Stmt {
   });
 }
 
-/// for [name = init | name := init]; [cond]; [post] block
+/// for [name := init | name = init]; [cond]; [post] block
 ///
-/// Init introduces mutable variable `name` (`=` or `:=`).
-/// Post is an optional `name = expr` assignment.
+/// `:=` declares a new mutable loop variable; `=` assigns to an existing
+/// mutable name in scope. Post is an optional `name = expr` assignment.
 final class ForCStmt extends Stmt {
   final String? initName;
   final Expr? initExpr;
+
+  /// `true` when init used `:=` (declaration); `false` when `=` (assignment).
+  /// Ignored when [initName] / [initExpr] are null (empty init).
+  final bool initDecl;
+
   final Expr? cond;
   final String? postName;
   final Expr? postExpr;
   final Block body;
   final SourcePos pos;
 
-  /// Initializer variable type, filled by the checker.
+  /// Initializer variable type for a declaring init (`:=`), filled by the checker.
   KlinType? resolvedInitType;
 
   ForCStmt({
     required this.initName,
     required this.initExpr,
+    required this.initDecl,
     required this.cond,
     required this.postName,
     required this.postExpr,

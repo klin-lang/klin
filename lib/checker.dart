@@ -1331,21 +1331,49 @@ final class Checker {
       case ForCStmt(
           :final initName,
           :final initExpr,
+          :final initDecl,
           :final cond,
           :final postName,
           :final postExpr,
           :final body,
           :final pos
         ):
+        if (initName != null && initExpr != null && initDecl) {
+          // `:=` must not shadow a name already visible in enclosing scopes.
+          if (_scope.lookup(initName) != null) {
+            throw CheckError(
+              'variable `$initName` is already in scope '
+              '(use `=` to assign, or pick another name)',
+              pos,
+            );
+          }
+        }
         _scope = _Scope(_scope);
         if (initName != null && initExpr != null) {
-          final initTy = _inferExpr(initExpr);
-          final concrete = _defaultConcrete(initTy, initExpr.pos);
-          _materialize(initExpr, concrete);
-          stmt.resolvedInitType = concrete;
-          _scope.define(
-            _Symbol(name: initName, type: concrete, isMut: true, pos: pos),
-          );
+          if (initDecl) {
+            final initTy = _inferExpr(initExpr);
+            final concrete = _defaultConcrete(initTy, initExpr.pos);
+            _materialize(initExpr, concrete);
+            stmt.resolvedInitType = concrete;
+            _scope.define(
+              _Symbol(name: initName, type: concrete, isMut: true, pos: pos),
+            );
+          } else {
+            // `=` assigns to an existing mutable binding (looked up via parent).
+            final sym = _scope.lookup(initName);
+            if (sym == null) {
+              throw CheckError('unknown variable `$initName`', initExpr.pos);
+            }
+            if (!sym.isMut) {
+              throw CheckError(
+                'cannot assign to immutable variable `$initName`',
+                initExpr.pos,
+              );
+            }
+            final initTy = _inferExpr(initExpr);
+            _expectAssignable(sym.type, initTy, initExpr.pos);
+            _materialize(initExpr, sym.type);
+          }
         }
         if (cond != null) _expectBoolCond(cond);
         if (postName != null && postExpr != null) {

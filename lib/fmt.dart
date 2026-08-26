@@ -411,6 +411,7 @@ void _writeStmt(_FmtOut out, Stmt stmt, int indent, {bool inline = false}) {
     case ForCStmt(
         :final initName,
         :final initExpr,
+        :final initDecl,
         :final cond,
         :final postName,
         :final postExpr,
@@ -419,7 +420,8 @@ void _writeStmt(_FmtOut out, Stmt stmt, int indent, {bool inline = false}) {
       if (!inline) out.buf.write(pad);
       out.buf.write('for ');
       if (initName != null && initExpr != null) {
-        out.buf.write('$initName = ${_expr(initExpr, indent)}');
+        final op = initDecl ? ':=' : '=';
+        out.buf.write('$initName $op ${_expr(initExpr, indent)}');
       }
       out.buf.write('; ');
       if (cond != null) out.buf.write(_expr(cond, indent));

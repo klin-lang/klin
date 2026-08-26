@@ -324,11 +324,12 @@ void _collectLocalsInStmt(
       _collectLocalsInBlock(body, line, col, map);
     case ForCStmt(
         :final initName,
+        :final initDecl,
         :final resolvedInitType,
         :final body,
       ):
       if (!nestedVisible) break;
-      if (initName != null) {
+      if (initDecl && initName != null) {
         map[initName] = KlinCompletionItem(
           label: initName,
           kind: KlinCompletionKind.variable,
@@ -558,9 +559,14 @@ KlinType? _bindingTypeInFunc(
           found = stmt.resolvedType ?? const PrimType(PrimKind.i32);
         }
         walkBlock(stmt.body);
-      case ForCStmt(:final initName, :final resolvedInitType, :final body):
+      case ForCStmt(
+          :final initName,
+          :final initDecl,
+          :final resolvedInitType,
+          :final body,
+        ):
         if (!nestedVisible) break;
-        if (initName == name) found = resolvedInitType;
+        if (initDecl && initName == name) found = resolvedInitType;
         walkBlock(body);
       case BlockStmt(:final block):
         if (!nestedVisible) break;

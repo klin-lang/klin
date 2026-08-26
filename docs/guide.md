@@ -91,7 +91,7 @@ fn main() {
         }
     }
 
-    for j = 0; j < 3; j = j + 1 {
+    for j := 0; j < 3; j = j + 1 {
         if j == 1 { continue }
         printf("j=%d\n", j)
         if j == 2 { break }
@@ -102,8 +102,8 @@ fn main() {
 - `if` / `else if` / `else` — the condition is `bool` only (`if n` is an
   error; write `if n != 0`)
 - `for i in 1..<6` — exclusive range; `i` is always `mut`
-- `for i = 0; i < n; i = i + 1` — C-style, no parens; init introduces
-  `mut i`
+- `for i := 0; i < n; i = i + 1` — C-style, no parens; `:=` declares
+  `mut i` (`=` in init assigns to an existing mut — [14-short-decl.md](14-short-decl.md))
 - `while cond { … }` — there is no V-style `for cond`
 - `break` / `continue` work in both loops
 - `match` / `pick` are later: [15-match.md](15-match.md),

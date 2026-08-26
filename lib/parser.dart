@@ -43,7 +43,8 @@ final class ParseErrors implements Exception {
 ///   if      := "if" expr block ("else" (if | block))?
 ///   while   := "while" expr block
 ///   for     := "for" ident "in" expr "..<" expr block
-///            | "for" [ident ("=" | ":=") expr] ";" [expr] ";" [ident "=" expr] block
+///            | "for" [ident (":=" | "=") expr] ";" [expr] ";" [ident "=" expr] block
+///              (`:=` declares; `=` assigns to existing mut)
 ///   return  := "return" expr?
 ///   call    := ident "(" (expr ("," expr)*)? ")"
 ///   expr    := equality
@@ -871,7 +872,8 @@ final class Parser {
     final forTok = _expect(TokenKind.for_, 'expected `for`');
 
     // for i in start..<end { ... }
-    // for i = 0; i < n; i = i + 1 { ... }
+    // for i := 0; i < n; i = i + 1 { ... }  — declare
+    // for i = 0; i < n; i = i + 1 { ... }   — assign to existing mut
     // for ; cond; { ... }  /  for ;; { ... }
     if (_check(TokenKind.ident)) {
       final name = _current;
@@ -893,15 +895,20 @@ final class Parser {
       }
     }
 
-    // C-style (`=` or `:=` both introduce a mutable loop variable)
+    // C-style: `:=` declares a mut loop var; `=` assigns to an existing mut.
     String? initName;
     Expr? initExpr;
+    var initDecl = false;
     if (!_check(TokenKind.semicolon)) {
       final name = _expect(TokenKind.ident, 'expected loop variable name');
-      if (_check(TokenKind.equal) || _check(TokenKind.colonEqual)) {
+      if (_check(TokenKind.colonEqual)) {
         _advance();
+        initDecl = true;
+      } else if (_check(TokenKind.equal)) {
+        _advance();
+        initDecl = false;
       } else {
-        throw ParseError('expected `=` or `:=`', _current.pos);
+        throw ParseError('expected `:=` or `=`', _current.pos);
       }
       initName = name.lexeme;
       initExpr = _expr();
@@ -928,6 +935,7 @@ final class Parser {
     return ForCStmt(
       initName: initName,
       initExpr: initExpr,
+      initDecl: initDecl,
       cond: cond,
       postName: postName,
       postExpr: postExpr,
