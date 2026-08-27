@@ -516,7 +516,8 @@ final class ForRangeStmt extends Stmt {
 /// for [name := init | name = init]; [cond]; [post] block
 ///
 /// `:=` declares a new mutable loop variable; `=` assigns to an existing
-/// mutable name in scope. Post is an optional `name = expr` assignment.
+/// mutable name in scope. Post is `name = expr`, `name += expr`, or
+/// `name -= expr`.
 final class ForCStmt extends Stmt {
   final String? initName;
   final Expr? initExpr;
@@ -528,6 +529,10 @@ final class ForCStmt extends Stmt {
   final Expr? cond;
   final String? postName;
   final Expr? postExpr;
+
+  /// `null` for plain `=`; `'+'` for `+=`; `'-'` for `-=`.
+  final String? postCompoundOp;
+
   final Block body;
   final SourcePos pos;
 
@@ -541,6 +546,7 @@ final class ForCStmt extends Stmt {
     required this.cond,
     required this.postName,
     required this.postExpr,
+    this.postCompoundOp,
     required this.body,
     required this.pos,
   });

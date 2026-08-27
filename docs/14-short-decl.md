@@ -15,13 +15,14 @@ let mut name = expr   // equivalent to `:=`
 In C-`for` init the same distinction holds:
 
 ```
-for i := 0; i < n; i = i + 1 { … }   // declare new mut i
+for i := 0; i < n; i += 1 { … }   // declare new mut i
 
 i := 0
-for i = 1; i < n; i = i + 1 { … }   // assign to existing i
+for i = 1; i < n; i += 1 { … }   // assign to existing i
 ```
 
 If `i` is already in scope, `for i := …` is an error (no shadowing).
+Post may use `=`, `+=`, or `-=` ([152](../issues/152-for-c-post-compound.md)).
 
 ## Semantics
 

@@ -468,6 +468,7 @@ void _emitStmt(
         :final cond,
         :final postName,
         :final postExpr,
+        :final postCompoundOp,
         :final body,
         :final pos,
         :final resolvedInitType
@@ -487,7 +488,9 @@ void _emitStmt(
       }();
       final condPart = cond == null ? '' : _emitExpr(cond, ctx);
       final postPart = (postName != null && postExpr != null)
-          ? '$postName = ${_emitExpr(postExpr, ctx)}'
+          ? (postCompoundOp != null
+              ? '$postName $postCompoundOp= ${_emitExpr(postExpr, ctx)}'
+              : '$postName = ${_emitExpr(postExpr, ctx)}')
           : '';
       buf.writeln('${pad}for ($initPart; $condPart; $postPart) {');
       _emitBlock(

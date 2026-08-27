@@ -415,6 +415,7 @@ void _writeStmt(_FmtOut out, Stmt stmt, int indent, {bool inline = false}) {
         :final cond,
         :final postName,
         :final postExpr,
+        :final postCompoundOp,
         :final body
       ):
       if (!inline) out.buf.write(pad);
@@ -427,7 +428,8 @@ void _writeStmt(_FmtOut out, Stmt stmt, int indent, {bool inline = false}) {
       if (cond != null) out.buf.write(_expr(cond, indent));
       out.buf.write('; ');
       if (postName != null && postExpr != null) {
-        out.buf.write('$postName = ${_expr(postExpr, indent)}');
+        final op = postCompoundOp == null ? '=' : '$postCompoundOp=';
+        out.buf.write('$postName $op ${_expr(postExpr, indent)}');
       }
       out.buf.write(' ');
       _writeBlock(out, body, indent, leadingNewline: false);
