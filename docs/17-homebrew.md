@@ -179,7 +179,7 @@ klin --version
 Local test from a clone on Windows (before upstream merge):
 
 ```powershell
-winget install --manifest .\winget\manifests\k\klin-lang\klin\0.1.3\
+winget install --manifest .\winget\manifests\k\klin-lang\klin\0.1.4\
 ```
 
 `klin run` still needs a host C compiler on `PATH` (MSVC / clang / mingw);

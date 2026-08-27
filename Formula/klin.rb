@@ -17,27 +17,27 @@ class Klin < Formula
   desc "Systems language that compiles to C"
   homepage "https://github.com/klin-lang/klin"
   license "MIT"
-  version "0.1.3"
+  version "0.1.4"
 
   on_macos do
     on_arm do
-      url "https://github.com/klin-lang/klin/releases/download/v0.1.3/klin-macos-arm64.tar.gz"
-      sha256 "103d71b3b18ab195b2375dc5304396096ca6fc7e02b6890b47a98d10c2ec38fb"
+      url "https://github.com/klin-lang/klin/releases/download/v0.1.4/klin-macos-arm64.tar.gz"
+      sha256 "543e7ae00f15cb81f52e676f67c185ac66de06fef87ca1c4790224b07ca86f9a"
     end
     on_intel do
-      url "https://github.com/klin-lang/klin/releases/download/v0.1.3/klin-macos-amd64.tar.gz"
-      sha256 "55ba931a9dd1b08ef2191434205b2f666f7aadb5262f8b98ff032e75469a9a08"
+      url "https://github.com/klin-lang/klin/releases/download/v0.1.4/klin-macos-amd64.tar.gz"
+      sha256 "a495c5e019e34ac8077766c9c3ae2f695d1863e52aa0684a6c5c07c0b3d4b74d"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/klin-lang/klin/releases/download/v0.1.3/klin-linux-arm64.tar.gz"
-      sha256 "d637fe29e752283998a7835320460335943504f2b1cf80378d49dd2738c3df58"
+      url "https://github.com/klin-lang/klin/releases/download/v0.1.4/klin-linux-arm64.tar.gz"
+      sha256 "1bd26a2ba5a9ec63ff99bf4068a228b78663ab8168ebc798a5602d654329d389"
     end
     on_intel do
-      url "https://github.com/klin-lang/klin/releases/download/v0.1.3/klin-linux-amd64.tar.gz"
-      sha256 "a8c68ab1870826c3152e23c75a0baf30574298686c94abecc7038d0f964284fb"
+      url "https://github.com/klin-lang/klin/releases/download/v0.1.4/klin-linux-amd64.tar.gz"
+      sha256 "8dfba35577305f753e1ae9a5a72d473e567dabc72067dd31b0d066db04bf19be"
     end
   end
 

@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+# Prepared for microsoft/winget-pkgs (issue 130). Submit is a maintainer action.
+# Archive layout: klin.exe + stdlib\ + templates\ at the zip root — keep them
+# beside the binary (same discovery as lib/project.dart).
+PackageIdentifier: klin-lang.klin
+PackageVersion: 0.1.4
+InstallerType: zip
+ReleaseDate: 2026-08-27
+Installers:
+  - Architecture: x64
+    NestedInstallerType: portable
+    NestedInstallerFiles:
+      - RelativeFilePath: klin.exe
+        PortableCommandAlias: klin
+    InstallerUrl: https://github.com/klin-lang/klin/releases/download/v0.1.4/klin-windows-amd64.zip
+    InstallerSha256: A745548B4E236E5B2219C95CE192FA3021C69751B7984C0860834ED8D8AA4810
+  - Architecture: arm64
+    NestedInstallerType: portable
+    NestedInstallerFiles:
+      - RelativeFilePath: klin.exe
+        PortableCommandAlias: klin
+    InstallerUrl: https://github.com/klin-lang/klin/releases/download/v0.1.4/klin-windows-arm64.zip
+    InstallerSha256: 7CED882D2DB94E8C39B216553B72C927E2FE13FA8379CB5EFFE5B7B52848B2CD
+ManifestType: installer
+ManifestVersion: 1.6.0
