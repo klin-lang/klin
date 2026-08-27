@@ -1,6 +1,6 @@
 # Klin
 
-> **Experimental 0.1.3** — real programs compile (host and several MCU
+> **Experimental 0.1.4** — real programs compile (host and several MCU
 > families). The public packaging surface is still settling. Expect
 > breaking changes before 1.0.
 
