@@ -1,0 +1,93 @@
+module klin_ad9850
+import testing
+
+struct Rec {
+    bytes: [8]u8
+    n: i32
+    latches: i32
+    resets: i32
+}
+
+fn rec_write(ctx: *mut u8, b: u8) {
+    let r = cast(*mut Rec, ctx)
+    if (*r).n < 8 {
+        (*r).bytes[(*r).n] = b
+    }
+    (*r).n = (*r).n + 1
+}
+
+fn rec_latch(ctx: *mut u8) {
+    let r = cast(*mut Rec, ctx)
+    (*r).latches = (*r).latches + 1
+}
+
+fn rec_reset(ctx: *mut u8) {
+    let r = cast(*mut Rec, ctx)
+    (*r).resets = (*r).resets + 1
+}
+
+fn mock_wire(rec: *mut Rec): Wire {
+    return Wire{
+        ctx: cast(*mut u8, rec),
+        write: rec_write,
+        latch: rec_latch,
+        reset: rec_reset
+    }
+}
+
+fn new_rec(): Rec {
+    let mut zero: [8]u8
+    return Rec{ bytes: zero, n: 0, latches: 0, resets: 0 }
+}
+
+fn test_send_streams_five_bytes_lsb_first() {
+    let mut rec = new_rec()
+    let d = attach(mock_wire(&rec), default_ref_hz())
+    d.send(0x04030201, 0, 0)
+    testing.assert_eq_i32(rec.n, 5)
+    testing.assert(rec.bytes[0] == 0x01)
+    testing.assert(rec.bytes[1] == 0x02)
+    testing.assert(rec.bytes[2] == 0x03)
+    testing.assert(rec.bytes[3] == 0x04)
+    testing.assert(rec.bytes[4] == 0)
+    testing.assert_eq_i32(rec.latches, 1)
+}
+
+fn test_set_freq_uses_tuning_word() {
+    let mut rec = new_rec()
+    let d = attach(mock_wire(&rec), 125000000)
+    // FTW(1 MHz) = 0x020C49BA → LSB-first bytes BA 49 0C 02
+    d.set_freq(1000000)
+    testing.assert(rec.bytes[0] == 0xBA)
+    testing.assert(rec.bytes[1] == 0x49)
+    testing.assert(rec.bytes[2] == 0x0C)
+    testing.assert(rec.bytes[3] == 0x02)
+    testing.assert(rec.bytes[4] == 0)
+    testing.assert_eq_i32(rec.latches, 1)
+}
+
+fn test_set_freq_phase_sets_control_byte() {
+    let mut rec = new_rec()
+    let d = attach(mock_wire(&rec), default_ref_hz())
+    // phase 8 → control_byte = 8 << 3 = 64
+    d.set_freq_phase(1000000, 8)
+    testing.assert(rec.bytes[4] == 64)
+    testing.assert_eq_i32(rec.latches, 1)
+}
+
+fn test_power_down_latches_pd_bit() {
+    let mut rec = new_rec()
+    let d = attach(mock_wire(&rec), default_ref_hz())
+    d.power_down()
+    testing.assert(rec.bytes[0] == 0)
+    testing.assert(rec.bytes[4] == 4)
+    testing.assert_eq_i32(rec.latches, 1)
+}
+
+fn test_reset_pulses_wire() {
+    let mut rec = new_rec()
+    let d = attach(mock_wire(&rec), default_ref_hz())
+    d.reset()
+    testing.assert_eq_i32(rec.resets, 1)
+    testing.assert_eq_i32(rec.latches, 0)
+}

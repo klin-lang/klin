@@ -1,0 +1,45 @@
+/// Host demo: the pure AD9850 tuning math plus a stdout "wire" so `klin run`
+/// prints the exact 40-bit frame the chip would receive. No MCU, no hardware.
+module app
+import klin_ad9850 dds
+
+struct Log {
+    n: i32
+}
+
+fn log_write(ctx: *mut u8, b: u8) {
+    printf("  byte %02X\n", cast(u32, b))
+}
+
+fn log_latch(ctx: *mut u8) {
+    printf("  latch (FQ_UD)\n")
+}
+
+fn log_reset(ctx: *mut u8) {
+    printf("  reset (RESET pulse)\n")
+}
+
+fn main() {
+    printf("klin_ad9850 v%d, ref=%u Hz\n", dds.version(), dds.default_ref_hz())
+    printf("FTW(1 Hz)   = %u\n", dds.tuning_word(1, dds.default_ref_hz()))
+    printf("FTW(1 MHz)  = %u\n", dds.tuning_word(1000000, dds.default_ref_hz()))
+    printf("FTW(10 MHz) = %u\n", dds.tuning_word(10000000, dds.default_ref_hz()))
+
+    let mut lg = Log{ n: 0 }
+    let wire = dds.Wire{
+        ctx: cast(*mut u8, &lg),
+        write: log_write,
+        latch: log_latch,
+        reset: log_reset
+    }
+    let d = dds.attach(wire, dds.default_ref_hz())
+
+    printf("set_freq 1 MHz:\n")
+    d.set_freq(1000000)
+
+    printf("set_freq_phase 10 MHz, step 8 (90 deg):\n")
+    d.set_freq_phase(10000000, 8)
+
+    printf("power_down:\n")
+    d.power_down()
+}

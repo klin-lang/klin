@@ -1,0 +1,64 @@
+/// AD9850 DDS chip driver (serial load). No MCU types — the app owns the four
+/// control pins (W_CLK, FQ_UD, DATA, RESET) and exposes them through `Wire`.
+/// The driver only builds the 40-bit word and streams it. No heap, no IRQ.
+module klin_ad9850
+
+/// App-owned serial hooks for one AD9850.
+///
+/// - `write`: clock out one byte, **LSB first** (D0 first), pulsing W_CLK per bit.
+/// - `latch`: pulse FQ_UD to load the 40 shifted bits into the DDS core.
+/// - `reset`: pulse RESET, then re-enter serial mode (board-specific priming).
+pub struct Wire {
+    ctx: *mut u8
+    write: fn(*mut u8,u8)
+    latch: fn(*mut u8)
+    reset: fn(*mut u8)
+}
+
+pub struct Dev {
+    wire: Wire
+    ref_hz: u32
+}
+
+/// Store the wire and the board reference clock. No hidden init cost.
+pub fn attach(wire: Wire, ref_hz: u32): Dev {
+    return Dev{ wire: wire, ref_hz: ref_hz }
+}
+
+fn put(dev: Dev, b: u8) {
+    let w = dev.wire.write
+    w(dev.wire.ctx, b)
+}
+
+/// Shift the 40-bit word (four FTW bytes LSB-first, then the W4 control byte)
+/// and latch it with FQ_UD.
+pub fn (dev: Dev) send(ftw: u32, phase: u8, power_down: u8) {
+    put(dev, word_byte(ftw, 0))
+    put(dev, word_byte(ftw, 1))
+    put(dev, word_byte(ftw, 2))
+    put(dev, word_byte(ftw, 3))
+    put(dev, control_byte(phase, power_down))
+    let l = dev.wire.latch
+    l(dev.wire.ctx)
+}
+
+/// Program `freq_hz` (phase 0, powered up).
+pub fn (dev: Dev) set_freq(freq_hz: u32) {
+    dev.send(tuning_word(freq_hz, dev.ref_hz), 0, 0)
+}
+
+/// Program `freq_hz` with a 5-bit phase offset (`0..31`, 11.25° per step).
+pub fn (dev: Dev) set_freq_phase(freq_hz: u32, phase: u8) {
+    dev.send(tuning_word(freq_hz, dev.ref_hz), phase, 0)
+}
+
+/// Latch the power-down bit; the output stays off until the next `set_freq`.
+pub fn (dev: Dev) power_down() {
+    dev.send(0, 0, 1)
+}
+
+/// Pulse RESET through the wire (the app re-enters serial mode).
+pub fn (dev: Dev) reset() {
+    let r = dev.wire.reset
+    r(dev.wire.ctx)
+}
