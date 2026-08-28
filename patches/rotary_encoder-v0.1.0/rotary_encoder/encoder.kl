@@ -1,0 +1,92 @@
+/// Quadrature rotary encoder + optional switch. MCU-agnostic `Wire`.
+/// Fits EC11 / KY-040 and any A/B (+ SW) mechanical encoder. No heap, no IRQ.
+module rotary_encoder
+
+/// App-owned pin reads. Levels are **logical** after polarity fix:
+/// A/B: `0`/`1`; switch: `0` = released, `1` = pressed (invert in the app if
+/// the hardware is active-low).
+pub struct Wire {
+    ctx: *mut u8
+    read: fn(*mut u8,i32):i32
+}
+
+pub struct Dev {
+    wire: Wire
+    ab: i32
+    btn: i32
+    btn_raw: i32
+    btn_n: i32
+    btn_thresh: i32
+}
+
+/// Result of one `poll`. At most one event per call (rotation beats button).
+pub enum Event {
+    None
+    Cw
+    Ccw
+    Press
+    Release
+}
+
+fn read_ch(wire: Wire, ch: i32): i32 {
+    let f = wire.read
+    return f(wire.ctx, ch) & 1
+}
+
+/// Store the wire; sample A/B once for the baseline. Button starts released.
+pub fn attach(wire: Wire): Dev {
+    return attach_debounce(wire, default_btn_thresh())
+}
+
+/// Like `attach`, but set the button debounce threshold (poll counts).
+pub fn attach_debounce(wire: Wire, btn_thresh: i32): Dev {
+    let a = read_ch(wire, ch_a())
+    let b = read_ch(wire, ch_b())
+    let thr = pick btn_thresh < 1 { 1 } { btn_thresh }
+    return Dev{
+        wire: wire,
+        ab: ab_code(a, b),
+        btn: 0,
+        btn_raw: 0,
+        btn_n: 0,
+        btn_thresh: thr
+    }
+}
+
+/// One poll tick: decode A/B, then debounce the switch. Caller owns the rate.
+/// Always samples A/B/SW so button debounce stays coherent during turns.
+pub fn (mut d: Dev) poll(): Event {
+    let a = read_ch(d.wire, ch_a())
+    let b = read_ch(d.wire, ch_b())
+    let raw = read_ch(d.wire, ch_sw())
+    let curr = ab_code(a, b)
+    let delta = step(d.ab, curr)
+    d.ab = curr
+
+    let mut btn_ev = Event.None
+    if raw == d.btn_raw {
+        d.btn_n = 0
+    } else {
+        d.btn_n = d.btn_n + 1
+        if d.btn_n >= d.btn_thresh {
+            d.btn_raw = raw
+            d.btn_n = 0
+            if raw != d.btn {
+                d.btn = raw
+                if raw == 1 {
+                    btn_ev = Event.Press
+                } else {
+                    btn_ev = Event.Release
+                }
+            }
+        }
+    }
+
+    if delta == 1 {
+        return Event.Cw
+    }
+    if delta == -1 {
+        return Event.Ccw
+    }
+    return btn_ev
+}

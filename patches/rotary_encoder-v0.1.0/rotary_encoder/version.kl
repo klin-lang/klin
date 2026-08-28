@@ -1,0 +1,6 @@
+module rotary_encoder
+
+/// Package version for `v0.1.0`.
+pub fn version(): i32 {
+    return 1
+}
