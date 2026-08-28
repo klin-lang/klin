@@ -1,4 +1,4 @@
-# 153 — Numeric `cast` (integer ↔ integer, float ↔ float, int ↔ float)
+# 154 — Numeric `cast` (integer ↔ integer, float ↔ float, int ↔ float)
 
 **Status:** planned
 **Depends on:** [002](002-symbol-table-checker.md) (checker/types), [019](019-default-int-types.md),
