@@ -1,0 +1,41 @@
+module klin_ad9850
+import testing
+
+fn test_version() {
+    testing.assert_eq_i32(version(), 2)
+}
+
+fn test_default_ref() {
+    testing.assert(default_ref_hz() == 125000000)
+}
+
+fn test_tuning_word() {
+    // 1 Hz  @125 MHz → floor(2^32 / 125e6) = 34
+    testing.assert(tuning_word(1, 125000000) == 34)
+    // 1 MHz @125 MHz → 0x020C49BA = 34359738
+    testing.assert(tuning_word(1000000, 125000000) == 34359738)
+    // Intermediate is i64 via cast; result is the 32-bit FTW.
+    testing.assert(tuning_word(1000, 1000000) == cast(u32, cast(i64, 1000) * 4294967296 / 1000000))
+}
+
+fn test_freq_from_word() {
+    // Inverse of the known 1 MHz FTW at 125 MHz (floor → 999999 Hz).
+    testing.assert(freq_from_word(34359738, 125000000) == 999999)
+    // Floor both ways: tuning_word(1000, 1e6) → 4294967 → 999 Hz back.
+    testing.assert(freq_from_word(tuning_word(1000, 1000000), 1000000) == 999)
+}
+
+fn test_control_byte() {
+    testing.assert(control_byte(0, 0) == 0)
+    testing.assert(control_byte(1, 0) == 8)
+    testing.assert(control_byte(31, 0) == 248)
+    testing.assert(control_byte(0, 1) == 4)
+    testing.assert(control_byte(31, 1) == 252)
+}
+
+fn test_word_byte() {
+    testing.assert(word_byte(0x04030201, 0) == 1)
+    testing.assert(word_byte(0x04030201, 1) == 2)
+    testing.assert(word_byte(0x04030201, 2) == 3)
+    testing.assert(word_byte(0x04030201, 3) == 4)
+}

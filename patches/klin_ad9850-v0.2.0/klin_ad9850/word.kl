@@ -1,0 +1,35 @@
+module klin_ad9850
+
+/// Reference clock most AD9850 breakout modules ship with (125 MHz).
+pub fn default_ref_hz(): u32 {
+    return 125000000
+}
+
+/// 2^32 — the AD9850 phase-accumulator span. Kept as `i64` so
+/// `freq * span` never overflows a 32-bit register.
+fn span(): i64 {
+    return 4294967296
+}
+
+/// 32-bit frequency tuning word: `FTW = floor(freq_hz * 2^32 / ref_hz)`.
+/// Whole Hz in, no float; `ref_hz` must be > 0. Intermediate multiply is
+/// `i64` via `cast`; the result is narrowed to `u32`.
+pub fn tuning_word(freq_hz: u32, ref_hz: u32): u32 {
+    return cast(u32, cast(i64, freq_hz) * span() / cast(i64, ref_hz))
+}
+
+/// Approximate output Hz for a tuning word (inverse of `tuning_word`).
+pub fn freq_from_word(ftw: u32, ref_hz: u32): u32 {
+    return cast(u32, cast(i64, ftw) * cast(i64, ref_hz) / span())
+}
+
+/// AD9850 W4 control byte: the two control bits are `0` (serial mode), then
+/// the power-down bit (`b2`) and a 5-bit phase (`b3..b7`, 11.25° per step).
+pub fn control_byte(phase: u8, power_down: u8): u8 {
+    return (phase & 31) << 3 | (power_down & 1) << 2
+}
+
+/// Byte `i` (0 = LSB) of the 32-bit tuning word — the wire sends byte 0 first.
+pub fn word_byte(ftw: u32, i: u8): u8 {
+    return cast(u8, ftw >> (i * 8) & 0xFF)
+}
