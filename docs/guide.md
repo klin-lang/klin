@@ -41,6 +41,9 @@ fn main() {
 - `bool`, `str` (C string pointer — no `==` on content; use `import str`)
 - Literals: `0xFF`, `0b1010`, `0o755`, `1_000`, `1.5e-3`, `'A'`
 - No implicit numeric truthiness: `if` wants `bool`
+- No implicit widen/narrow between concrete numeric types — use
+  `cast(i64, n)` / `cast(f64, n)` ([syntax.md](syntax.md),
+  [154](../issues/154-numeric-cast.md))
 
 `:=` is sugar for `let mut` ([14-short-decl.md](14-short-decl.md)).
 

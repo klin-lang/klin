@@ -1,6 +1,6 @@
 # 154 — Numeric `cast` (integer ↔ integer, float ↔ float, int ↔ float)
 
-**Status:** planned
+**Status:** ✅ done
 **Depends on:** [002](002-symbol-table-checker.md) (checker/types), [019](019-default-int-types.md),
 [072](072-enums.md) (`cast` surface already exists)
 
@@ -145,10 +145,10 @@ integer literal). Keeps the “no surprise truncate of `1.5`” story.
 
 ## Completion criteria
 
-- [ ] Checker accepts numeric prim ↔ numeric prim via `cast(T, expr)`.
-- [ ] Checker still rejects `bool` / non-numeric / float↔enum.
-- [ ] Emission remains a plain C cast (pointers still via `uintptr_t`).
-- [ ] Untyped int/float inside `cast` follow the rules above.
-- [ ] Docs (syntax and/or guide) describe semantics = C.
-- [ ] Golden + negative tests; `dart analyze` / `dart test` green.
-- [ ] Entry in [sorted.md](sorted.md) marked ✅.
+- [x] Checker accepts numeric prim ↔ numeric prim via `cast(T, expr)`.
+- [x] Checker still rejects `bool` / non-numeric / float↔enum.
+- [x] Emission remains a plain C cast (pointers still via `uintptr_t`).
+- [x] Untyped int/float inside `cast` follow the rules above.
+- [x] Docs (syntax and/or guide) describe semantics = C.
+- [x] Golden + negative tests; `dart analyze` / `dart test` green.
+- [x] Entry in [sorted.md](sorted.md) marked ✅.

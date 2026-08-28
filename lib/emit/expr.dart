@@ -100,8 +100,8 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
     CastExpr(:final resolvedType, :final expr) => () {
         final target = resolvedType;
         if (target == null) throw StateError('emit: cast without type');
-        // Pointer casts round-trip through uintptr_t; enum/integer casts are
-        // a plain C cast (issue 072).
+        // Pointer casts round-trip through uintptr_t; enum/integer and
+        // numeric casts are a plain C cast (issues 072, 154).
         if (target is PtrType) {
           return '(${_cType(target)})(uintptr_t)(${_emitExpr(expr, ctx)})';
         }

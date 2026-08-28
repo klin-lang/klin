@@ -1,0 +1,36 @@
+// Numeric cast (issue 154): explicit int↔int, float↔float, int↔float.
+// Semantics match a C cast; no implicit widen on assign or operators.
+
+fn main() {
+    let a: i32 = 40
+
+    // Widen / narrow integers.
+    let wide: i64 = cast(i64, a)
+    printf("wide=%lld\n", wide)
+    let narrow: u8 = cast(u8, 300)
+    printf("narrow=%d\n", cast(i32, narrow))
+
+    // Signed ↔ unsigned (C cast).
+    let neg: i32 = 0 - 1
+    let bits: u32 = cast(u32, neg)
+    printf("bits=%u\n", bits)
+
+    // Int ↔ float and float ↔ float.
+    let af: f64 = cast(f64, a)
+    printf("af=%g\n", af)
+    let trunc: i32 = cast(i32, cast(f64, 3.9))
+    printf("trunc=%d\n", trunc)
+    let half: f32 = cast(f32, af)
+    printf("half=%g\n", half)
+
+    // Aliases int / float (= i32 / f64) and same-type no-op.
+    let as_int: int = cast(int, wide)
+    let as_float: float = cast(float, a)
+    let same: i32 = cast(i32, a)
+    printf("aliases=%d %g %d\n", as_int, as_float, same)
+
+    // Untyped literals inside cast.
+    let lit_i: i64 = cast(i64, 7)
+    let lit_f: f32 = cast(f32, 1.5)
+    printf("lits=%lld %g\n", lit_i, lit_f)
+}
