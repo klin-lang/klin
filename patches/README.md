@@ -10,6 +10,7 @@ as a mirror after the first tag if useful for offline `-I`.
 | [klin_xpt2046-v0.1.0/](klin_xpt2046-v0.1.0/) | [`klin-lang/klin_xpt2046`](https://github.com/klin-lang/klin_xpt2046) **published** → [`v0.1.0`](https://github.com/klin-lang/klin_xpt2046/releases/tag/v0.1.0) | [149](../issues/149-klin-xpt2046.md) ✅ |
 | [klin_ad9850-v0.1.0/](klin_ad9850-v0.1.0/) | [`klin-lang/klin_ad9850`](https://github.com/klin-lang/klin_ad9850) **published** → [`v0.1.0`](https://github.com/klin-lang/klin_ad9850/releases/tag/v0.1.0) | [153](../issues/153-klin-ad9850.md) ✅ |
 | [klin_ad9850-v0.2.0/](klin_ad9850-v0.2.0/) | [`klin-lang/klin_ad9850`](https://github.com/klin-lang/klin_ad9850) **published** → [`v0.2.0`](https://github.com/klin-lang/klin_ad9850/releases/tag/v0.2.0) (typed `u8`/`u32` + numeric `cast`) | [153](../issues/153-klin-ad9850.md) ✅ |
+| [rotary_encoder-v0.1.0/](rotary_encoder-v0.1.0/) | [`klin-lang/rotary_encoder`](https://github.com/klin-lang/rotary_encoder) seed — quadrature A/B + switch `Wire`; tag when published | [155](../issues/155-rotary-encoder.md) 🔨 |
 
 ```sh
 cd /path/to/machine_avr

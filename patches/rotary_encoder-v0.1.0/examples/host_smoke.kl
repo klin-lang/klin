@@ -1,0 +1,63 @@
+/// Host demo: scripted A/B/SW levels print Event names. No MCU, no hardware.
+module app
+import rotary_encoder enc
+
+struct Rec {
+    a: [8]i32
+    b: [8]i32
+    sw: [8]i32
+    n: i32
+    i: i32
+}
+
+fn rec_read(ctx: *mut u8, ch: i32): i32 {
+    let r = cast(*mut Rec, ctx)
+    let mut i = (*r).i
+    if i >= (*r).n {
+        i = (*r).n - 1
+    }
+    if ch == enc.ch_a() {
+        return (*r).a[i]
+    }
+    if ch == enc.ch_b() {
+        return (*r).b[i]
+    }
+    let v = (*r).sw[i]
+    (*r).i = (*r).i + 1
+    return v
+}
+
+fn event_name(e: enc.Event): str {
+    match e {
+        enc.Event.None { return "None" }
+        enc.Event.Cw { return "Cw" }
+        enc.Event.Ccw { return "Ccw" }
+        enc.Event.Press { return "Press" }
+        enc.Event.Release { return "Release" }
+    }
+}
+
+fn main() {
+    printf("rotary_encoder v%d\n", enc.version())
+    printf("step(0,1)=%d step(0,2)=%d\n", enc.step(0, 1), enc.step(0, 2))
+
+    let mut rec = Rec{
+        // rows: idle → CW step → idle → press×2 → hold → release×2
+        a: [0, 0, 0, 0, 0, 0, 0, 0],
+        b: [0, 1, 1, 1, 1, 1, 1, 1],
+        sw: [0, 0, 0, 1, 1, 1, 0, 0],
+        n: 8,
+        i: 0
+    }
+    let mut d = enc.attach_debounce(
+        enc.Wire{ ctx: cast(*mut u8, &rec), read: rec_read },
+        2
+    )
+    rec.i = 1
+    let mut k = 0
+    while k < 7 {
+        let e = d.poll()
+        printf("poll %d -> %s\n", k, event_name(e))
+        k = k + 1
+    }
+}

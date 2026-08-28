@@ -1,0 +1,134 @@
+module rotary_encoder
+import testing
+
+/// Scripted pin levels for host tests (no MCU).
+struct Rec {
+    a: [32]i32
+    b: [32]i32
+    sw: [32]i32
+    n: i32
+    i: i32
+}
+
+fn rec_read(ctx: *mut u8, ch: i32): i32 {
+    let r = cast(*mut Rec, ctx)
+    let mut i = (*r).i
+    if i >= (*r).n {
+        i = (*r).n - 1
+    }
+    if i < 0 {
+        return 0
+    }
+    // Advance the sample index once per full A/B/SW triad read order:
+    // poll reads A, then B, then SW — bump on SW so one poll = one row.
+    if ch == ch_a() {
+        return (*r).a[i]
+    }
+    if ch == ch_b() {
+        return (*r).b[i]
+    }
+    let v = (*r).sw[i]
+    (*r).i = (*r).i + 1
+    return v
+}
+
+fn mock_wire(rec: *mut Rec): Wire {
+    return Wire{ ctx: cast(*mut u8, rec), read: rec_read }
+}
+
+fn new_rec(n: i32): Rec {
+    let z: [32]i32 = [
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0
+    ]
+    return Rec{ a: z, b: z, sw: z, n: n, i: 0 }
+}
+
+fn test_poll_cw_one_step() {
+    let mut rec = new_rec(3)
+    // baseline 00 (consumed by attach), then 01 → Cw, then idle 01
+    rec.a[0] = 0
+    rec.b[0] = 0
+    rec.a[1] = 0
+    rec.b[1] = 1
+    rec.a[2] = 0
+    rec.b[2] = 1
+    let mut d = attach(mock_wire(&rec))
+    // attach already sampled row 0 via direct wire.read; reset index to 1
+    rec.i = 1
+    let e = d.poll()
+    testing.assert(e == Event.Cw)
+    rec.i = 2
+    let e2 = d.poll()
+    testing.assert(e2 == Event.None)
+}
+
+fn test_poll_ccw_one_step() {
+    let mut rec = new_rec(2)
+    rec.a[0] = 0
+    rec.b[0] = 0
+    rec.a[1] = 1
+    rec.b[1] = 0
+    let mut d = attach(mock_wire(&rec))
+    rec.i = 1
+    let e = d.poll()
+    testing.assert(e == Event.Ccw)
+}
+
+fn test_button_press_after_debounce() {
+    let mut rec = new_rec(6)
+    // thresh default 3: need 3 consecutive pressed samples
+    rec.sw[0] = 0
+    rec.sw[1] = 1
+    rec.sw[2] = 1
+    rec.sw[3] = 1
+    rec.sw[4] = 1
+    rec.sw[5] = 1
+    let mut d = attach_debounce(mock_wire(&rec), 3)
+    rec.i = 1
+    testing.assert(d.poll() == Event.None)
+    rec.i = 2
+    testing.assert(d.poll() == Event.None)
+    rec.i = 3
+    testing.assert(d.poll() == Event.Press)
+    rec.i = 4
+    testing.assert(d.poll() == Event.None)
+}
+
+fn test_button_release_after_debounce() {
+    let mut rec = new_rec(8)
+    rec.sw[0] = 0
+    // press
+    rec.sw[1] = 1
+    rec.sw[2] = 1
+    rec.sw[3] = 1
+    // release
+    rec.sw[4] = 0
+    rec.sw[5] = 0
+    rec.sw[6] = 0
+    rec.sw[7] = 0
+    let mut d = attach_debounce(mock_wire(&rec), 3)
+    rec.i = 1
+    d.poll()
+    rec.i = 2
+    d.poll()
+    rec.i = 3
+    testing.assert(d.poll() == Event.Press)
+    rec.i = 4
+    testing.assert(d.poll() == Event.None)
+    rec.i = 5
+    testing.assert(d.poll() == Event.None)
+    rec.i = 6
+    testing.assert(d.poll() == Event.Release)
+}
+
+fn test_attach_debounce_min_thresh() {
+    let mut rec = new_rec(2)
+    rec.sw[0] = 0
+    rec.sw[1] = 1
+    let mut d = attach_debounce(mock_wire(&rec), 0)
+    rec.i = 1
+    testing.assert(d.poll() == Event.Press)
+}

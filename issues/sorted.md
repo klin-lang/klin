@@ -110,6 +110,7 @@ building the core from scratch.
 | [148](148-klin-flash.md) | `klin flash` thin wrapper vs board `make flash` (no flasher in compiler) | 💭 | 010, 075, 147 |
 | [149](149-klin-xpt2046.md) | `klin_xpt2046` XPT2046 resistive touch chip driver (SPI `Wire`) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/klin_xpt2046)) | 020, 049, 061, 150 |
 | [153](153-klin-ad9850.md) | `klin_ad9850` AD9850 DDS signal generator chip driver (serial `Wire`) | ✅ `@v0.2.0` ([repo](https://github.com/klin-lang/klin_ad9850); `u8`/`u32` + [154](154-numeric-cast.md)) | 020, 049, 149, 154 |
+| [155](155-rotary-encoder.md) | `rotary_encoder` quadrature A/B + switch driver (`Wire`) | 🔨 `@v0.1.0` seed ([patches](../patches/rotary_encoder-v0.1.0/)) | 020, 049, 072, 149 |
 | [150](150-sd-spi-fatfs.md) | `klin_sd_spi` + `klin_fatfs` (SPI SD blocks + ChaN FatFs; SDIO later) | ✅ `@v0.1.0` ([sd](https://github.com/klin-lang/klin_sd_spi), [fatfs](https://github.com/klin-lang/klin_fatfs)) | 021, 061, 147, 149 |
 | [095](095-board-waveshare-rp2350-lcd-096.md) | Board pack Waveshare RP2350-LCD-0.96 (ST7735S) | ✅ `@v0.13.0` ([repo](https://github.com/klin-lang/waveshare_rp2350_lcd_096)) | 061, 062 |
 | [096](096-board-nucleo-f411re.md) | Board pack Nucleo-F411RE (pins + `.ioc` + examples) | ✅ `@v0.1.3` ([repo](https://github.com/klin-lang/nucleo_f411re)) | 061, 074, 075 |

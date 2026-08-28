@@ -1,0 +1,6 @@
+module rotary_encoder
+import testing
+
+fn test_version_again() {
+    testing.assert_eq_i32(version(), 1)
+}

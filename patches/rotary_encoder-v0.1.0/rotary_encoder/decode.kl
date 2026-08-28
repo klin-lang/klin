@@ -1,0 +1,40 @@
+/// Pure quadrature decode. No MCU types, no heap, no IRQ.
+module rotary_encoder
+
+/// Wire channel ids for `Wire.read(ctx, ch)`.
+pub fn ch_a(): i32 {
+    return 0
+}
+
+pub fn ch_b(): i32 {
+    return 1
+}
+
+/// Optional switch under the knob. Unused → always return idle `0`.
+pub fn ch_sw(): i32 {
+    return 2
+}
+
+/// Default button debounce in **poll counts** (not ms — the app owns time).
+pub fn default_btn_thresh(): i32 {
+    return 3
+}
+
+/// Pack A/B levels (`0`/`1`) into a 2-bit Gray code `0..3`.
+pub fn ab_code(a: i32, b: i32): i32 {
+    return ((a & 1) << 1) | (b & 1)
+}
+
+/// One Gray-code step: `+1` = CW, `-1` = CCW, `0` = idle / illegal jump.
+///
+/// Table index = `(prev << 2) | curr`. Illegal diagonals (two bits flip) stay 0.
+pub fn step(prev: i32, curr: i32): i32 {
+    let table: [16]i32 = [
+        0, 1, -1, 0,
+        -1, 0, 0, 1,
+        1, 0, 0, -1,
+        0, -1, 1, 0
+    ]
+    let i = ((prev & 3) << 2) | (curr & 3)
+    return table[i]
+}
