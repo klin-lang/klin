@@ -1,0 +1,10 @@
+// Explicit numeric conversions via cast(T, expr) — issue 154.
+// No silent widen: i32 and i64 stay distinct until you cast.
+
+fn main() {
+    let n: i32 = 1000
+    let big: i64 = cast(i64, n)
+    let as_f: f64 = cast(f64, n)
+    let back: i32 = cast(i32, as_f)
+    printf("i64=%lld f64=%g back=%d\n", big, as_f, back)
+}

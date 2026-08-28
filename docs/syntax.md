@@ -51,6 +51,32 @@ Runnable: [`examples/enums.kl`](../examples/enums.kl),
 Issues: [072](../issues/072-enums.md), [126](../issues/126-enum-index.md),
 [129](../issues/129-enum-match-exhaustive.md).
 
+## Numeric `cast`
+
+Concrete numeric types do **not** convert implicitly. Use the same
+`cast(T, expr)` form as for enums (issue [154](../issues/154-numeric-cast.md)):
+
+```klin
+let a: i32 = 40
+let b: i64 = cast(i64, a)
+let c: f64 = cast(f64, a)
+let d: u8 = cast(u8, 300)       // truncates like C → 44
+let e: i32 = cast(i32, cast(f64, 3.9))  // toward zero → 3
+```
+
+- Allowed: integer ↔ integer, float ↔ float, integer ↔ float
+  (`i8`…`i64`, `u8`…`u64`, `usize`/`isize`, `f32`/`f64`, aliases
+  `int`/`float`). Same-type cast is a no-op.
+- Semantics = a plain C cast (truncation / wrap; no saturating /
+  checked casts in the language).
+- Untyped int literal may target integer or float; untyped float
+  literal may target float only (`cast(i32, 1.5)` is an error — cast
+  to a float first).
+- Not allowed: `bool`, struct/array/slice/`str`, float ↔ enum.
+- Pointer casts stay separate (`cast(*mut u32, addr)` via `uintptr_t`).
+
+Runnable: [`examples/numeric_cast.kl`](../examples/numeric_cast.kl).
+
 ## Associated functions (`Type.fn`)
 
 A function on a type with **no** instance receiver. Declaration

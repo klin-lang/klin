@@ -2428,8 +2428,33 @@ final class Checker {
               source is EnumType) {
             return target;
           }
+          // Explicit numeric prim ↔ prim (issue 154). No implicit widen.
+          if (target is PrimType &&
+              (target.kind.isInteger || target.kind.isFloat)) {
+            if (source is UntypedFloat && target.kind.isInteger) {
+              throw CheckError(
+                'cast from float literal to integer is not allowed; '
+                'cast to a float first',
+                pos,
+              );
+            }
+            if (source is UntypedInt || source is UntypedFloat) {
+              _materialize(expr, target);
+              return target;
+            }
+            if (source is PrimType &&
+                (source.kind.isInteger || source.kind.isFloat)) {
+              return target;
+            }
+            throw CheckError(
+              'numeric cast requires an integer or float',
+              pos,
+            );
+          }
           throw CheckError(
-              'MVP cast supports pointer or enum/integer conversions', pos);
+            'cast supports pointer, enum↔integer, or numeric conversions',
+            pos,
+          );
         }(),
       MethodCallExpr() => _checkMethodCall(expr),
       StructLitExpr(

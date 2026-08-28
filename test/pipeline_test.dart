@@ -1138,6 +1138,100 @@ fn main() {
     expect(c, contains('(Status)(5)'));
   });
 
+  test('golden: numeric cast int/float (issue 154)', () async {
+    final result = await _compileAndRun('test/numeric_cast.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/numeric_cast.out').readAsString());
+
+    final source = File('test/numeric_cast.kl').readAsStringSync();
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'test/numeric_cast.kl');
+    expect(c, contains('(int64_t)(a)'));
+    expect(c, contains('(uint8_t)(300)'));
+    expect(c, contains('(double)(a)'));
+    expect(c, contains('(int32_t)('));
+    expect(c, contains('(float)('));
+  });
+
+  test('error: numeric cast rejects bool (issue 154)', () {
+    const source = '''
+fn main() {
+  let x: i32 = cast(i32, true)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError &&
+          e.toString().contains('numeric cast requires an integer or float'))),
+    );
+  });
+
+  test('error: numeric cast rejects float literal to integer (issue 154)', () {
+    const source = '''
+fn main() {
+  let x: i32 = cast(i32, 1.5)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError &&
+          e.toString().contains('float literal to integer'))),
+    );
+  });
+
+  test('error: cast rejects float to enum (issue 154)', () {
+    const source = '''
+enum Color { Red, Green }
+fn main() {
+  let c: Color = cast(Color, cast(f64, 1))
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError &&
+          e.toString().contains('cast to enum requires an integer'))),
+    );
+  });
+
+  test('error: cast rejects struct target (issue 154)', () {
+    const source = '''
+struct P { x: i32 }
+fn main() {
+  let p = cast(P, 1)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError &&
+          e.toString().contains(
+              'cast supports pointer, enum↔integer, or numeric conversions'))),
+    );
+  });
+
+  test('error: no implicit i32 to i64 assign (issue 154)', () {
+    const source = '''
+fn main() {
+  let a: i32 = 1
+  let b: i64 = a
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError && e.toString().contains('type mismatch'))),
+    );
+  });
+
   test('golden: exhaustive enum match without else (issue 129)', () async {
     final result = await _compileAndRun('test/enum_match_exh.kl', tmp);
     expect(result.exitCode, 0, reason: result.stderr);
