@@ -141,6 +141,7 @@ building the core from scratch.
 | [076](076-release-windows-arm.md) | Release: Windows/ARM targets + publishing + checksums | ✅ | 067 |
 | [077](077-string-template.md) | Runtime string substitution / templates (`{0}` positional + `{key}` KV) | 💭 | 007, 057, 016, 060 |
 | [078](078-bitwise-ops.md) | Bitwise operators (`\| & ^ ~ << >>`; integers only) | ✅ | 002, 019 |
+| [153](153-numeric-cast.md) | Numeric `cast` (int↔int, float↔float, int↔float; explicit, C semantics) | planned | 002, 019, 072 |
 | [097](097-logical-ops.md) | Logical operators (`&&` / `\|\|`; bool only, short-circuit) | ✅ | 002, 003, 078 |
 | [079](079-associated-functions.md) | Associated/static functions on types (`Type.func`; constructors/parsers) | ✅ | 005, 072 |
 | [080](080-stdlib-str.md) | `stdlib/str` — `eq`/`len`/… (string compares without `==`) | ✅ | 012, 021 |
