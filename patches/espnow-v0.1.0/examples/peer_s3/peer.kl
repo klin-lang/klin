@@ -1,0 +1,65 @@
+// ESP32-S3 ESP-NOW broadcast demo via klin-lang/espnow (ESP-IDF).
+// Pair two boards on the same channel; each prints RX and rebroadcasts.
+//   make emit && make build && make flash
+import "../../espnow" now
+
+@[cexport, codename("klin_app_main")]
+fn app_main_klin() {
+  let mut e = now.init()
+  if e != now.err_ok() {
+    return
+  }
+  e = now.set_channel(6)
+  if e != now.err_ok() {
+    return
+  }
+  now.log_self()
+
+  e = now.add_broadcast()
+  if e != now.err_ok() {
+    return
+  }
+
+  let mut peer: [6]u8
+  peer[0] = 255
+  peer[1] = 255
+  peer[2] = 255
+  peer[3] = 255
+  peer[4] = 255
+  peer[5] = 255
+
+  let mut msg: [16]u8
+  msg[0] = 75
+  msg[1] = 76
+  msg[2] = 73
+  msg[3] = 78
+  msg[4] = 45
+  msg[5] = 78
+  msg[6] = 79
+  msg[7] = 87
+
+  e = now.send(cast(*u8, &peer[0]), cast(*u8, &msg[0]), 8)
+  if e == now.err_ok() {
+    let _w = now.send_wait(2000)
+  }
+
+  let mut src: [6]u8
+  let mut buf: [250]u8
+  while true {
+    if now.recv_available() {
+      let n = now.recv(cast(*mut u8, &src[0]), cast(*mut u8, &buf[0]), 250)
+      if n > 0 {
+        let _s = now.send(cast(*u8, &peer[0]), cast(*u8, &buf[0]), n)
+        let _w2 = now.send_wait(1000)
+      }
+    }
+    let mut i: i32 = 0
+    while i < 500000 {
+      i = i + 1
+    }
+  }
+}
+
+fn main() {
+  app_main_klin()
+}

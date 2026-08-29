@@ -33,7 +33,8 @@ Sibling (non-network): [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP 
 | W2 | **Scan** (SSID list) | `esp_wifi` | ✅ `@v0.3.0` — caller buffer for SSID; fixed C table max 16 |
 | W3 | **RSSI / link stats** | `esp_wifi` | ✅ `@v0.4.0` — thin `esp_wifi_sta_get_ap_info` after assoc |
 
-Wi‑Fi W1–W3 + N1 dual + N2 sockets + N3 HTTP/TLS + ETH E1 RMII done. **Next**: ETH **E2** (other SPI chips); IoT → [105](105-later-tracks-iot.md).
+Wi‑Fi W1–W3 + N1 dual + N2 sockets + N3 HTTP/TLS + ETH E1 RMII done. **Next**: ETH **E2** (other SPI chips); IoT → [105](105-later-tracks-iot.md).  
+ESP-NOW (connectionless peer frames) is a **sibling** package — [159](159-esp-now-idf.md) / seed [`patches/espnow-v0.1.0/`](../patches/espnow-v0.1.0/) — not a row on `esp_wifi`.
 
 ## Queue — Ethernet (`esp_eth`, same package)
 
