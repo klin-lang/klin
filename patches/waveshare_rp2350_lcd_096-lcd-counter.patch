@@ -1,0 +1,332 @@
+From 0548c09ab6863b3fbde0a932eea57623c1556071 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Sat, 29 Aug 2026 09:32:33 +0000
+Subject: [PATCH] Add lcd_counter demo and PICOTOOL.md flash guide
+
+White LCD with black x: counter (++/s). Document UF2/picotool load
+for RP2350-LCD-0.96 (BOOT is bootloader-only).
+---
+ PICOTOOL.md                         | 52 +++++++++++++++++++
+ README.md                           |  6 ++-
+ examples/lcd_counter/Makefile       | 33 ++++++++++++
+ examples/lcd_counter/image_def.S    | 18 +++++++
+ examples/lcd_counter/lcd_counter.kl | 27 ++++++++++
+ examples/lcd_counter/linker.ld      | 37 ++++++++++++++
+ examples/lcd_counter/startup.s      | 79 +++++++++++++++++++++++++++++
+ 7 files changed, 250 insertions(+), 2 deletions(-)
+ create mode 100644 PICOTOOL.md
+ create mode 100644 examples/lcd_counter/Makefile
+ create mode 100644 examples/lcd_counter/image_def.S
+ create mode 100644 examples/lcd_counter/lcd_counter.kl
+ create mode 100644 examples/lcd_counter/linker.ld
+ create mode 100644 examples/lcd_counter/startup.s
+
+diff --git a/PICOTOOL.md b/PICOTOOL.md
+new file mode 100644
+index 0000000..aede587
+--- /dev/null
++++ b/PICOTOOL.md
+@@ -0,0 +1,52 @@
++# Flashing with picotool (RP2350-LCD-0.96)
++
++Klin emits C and links an **ELF**. It does **not** flash the board.
++Do **not** rename `*.elf` to `*.uf2` — UF2 is a different format.
++
++## Install picotool
++
++Official tool for Pico / Pico 2 / RP2350:
++
++- Source / releases: https://github.com/raspberrypi/picotool
++- macOS: `brew install picotool`
++- Linux: distro package if available, otherwise build from the repo above
++- Windows: release binaries or build with the Pico SDK toolchain
++
++## Build an example
++
++```sh
++cd examples/lcd_counter   # or lcd_fill, lcd_text, …
++make deps KLIN=/path/to/klin/bin/klin.dart
++make emit KLIN=/path/to/klin/bin/klin.dart
++make elf                  # needs arm-none-eabi-gcc
++# → lcd_counter.elf
++```
++
++## Enter BOOT mode
++
++On this PCB **BOOT** is the ROM UF2 bootloader only. It is wired to
++QSPI chip-select — **not** an application GPIO. There is no USER button.
++
++1. Hold **BOOT**
++2. Plug USB-C (or hold BOOT and tap **RESET**)
++3. Release **BOOT**
++
++The board appears as a USB mass-storage drive (or is ready for `picotool`).
++
++## Load firmware
++
++Preferred (ELF directly):
++
++```sh
++picotool load -f lcd_counter.elf
++picotool reboot
++```
++
++UF2 drag-and-drop: convert ELF → UF2 with `picotool` / `elf2uf2`, then copy
++the `.uf2` onto the mass-storage volume.
++
++## Related
++
++- Board wiki: https://www.waveshare.com/wiki/RP2350-LCD-0.96
++- Klin scaffold: `klin init waveshare-rp2350-lcd-096`
++- Klin issue [095](https://github.com/klin-lang/klin/blob/main/issues/095-board-waveshare-rp2350-lcd-096.md)
+diff --git a/README.md b/README.md
+index e646e65..ddc559d 100644
+--- a/README.md
++++ b/README.md
+@@ -115,8 +115,9 @@ make emit KLIN=/path/to/klin/bin/klin.dart
+ make elf                # riscv64-unknown-elf-gcc -march=rv32imac -mabi=ilp32
+ ```
+ 
+-Flash the `.elf` / UF2 with picotool / OpenOCD / your usual Pico 2 flow.
+-Boot the core that matches the IMAGE_DEF (Arm vs RISC-V).
++Flash the `.elf` / UF2 with picotool / OpenOCD / your usual Pico 2 flow —
++step-by-step: [PICOTOOL.md](PICOTOOL.md). Boot the core that matches the
++IMAGE_DEF (Arm vs RISC-V).
+ 
+ ### Demo checklist
+ 
+@@ -125,6 +126,7 @@ Boot the core that matches the IMAGE_DEF (Arm vs RISC-V).
+ | `lcd_fill` / `lcd_rects` | solid / rect colors via DMA→SPI1 |
+ | `lcd_pio_fill` | solid colors via **PIO-as-SPI** (GP10/11 remux) |
+ | `lcd_text` | green `KLIN 0.2`, cyan `FONT 5X7` (Arm) |
++| `lcd_counter` | white LCD, black `x:` ++ once per second (no blanking) |
+ | `riscv_lcd_text` | green `KLIN RV32`, cyan `HAZARD3` (RISC-V) |
+ | `temp_chip` | `TEMP` + `T=xxC` updating, yellow bar |
+ | `battery_mv` | `BAT` + `B=xxxxMV`, green/red bar |
+diff --git a/examples/lcd_counter/Makefile b/examples/lcd_counter/Makefile
+new file mode 100644
+index 0000000..0c6e56c
+--- /dev/null
++++ b/examples/lcd_counter/Makefile
+@@ -0,0 +1,33 @@
++CC := arm-none-eabi-gcc
++CFLAGS := -mcpu=cortex-m33 -mthumb -mfloat-abi=soft -ffreestanding -Os -ffunction-sections -fdata-sections
++LDFLAGS := -T linker.ld -Wl,--gc-sections --specs=nano.specs -nostartfiles
++
++KLIN ?= klin
++ROOT := ../..
++
++.PHONY: all emit elf clean deps
++
++all: emit
++
++deps:
++	@case "$(KLIN)" in \
++	  *.dart) dart run "$(KLIN)" get github/klin-lang/machine_rp@v0.11.0 ;; \
++	  *) "$(KLIN)" get github/klin-lang/machine_rp@v0.11.0 ;; \
++	esac
++
++emit: out/lcd_counter.c
++
++out/lcd_counter.c out/lcd_counter.link: lcd_counter.kl $(wildcard $(ROOT)/waveshare_rp2350_lcd_096/*.kl)
++	@mkdir -p out
++	@case "$(KLIN)" in \
++	  *.dart) dart run "$(KLIN)" --emit-c lcd_counter.kl ;; \
++	  *) "$(KLIN)" --emit-c lcd_counter.kl ;; \
++	esac
++
++elf: lcd_counter.elf
++
++lcd_counter.elf: linker.ld out/lcd_counter.c out/lcd_counter.link
++	$(CC) $(CFLAGS) -I. $(LDFLAGS) $$(cat out/lcd_counter.link) out/lcd_counter.c -o $@
++
++clean:
++	rm -rf out lcd_counter.elf
+diff --git a/examples/lcd_counter/image_def.S b/examples/lcd_counter/image_def.S
+new file mode 100644
+index 0000000..3774cbe
+--- /dev/null
++++ b/examples/lcd_counter/image_def.S
+@@ -0,0 +1,18 @@
++/* Minimum Arm IMAGE_DEF for RP2350 (datasheet §5.9.5). MIT — Klin machine_rp. */
++.section .picobin_block, "a"
++
++.word 0xffffded3 /* PICOBIN_BLOCK_MARKER_START */
++
++/* IMAGE_TYPE: EXE + Secure + ARM + RP2350 */
++.byte 0x42
++.byte 0x1
++.hword 0x1021
++
++/* LAST */
++.byte 0xff
++.hword 0x0001
++.byte 0
++
++.word 0 /* next block = self / none */
++
++.word 0xab123579 /* PICOBIN_BLOCK_MARKER_END */
+diff --git a/examples/lcd_counter/lcd_counter.kl b/examples/lcd_counter/lcd_counter.kl
+new file mode 100644
+index 0000000..0e08012
+--- /dev/null
++++ b/examples/lcd_counter/lcd_counter.kl
+@@ -0,0 +1,27 @@
++/// White LCD, black 5×7 font, `x:` increments once per second (no blanking).
++/// LCD text uses `[]i32` + `format_label_u32` — host `"x: $x"` is print-only
++/// (`printf` / `puts`), not the font API.
++import "../../waveshare_rp2350_lcd_096" board
++
++@[link("startup.s")]
++@[link("image_def.S")]
++fn main() {
++    let lcd = board.lcd_out(12000000, 1000000)
++    lcd.backlight(true)
++    lcd.fill(board.color_white())
++
++    let mut prefix: [2]i32
++    prefix[0] = 'x'
++    prefix[1] = ':'
++    let mut empty: [1]i32
++
++    let mut x: i32 = 0
++    while true {
++        let mut line: [16]i32
++        let n = board.format_label_u32(line[:], prefix[:], x, empty[:0])
++        lcd.fill_rect(8, 28, 144, 16, board.color_white())
++        lcd.draw_text_n(8, 28, line[:], n, board.color_black(), board.color_white())
++        board.delay_ms(1000)
++        x = x + 1
++    }
++}
+diff --git a/examples/lcd_counter/linker.ld b/examples/lcd_counter/linker.ld
+new file mode 100644
+index 0000000..82fd950
+--- /dev/null
++++ b/examples/lcd_counter/linker.ld
+@@ -0,0 +1,37 @@
++ENTRY(Reset_Handler)
++
++MEMORY
++{
++  FLASH (rx)  : ORIGIN = 0x10000000, LENGTH = 4M
++  RAM (rwx)   : ORIGIN = 0x20000000, LENGTH = 512K
++}
++
++_estack = ORIGIN(RAM) + LENGTH(RAM);
++
++SECTIONS
++{
++  .text :
++  {
++    KEEP(*(.isr_vector))
++    KEEP(*(.picobin_block))
++    *(.text*)
++    *(.rodata*)
++  } > FLASH
++
++  .data :
++  {
++    _sdata = .;
++    *(.data*)
++    _edata = .;
++  } > RAM AT> FLASH
++
++  _sidata = LOADADDR(.data);
++
++  .bss (NOLOAD) :
++  {
++    _sbss = .;
++    *(.bss*)
++    *(COMMON)
++    _ebss = .;
++  } > RAM
++}
+diff --git a/examples/lcd_counter/startup.s b/examples/lcd_counter/startup.s
+new file mode 100644
+index 0000000..0188a66
+--- /dev/null
++++ b/examples/lcd_counter/startup.s
+@@ -0,0 +1,79 @@
++.syntax unified
++.cpu cortex-m33
++.thumb
++
++.global Reset_Handler
++.extern main
++
++.section .isr_vector, "a", %progbits
++.word _estack
++.word Reset_Handler
++.word NMI_Handler
++.word HardFault_Handler
++.word MemManage_Handler
++.word BusFault_Handler
++.word UsageFault_Handler
++.word SecureFault_Handler
++.word 0
++.word 0
++.word 0
++.word SVC_Handler
++.word DebugMon_Handler
++.word 0
++.word PendSV_Handler
++.word SysTick_Handler
++
++.section .text.Reset_Handler, "ax", %progbits
++.thumb_func
++Reset_Handler:
++  ldr r0, =_sdata
++  ldr r1, =_edata
++  ldr r2, =_sidata
++1:
++  cmp r0, r1
++  bcs 2f
++  ldr r3, [r2]
++  str r3, [r0]
++  adds r2, #4
++  adds r0, #4
++  b 1b
++2:
++  ldr r0, =_sbss
++  ldr r1, =_ebss
++  movs r2, #0
++3:
++  cmp r0, r1
++  bcs 4f
++  str r2, [r0]
++  adds r0, #4
++  b 3b
++4:
++  bl main
++5:
++  b 5b
++
++.section .text.Default_Handler, "ax", %progbits
++.thumb_func
++Default_Handler:
++  b .
++
++.weak NMI_Handler
++.thumb_set NMI_Handler, Default_Handler
++.weak HardFault_Handler
++.thumb_set HardFault_Handler, Default_Handler
++.weak MemManage_Handler
++.thumb_set MemManage_Handler, Default_Handler
++.weak BusFault_Handler
++.thumb_set BusFault_Handler, Default_Handler
++.weak UsageFault_Handler
++.thumb_set UsageFault_Handler, Default_Handler
++.weak SecureFault_Handler
++.thumb_set SecureFault_Handler, Default_Handler
++.weak SVC_Handler
++.thumb_set SVC_Handler, Default_Handler
++.weak DebugMon_Handler
++.thumb_set DebugMon_Handler, Default_Handler
++.weak PendSV_Handler
++.thumb_set PendSV_Handler, Default_Handler
++.weak SysTick_Handler
++.thumb_set SysTick_Handler, Default_Handler
+-- 
+2.43.0
+

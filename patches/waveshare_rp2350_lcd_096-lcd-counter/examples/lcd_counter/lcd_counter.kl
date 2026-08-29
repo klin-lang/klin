@@ -1,0 +1,27 @@
+/// White LCD, black 5×7 font, `x:` increments once per second (no blanking).
+/// LCD text uses `[]i32` + `format_label_u32` — host `"x: $x"` is print-only
+/// (`printf` / `puts`), not the font API.
+import "../../waveshare_rp2350_lcd_096" board
+
+@[link("startup.s")]
+@[link("image_def.S")]
+fn main() {
+    let lcd = board.lcd_out(12000000, 1000000)
+    lcd.backlight(true)
+    lcd.fill(board.color_white())
+
+    let mut prefix: [2]i32
+    prefix[0] = 'x'
+    prefix[1] = ':'
+    let mut empty: [1]i32
+
+    let mut x: i32 = 0
+    while true {
+        let mut line: [16]i32
+        let n = board.format_label_u32(line[:], prefix[:], x, empty[:0])
+        lcd.fill_rect(8, 28, 144, 16, board.color_white())
+        lcd.draw_text_n(8, 28, line[:], n, board.color_black(), board.color_white())
+        board.delay_ms(1000)
+        x = x + 1
+    }
+}

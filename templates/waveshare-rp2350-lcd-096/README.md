@@ -29,9 +29,26 @@ make KLIN=/path/to/bin/klin.dart   # or installed `klin`
 # → main.elf
 ```
 
-Needs `arm-none-eabi-gcc` on `PATH`. Flash with your usual UF2 / picotool flow.
+Needs `arm-none-eabi-gcc` on `PATH`.
+
+### Flash
+
+Klin does not flash the chip. Full UF2 / `picotool` steps (BOOT is
+bootloader-only, not an app GPIO):
+
+- Seed / pending pack merge:
+  [`patches/waveshare_rp2350_lcd_096-lcd-counter/PICOTOOL.md`](../../patches/waveshare_rp2350_lcd_096-lcd-counter/PICOTOOL.md)
+- Apply to upstream:
+  [`patches/waveshare_rp2350_lcd_096-lcd-counter.patch`](../../patches/waveshare_rp2350_lcd_096-lcd-counter.patch)
+
+Short version: hold **BOOT**, plug USB-C, then
+`picotool load -f main.elf && picotool reboot`. Do not rename `.elf` → `.uf2`.
+
+White LCD counter (`x:` ++/s, no blanking):
+[`patches/.../examples/lcd_counter/`](../../patches/waveshare_rp2350_lcd_096-lcd-counter/examples/lcd_counter/).
 
 ## Links
 
 - Issue [095](../../issues/095-board-waveshare-rp2350-lcd-096.md), [075](../../issues/075-board-pack-init-host.md)
 - Pack: https://github.com/klin-lang/waveshare_rp2350_lcd_096
+- Embedded walkthrough: [docs/embedded.md](../../docs/embedded.md)
