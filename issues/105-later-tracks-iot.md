@@ -52,6 +52,6 @@ Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP done;
 - Network later: [104](104-later-tracks-esp-network.md)  
 - Wi‑Fi / ETH MVP: [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md)  
 - Other later tracks: [103](103-later-tracks-ble-usb-camera-lcd.md)  
-- VW553 CoAP / WS / iBeacon / Wi‑Fi Mesh / cloud: [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md)  
+- VW553 CoAP / WS / iBeacon / Wi‑Fi Mesh / cloud: [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md) (CoAP → [159](159-gd32v-coap-sdk.md))  
 - BLE: [106](106-esp-ble-idf.md)  
 - Targets: [062](062-targets-esp-rp.md)  
