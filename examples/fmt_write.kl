@@ -1,0 +1,15 @@
+/// fmt.write — interpolate into a caller buffer (issue 156).
+/// See docs/07-interpolation.md
+import fmt
+
+fn main() {
+    let mut buf: [64]u8
+    let name: str = "adc"
+    let n = 42
+
+    let len = fmt.write(buf[:], "ch=$name n=$n")
+    printf("len=%d text=%s\n", len, &buf[0])
+
+    let _ = fmt.write(buf[:], "hex=${n:%08x}")
+    printf("%s\n", &buf[0])
+}

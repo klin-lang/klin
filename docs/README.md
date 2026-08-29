@@ -48,7 +48,7 @@ These are feature write-ups. The tutorial is [guide.md](guide.md).
 | [language.md](language.md) | Language surface — do not propose `[T]` / `map` |
 | [04-macros.md](04-macros.md) | Generics = `$fn` expand (not `[T]` in the compiler) |
 | [device.md](device.md) | `$device` / fluent MMIO from SVD |
-| [07-interpolation.md](07-interpolation.md) | `"$name"` / `${expr}` → `printf` |
+| [07-interpolation.md](07-interpolation.md) | `"$name"` / `${expr}` → print **or** `fmt.write` |
 | [12-modules.md](12-modules.md) | `module` / `import` / `pub` |
 | [13-fn-ptr.md](13-fn-ptr.md) | `fn(T…): Ret` (no capture) |
 | [14-short-decl.md](14-short-decl.md) | `:=` → `let mut` |

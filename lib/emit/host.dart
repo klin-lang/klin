@@ -163,6 +163,30 @@ bool _programNeedsTimeHost(Program program) {
   return false;
 }
 
+bool _programNeedsFmtHost(Program program) {
+  for (final func in program.funcs) {
+    for (final attr in func.attrs) {
+      if (attr.name == 'codename' && attr.arg == 'klin_fmt_write_str') {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+void _emitFmtHostHelpers(StringBuffer buf) {
+  buf.writeln('#include <stdio.h>');
+  buf.writeln();
+  buf.writeln(
+      'int32_t klin_fmt_write_str(uint8_t *buf, int32_t len, const char *msg) {');
+  buf.writeln('    if (buf == NULL || len <= 0 || msg == NULL) return -1;');
+  buf.writeln('    int n = snprintf((char *)buf, (size_t)len, "%s", msg);');
+  buf.writeln('    if (n < 0 || n >= len) return -1;');
+  buf.writeln('    return (int32_t)n;');
+  buf.writeln('}');
+  buf.writeln();
+}
+
 void _emitTimeHostHelpers(StringBuffer buf) {
   buf.writeln('#include <time.h>');
   buf.writeln('#include <stdio.h>');

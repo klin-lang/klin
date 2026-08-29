@@ -11,6 +11,7 @@ import 'package:klin/preprocess.dart';
 import 'package:klin/project.dart';
 import 'package:klin/remote.dart';
 import 'package:klin/token.dart';
+import 'package:klin/version.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -1818,6 +1819,19 @@ fn main() {
     expect(c, contains('%.8s'));
   });
 
+  test('golden: fmt.write buffer interpolation (issue 156)', () async {
+    final result = await _compileAndRun('test/fmt_write.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/fmt_write.out').readAsString());
+
+    final program = loadProject('test/fmt_write.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/fmt_write.kl');
+    expect(c, contains('snprintf('));
+    expect(c, contains('klin_fmt_write_str'));
+    expect(c, isNot(contains('malloc')));
+  });
+
   test('golden: stdlib time Instant/Duration/format (issue 037)', () async {
     final result = await _compileAndRun('test/time_basic.kl', tmp);
     expect(result.exitCode, 0, reason: result.stderr);
@@ -2007,7 +2021,7 @@ fn main() {
     expect(result.stdout, contains('n=-1'));
   });
 
-  test('error: interpolated string in let is print-only', () {
+  test('error: interpolated string in let needs a sink', () {
     final source = r'''
 fn main() {
     let b: str = "x"
@@ -2020,7 +2034,7 @@ fn main() {
       throwsA(
         predicate(
           (e) =>
-              e is CheckError && e.toString().contains('print-only'),
+              e is CheckError && e.toString().contains('fmt.write'),
         ),
       ),
     );
@@ -4874,7 +4888,7 @@ fn test_color() {
     for (final flag in ['--version', '-v']) {
       final proc = await Process.run('dart', ['run', 'bin/klin.dart', flag]);
       expect(proc.exitCode, 0, reason: '$flag: ${proc.stderr}');
-      expect(proc.stdout.toString().trim(), 'klin 0.1.4');
+      expect(proc.stdout.toString().trim(), 'klin $klinVersion');
     }
   });
 

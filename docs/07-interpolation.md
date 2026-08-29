@@ -15,9 +15,32 @@ Syntax like Dart/V in plain `"…"` (no `$"` prefix).
 | `${n:hex}` / `${f:sci}` | aliases for `%x` / `%e` |
 | `\$` | literal `$` |
 
-**MVP:** interpolation is **print-only** — sole argument to `puts` / `printf` /
-`io.print` / `io.println`. Not: `let s = "a $b"`.
+## Sinks
+
+| Sink | Effect |
+|---|---|
+| `puts` / `printf` / `io.print` / `io.println` | print (016) |
+| `fmt.write(buf[:], "…")` | write into caller `[]u8` ([156](../issues/156-fmt-write.md)) |
+
+`fmt.write` returns bytes written excluding the trailing NUL, or `-1` on
+empty buffer / truncation / error. Same format slots as print. Needs libc
+`snprintf` (newlib-nano is fine on embedded).
+
+```klin
+import fmt
+
+fn main() {
+    let mut buf: [64]u8
+    let x = 7
+    let n = fmt.write(buf[:], "x: $x")
+    printf("%s\n", &buf[0])
+}
+```
+
+**Not yet:** `let s = "a $b"` (would hide allocation). Heap form → later /
+[077](../issues/077-string-template.md).
 
 Alignment / padding: explicit printf (`%8s`, `%-8s`, `%08x`). Dates → [issue 037](../issues/037-datetime-format.md).
 
-Example: [`examples/interp.kl`](../examples/interp.kl).
+Examples: [`examples/interp.kl`](../examples/interp.kl),
+[`examples/fmt_write.kl`](../examples/fmt_write.kl).

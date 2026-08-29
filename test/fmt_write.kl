@@ -1,0 +1,20 @@
+/// Golden: fmt.write into a caller buffer (issue 156).
+import fmt
+
+fn main() {
+    let mut buf: [64]u8
+    let x = 7
+    let n = fmt.write(buf[:], "x: $x")
+    printf("n=%d s=%s\n", n, &buf[0])
+
+    let m = fmt.write(buf[:], "hi")
+    printf("m=%d s=%s\n", m, &buf[0])
+
+    let price = 1.5
+    let p = fmt.write(buf[:], "p=${price:0.00}")
+    printf("p=%d s=%s\n", p, &buf[0])
+
+    let mut tiny: [4]u8
+    let bad = fmt.write(tiny[:], "overflow!!")
+    printf("bad=%d\n", bad)
+}

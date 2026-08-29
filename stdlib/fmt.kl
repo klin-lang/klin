@@ -1,0 +1,24 @@
+/// Format into a caller-owned buffer (no hidden heap).
+///
+/// `fmt.write(buf[:], "x: $x")` with an interpolated string is a **compiler
+/// intrinsic** (`snprintf`). Plain `str` uses the same buffer contract.
+///
+/// Needs libc `snprintf` (newlib-nano is fine on embedded). Return value:
+/// bytes written excluding the trailing NUL, or `-1` on empty/overflow/error.
+///
+/// See [docs/07-interpolation.md](../docs/07-interpolation.md).
+module fmt
+
+@[cinclude("<stdio.h>")]
+
+@[cimport, codename("klin_fmt_write_str")]
+fn write_str(buf: *mut u8, len: i32, msg: str): i32
+
+/// Write `msg` into `buf` (NUL-terminated). Same return contract as the
+/// interpolated intrinsic.
+pub fn write(buf: []u8, msg: str): i32 {
+    if buf.len <= 0 {
+        return -1
+    }
+    return write_str(cast(*mut u8, &buf[0]), buf.len, msg)
+}

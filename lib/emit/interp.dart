@@ -82,6 +82,34 @@ String _emitInterpPrintfExpr(InterpolatedStringExpr interp, _ExprCtx ctx) {
   return 'printf("${prepared.fmt}"$args)';
 }
 
+/// `fmt.write(buf[:], "…")` → `snprintf` into the slice; returns length or -1.
+String _emitInterpWriteExpr(
+  Expr outBuf,
+  InterpolatedStringExpr interp,
+  _ExprCtx ctx,
+) {
+  final pad = '    ' * ctx.indent;
+  final prepared =
+      _prepareInterpPrintf(interp, ctx, ctx.state, pad, ctx.buf);
+  final args = prepared.argExprs.isEmpty
+      ? ''
+      : ', ${prepared.argExprs.join(', ')}';
+  final sliceTy = const PrimType(PrimKind.u8);
+  final sliceName = ctx.state.nextValueTemp();
+  final nName = ctx.state.nextValueTemp();
+  ctx.buf.writeln(
+    '$pad${_sliceCName(sliceTy)} $sliceName = ${_emitExpr(outBuf, ctx)};',
+  );
+  ctx.buf.writeln(
+    '${pad}int32_t $nName = $sliceName.len <= 0 '
+    '? (int32_t)-1 '
+    ': snprintf((char *)$sliceName.ptr, (size_t)$sliceName.len, '
+    '"${prepared.fmt}"$args);',
+  );
+  return '($nName < 0 || $nName >= (int32_t)$sliceName.len) '
+      '? (int32_t)-1 : $nName';
+}
+
 ({String fmt, List<String> argExprs}) _prepareInterpPrintf(
   InterpolatedStringExpr interp,
   _ExprCtx ctx,
