@@ -55,3 +55,18 @@ fn test_send_without_connect() {
     msg[0] = 0
     testing.assert_eq_i32(send_text(cast(*u8, &msg[0]), 1), 0 - 1)
 }
+
+fn test_recv_full_buffer_keeps_last_byte() {
+    let mut msg: [2]u8
+    let mut out: [2]u8
+    msg[0] = 170
+    msg[1] = 187
+    out[0] = 0
+    out[1] = 0
+    testing.assert_eq_i32(connect("ws://127.0.0.1/"), 0)
+    testing.assert_eq_i32(send_bin(cast(*u8, &msg[0]), 2), 0)
+    testing.assert_eq_i32(recv(cast(*mut u8, &out[0]), 2), 2)
+    testing.assert_eq_i32(cast(i32, out[0]), 170)
+    testing.assert_eq_i32(cast(i32, out[1]), 187)
+    testing.assert_eq_i32(disconnect(), 0)
+}

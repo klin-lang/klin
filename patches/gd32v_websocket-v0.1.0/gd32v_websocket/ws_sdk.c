@@ -433,9 +433,19 @@ int klin_gd32v_ws_send_bin(const unsigned char *data, int len) {
   return ws_send_frame(KLIN_GD32V_WS_OPCODE_BIN, data, len);
 }
 
+/* After a partial/bad frame, drop the socket so the next recv is not misaligned. */
+static void ws_force_close(void) {
+  if (g_fd >= 0) {
+    close(g_fd);
+  }
+  g_fd = -1;
+  g_connected = 0;
+  g_last_opcode = 0;
+}
+
 int klin_gd32v_ws_recv(unsigned char *out, int out_max) {
   unsigned char buf[KLIN_GD32V_WS_IO_MAX];
-  int n, i, opcode, plen, hlen;
+  int n, i, opcode, plen;
   unsigned char b1;
 
   if (!g_connected || g_fd < 0 || out == NULL || out_max < 1) {
@@ -445,14 +455,16 @@ int klin_gd32v_ws_recv(unsigned char *out, int out_max) {
   for (;;) {
     n = io_read_some(buf, 2);
     if (n == 0) {
-      return 0; /* timeout / no data */
+      return 0; /* timeout / no data — stream still aligned */
     }
     if (n < 0) {
+      ws_force_close();
       return -1;
     }
     if (n == 1) {
       int n2 = io_read_some(buf + 1, 1);
       if (n2 <= 0) {
+        ws_force_close();
         return -1;
       }
     }
@@ -460,32 +472,34 @@ int klin_gd32v_ws_recv(unsigned char *out, int out_max) {
     b1 = buf[1];
     if (b1 & 0x80) {
       /* server must not mask */
+      ws_force_close();
       return -1;
     }
     plen = b1 & 0x7f;
-    hlen = 2;
     if (plen == 126) {
       n = io_read_some(buf + 2, 2);
       if (n < 2) {
+        ws_force_close();
         return -1;
       }
       plen = (buf[2] << 8) | buf[3];
-      hlen = 4;
     } else if (plen == 127) {
+      ws_force_close();
       return -1; /* oversized for MVP */
     }
     if (plen > KLIN_GD32V_WS_IO_MAX) {
+      ws_force_close();
       return -1;
     }
     i = 0;
     while (i < plen) {
       n = io_read_some(buf + i, plen - i);
       if (n <= 0) {
+        ws_force_close();
         return -1;
       }
       i += n;
     }
-    (void)hlen;
 
     if (opcode == KLIN_GD32V_WS_OPCODE_PING) {
       (void)ws_send_frame(KLIN_GD32V_WS_OPCODE_PONG, buf, plen);
@@ -495,9 +509,7 @@ int klin_gd32v_ws_recv(unsigned char *out, int out_max) {
       continue;
     }
     if (opcode == KLIN_GD32V_WS_OPCODE_CLOSE) {
-      g_connected = 0;
-      close(g_fd);
-      g_fd = -1;
+      ws_force_close();
       return -1;
     }
     if (opcode != KLIN_GD32V_WS_OPCODE_TEXT &&
@@ -512,10 +524,9 @@ int klin_gd32v_ws_recv(unsigned char *out, int out_max) {
       if (take > 0) {
         memcpy(out, buf, (size_t)take);
       }
+      /* NUL only when there is spare room — never overwrite a payload byte. */
       if (take < out_max) {
         out[take] = '\0';
-      } else {
-        out[out_max - 1] = '\0';
       }
       g_last_opcode = opcode;
       return take;
@@ -596,10 +607,9 @@ int klin_gd32v_ws_recv(unsigned char *out, int out_max) {
   if (take > 0) {
     memcpy(out, g_stub_payload, (size_t)take);
   }
+  /* NUL only when there is spare room — never overwrite a payload byte. */
   if (take < out_max) {
     out[take] = '\0';
-  } else {
-    out[out_max - 1] = '\0';
   }
   g_last_opcode = g_stub_opcode;
   g_stub_pending = 0;
