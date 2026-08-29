@@ -19,7 +19,7 @@
 - Examples: `blink` (LED1), `uart_com0`, `button_key`
 - Pin macros match Nuclei SDK `gd32vw553h_eval.h`
 
-**Out of scope:** START kit (→ [139](139-board-gd32vw553h-start.md) / [`gd32vw553h_start`](https://github.com/klin-lang/gd32vw553h_start); SDK default UART2 PA6/PA7), Wi‑Fi API (→ [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [137](137-gd32v-wifi-sdk.md)), BLE, SPI helpers (those pads overlap the LEDs), board pack for VF103 Longan Nano, vendoring the wireless SDK.
+**Out of scope:** START kit (→ [139](139-board-gd32vw553h-start.md) / [`gd32vw553h_start`](https://github.com/klin-lang/gd32vw553h_start); SDK default UART2 PA6/PA7), LCKFB / silk `GD32VW553HMQ-EVT` stamp (LED **PC13**, CH340; → [156](156-board-lckfb-gd32vw553.md)), Wi‑Fi API (→ [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [137](137-gd32v-wifi-sdk.md)), BLE, SPI helpers (those pads overlap the LEDs), board pack for VF103 Longan Nano, vendoring the wireless SDK.
 
 **Scaffold:** `klin init gd32vw553h-eval` — freestanding LED1 blink via
 bundled `templates/gd32vw553h-eval/` ([075](075-board-pack-init-host.md)).
@@ -51,4 +51,5 @@ klin init gd32vw553h-eval my_blink
 - Header: [`gd32vw553h_eval.h`](https://github.com/Nuclei-Software/nuclei-sdk/blob/master/SoC/gd32vw55x/Board/gd32vw553h_eval/Include/gd32vw553h_eval.h)  
 - Chip: [136](136-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
 - Radio sibling: [137](137-gd32v-wifi-sdk.md) / [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [`@v0.4.0`](https://github.com/klin-lang/gd32v_wifi/releases/tag/v0.4.0)  
+- LCKFB / `GD32VW553HMQ-EVT` stamp: [156](156-board-lckfb-gd32vw553.md)  
 - `klin init`: [075](075-board-pack-init-host.md)
