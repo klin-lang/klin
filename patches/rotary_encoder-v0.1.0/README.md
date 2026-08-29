@@ -50,7 +50,7 @@ klin run -I patches/rotary_encoder-v0.1.0 patches/rotary_encoder-v0.1.0/examples
 Unused switch → always return `0`.
 
 ```klin
-import rotary_encoder enc
+import "github/klin-lang/rotary_encoder" enc
 
 fn pins_read(ctx: *mut u8, ch: i32): i32 {
     // machine_* Pin reads; invert SW if active-low
@@ -71,6 +71,64 @@ fn main() {
 
 One detent on a typical EC11 is several Gray steps (often 4). Count `Cw`/`Ccw`
 in the app if you want “click” units instead of transitions.
+
+## EC11 example (Elektroweb S-026)
+
+20 PPR module with knob switch. Typical breakout: **CLK/A**, **DT/B**, **SW**
+(active-low), **+**, **GND**. Fetch once, then remote import:
+
+```sh
+klin get github/klin-lang/rotary_encoder@v0.1.0
+```
+
+```klin
+module app
+import "github/klin-lang/rotary_encoder" enc
+// import machine_stm32 m   // or machine_rp / machine_esp
+
+/// Wire your GPIO here, e.g. A=PA0, B=PA1, SW=PA2.
+struct Pins {
+    // a: m.Pin, b: m.Pin, sw: m.Pin
+}
+
+fn ec11_read(ctx: *mut u8, ch: i32): i32 {
+    let p = cast(*mut Pins, ctx)
+    if ch == enc.ch_a() {
+        return 0 // return p.a.value()
+    }
+    if ch == enc.ch_b() {
+        return 0 // return p.b.value()
+    }
+    // SW active-low → logical pressed = 1
+    return 0 // return 1 - p.sw.value()
+}
+
+fn main() {
+    let mut pins = Pins{}
+    let mut d = enc.attach(enc.Wire{
+        ctx: cast(*mut u8, &pins),
+        read: ec11_read
+    })
+
+    let mut volume = 50
+    while true {
+        match d.poll() {
+            enc.Event.Cw {
+                if volume < 100 { volume = volume + 1 }
+            }
+            enc.Event.Ccw {
+                if volume > 0 { volume = volume - 1 }
+            }
+            enc.Event.Press { /* select / mute */ }
+            else {}
+        }
+    }
+}
+```
+
+Until the upstream repo is tagged, the same sources work via
+`-I patches/rotary_encoder-v0.1.0` (local seed mirror).
+
 
 ## Layout
 
