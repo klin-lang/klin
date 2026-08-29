@@ -11,6 +11,7 @@ import 'package:klin/preprocess.dart';
 import 'package:klin/project.dart';
 import 'package:klin/remote.dart';
 import 'package:klin/token.dart';
+import 'package:klin/version.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -2020,7 +2021,7 @@ fn main() {
     expect(result.stdout, contains('n=-1'));
   });
 
-  test('error: interpolated string in let is print-only', () {
+  test('error: interpolated string in let needs a sink', () {
     final source = r'''
 fn main() {
     let b: str = "x"
@@ -2033,7 +2034,7 @@ fn main() {
       throwsA(
         predicate(
           (e) =>
-              e is CheckError && e.toString().contains('print-only'),
+              e is CheckError && e.toString().contains('fmt.write'),
         ),
       ),
     );
@@ -4887,7 +4888,7 @@ fn test_color() {
     for (final flag in ['--version', '-v']) {
       final proc = await Process.run('dart', ['run', 'bin/klin.dart', flag]);
       expect(proc.exitCode, 0, reason: '$flag: ${proc.stderr}');
-      expect(proc.stdout.toString().trim(), 'klin 0.1.4');
+      expect(proc.stdout.toString().trim(), 'klin $klinVersion');
     }
   });
 
