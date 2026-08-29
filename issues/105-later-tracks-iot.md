@@ -1,7 +1,7 @@
 # 105 — Later tracks: IoT protocols / cloud edge
 
-**Status:** 💭 backlog (ESP MQTT/OTA still open; VW553 MQTT ✅ [146](146-gd32v-mqtt-sdk.md); VW553 OTA ✅ [145](145-gd32v-ota-sdk.md); VW553 iBeacon 🔨 [158](158-gd32v-ble-ibeacon.md); CoAP/WS/Wi‑Fi Mesh/cloud staged → [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md))  
-**Depends on:** [104](104-later-tracks-esp-network.md), [111](111-esp-sockets-idf.md), [112](112-esp-http-idf.md), [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md), [145](145-gd32v-ota-sdk.md), [146](146-gd32v-mqtt-sdk.md), [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md), [158](158-gd32v-ble-ibeacon.md)
+**Status:** 💭 backlog (ESP MQTT/OTA still open; VW553 MQTT ✅ [146](146-gd32v-mqtt-sdk.md); VW553 OTA ✅ [145](145-gd32v-ota-sdk.md); VW553 iBeacon 🔨 [158](158-gd32v-ble-ibeacon.md); VW553 CoAP 🔨 [159](159-gd32v-coap-sdk.md); WS/Wi‑Fi Mesh/cloud staged → [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md))  
+**Depends on:** [104](104-later-tracks-esp-network.md), [111](111-esp-sockets-idf.md), [112](112-esp-http-idf.md), [101](101-esp-wifi-idf.md), [102](102-esp-eth-idf.md), [145](145-gd32v-ota-sdk.md), [146](146-gd32v-mqtt-sdk.md), [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md), [158](158-gd32v-ble-ibeacon.md), [159](159-gd32v-coap-sdk.md)
 
 ## Verdict
 
@@ -28,7 +28,7 @@ Sibling backlogs: [103](103-later-tracks-ble-usb-camera-lcd.md) (A–D MVP done;
 |---|---|---|---|
 | I1 | **MQTT** client | ESP: thin IDF package (open) / [`gd32v_mqtt`](https://github.com/klin-lang/gd32v_mqtt) [146](146-gd32v-mqtt-sdk.md) (VW553 ✅) | Publish/subscribe; buffers and client id **explicit**; no hidden reconnect heap in Klin. |
 | I2 | **OTA** update | Thin IDF wrapper package (ESP) / [`gd32v_ota`](https://github.com/klin-lang/gd32v_ota) [145](145-gd32v-ota-sdk.md) (VW553) | Often uses HTTPS. Partition / URL / hash checks explicit; not board-pack magic. VW553 track started. |
-| I3 | **CoAP** / **WebSocket** / **iBeacon** / **Wi‑Fi Mesh** / cloud | VW553: iBeacon 🔨 [158](158-gd32v-ble-ibeacon.md); rest staged [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md) | One stage at a time. ESP twins still optional later. |
+| I3 | **CoAP** / **WebSocket** / **iBeacon** / **Wi‑Fi Mesh** / cloud | VW553: iBeacon 🔨 [158](158-gd32v-ble-ibeacon.md); CoAP 🔨 [159](159-gd32v-coap-sdk.md); rest staged [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md) | One stage at a time. ESP twins still optional later. |
 | I4 | **Matter / Thread / Zigbee** | Far later | Heavy stacks; own decision when silicon + need exist — not MVP. |
 
 ## Rules

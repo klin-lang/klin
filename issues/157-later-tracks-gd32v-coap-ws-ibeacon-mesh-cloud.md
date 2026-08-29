@@ -1,6 +1,6 @@
 # 157 — Later tracks: GD32VW553 CoAP / WebSocket / iBeacon / Wi‑Fi Mesh / cloud
 
-**Status:** 💭 staged backlog — **V1** 🔨 [158](158-gd32v-ble-ibeacon.md) patch (awaiting `@v0.16.0`); V2–V5 not started  
+**Status:** 💭 staged backlog — **V1** 🔨 [158](158-gd32v-ble-ibeacon.md); **V2** 🔨 [159](159-gd32v-coap-sdk.md); V3–V5 not started  
 **Depends on:** [137](137-gd32v-wifi-sdk.md), [140](140-gd32v-ble-sdk.md), [143](143-gd32v-sockets-sdk.md), [144](144-gd32v-http-sdk.md), [146](146-gd32v-mqtt-sdk.md), [062](062-targets-esp-rp.md), [105](105-later-tracks-iot.md)
 
 ## Verdict
@@ -11,7 +11,7 @@ ships examples Klin does **not** wrap yet:
 | SDK example (approx.) | Klin today |
 |---|---|
 | `MSDK/examples/ble/peripheral/ble_ibeacon` | 🔨 [158](158-gd32v-ble-ibeacon.md) patch → [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) `@v0.16.0` |
-| `MSDK/examples/wifi/coap` | — |
+| `MSDK/examples/wifi/coap` | 🔨 [159](159-gd32v-coap-sdk.md) seed → `gd32v_coap` `@v0.1.0` |
 | `MSDK/examples/wifi/websocket_client` | — |
 | `MSDK/examples/wifi/wifi_mesh_smart` | — (**not** BLE Mesh — that is [140](140-gd32v-ble-sdk.md)) |
 | `MSDK/examples/cloud/{alicloud,aws,azure}` | — |
@@ -28,13 +28,14 @@ OTA [145](145-gd32v-ota-sdk.md), MQTT [146](146-gd32v-mqtt-sdk.md).
 | # | Track | Likely home | Needs first | MVP sketch |
 |---|---|---|---|---|
 | **V1** | **iBeacon** advertise (+ optional scan later) | Tag on [`gd32v_ble`](https://github.com/klin-lang/gd32v_ble) | [140](140-gd32v-ble-sdk.md) | 🔨 [158](158-gd32v-ble-ibeacon.md) — UUID / major / minor / measured RSSI as **arguments** |
-| **V2** | **CoAP** client | `gd32v_coap` | [137](137-gd32v-wifi-sdk.md) IP + [143](143-gd32v-sockets-sdk.md) | GET/PUT into **caller** buffers after STA IP; confirm/non-confirm explicit |
+| **V2** | **CoAP** client | `gd32v_coap` | [137](137-gd32v-wifi-sdk.md) IP + [143](143-gd32v-sockets-sdk.md) | 🔨 [159](159-gd32v-coap-sdk.md) — GET/PUT into **caller** buffers; confirm/non-confirm explicit |
 | **V3** | **WebSocket** client | `gd32v_websocket` | [137](137-gd32v-wifi-sdk.md) IP + [143](143-gd32v-sockets-sdk.md) | Connect + send/recv text/binary frames; TLS PEM later tag (same rule as [144](144-gd32v-http-sdk.md)) |
 | **V4** | **Wi‑Fi Mesh** | `gd32v_wifi_mesh` (sibling of `gd32v_wifi`) | [137](137-gd32v-wifi-sdk.md) | Join / self-organize / send — SDK `wifi_mesh_smart` engine; **not** BLE Mesh |
 | **V5** | **Cloud** (Aliyun / AWS / Azure) | One package **per** vendor **or** deferred until a desk project picks one | Wi‑Fi IP + usually MQTT/HTTP ([146](146-gd32v-mqtt-sdk.md) / [144](144-gd32v-http-sdk.md)) | Thin FFI over SDK `MSDK/examples/cloud/*`; credentials / endpoints **arguments** — no baked-in vendor keys |
 
-Do **not** start V2 before V1 is published (or explicitly skipped with a note here).  
-V1 implementation lives in [158](158-gd32v-ble-ibeacon.md) (patch under `patches/` until upstream tags `@v0.16.0`).  
+V1 Klin docs merged ([158](158-gd32v-ble-ibeacon.md)); upstream `gd32v_ble` `@v0.16.0` tag still awaiting publish.  
+V2 started at request ([159](159-gd32v-coap-sdk.md)) while V1 upstream tag is pending.  
+Do **not** start V3 before V2 is published (or explicitly skipped with a note here).  
 Do **not** start V5 until a concrete cloud + device need exists — vendor SDKs are large.
 
 ## Rules
@@ -48,7 +49,7 @@ Do **not** start V5 until a concrete cloud + device need exists — vendor SDKs 
 
 ## Out of scope (this issue)
 
-- Implementing V2–V5 here (spawn child issues; V1 → [158](158-gd32v-ble-ibeacon.md))  
+- Implementing V3–V5 here (spawn child issues; V1 → [158](158-gd32v-ble-ibeacon.md); V2 → [159](159-gd32v-coap-sdk.md))  
 - ESP CoAP / WebSocket / Matter twins (→ [105](105-later-tracks-iot.md) / separate ESP tracks)  
 - BLE Mesh extras (already [140](140-gd32v-ble-sdk.md))  
 - Folding radio into board packs ([138](138-board-gd32vw553h-eval.md) / [139](139-board-gd32vw553h-start.md) / [156](156-board-lckfb-gd32vw553.md))
@@ -56,6 +57,6 @@ Do **not** start V5 until a concrete cloud + device need exists — vendor SDKs 
 ## Links
 
 - SDK: https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK  
-- Wi‑Fi / BLE / sockets / HTTP / MQTT: [137](137-gd32v-wifi-sdk.md), [140](140-gd32v-ble-sdk.md), [143](143-gd32v-sockets-sdk.md), [144](144-gd32v-http-sdk.md), [146](146-gd32v-mqtt-sdk.md)  
+- Wi‑Fi / BLE / sockets / HTTP / MQTT / CoAP: [137](137-gd32v-wifi-sdk.md), [140](140-gd32v-ble-sdk.md), [143](143-gd32v-sockets-sdk.md), [144](144-gd32v-http-sdk.md), [146](146-gd32v-mqtt-sdk.md), [159](159-gd32v-coap-sdk.md)  
 - IoT later (ESP-shaped): [105](105-later-tracks-iot.md)  
 - Targets: [062](062-targets-esp-rp.md)  

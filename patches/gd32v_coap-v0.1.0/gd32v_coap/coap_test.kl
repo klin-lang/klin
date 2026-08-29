@@ -1,0 +1,60 @@
+module gd32v_coap
+
+import testing
+
+fn test_version_is_one() {
+    testing.assert_eq_i32(version(), 1)
+}
+
+fn test_err_ok_is_zero() {
+    testing.assert_eq_i32(err_ok(), 0)
+}
+
+fn test_confirm_helpers() {
+    testing.assert_eq_i32(confirm_yes(), 1)
+    testing.assert_eq_i32(confirm_no(), 0)
+}
+
+fn test_get_con_host_stub() {
+    let mut out: [32]u8
+    let mut n: i32
+    n = get("coap://127.0.0.1/test", cast(*mut u8, &out[0]), 32, confirm_yes())
+    testing.assert_eq_i32(n, 2)
+    testing.assert_eq_i32(last_code(), 69)
+}
+
+fn test_get_non_host_stub() {
+    let mut out: [32]u8
+    let mut n: i32
+    n = get("coap://example/path", cast(*mut u8, &out[0]), 32, confirm_no())
+    testing.assert_eq_i32(n, 2)
+    testing.assert_eq_i32(last_code(), 69)
+}
+
+fn test_put_host_stub() {
+    let mut body: [4]u8
+    let mut out: [8]u8
+    let mut n: i32
+    body[0] = 49
+    body[1] = 50
+    body[2] = 51
+    body[3] = 52
+    n = put(
+        "coap://127.0.0.1/test",
+        cast(*u8, &body[0]),
+        4,
+        cast(*mut u8, &out[0]),
+        8,
+        confirm_yes()
+    )
+    testing.assert_eq_i32(n, 0)
+    testing.assert_eq_i32(last_code(), 68)
+}
+
+fn test_get_rejects_tiny_out() {
+    let mut out: [2]u8
+    testing.assert_eq_i32(
+        get("coap://h/", cast(*mut u8, &out[0]), 2, confirm_yes()),
+        0 - 1
+    )
+}

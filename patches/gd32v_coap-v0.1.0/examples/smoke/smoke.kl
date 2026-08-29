@@ -1,0 +1,15 @@
+/// Host smoke: CoAP client stubs (no LwIP).
+import "../../gd32v_coap" coap
+
+fn main() {
+    let mut out: [32]u8
+    let mut n = coap.get(
+        "coap://127.0.0.1/validate",
+        cast(*mut u8, &out[0]),
+        32,
+        coap.confirm_yes()
+    )
+    if n < 0 {
+        return
+    }
+}

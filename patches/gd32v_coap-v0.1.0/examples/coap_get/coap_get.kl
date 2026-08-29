@@ -1,0 +1,30 @@
+// GD32VW553 CoAP GET — needs Wi‑Fi IP + LwIP (GD32VW55x_WiFi_BLE_SDK).
+import "github/klin-lang/gd32v_wifi" wifi
+import "github/klin-lang/gd32v_coap" coap
+
+fn main() {
+    let mut e = wifi.sta_init()
+    if e != wifi.err_ok() {
+        return
+    }
+    e = wifi.sta_connect("myssid", "mypass")
+    if e != wifi.err_ok() {
+        return
+    }
+    e = wifi.sta_wait_ip(20000)
+    if e != wifi.err_ok() {
+        return
+    }
+
+    let mut out: [256]u8
+    let mut n = coap.get(
+        "coap://californium.eclipseprojects.io/validate",
+        cast(*mut u8, &out[0]),
+        256,
+        coap.confirm_yes()
+    )
+    if n < 0 {
+        return
+    }
+    let _c = coap.last_code()
+}
