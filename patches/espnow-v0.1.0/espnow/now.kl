@@ -1,0 +1,164 @@
+/// ESP-IDF ESP-NOW — thin Klin surface over `now_idf.c`.
+/// Radio silicon + IDF Wi‑Fi / ESP-NOW own heap and tasks; Klin does not hide
+/// those costs. Not part of `machine_esp` (MMIO Pin…Adc+Rmt only).
+/// Sibling of `esp_wifi` / `esp_ble`. Espressif-only peer protocol (not IP).
+/// Unencrypted peers on this tag; PMK/LMK later.
+module espnow
+
+@[link("now_idf.c")]
+@[cinclude("now_idf.h")]
+@[cimport, codename("klin_now_data_max")]
+fn klin_now_data_max(): i32
+
+@[cimport, codename("klin_now_recv_queue_max")]
+fn klin_now_recv_queue_max(): i32
+
+@[cimport, codename("klin_now_init")]
+fn klin_now_init(): i32
+
+@[cimport, codename("klin_now_deinit")]
+fn klin_now_deinit(): i32
+
+@[cimport, codename("klin_now_set_channel")]
+fn klin_now_set_channel(channel: i32): i32
+
+@[cimport, codename("klin_now_channel")]
+fn klin_now_channel(): i32
+
+@[cimport, codename("klin_now_mac_self")]
+fn klin_now_mac_self(out6: *mut u8): i32
+
+@[cimport, codename("klin_now_add_peer")]
+fn klin_now_add_peer(mac6: *u8, channel: i32): i32
+
+@[cimport, codename("klin_now_del_peer")]
+fn klin_now_del_peer(mac6: *u8): i32
+
+@[cimport, codename("klin_now_peer_exists")]
+fn klin_now_peer_exists(mac6: *u8): i32
+
+@[cimport, codename("klin_now_add_broadcast")]
+fn klin_now_add_broadcast(): i32
+
+@[cimport, codename("klin_now_send")]
+fn klin_now_send(mac6: *u8, data: *u8, len: i32): i32
+
+@[cimport, codename("klin_now_send_wait")]
+fn klin_now_send_wait(timeout_ms: i32): i32
+
+@[cimport, codename("klin_now_send_ok")]
+fn klin_now_send_ok(): i32
+
+@[cimport, codename("klin_now_send_done")]
+fn klin_now_send_done(): i32
+
+@[cimport, codename("klin_now_recv_count")]
+fn klin_now_recv_count(): i32
+
+@[cimport, codename("klin_now_recv")]
+fn klin_now_recv(mac6_out: *mut u8, out: *mut u8, max_len: i32): i32
+
+@[cimport, codename("klin_now_log_self")]
+fn klin_now_log_self()
+
+/// `ESP_OK` (0).
+pub fn err_ok(): i32 {
+    return 0
+}
+
+/// Max payload bytes per frame (`ESP_NOW_MAX_DATA_LEN` = 250).
+pub fn data_max(): i32 {
+    return klin_now_data_max()
+}
+
+/// Fixed RX ring depth (overflow drops newest).
+pub fn recv_queue_max(): i32 {
+    return klin_now_recv_queue_max()
+}
+
+/// NVS + Wi‑Fi STA (no AP assoc) + ESP-NOW + send/recv callbacks.
+/// Default channel = 1. Returns IDF `esp_err_t` as `i32` (0 = OK).
+pub fn init(): i32 {
+    return klin_now_init()
+}
+
+/// `esp_now_deinit` + `esp_wifi_stop`. Clears peers and the RX ring.
+pub fn deinit(): i32 {
+    return klin_now_deinit()
+}
+
+/// Alias of `deinit`.
+pub fn stop(): i32 {
+    return klin_now_deinit()
+}
+
+/// Primary Wi‑Fi channel `1`…`13`. Both peers must match.
+pub fn set_channel(channel: i32): i32 {
+    return klin_now_set_channel(channel)
+}
+
+pub fn channel(): i32 {
+    return klin_now_channel()
+}
+
+/// Copy this station MAC (6 bytes) into `out6`.
+pub fn mac_self(out6: *mut u8): i32 {
+    return klin_now_mac_self(out6)
+}
+
+/// Add an unencrypted peer. `channel` 0 = current channel after `init`/`set_channel`.
+pub fn add_peer(mac6: *u8, channel: i32): i32 {
+    return klin_now_add_peer(mac6, channel)
+}
+
+pub fn del_peer(mac6: *u8): i32 {
+    return klin_now_del_peer(mac6)
+}
+
+pub fn peer_exists(mac6: *u8): bool {
+    return klin_now_peer_exists(mac6) != 0
+}
+
+/// Add broadcast peer `ff:ff:ff:ff:ff:ff` on the current channel.
+pub fn add_broadcast(): i32 {
+    return klin_now_add_broadcast()
+}
+
+/// Send `len` bytes (`1`…`data_max`) to `mac6`. Does not wait for the send CB.
+pub fn send(mac6: *u8, data: *u8, len: i32): i32 {
+    return klin_now_send(mac6, data, len)
+}
+
+/// Block until the send callback or `timeout_ms` (`-1` = forever).
+pub fn send_wait(timeout_ms: i32): i32 {
+    return klin_now_send_wait(timeout_ms)
+}
+
+/// True after a successful MAC-layer send callback for the last `send`.
+pub fn send_ok(): bool {
+    return klin_now_send_ok() != 0
+}
+
+/// True after the send callback ran (ok or fail) since the last `send`.
+pub fn send_done(): bool {
+    return klin_now_send_done() != 0
+}
+
+/// Frames waiting in the RX ring.
+pub fn recv_count(): i32 {
+    return klin_now_recv_count()
+}
+
+pub fn recv_available(): bool {
+    return klin_now_recv_count() > 0
+}
+
+/// Pop oldest RX frame into caller buffers. Returns payload length or error.
+pub fn recv(mac6_out: *mut u8, out: *mut u8, max_len: i32): i32 {
+    return klin_now_recv(mac6_out, out, max_len)
+}
+
+/// Debug `printf` of own MAC + channel (UART0 under IDF).
+pub fn log_self() {
+    klin_now_log_self()
+}

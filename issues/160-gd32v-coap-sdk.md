@@ -1,4 +1,4 @@
-# 159 — `gd32v_coap` CoAP client (`@v0.1.0`)
+# 160 — `gd32v_coap` CoAP client (`@v0.1.0`)
 
 **Status:** 🔨 seed [`patches/gd32v_coap-v0.1.0/`](../patches/gd32v_coap-v0.1.0/)
 (awaiting upstream [`klin-lang/gd32v_coap`](https://github.com/klin-lang/gd32v_coap) `@v0.1.0`)  

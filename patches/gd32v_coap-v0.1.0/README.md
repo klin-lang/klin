@@ -74,6 +74,6 @@ klin test gd32v_coap
 
 ## Links
 
-- Klin issue: [159](https://github.com/klin-lang/klin/blob/main/issues/159-gd32v-coap-sdk.md)
+- Klin issue: [159](https://github.com/klin-lang/klin/blob/main/issues/160-gd32v-coap-sdk.md)
 - Queue: [157](https://github.com/klin-lang/klin/blob/main/issues/157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md) V2
 - SDK example: `MSDK/examples/wifi/coap` (libcoap)

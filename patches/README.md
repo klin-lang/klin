@@ -12,7 +12,8 @@ as a mirror after the first tag if useful for offline `-I`.
 | [klin_ad9850-v0.2.0/](klin_ad9850-v0.2.0/) | [`klin-lang/klin_ad9850`](https://github.com/klin-lang/klin_ad9850) **published** → [`v0.2.0`](https://github.com/klin-lang/klin_ad9850/releases/tag/v0.2.0) (typed `u8`/`u32` + numeric `cast`) | [153](../issues/153-klin-ad9850.md) ✅ |
 | [rotary_encoder-v0.1.0/](rotary_encoder-v0.1.0/) | [`klin-lang/rotary_encoder`](https://github.com/klin-lang/rotary_encoder) seed — quadrature A/B + switch `Wire`; tag when published | [155](../issues/155-rotary-encoder.md) 🔨 |
 | [gd32v_ble-v0.16.0-ibeacon.patch](gd32v_ble-v0.16.0-ibeacon.patch) + [notes](gd32v_ble-v0.16.0-ibeacon/) | [`klin-lang/gd32v_ble`](https://github.com/klin-lang/gd32v_ble) — Apple iBeacon advertise → tag `@v0.16.0` when published | [158](../issues/158-gd32v-ble-ibeacon.md) 🔨 |
-| [gd32v_coap-v0.1.0/](gd32v_coap-v0.1.0/) | [`klin-lang/gd32v_coap`](https://github.com/klin-lang/gd32v_coap) seed — CoAP GET/PUT client; tag when published | [159](../issues/159-gd32v-coap-sdk.md) 🔨 |
+| [espnow-v0.1.0/](espnow-v0.1.0/) | [`klin-lang/espnow`](https://github.com/klin-lang/espnow) seed — ESP-IDF ESP-NOW peer/broadcast; tag when published | [159](../issues/159-esp-now-idf.md) 🔨 |
+| [gd32v_coap-v0.1.0/](gd32v_coap-v0.1.0/) | [`klin-lang/gd32v_coap`](https://github.com/klin-lang/gd32v_coap) seed — CoAP GET/PUT client; tag when published | [160](../issues/160-gd32v-coap-sdk.md) 🔨 |
 | [waveshare_rp2350_lcd_096-lcd-counter/](waveshare_rp2350_lcd_096-lcd-counter/) + [`.patch`](waveshare_rp2350_lcd_096-lcd-counter.patch) | [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) — `PICOTOOL.md` + `examples/lcd_counter` → [PR #14](https://github.com/klin-lang/waveshare_rp2350_lcd_096/pull/14) | [095](../issues/095-board-waveshare-rp2350-lcd-096.md) 🔨 |
 
 ```sh

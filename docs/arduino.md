@@ -42,7 +42,7 @@ These keep the Arduino **name / form factor**, but need another package:
 
 | Board (examples) | Chip | Klin path |
 |---|---|---|
-| **Nano ESP32** / S3– or C3–class modules | ESP32-C3 / ESP32-S3 | [`machine_esp`](https://github.com/klin-lang/machine_esp) ✅ (+ [`esp_wifi`](https://github.com/klin-lang/esp_wifi) / [`esp_eth`](https://github.com/klin-lang/esp_eth) / [`esp_ble`](https://github.com/klin-lang/esp_ble)). Classic ESP32 (Xtensa dual) still later ([062](../issues/062-targets-esp-rp.md)). |
+| **Nano ESP32** / S3– or C3–class modules | ESP32-C3 / ESP32-S3 | [`machine_esp`](https://github.com/klin-lang/machine_esp) ✅ (+ [`esp_wifi`](https://github.com/klin-lang/esp_wifi) / [`esp_eth`](https://github.com/klin-lang/esp_eth) / [`esp_ble`](https://github.com/klin-lang/esp_ble) / [`espnow`](https://github.com/klin-lang/espnow) seed [159](../issues/159-esp-now-idf.md)). Classic ESP32 (Xtensa dual) still later ([062](../issues/062-targets-esp-rp.md)). |
 | **Nano RP2040 Connect** / Pico-class Arduino | RP2040 | [`machine_rp`](https://github.com/klin-lang/machine_rp) ✅ |
 | Pico 2 / RP2350 Arduino-shaped | RP2350 | [`machine_rp`](https://github.com/klin-lang/machine_rp) ✅ (`*_rp2350`) |
 | **Uno R4** Minima / WiFi | Renesas RA4M1 (+ ESP32-S3 on WiFi) | Later → [107](../issues/107-later-tracks-arduino-boards.md) (new RA port) |
