@@ -1,6 +1,6 @@
 # 075 — Board pack / `klin init` vs host (laptop): linker & startup
 
-**Status:** 🔨 MCU `klin init` ✅ (`nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`, `waveshare-esp32-s3-pico`, `gd32vw553h-eval`, `gd32vw553h-start`, `weact-f411`; host-init still 💭)  
+**Status:** 🔨 MCU `klin init` ✅ (`nucleo-f411`, `pico`, `pico2`, `waveshare-rp2350-lcd-096`, `waveshare-esp32-s3-pico`, `gd32vw553h-eval`, `gd32vw553h-start`, `lckfb-gd32vw553`, `weact-f411`; host-init still 💭)  
 **Depends on:** [010](010-bare-metal.md), [054](054-embedded-project-layout.md), [053](053-device-board-assets.md); optionally [074](074-board-ioc-klin-mod.md)
 
 ## Verdict in brief
@@ -163,6 +163,7 @@ lower priority.
       `waveshare-esp32-s3-pico` (ESP-IDF scaffold; no freestanding ld/startup),
       `gd32vw553h-eval` (RISC-V freestanding + board pack [138](138-board-gd32vw553h-eval.md)),
       `gd32vw553h-start` (RISC-V freestanding + board pack [139](139-board-gd32vw553h-start.md)),
+      `lckfb-gd32vw553` (RISC-V freestanding PC13 blink [156](156-board-lckfb-gd32vw553.md)),
       `weact-f411` (F411CE PC13 blink + `make flash` [147](147-board-weact-f411.md))
 - [ ] (optional, low priority) `klin init` host → `hello` + mod
 
@@ -178,6 +179,7 @@ lower priority.
   (ESP-IDF + D10 blink + board pack [100](100-board-waveshare-esp32-s3-pico.md)),
   `gd32vw553h-eval` (VW553 LED1 + board pack [138](138-board-gd32vw553h-eval.md)),
   `gd32vw553h-start` (VW553 RGB red + board pack [139](139-board-gd32vw553h-start.md)),
+  `lckfb-gd32vw553` (LCKFB HMQ-EVT PC13 [156](156-board-lckfb-gd32vw553.md)),
   `weact-f411` (Black Pill PC13 + `dfu-util` [147](147-board-weact-f411.md)).
 - ESP scaffolds use **IDF** (`main/app_main.c`, `sdkconfig.defaults`, `idf.py`)
   instead of `board/startup.s` + `linker.ld` — still layer B (one-time copy);

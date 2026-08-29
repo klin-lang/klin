@@ -11,6 +11,7 @@ const knownInitBoards = <String>[
   'waveshare-esp32-s3-pico',
   'gd32vw553h-eval',
   'gd32vw553h-start',
+  'lckfb-gd32vw553',
   'weact-f411',
 ];
 

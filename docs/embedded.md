@@ -42,6 +42,7 @@ on Nucleo, the SVD). Compile / `make` stay offline after that.
 | `waveshare-esp32-s3-pico` | ESP32-S3 | ESP-IDF v5.x | D10 LED via `machine_esp` + IDF |
 | `gd32vw553h-eval` | GD32VW553 | `riscv64-unknown-elf-gcc` | LED1 (PA4) via `machine_gd32v` + board pack |
 | `gd32vw553h-start` | GD32VW553 | `riscv64-unknown-elf-gcc` | RGB red (PB0) via `machine_gd32v` + board pack |
+| `lckfb-gd32vw553` | GD32VW553HMQ | `riscv64-unknown-elf-gcc` | PC13 LED via `machine_gd32v` (LCKFB / HMQ-EVT stamp) |
 | `weact-f411` | STM32F411CE | `arm-none-eabi-gcc` | PC13 LED via `machine_stm32`; `make flash` (dfu-util) |
 
 Unknown id → error. Templates ship **in the Klin install**
@@ -146,12 +147,13 @@ cd my_start && klin get && make emit
 ```
 
 **LCKFB / silk `GD32VW553HMQ-EVT`** — stamp module with CH340 USB-C and
-external JTAG. **Not** START or EVAL: user LED is **PC13**, KEY **PA0**,
-log UART is USART0 PB15/PA8 (same COM0 pins as EVAL, different LED).
-No `klin init` id yet — use [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)
-`*_vw553` with those pins, or wait for a board pack
-([156](../issues/156-board-lckfb-gd32vw553.md)). Wiki:
-https://wiki.lckfb.com/zh-hans/gd32vw553/
+external JTAG. User LED **PC13**, KEY **PA0**, log UART USART0 PB15/PA8
+([156](../issues/156-board-lckfb-gd32vw553.md)).
+
+```sh
+klin init lckfb-gd32vw553 my_stamp
+cd my_stamp && klin get && make emit
+```
 
 ## What you do not do
 
