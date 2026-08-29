@@ -53,15 +53,19 @@ pages to every app that only needs “turn / click”. Same MCU-agnostic `Wire` 
 ## Usage
 
 ```sh
+klin get github/klin-lang/rotary_encoder@v0.1.0
+```
+
+```klin
+import "github/klin-lang/rotary_encoder" enc
+```
+
+Until publish, the seed still runs locally:
+
+```sh
 klin test patches/rotary_encoder-v0.1.0/rotary_encoder
 klin run -I patches/rotary_encoder-v0.1.0 \
   patches/rotary_encoder-v0.1.0/examples/host_smoke.kl
-```
-
-After publish:
-
-```sh
-klin get github/klin-lang/rotary_encoder@v0.1.0
 ```
 
 ## Links
