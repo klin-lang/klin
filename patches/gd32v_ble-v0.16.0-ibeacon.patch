@@ -1,0 +1,532 @@
+diff --git a/README.md b/README.md
+index f955ede..b70badd 100644
+--- a/README.md
++++ b/README.md
+@@ -25,10 +25,12 @@ not hidden Klin allocation.
+ Wi‑Fi is [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi). Do **not**
+ put BLE in a board pack.
+ 
+-## Status (`@v0.15.0`)
++## Status (`@v0.16.0`)
+ 
+ | API | Notes |
+ |---|---|
++| `ibeacon_advertise` | Non-connectable Apple iBeacon; UUID16 + major/minor + measured power args |
++| `ibeacon_company_id` | `0x004C` |
+ | `mesh_oob_auth_set` / `mesh_oob_auth` | 0=none, 1=out num, 2=in num, 3=static, 4=out string, 5=in string |
+ | `mesh_oob_string` / `mesh_oob_input_string` | String OOB display / inject (actions 3 / 4) |
+ | `mesh_oob_static_set` | Static OOB bytes (1..=16) |
+@@ -44,7 +46,7 @@ put BLE in a board pack.
+ | Prior APIs | privacy / GATT / bond / UUID / scan / … |
+ | `err_ok` | 0 |
+ 
+-`version()` → `15`.
++`version()` → `16`.
+ 
+ Host `klin test` uses stubs when `ble_init.h` is not on the include path.
+ 
+@@ -58,6 +60,31 @@ friendship parameters after establish (no runtime queue-size setter in the SDK).
+ Default auth is **none**. Interactive OOB uses `mesh_oob_auth_set` +
+ `mesh_prov_*_begin` (blocking `mesh_prov_adv`/`gatt` stay for none/static).
+ 
++
++## Usage (iBeacon)
++
++Apple iBeacon license: https://developer.apple.com/ibeacon/
++
++```klin
++import "github/klin-lang/gd32v_ble" ble
++
++fn main() {
++    let mut uuid: [16]u8
++    let mut i = 0
++    while i < 16 {
++        uuid[i] = cast(u8, i)
++        i = i + 1
++    }
++    let mut e = ble.init()
++    // measured_pwr = calibrated RSSI at 1 m (signed int8), e.g. -61
++    e = ble.ibeacon_advertise(cast(*u8, &uuid[0]), 0x1111, 0x2222, 0 - 61)
++}
++```
++
++```sh
++klin get github/klin-lang/gd32v_ble@v0.16.0
++```
++
+ ## Usage (string OOB)
+ 
+ ```klin
+@@ -77,7 +104,7 @@ fn main() {
+ ```
+ 
+ ```sh
+-klin get github/klin-lang/gd32v_ble@v0.15.0
++klin get github/klin-lang/gd32v_ble@v0.16.0
+ ```
+ 
+ ## Usage (interactive number OOB)
+diff --git a/examples/ibeacon/Makefile b/examples/ibeacon/Makefile
+new file mode 100644
+index 0000000..80c0fec
+--- /dev/null
++++ b/examples/ibeacon/Makefile
+@@ -0,0 +1,21 @@
++# GD32VW553 BLE iBeacon — Klin emit-c (ELF needs the official SDK).
++#
++#   make emit KLIN=/path/to/klin/bin/klin.dart
++
++KLIN ?= klin
++
++.PHONY: all emit clean
++
++all: emit
++
++emit: out/ibeacon.c
++
++out/ibeacon.c out/ibeacon.link: ibeacon.kl $(wildcard ../../gd32v_ble/*.kl) $(wildcard ../../gd32v_ble/*.[ch])
++	@mkdir -p out
++	@case "$(KLIN)" in \
++	  *.dart) dart run "$(KLIN)" --emit-c ibeacon.kl ;; \
++	  *) "$(KLIN)" --emit-c ibeacon.kl ;; \
++	esac
++
++clean:
++	rm -rf out
+diff --git a/examples/ibeacon/README.md b/examples/ibeacon/README.md
+new file mode 100644
+index 0000000..69f9bf0
+--- /dev/null
++++ b/examples/ibeacon/README.md
+@@ -0,0 +1,12 @@
++# iBeacon example
++
++Non-connectable Apple iBeacon advertise via `gd32v_ble.ibeacon_advertise`.
++
++Needs [`GD32VW55x_WiFi_BLE_SDK`](https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK)
++on the include/link path (same as other BLE examples).
++
++Before shipping iBeacon, see https://developer.apple.com/ibeacon/ for licensing.
++
++```sh
++make emit KLIN=/path/to/klin/bin/klin.dart
++```
+diff --git a/examples/ibeacon/ibeacon.kl b/examples/ibeacon/ibeacon.kl
+new file mode 100644
+index 0000000..57de3b2
+--- /dev/null
++++ b/examples/ibeacon/ibeacon.kl
+@@ -0,0 +1,22 @@
++// GD32VW553 BLE Apple iBeacon — needs GD32VW55x_WiFi_BLE_SDK on the include/link path.
++// License: https://developer.apple.com/ibeacon/
++import "../../gd32v_ble" ble
++
++fn main() {
++    let mut uuid: [16]u8
++    let mut i = 0
++    while i < 16 {
++        uuid[i] = cast(u8, i + 1)
++        i = i + 1
++    }
++
++    let mut e = ble.init()
++    if e != ble.err_ok() {
++        return
++    }
++    // major/minor big-endian on air; measured_pwr = RSSI at 1 m (signed int8).
++    e = ble.ibeacon_advertise(cast(*u8, &uuid[0]), 0x1111, 0x2222, 0 - 61)
++    if e != ble.err_ok() {
++        return
++    }
++}
+diff --git a/gd32v_ble/advertise.kl b/gd32v_ble/advertise.kl
+index f723abe..c801656 100644
+--- a/gd32v_ble/advertise.kl
++++ b/gd32v_ble/advertise.kl
+@@ -18,6 +18,7 @@
+ /// Mesh Friend/LPN (`@v0.13.0`): `mesh_lpn_*` / `mesh_friend_*` (needs SDK LOW_POWER / FRIEND).
+ /// Mesh interactive OOB (`@v0.14.0`): `mesh_oob_auth_*` / `mesh_prov_*_begin` + poll.
+ /// Mesh extras (`@v0.15.0`): string OOB, friendship param readouts, vendor byte model.
++/// iBeacon (`@v0.16.0`): non-connectable Apple iBeacon (`ibeacon_advertise`).
+ /// Central / GATT client / bonding need an SDK build with those roles (e.g. msdk_ffd).
+ module gd32v_ble
+ 
+@@ -28,6 +29,11 @@ fn klin_gd32v_ble_init(): i32
+ @[cimport, codename("klin_gd32v_ble_advertise")]
+ fn klin_gd32v_ble_advertise(name: str): i32
+ 
++@[cimport, codename("klin_gd32v_ble_ibeacon_advertise")]
++fn klin_gd32v_ble_ibeacon_advertise(
++    uuid16: *u8, major: i32, minor: i32, measured_pwr: i32
++): i32
++
+ @[cimport, codename("klin_gd32v_ble_stop_advertise")]
+ fn klin_gd32v_ble_stop_advertise(): i32
+ 
+@@ -436,6 +442,21 @@ pub fn advertise(name: str): i32 {
+     return klin_gd32v_ble_advertise(name)
+ }
+ 
++/// Non-connectable Apple iBeacon (company `0x004C`, type `0x02 0x15`).
++/// `uuid16` = 16-byte proximity UUID; `major`/`minor` `0..=65535`;
++/// `measured_pwr` = calibrated RSSI at 1 m as signed int8 (`-128..=127`).
++/// Stops any prior advertise. `wait_connected` fails while iBeacon is active.
++pub fn ibeacon_advertise(
++    uuid16: *u8, major: i32, minor: i32, measured_pwr: i32
++): i32 {
++    return klin_gd32v_ble_ibeacon_advertise(uuid16, major, minor, measured_pwr)
++}
++
++/// Apple company identifier used in iBeacon manufacturer data.
++pub fn ibeacon_company_id(): i32 {
++    return 0x004C
++}
++
+ pub fn stop_advertise(): i32 {
+     return klin_gd32v_ble_stop_advertise()
+ }
+diff --git a/gd32v_ble/advertise_test.kl b/gd32v_ble/advertise_test.kl
+index a7da254..5c68fd1 100644
+--- a/gd32v_ble/advertise_test.kl
++++ b/gd32v_ble/advertise_test.kl
+@@ -26,3 +26,41 @@ fn test_wait_connected_needs_advertise() {
+     testing.assert_eq_i32(wait_connected(0), 0 - 1)
+     testing.assert_eq_i32(stop(), 0)
+ }
++
++fn test_ibeacon_advertise_host_stub() {
++    let mut uuid: [16]u8
++    let mut i = 0
++    testing.assert_eq_i32(init(), 0)
++    while i < 16 {
++        uuid[i] = cast(u8, i)
++        i = i + 1
++    }
++    testing.assert_eq_i32(
++        ibeacon_advertise(cast(*u8, &uuid[0]), 0x1111, 0x2222, 0 - 61),
++        0
++    )
++    testing.assert_eq_i32(advertising(), 1)
++    testing.assert_eq_i32(wait_connected(0), 0 - 1)
++    testing.assert_eq_i32(connected(), 0)
++    testing.assert_eq_i32(stop_advertise(), 0)
++    testing.assert_eq_i32(advertising(), 0)
++    testing.assert_eq_i32(stop(), 0)
++}
++
++fn test_ibeacon_rejects_bad_range() {
++    let mut uuid: [16]u8
++    testing.assert_eq_i32(init(), 0)
++    testing.assert_eq_i32(
++        ibeacon_advertise(cast(*u8, &uuid[0]), 0 - 1, 0, 0 - 59),
++        0 - 1
++    )
++    testing.assert_eq_i32(
++        ibeacon_advertise(cast(*u8, &uuid[0]), 0, 70000, 0 - 59),
++        0 - 1
++    )
++    testing.assert_eq_i32(
++        ibeacon_advertise(cast(*u8, &uuid[0]), 1, 2, 200),
++        0 - 1
++    )
++    testing.assert_eq_i32(stop(), 0)
++}
+diff --git a/gd32v_ble/ble_sdk.c b/gd32v_ble/ble_sdk.c
+index e328ca7..89008a5 100644
+--- a/gd32v_ble/ble_sdk.c
++++ b/gd32v_ble/ble_sdk.c
+@@ -18,6 +18,7 @@
+  * Friend/LPN (`@v0.13.0`): `mesh_lpn_*` / `mesh_friend_*` when SDK CONFIG_BT_MESH_LOW_POWER / FRIEND.
+  * Interactive OOB (`@v0.14.0`): `mesh_oob_auth_*` / `mesh_oob_input_number` / non-blocking `mesh_prov_*_begin`.
+  * Mesh extras (`@v0.15.0`): string OOB + friendship params + vendor byte model.
++ * iBeacon (`@v0.16.0`): non-connectable Apple iBeacon advertise via `ble_adv_*`.
+  */
+ #include "ble_sdk.h"
+ 
+@@ -45,6 +46,7 @@
+ #include "ble_storage.h"
+ #include "ble_gap.h"
+ #include "ble_adapter.h"
++#include "ble_adv.h"
+ #if defined(__has_include)
+ #if __has_include("wrapper_os.h")
+ #include "wrapper_os.h"
+@@ -100,6 +102,12 @@ typedef struct {
+ 
+ static int s_inited;
+ static int s_advertising;
++static int s_ibeacon; /* 1 while non-connectable iBeacon set is active */
++static unsigned char s_ibeacon_payload[23];
++static unsigned char s_ibeacon_adv_idx; /* 0xFF = none */
++#ifdef KLIN_GD32V_BLE_HAVE_SDK
++static int s_ibeacon_adv_state; /* ble_adv_state_t */
++#endif
+ static int s_connected;
+ static int s_scanning;
+ static int s_central_connected;
+@@ -826,6 +834,8 @@ int klin_gd32v_ble_init(void)
+     klin_gd32v_ble_privacy_reset();
+     klin_gd32v_ble_mesh_state_reset();
+     s_bond_enabled = 0;
++    s_ibeacon = 0;
++    s_ibeacon_adv_idx = 0xFF;
+     klin_gd32v_ble_scan_clear();
+     return 0;
+ }
+@@ -860,6 +870,17 @@ int klin_gd32v_ble_advertise(const char *name)
+ 
+ int klin_gd32v_ble_stop_advertise(void)
+ {
++    if (s_ibeacon) {
++        if (s_ibeacon_adv_idx != 0xFF) {
++            (void)ble_adv_stop(s_ibeacon_adv_idx);
++            (void)ble_adv_remove(s_ibeacon_adv_idx);
++            s_ibeacon_adv_idx = 0xFF;
++        }
++        s_ibeacon = 0;
++        s_advertising = 0;
++        s_ibeacon_adv_state = (int)BLE_ADV_STATE_IDLE;
++        return 0;
++    }
+     if (s_advertising) {
+         (void)app_adv_stop(0, 1);
+     }
+@@ -877,11 +898,111 @@ int klin_gd32v_ble_advertising(void)
+     return s_advertising;
+ }
+ 
++
++#define KLIN_GD32V_BLE_IBEACON_COMPANY_ID 0x004Cu
++#define KLIN_GD32V_BLE_IBEACON_DATA_LEN   23
++
++static void klin_gd32v_ble_ibeacon_fill(
++    const unsigned char *uuid16, int major, int minor, int measured_pwr)
++{
++    s_ibeacon_payload[0] = 0x02;
++    s_ibeacon_payload[1] = 0x15;
++    memcpy(s_ibeacon_payload + 2, uuid16, 16);
++    s_ibeacon_payload[18] = (unsigned char)((major >> 8) & 0xff);
++    s_ibeacon_payload[19] = (unsigned char)(major & 0xff);
++    s_ibeacon_payload[20] = (unsigned char)((minor >> 8) & 0xff);
++    s_ibeacon_payload[21] = (unsigned char)(minor & 0xff);
++    s_ibeacon_payload[22] = (unsigned char)(measured_pwr & 0xff);
++}
++
++static void klin_gd32v_ble_ibeacon_start_data(uint8_t adv_idx)
++{
++    ble_adv_data_set_t adv;
++    ble_adv_data_t adv_data;
++    ble_adv_data_manuf_data_t manuf_data;
++
++    memset(&adv, 0, sizeof(adv));
++    memset(&adv_data, 0, sizeof(adv_data));
++    memset(&manuf_data, 0, sizeof(manuf_data));
++
++    manuf_data.company_id = KLIN_GD32V_BLE_IBEACON_COMPANY_ID;
++    manuf_data.data_len = KLIN_GD32V_BLE_IBEACON_DATA_LEN;
++    manuf_data.p_data = s_ibeacon_payload;
++
++    adv_data.flags = BLE_GAP_ADV_FLAG_LE_ONLY_GENERAL_DISC_MODE;
++    adv_data.p_manuf_specific_data = &manuf_data;
++
++    adv.data_force = false;
++    adv.data.p_data_enc = &adv_data;
++
++    (void)ble_adv_start(adv_idx, &adv, NULL, NULL);
++}
++
++static void klin_gd32v_ble_ibeacon_evt(ble_adv_evt_t adv_evt, void *p_data, void *p_context)
++{
++    ble_adv_state_chg_t *p_chg;
++    int old_state;
++
++    (void)p_context;
++    if (adv_evt != BLE_ADV_EVT_STATE_CHG || p_data == NULL) {
++        return;
++    }
++    p_chg = (ble_adv_state_chg_t *)p_data;
++    old_state = s_ibeacon_adv_state;
++    s_ibeacon_adv_state = (int)p_chg->state;
++    if ((p_chg->state == BLE_ADV_STATE_CREATE)
++        && (old_state == (int)BLE_ADV_STATE_CREATING)) {
++        s_ibeacon_adv_idx = p_chg->adv_idx;
++        klin_gd32v_ble_ibeacon_start_data(p_chg->adv_idx);
++    }
++}
++
++int klin_gd32v_ble_ibeacon_advertise(
++    const unsigned char *uuid16, int major, int minor, int measured_pwr)
++{
++    ble_adv_param_t adv_param;
++
++    if (!s_inited || uuid16 == NULL) {
++        return -1;
++    }
++    if (major < 0 || major > 65535 || minor < 0 || minor > 65535) {
++        return -1;
++    }
++    if (measured_pwr < -128 || measured_pwr > 127) {
++        return -1;
++    }
++
++    (void)klin_gd32v_ble_stop_advertise();
++
++    klin_gd32v_ble_ibeacon_fill(uuid16, major, minor, measured_pwr);
++
++    memset(&adv_param, 0, sizeof(adv_param));
++    adv_param.param.own_addr_type = s_own_addr_type;
++    adv_param.param.type = BLE_GAP_ADV_TYPE_LEGACY;
++    adv_param.param.prop = BLE_GAP_ADV_PROP_NON_CONN_NON_SCAN;
++    adv_param.param.filter_pol = BLE_GAP_ADV_ALLOW_SCAN_ANY_CON_ANY;
++    adv_param.param.disc_mode = BLE_GAP_ADV_MODE_GEN_DISC;
++    adv_param.param.primary_phy = BLE_GAP_PHY_1MBPS;
++    adv_param.param.ch_map = 0x07;
++    adv_param.param.adv_intv_min = APP_ADV_INT_MIN;
++    adv_param.param.adv_intv_max = APP_ADV_INT_MAX;
++
++    s_ibeacon_adv_state = (int)BLE_ADV_STATE_IDLE;
++    s_ibeacon_adv_idx = 0xFF;
++    if (ble_adv_create(&adv_param, klin_gd32v_ble_ibeacon_evt, NULL) != BLE_ERR_NO_ERROR) {
++        return -1;
++    }
++    s_ibeacon = 1;
++    s_advertising = 1;
++    s_connected = 0;
++    return 0;
++}
++
+ int klin_gd32v_ble_wait_connected(int timeout_ms)
+ {
+     int waited;
+ 
+-    if (!s_inited || !s_advertising) {
++    if (!s_inited || !s_advertising || s_ibeacon) {
+         return -1;
+     }
+     waited = 0;
+@@ -2631,6 +2752,8 @@ int klin_gd32v_ble_init(void)
+     s_central_connected = 0;
+     s_scan_count = 0;
+     s_bond_enabled = 0;
++    s_ibeacon = 0;
++    s_ibeacon_adv_idx = 0xFF;
+     memset(s_scan, 0, sizeof(s_scan));
+     klin_gd32v_ble_gatt_values_reset();
+     klin_gd32v_ble_gattc_reset();
+@@ -2654,6 +2777,8 @@ int klin_gd32v_ble_advertise(const char *name)
+ int klin_gd32v_ble_stop_advertise(void)
+ {
+     s_advertising = 0;
++    s_ibeacon = 0;
++    s_ibeacon_adv_idx = 0xFF;
+     return 0;
+ }
+ 
+@@ -2667,10 +2792,36 @@ int klin_gd32v_ble_advertising(void)
+     return s_advertising;
+ }
+ 
++int klin_gd32v_ble_ibeacon_advertise(
++    const unsigned char *uuid16, int major, int minor, int measured_pwr)
++{
++    if (!s_inited || uuid16 == NULL) {
++        return -1;
++    }
++    if (major < 0 || major > 65535 || minor < 0 || minor > 65535) {
++        return -1;
++    }
++    if (measured_pwr < -128 || measured_pwr > 127) {
++        return -1;
++    }
++    memcpy(s_ibeacon_payload + 2, uuid16, 16);
++    s_ibeacon_payload[0] = 0x02;
++    s_ibeacon_payload[1] = 0x15;
++    s_ibeacon_payload[18] = (unsigned char)((major >> 8) & 0xff);
++    s_ibeacon_payload[19] = (unsigned char)(major & 0xff);
++    s_ibeacon_payload[20] = (unsigned char)((minor >> 8) & 0xff);
++    s_ibeacon_payload[21] = (unsigned char)(minor & 0xff);
++    s_ibeacon_payload[22] = (unsigned char)(measured_pwr & 0xff);
++    s_ibeacon = 1;
++    s_advertising = 1;
++    s_connected = 0;
++    return 0;
++}
++
+ int klin_gd32v_ble_wait_connected(int timeout_ms)
+ {
+     (void)timeout_ms;
+-    if (!s_inited || !s_advertising) {
++    if (!s_inited || !s_advertising || s_ibeacon) {
+         return -1;
+     }
+     s_connected = 1;
+@@ -2680,6 +2831,8 @@ int klin_gd32v_ble_wait_connected(int timeout_ms)
+ int klin_gd32v_ble_stop(void)
+ {
+     s_advertising = 0;
++    s_ibeacon = 0;
++    s_ibeacon_adv_idx = 0xFF;
+     s_connected = 0;
+     s_scanning = 0;
+     s_central_connected = 0;
+diff --git a/gd32v_ble/ble_sdk.h b/gd32v_ble/ble_sdk.h
+index 5b41d05..dc45d6d 100644
+--- a/gd32v_ble/ble_sdk.h
++++ b/gd32v_ble/ble_sdk.h
+@@ -8,6 +8,7 @@
+  * `@v0.12.0` = … + Mesh Gen Level + vendor button on the node (`mesh_level*` / `mesh_vnd*`).
+  * `@v0.13.0` = … + Mesh Friend / LPN knobs (`mesh_lpn_*` / `mesh_friend_*`).
+  * `@v0.14.0` = … + Mesh interactive OOB (`mesh_oob_auth_*` / `mesh_prov_*_begin`).
++ * `@v0.16.0` = … + Apple iBeacon non-connectable advertise (`ibeacon_advertise`).
+  * Peripheral GATT: up to KLIN_GD32V_BLE_GATT_SVC_MAX services (1 chr each),
+  * 16-bit or 128-bit UUIDs via gatt_uuid* / gatt_add_* before init.
+  * Default single svc 0xFFF0 / chr 0xFFF1 when unset.
+@@ -60,6 +61,14 @@ int klin_gd32v_ble_init(void);
+ /** Set GAP name + start legacy undirected connectable advertise (`app_adv_create`). */
+ int klin_gd32v_ble_advertise(const char *name);
+ 
++/**
++ * Non-connectable Apple iBeacon advertise (`ble_adv_*`, company 0x004C).
++ * `uuid16` = 16-byte proximity UUID; `major`/`minor` 0..=65535; `measured_pwr`
++ * = calibrated RSSI at 1 m as signed int8 (−128..=127). Stops any prior advertise.
++ */
++int klin_gd32v_ble_ibeacon_advertise(
++    const unsigned char *uuid16, int major, int minor, int measured_pwr);
++
+ int klin_gd32v_ble_stop_advertise(void);
+ int klin_gd32v_ble_connected(void);
+ int klin_gd32v_ble_advertising(void);
+diff --git a/gd32v_ble/version.kl b/gd32v_ble/version.kl
+index 618883f..06a3770 100644
+--- a/gd32v_ble/version.kl
++++ b/gd32v_ble/version.kl
+@@ -1,5 +1,5 @@
+ module gd32v_ble
+ 
+ pub fn version(): i32 {
+-    return 15
++    return 16
+ }
+diff --git a/gd32v_ble/version_test.kl b/gd32v_ble/version_test.kl
+index 9791b62..034add9 100644
+--- a/gd32v_ble/version_test.kl
++++ b/gd32v_ble/version_test.kl
+@@ -2,8 +2,8 @@ module gd32v_ble
+ 
+ import testing
+ 
+-fn test_version_is_fifteen() {
+-    testing.assert_eq_i32(version(), 15)
++fn test_version_is_sixteen() {
++    testing.assert_eq_i32(version(), 16)
+ }
+ 
+ fn test_err_ok_is_zero() {
+@@ -23,3 +23,7 @@ fn test_gatt_uuids_and_max() {
+ fn test_scan_max_is_sixteen() {
+     testing.assert_eq_i32(scan_max(), 16)
+ }
++
++fn test_ibeacon_company_id() {
++    testing.assert_eq_i32(ibeacon_company_id(), 0x004C)
++}

@@ -1,6 +1,6 @@
 # 140 — GD32VW553 BLE as a separate SDK package (`gd32v_ble`)
 
-**Status:** 🔨 advertise + GATT + central + GATT client + Just Works bonding + UUID16 + passkey + UUID128/multi + privacy + Mesh OnOff + Mesh provisioner + Gen Level/vendor + Friend/LPN + interactive OOB + string OOB / friendship params / vendor byte published [`@v0.15.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.15.0)  
+**Status:** 🔨 advertise + GATT + central + GATT client + Just Works bonding + UUID16 + passkey + UUID128/multi + privacy + Mesh OnOff + Mesh provisioner + Gen Level/vendor + Friend/LPN + interactive OOB + string OOB / friendship params / vendor byte published [`@v0.15.0`](https://github.com/klin-lang/gd32v_ble/releases/tag/v0.15.0); **iBeacon** patch for `@v0.16.0` → [158](158-gd32v-ble-ibeacon.md)  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md), [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [136](136-machine-gd32v-gd32vw553.md), [137](137-gd32v-wifi-sdk.md)
 **Formerly:** `130` (renumbered to resolve duplicate issue numbers).
 
@@ -239,12 +239,23 @@ On the **`mesh_enable` node** (not provisioner):
 - Second vendor model on the **`mesh_enable` composition** (cid `0x05f1`, id `0x0001`): `mesh_vnd_byte` / `mesh_vnd_byte_set` / `mesh_vnd_byte_changed` (SET opcode `0x10`)  
 - `version()` → `15`  
 - Examples updated: `mesh_oob` / `mesh_friend` / `mesh_level`  
-- **Not** included (until later): more vendor models; runtime Friend queue-size knobs (SDK has none)
+- **Not** included (until `@v0.16.0`): iBeacon — see [158](158-gd32v-ble-ibeacon.md)
+
+## Scope (`@v0.16.0` — iBeacon)
+
+See dedicated issue [158](158-gd32v-ble-ibeacon.md) (157 V1). Patch:
+[`patches/gd32v_ble-v0.16.0-ibeacon.patch`](../patches/gd32v_ble-v0.16.0-ibeacon.patch).
+
+- `ibeacon_advertise(uuid16, major, minor, measured_pwr)` — non-connectable Apple iBeacon (`ble_adv_*`, company `0x004C`)  
+- `ibeacon_company_id()` → `0x004C`  
+- Args only; fixed 23-byte C payload; `wait_connected` fails while active  
+- `version()` → `16`  
+- Example `examples/ibeacon/`  
 
 ## Out of scope (this tag)
 
 - Runtime Friend queue-size setters (SDK CONFIG only) / further vendor models  
-- iBeacon — staged [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md) **V1** (tag on this package or thin sibling)  
+- iBeacon **scan** / parse (later on [158](158-gd32v-ble-ibeacon.md) if needed)  
 - Wi‑Fi — [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [137](137-gd32v-wifi-sdk.md)  
 - Board packs — [138](138-board-gd32vw553h-eval.md) / [139](139-board-gd32vw553h-start.md) (no radio API)  
 - Vendoring `GD32VW55x_WiFi_BLE_SDK`  
@@ -252,12 +263,12 @@ On the **`mesh_enable` node** (not provisioner):
 
 ## Contract (prime rule)
 
-- No Klin GC / hidden heap — advertise name is a C string you pass in; GATT payloads are caller buffers + fixed per-slot 20-byte statics in C (max 4 slots); scan results are a fixed 16-row static table; GATT client uses a fixed 20-byte client buffer; bond keys live in **SDK flash storage**; passkey is an explicit `i32` PIN; 128-bit UUIDs are explicit 16-byte LE buffers. UUID table frozen at `init`. Unprov UUID table max 8. Static OOB is a fixed 16-byte buffer. OOB string buffer is fixed 17 bytes (16 + NUL).  
+- No Klin GC / hidden heap — advertise name is a C string you pass in; GATT payloads are caller buffers + fixed per-slot 20-byte statics in C (max 4 slots); scan results are a fixed 16-row static table; GATT client uses a fixed 20-byte client buffer; bond keys live in **SDK flash storage**; passkey is an explicit `i32` PIN; 128-bit UUIDs are explicit 16-byte LE buffers. UUID table frozen at `init`. Unprov UUID table max 8. Static OOB is a fixed 16-byte buffer. OOB string buffer is fixed 17 bytes (16 + NUL). iBeacon UUID is a caller pointer + fixed 23-byte C payload.  
 - `privacy_enable` only when radio is idle (not advertising / scanning / connected).  
 - Mesh needs explicit SDK mesh + BLE_MAX; provisioner needs PROVISIONER+CDB; Friend/LPN need LOW_POWER / FRIEND; mesh stack buffers are **SDK contracts**.  
 - Interactive OOB: no Klin callbacks — poll `mesh_oob_action` / `mesh_prov_busy` after `mesh_prov_*_begin` (actions **1**/**2** number; **3**/**4** string via `mesh_oob_string` / `mesh_oob_input_string`).  
 - `mesh_enable` and `mesh_provisioner_enable` are mutually exclusive.  
-- SDK heap / OSAL BLE task / GAP / GATTS / GATTC / security / privacy / mesh / scan events are **SDK contracts**, documented in the package README.  
+- SDK heap / OSAL BLE task / GAP / GATTS / GATTC / security / privacy / mesh / scan / `ble_adv_*` events are **SDK contracts**, documented in the package README.  
 - Errors are `i32` (0 = ok).  
 - Host `klin test` must not require the SDK tree.
 
