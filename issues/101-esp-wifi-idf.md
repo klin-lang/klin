@@ -76,6 +76,7 @@ Changelog: `@v0.1.0` STA+DHCP → `@v0.1.1` static → `@v0.2.0` SoftAP → `@v0
 
 - Dual Wi‑Fi+ETH prefer/failover ✅ [113](113-esp-netif-dual-idf.md); APSTA / SoftAP+ETH later → [104](104-later-tracks-esp-network.md); sockets ✅ [111](111-esp-sockets-idf.md); HTTP ✅ [112](112-esp-http-idf.md)  
 - BLE — ✅ separate package [`esp_ble`](https://github.com/klin-lang/esp_ble) → [106](106-esp-ble-idf.md) (was track A in [103](103-later-tracks-ble-usb-camera-lcd.md))  
+- ESP-NOW — 🔨 sibling [`espnow`](https://github.com/klin-lang/espnow) seed → [159](159-esp-now-idf.md) (not STA/IP)  
 - Freestanding (no IDF)  
 - Reconnect policy beyond the small, documented retry in `sta_idf.c` (max 5)
 

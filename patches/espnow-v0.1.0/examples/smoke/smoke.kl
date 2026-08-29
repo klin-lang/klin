@@ -1,0 +1,87 @@
+// emit-c smoke against stubs/ (no ESP-IDF).
+import "../../espnow" now
+
+fn main() {
+  let mut e = now.init()
+  if e != now.err_ok() {
+    return
+  }
+  if now.data_max() < 1 {
+    return
+  }
+  if now.recv_queue_max() < 1 {
+    return
+  }
+  e = now.set_channel(6)
+  if e != now.err_ok() {
+    return
+  }
+  if now.channel() != 6 {
+    return
+  }
+
+  let mut mac: [6]u8
+  e = now.mac_self(cast(*mut u8, &mac[0]))
+  if e != now.err_ok() {
+    return
+  }
+  now.log_self()
+
+  e = now.add_broadcast()
+  if e != now.err_ok() {
+    return
+  }
+
+  let mut peer: [6]u8
+  peer[0] = 0xaa
+  peer[1] = 0xbb
+  peer[2] = 0xcc
+  peer[3] = 0xdd
+  peer[4] = 0xee
+  peer[5] = 0xff
+  e = now.add_peer(cast(*u8, &peer[0]), 0)
+  if e != now.err_ok() {
+    return
+  }
+  if !now.peer_exists(cast(*u8, &peer[0])) {
+    return
+  }
+
+  let mut msg: [8]u8
+  msg[0] = 72
+  msg[1] = 105
+  e = now.send(cast(*u8, &peer[0]), cast(*u8, &msg[0]), 2)
+  if e != now.err_ok() {
+    return
+  }
+  e = now.send_wait(1000)
+  if e != now.err_ok() {
+    return
+  }
+  if !now.send_done() {
+    return
+  }
+  if !now.send_ok() {
+    return
+  }
+
+  if !now.recv_available() {
+    return
+  }
+  let mut src: [6]u8
+  let mut buf: [250]u8
+  let n = now.recv(cast(*mut u8, &src[0]), cast(*mut u8, &buf[0]), 250)
+  if n != 2 {
+    return
+  }
+
+  e = now.del_peer(cast(*u8, &peer[0]))
+  if e != now.err_ok() {
+    return
+  }
+  e = now.deinit()
+  if e != now.err_ok() {
+    return
+  }
+  let _v = now.version()
+}

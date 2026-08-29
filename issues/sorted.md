@@ -128,6 +128,7 @@ building the core from scratch.
 | [104](104-later-tracks-esp-network.md) | Later tracks: ESP network (Wi‑Fi W1–W3 ✅; N1 dual ✅; sockets ✅; HTTP/TLS ✅; RMII ✅) | 🔨 Wi‑Fi+N1–N3+E1 ✅; ETH E2+ backlog | 101, 102, 062, 111, 112, 113 |
 | [105](105-later-tracks-iot.md) | Later tracks: IoT (MQTT / OTA…) | 💭 (VW553 OTA ✅ [145](145-gd32v-ota-sdk.md); MQTT ✅ [146](146-gd32v-mqtt-sdk.md); VW553 iBeacon 🔨 [158](158-gd32v-ble-ibeacon.md); CoAP/WS/Wi‑Fi Mesh/cloud → [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md); ESP twins open) | 104, 101, 102, 111, 112, 145, 146, 157, 158 |
 | [106](106-esp-ble-idf.md) | ESP BLE thin IDF package (`esp_ble` GATT + bond + UUID16/128 + privacy + Mesh OnOff) | ✅ `@v0.10.0` ([repo](https://github.com/klin-lang/esp_ble)) | 021, 024, 049, 061, 062, 101 |
+| [159](159-esp-now-idf.md) | ESP-NOW thin IDF package (`espnow` peer/broadcast) | 🔨 `@v0.1.0` seed ([patches](../patches/espnow-v0.1.0/)) | 021, 024, 049, 061, 062, 101 |
 | [107](107-later-tracks-arduino-boards.md) | Later tracks: Arduino boards (Leonardo → [142](142-machine-avr-atmega32u4.md); Uno R4 / Due / Giga / Portenta) | 💭 backlog (one family at a time) | 061, 062, 075 |
 | [108](108-esp-usb-idf.md) | ESP USB OTG thin IDF package (`esp_usb` TinyUSB device CDC) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_usb)) | 021, 024, 049, 061, 062 |
 | [109](109-esp-camera-idf.md) | ESP camera thin IDF package (`esp_camera` DVP JPEG) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/esp_camera)) | 021, 024, 049, 061, 062 |
