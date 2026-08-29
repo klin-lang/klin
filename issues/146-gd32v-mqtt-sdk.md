@@ -38,7 +38,7 @@ MQTT is a protocol contract (topics, QoS, client id, credentials). Keeping it se
 - Automatic reconnect / hidden keepalive task heap in Klin (keepalive may be explicit later)  
 - Bringing up Wi‑Fi (→ [137](137-gd32v-wifi-sdk.md))  
 - OTA (→ [145](145-gd32v-ota-sdk.md))  
-- CoAP / WebSocket / cloud — [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md)  
+- CoAP / WebSocket / cloud — [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md) (CoAP → [160](160-gd32v-coap-sdk.md))  
 - Changing the Klin compiler  
 - ESP-IDF `esp_mqtt` on VW553  
 

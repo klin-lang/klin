@@ -109,8 +109,9 @@ building the core from scratch.
 | [144](144-gd32v-http-sdk.md) | `gd32v_http` GD32VW553 HTTP(+TLS PEM) client (after IP; no IDF crt bundle) | ✅ `@v0.1.0` | 021, 024, 049, 062, 137, 143 |
 | [145](145-gd32v-ota-sdk.md) | `gd32v_ota` GD32VW553 OTA/FOTA (ping‑pong MSDK + HTTP(S) PEM download) | ✅ `@v0.1.0` | 021, 024, 049, 062, 105, 137, 144 |
 | [146](146-gd32v-mqtt-sdk.md) | `gd32v_mqtt` GD32VW553 MQTT 3.1.1 **client** (QoS0 pub/sub; TLS PEM) | ✅ `@v0.1.0` | 021, 024, 049, 062, 105, 137, 143 |
-| [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md) | Later tracks VW553: iBeacon → CoAP → WebSocket → Wi‑Fi Mesh → cloud (Aliyun/AWS/Azure) | 💭 V1 🔨 [158](158-gd32v-ble-ibeacon.md); V2–V5 staged | 062, 105, 137, 140, 143, 144, 146 |
+| [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md) | Later tracks VW553: iBeacon → CoAP → WebSocket → Wi‑Fi Mesh → cloud (Aliyun/AWS/Azure) | 💭 V1 🔨 [158](158-gd32v-ble-ibeacon.md); V2 🔨 [160](160-gd32v-coap-sdk.md); V3–V5 staged | 062, 105, 137, 140, 143, 144, 146 |
 | [158](158-gd32v-ble-ibeacon.md) | `gd32v_ble` Apple iBeacon advertise (`ibeacon_advertise`) | 🔨 patch `@v0.16.0` ([patch](../patches/gd32v_ble-v0.16.0-ibeacon.patch)) | 140, 157 |
+| [160](160-gd32v-coap-sdk.md) | `gd32v_coap` CoAP GET/PUT client (confirm explicit) | 🔨 seed `@v0.1.0` ([patches](../patches/gd32v_coap-v0.1.0/)) | 137, 143, 157 |
 | [148](148-klin-flash.md) | `klin flash` thin wrapper vs board `make flash` (no flasher in compiler) | 💭 | 010, 075, 147 |
 | [149](149-klin-xpt2046.md) | `klin_xpt2046` XPT2046 resistive touch chip driver (SPI `Wire`) | ✅ `@v0.1.0` ([repo](https://github.com/klin-lang/klin_xpt2046)) | 020, 049, 061, 150 |
 | [153](153-klin-ad9850.md) | `klin_ad9850` AD9850 DDS signal generator chip driver (serial `Wire`) | ✅ `@v0.2.0` ([repo](https://github.com/klin-lang/klin_ad9850); `u8`/`u32` + [154](154-numeric-cast.md)) | 020, 049, 149, 154 |
@@ -126,7 +127,7 @@ building the core from scratch.
 | [102](102-esp-eth-idf.md) | ESP Ethernet thin IDF package (`esp_eth` W5500 + RMII) | ✅ `@v0.2.0` ([repo](https://github.com/klin-lang/esp_eth)) | 021, 024, 049, 061, 062, 101 |
 | [103](103-later-tracks-ble-usb-camera-lcd.md) | Later tracks A–D MVP done (BLE/USB/camera/Pico LCD); leftover tags | ✅ MVP (later tags elsewhere) | 061, 062, 101, 102, 106, 108, 109, 110 |
 | [104](104-later-tracks-esp-network.md) | Later tracks: ESP network (Wi‑Fi W1–W3 ✅; N1 dual ✅; sockets ✅; HTTP/TLS ✅; RMII ✅) | 🔨 Wi‑Fi+N1–N3+E1 ✅; ETH E2+ backlog | 101, 102, 062, 111, 112, 113 |
-| [105](105-later-tracks-iot.md) | Later tracks: IoT (MQTT / OTA…) | 💭 (VW553 OTA ✅ [145](145-gd32v-ota-sdk.md); MQTT ✅ [146](146-gd32v-mqtt-sdk.md); VW553 iBeacon 🔨 [158](158-gd32v-ble-ibeacon.md); CoAP/WS/Wi‑Fi Mesh/cloud → [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md); ESP twins open) | 104, 101, 102, 111, 112, 145, 146, 157, 158 |
+| [105](105-later-tracks-iot.md) | Later tracks: IoT (MQTT / OTA…) | 💭 (VW553 OTA ✅ [145](145-gd32v-ota-sdk.md); MQTT ✅ [146](146-gd32v-mqtt-sdk.md); iBeacon 🔨 [158](158-gd32v-ble-ibeacon.md); CoAP 🔨 [160](160-gd32v-coap-sdk.md); WS/Wi‑Fi Mesh/cloud → [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md); ESP twins open) | 104, 101, 102, 111, 112, 145, 146, 157, 158, 160 |
 | [106](106-esp-ble-idf.md) | ESP BLE thin IDF package (`esp_ble` GATT + bond + UUID16/128 + privacy + Mesh OnOff) | ✅ `@v0.10.0` ([repo](https://github.com/klin-lang/esp_ble)) | 021, 024, 049, 061, 062, 101 |
 | [159](159-esp-now-idf.md) | ESP-NOW thin IDF package (`espnow` peer/broadcast) | 🔨 `@v0.1.0` seed ([patches](../patches/espnow-v0.1.0/)) | 021, 024, 049, 061, 062, 101 |
 | [107](107-later-tracks-arduino-boards.md) | Later tracks: Arduino boards (Leonardo → [142](142-machine-avr-atmega32u4.md); Uno R4 / Due / Giga / Portenta) | 💭 backlog (one family at a time) | 061, 062, 075 |

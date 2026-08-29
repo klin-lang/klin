@@ -1,0 +1,52 @@
+/// GD32VW55x CoAP (RFC 7252) **client** — thin Klin surface over `coap_sdk.c`.
+/// Does **not** bring up Wi‑Fi — use [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi)
+/// first for an IP. Sibling of [`gd32v_sockets`](https://github.com/klin-lang/gd32v_sockets)
+/// / [`gd32v_http`](https://github.com/klin-lang/gd32v_http).
+/// Response payload → **caller** buffer. Confirm (CON) vs non-confirm (NON) is
+/// an **explicit** `confirm` argument (`1` / `0`).
+/// Minimal UDP encode/decode — not a libcoap FFI wrapper. Not a CoAP server.
+module gd32v_coap
+
+@[link("coap_sdk.c")]
+@[cimport, codename("klin_gd32v_coap_get")]
+fn klin_gd32v_coap_get(uri: str, out: *mut u8, out_max: i32, confirm: i32): i32
+
+@[cimport, codename("klin_gd32v_coap_put")]
+fn klin_gd32v_coap_put(
+    uri: str, body: *u8, body_len: i32, out: *mut u8, out_max: i32, confirm: i32
+): i32
+
+@[cimport, codename("klin_gd32v_coap_last_code")]
+fn klin_gd32v_coap_last_code(): i32
+
+pub fn err_ok(): i32 {
+    return 0
+}
+
+/// Use confirmable messaging (CON). Pass as `confirm` to `get` / `put`.
+pub fn confirm_yes(): i32 {
+    return 1
+}
+
+/// Use non-confirmable messaging (NON).
+pub fn confirm_no(): i32 {
+    return 0
+}
+
+/// Last CoAP response code (e.g. `69` = 2.05 Content), or `0`.
+pub fn last_code(): i32 {
+    return klin_gd32v_coap_last_code()
+}
+
+/// CoAP GET into caller buffer. `uri` like `coap://host[:port]/path`.
+/// `confirm` != 0 → CON, else NON. Returns payload bytes, or `-1`.
+pub fn get(uri: str, out: *mut u8, out_max: i32, confirm: i32): i32 {
+    return klin_gd32v_coap_get(uri, out, out_max, confirm)
+}
+
+/// CoAP PUT; body is a caller buffer. Returns response payload bytes, or `-1`.
+pub fn put(
+    uri: str, body: *u8, body_len: i32, out: *mut u8, out_max: i32, confirm: i32
+): i32 {
+    return klin_gd32v_coap_put(uri, body, body_len, out, out_max, confirm)
+}
