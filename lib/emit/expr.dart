@@ -74,11 +74,20 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
       asyncSpawnFn != null
           ? '${resolvedCallee ?? 'eventloop_spawn'}(${_emitExpr(args[0], ctx)}, '
               '${asyncSpawnFn}_poll_erased, ${asyncSpawnFn}_init_erased)'
-          : args.length == 1 && args[0] is InterpolatedStringExpr
-              ? _emitInterpPrintfExpr(args[0] as InterpolatedStringExpr, ctx)
-              : '${resolvedCallee ?? callee}(${args.map((arg) => _emitExpr(arg, ctx)).join(', ')})',
+          : resolvedCallee == '__klin_fmt_write' &&
+                  args.length == 2 &&
+                  args[1] is InterpolatedStringExpr
+              ? _emitInterpWriteExpr(
+                  args[0],
+                  args[1] as InterpolatedStringExpr,
+                  ctx,
+                )
+              : args.length == 1 && args[0] is InterpolatedStringExpr
+                  ? _emitInterpPrintfExpr(
+                      args[0] as InterpolatedStringExpr, ctx)
+                  : '${resolvedCallee ?? callee}(${args.map((arg) => _emitExpr(arg, ctx)).join(', ')})',
     InterpolatedStringExpr() => throw StateError(
-        'emit: interpolated string must be lowered via printf sink',
+        'emit: interpolated string must be lowered via printf / fmt.write',
       ),
     UnaryExpr(:final op, :final operand) => '$op(${_emitExpr(operand, ctx)})',
     IndexExpr(:final object, :final index) => object.resolvedType is SliceType

@@ -52,7 +52,8 @@ Set<String> _collectCIncludes(Program program) {
 bool _callsStdio(FuncDecl func) =>
     func.body?.stmts.any(_stmtCallsStdio) ?? false;
 
-bool _isStdioName(String? name) => name == 'puts' || name == 'printf';
+bool _isStdioName(String? name) =>
+    name == 'puts' || name == 'printf' || name == '__klin_fmt_write';
 
 bool _stmtCallsStdio(Stmt stmt) => switch (stmt) {
       CallStmt(:final callee, :final args, :final resolvedCallee) =>
@@ -100,7 +101,8 @@ bool _exprCallsStdio(Expr expr) => switch (expr) {
         _isStdioName(callee) ||
             _isStdioName(resolvedCallee) ||
             args.any(_exprCallsStdio) ||
-            (args.length == 1 && args[0] is InterpolatedStringExpr),
+            (args.length == 1 && args[0] is InterpolatedStringExpr) ||
+            (args.length == 2 && args[1] is InterpolatedStringExpr),
       InterpolatedStringExpr() => true,
       MethodCallExpr(:final receiver, :final args) =>
         _exprCallsStdio(receiver) || args.any(_exprCallsStdio),

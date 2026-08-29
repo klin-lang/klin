@@ -1246,6 +1246,10 @@ final class Checker {
         }
 
       case CallStmt(:final moduleName, :final callee, :final args, :final pos):
+        if (_tryCheckInterpFmtWrite(moduleName, callee, args, pos,
+            onResolved: (cName) => stmt.resolvedCallee = cName)) {
+          break;
+        }
         if (_tryCheckInterpPrint(moduleName, callee, args, pos,
             onResolved: (cName) => stmt.resolvedCallee = cName)) {
           break;
@@ -1493,6 +1497,39 @@ final class Checker {
     _materialize(value, _currentReturn);
   }
 
+  /// `fmt.write(buf[:], "… $x")` — interpolate into a caller `[]u8` buffer.
+  /// Returns true when handled (intrinsic `__klin_fmt_write`).
+  bool _tryCheckInterpFmtWrite(
+    String? moduleName,
+    String callee,
+    List<Expr> args,
+    SourcePos pos, {
+    required void Function(String cName) onResolved,
+  }) {
+    if (moduleName != 'fmt' || callee != 'write') return false;
+    if (args.length != 2 || args[1] is! InterpolatedStringExpr) return false;
+
+    final bufTy = _inferExpr(args[0]);
+    if (bufTy is! SliceType) {
+      throw CheckError(
+        'fmt.write expects `[]u8` as the first argument',
+        args[0].pos,
+      );
+    }
+    final elem = bufTy.elem;
+    if (elem.kind != PrimKind.u8) {
+      throw CheckError(
+        'fmt.write expects `[]u8` as the first argument',
+        args[0].pos,
+      );
+    }
+    final interp = args[1] as InterpolatedStringExpr;
+    _resolveInterpolatedString(interp);
+    interp.appendNewline = false;
+    onResolved('__klin_fmt_write');
+    return true;
+  }
+
   /// If [args] is a single interpolated string to a print sink, resolve it and
   /// rewrite the call to `printf`. Returns true when handled.
   bool _tryCheckInterpPrint(
@@ -1505,17 +1542,22 @@ final class Checker {
     final hasInterp = args.any((a) => a is InterpolatedStringExpr);
     if (!hasInterp) return false;
 
+    if (_isInterpFmtWrite(moduleName, callee)) {
+      // Let `_tryCheckInterpFmtWrite` handle / error on bad shape.
+      return false;
+    }
+
     if (!_isInterpPrintSink(moduleName, callee)) {
       final bad = args.whereType<InterpolatedStringExpr>().first;
       throw CheckError(
-        'interpolated string is print-only in MVP '
-        '(use as the sole argument to puts / printf / io.print / io.println)',
+        'interpolated string must be passed to puts / printf / io.print / '
+        'io.println, or fmt.write(buf[:], …)',
         bad.pos,
       );
     }
     if (args.length != 1 || args[0] is! InterpolatedStringExpr) {
       throw CheckError(
-        'interpolated string must be the sole argument of `$callee` in MVP',
+        'interpolated string must be the sole argument of `$callee`',
         pos,
       );
     }
@@ -1525,6 +1567,9 @@ final class Checker {
     onResolved('printf');
     return true;
   }
+
+  bool _isInterpFmtWrite(String? moduleName, String callee) =>
+      moduleName == 'fmt' && callee == 'write';
 
   bool _isInterpPrintSink(String? moduleName, String callee) {
     if (callee == 'puts' || callee == 'printf') return true;
@@ -2282,8 +2327,8 @@ final class Checker {
       BoolLit() => const PrimType(PrimKind.bool_),
       StringLit() => const StrType(),
       InterpolatedStringExpr(:final pos) => throw CheckError(
-          'interpolated string is print-only in MVP '
-          '(use as the sole argument to puts / printf / io.print / io.println)',
+          'interpolated string must be passed to puts / printf / io.print / '
+          'io.println, or fmt.write(buf[:], …)',
           pos,
         ),
       NameExpr nameExpr => () {
@@ -2508,6 +2553,10 @@ final class Checker {
         }(),
       CallExpr(:final moduleName, :final callee, :final args, :final pos) =>
         () {
+          if (_tryCheckInterpFmtWrite(moduleName, callee, args, pos,
+              onResolved: (cName) => expr.resolvedCallee = cName)) {
+            return const PrimType(PrimKind.i32);
+          }
           if (_tryCheckInterpPrint(moduleName, callee, args, pos,
               onResolved: (cName) => expr.resolvedCallee = cName)) {
             // printf returns i32; treat like FFI.

@@ -372,6 +372,15 @@ void _emitStmt(
           '$pad(void)${resolvedCallee ?? 'eventloop_spawn'}($ex, '
           '${asyncSpawnFn}_poll_erased, ${asyncSpawnFn}_init_erased);',
         );
+      } else if (resolvedCallee == '__klin_fmt_write' &&
+          args.length == 2 &&
+          args[1] is InterpolatedStringExpr) {
+        final expr = _emitInterpWriteExpr(
+          args[0],
+          args[1] as InterpolatedStringExpr,
+          ctx,
+        );
+        buf.writeln('$pad(void)($expr);');
       } else if (args.length == 1 && args[0] is InterpolatedStringExpr) {
         _emitInterpPrintf(
           buf,

@@ -17,6 +17,7 @@ User libraries / directory packages: [docs/11-klin-libraries.md](../docs/11-klin
 | Module | Role |
 |---|---|
 | [`io`](io.kl) | Host `print` / `println` (thin libc wrappers) |
+| [`fmt`](fmt.kl) | `write(buf[:], …)` — interpolate / copy into caller `[]u8` ([156](../issues/156-fmt-write.md)) |
 | [`str`](str.kl) | Host `eq` / `len` (thin `strcmp` / `strlen`; no `==` on `str`) |
 | [`math`](math.kl) | Host `sin` / `sqrt` / `sin_f32` / `sqr` / `cbrt` / `div_i32` / … (libm + Klin helpers; `@[link("-lm")]`) |
 | [`testing`](testing.kl) | `assert` / `assert_eq_i32` for `klin test` |
@@ -35,6 +36,25 @@ io.println("with newline")
 ```
 
 Do **not** import on bare metal (pulls `stdio`).
+
+## `fmt`
+
+Write an interpolated string (or plain `str`) into a caller buffer — no hidden
+heap ([issue 156](../issues/156-fmt-write.md), [docs/07-interpolation.md](../docs/07-interpolation.md)):
+
+```klin
+import fmt
+
+fn main() {
+    let mut buf: [64]u8
+    let x = 7
+    let n = fmt.write(buf[:], "x: $x")
+    printf("%s\n", &buf[0])
+}
+```
+
+Returns bytes written excluding NUL, or `-1` on error/truncation. Needs
+`snprintf` (newlib-nano OK). Same `$` / `${…}` formats as print sinks.
 
 ## `str`
 

@@ -1818,6 +1818,19 @@ fn main() {
     expect(c, contains('%.8s'));
   });
 
+  test('golden: fmt.write buffer interpolation (issue 156)', () async {
+    final result = await _compileAndRun('test/fmt_write.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/fmt_write.out').readAsString());
+
+    final program = loadProject('test/fmt_write.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/fmt_write.kl');
+    expect(c, contains('snprintf('));
+    expect(c, contains('klin_fmt_write_str'));
+    expect(c, isNot(contains('malloc')));
+  });
+
   test('golden: stdlib time Instant/Duration/format (issue 037)', () async {
     final result = await _compileAndRun('test/time_basic.kl', tmp);
     expect(result.exitCode, 0, reason: result.stderr);

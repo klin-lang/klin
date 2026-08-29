@@ -49,6 +49,7 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `match.kl` | `match` stmt + expr, no fallthrough ([014](../issues/014-match.md), [docs/15](../docs/15-match.md)) |
 | `add_test.kl` | Sample `klin test` (`import testing`) |
 | `interp.kl` | String interpolation → `printf` ([docs/07-interpolation.md](../docs/07-interpolation.md)) |
+| `fmt_write.kl` | `fmt.write(buf[:], "…")` buffer sink ([156](../issues/156-fmt-write.md)) |
 | `time_demo.kl` | `stdlib/time` — Instant / Duration / format ([docs/08-time.md](../docs/08-time.md)) |
 | `mem_heap.kl` | `stdlib/mem` — explicit `Allocator` heap ([docs/14-allocator.md](../docs/14-allocator.md)) |
 | `str_eq.kl` | `stdlib/str` |

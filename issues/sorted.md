@@ -34,7 +34,8 @@ building the core from scratch.
 | [014](014-match.md) | `match` (default break, `1,2,3` / `4..=10`, stmt+expr) | ✅ | 003 |
 | [084](084-match-when-rel.md) | `match`: `when` guards + relational patterns (`>`, `>=`, …) + `_ when` | ✅ | 014 |
 | [085](085-pick.md) | `pick cond { a } { b }` — expression ternary → C `?:` | ✅ | 003 |
-| [016](016-string-interpolation.md) | Interpolated strings | ✅ | 012 |
+| [016](016-string-interpolation.md) | Interpolated strings (print sinks ✅; `fmt.write` → [156](156-fmt-write.md)) | ✅ | 012 |
+| [156](156-fmt-write.md) | `fmt.write(buf[:], "… $x")` — interpolation into caller buffer | ✅ | 016 |
 | [017](017-collection-methods.md) | Collection methods (`slice` + `slice_alloc`; +i64/f64 types, +ops) | ✅ | 007, 057 |
 | [019](019-default-int-types.md) | Default types (`int` / `float` → `i32` / `f64`) | ✅ | 002 |
 | [020](020-klin-libraries.md) | Klin libraries (`lib/` / `-I` / `KLIN_PATH`) | ✅ | 006 |

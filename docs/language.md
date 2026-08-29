@@ -37,7 +37,7 @@ These compile. They are not “missing.”
 | `asm("…")` | → `asm volatile("…");` — not an assembler |
 | `@[cimport]` / `@[cexport]` / `@[link]` / `@[isr]` / `codename` | FFI and vectors; no `c("…")` |
 | `&&` `\|\|` / bitwise | `or` stays error-handling |
-| `"$x"` / `${expr}` | print-only interpolation |
+| `"$x"` / `${expr}` | interpolation → print sinks **or** `fmt.write(buf[:], …)` ([156](../issues/156-fmt-write.md)) |
 | destructuring, enum as `[N]T` index | [syntax.md](syntax.md) |
 | ZII | no constructors / destructors |
 

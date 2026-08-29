@@ -79,6 +79,9 @@ String emitC(Program program, String sourcePath) {
   if (_programNeedsTimeHost(program)) {
     _emitTimeHostHelpers(buf);
   }
+  if (_programNeedsFmtHost(program)) {
+    _emitFmtHostHelpers(buf);
+  }
   _emitStructTypedefs(
     buf,
     program,
