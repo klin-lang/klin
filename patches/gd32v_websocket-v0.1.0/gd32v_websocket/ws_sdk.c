@@ -259,8 +259,22 @@ static int io_write_all(const void *buf, int len) {
   return len;
 }
 
+/**
+ * Read up to `max` bytes.
+ * Returns >0 bytes, `0` on timeout / would-block (idle poll), `-1` on EOF or error.
+ */
 static int io_read_some(unsigned char *buf, int max) {
-  return (int)read(g_fd, buf, (size_t)max);
+  int n = (int)read(g_fd, buf, (size_t)max);
+  if (n > 0) {
+    return n;
+  }
+  if (n == 0) {
+    return -1; /* peer closed */
+  }
+  if (errno == EAGAIN || errno == EWOULDBLOCK) {
+    return 0; /* SO_RCVTIMEO — no data yet */
+  }
+  return -1;
 }
 
 static int ws_send_frame(int opcode, const unsigned char *data, int len) {
