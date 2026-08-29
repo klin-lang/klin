@@ -19,7 +19,7 @@
 - Examples: `blink` (red), `uart_log` (UART2 / GDLINK VCP)
 - Covers H-START and K-START for this map (same UART2 + V4 RGB). Older V3.0 RGB PB11/12/13 is **not** mapped.
 
-**Out of scope:** EVAL pack (→ [138](138-board-gd32vw553h-eval.md)), Wi‑Fi API (→ [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [137](137-gd32v-wifi-sdk.md)), BLE, user key (AN154 SW1 is NRST only), V3.0 LED map, vendoring the wireless SDK.
+**Out of scope:** EVAL pack (→ [138](138-board-gd32vw553h-eval.md)), LCKFB / silk `GD32VW553HMQ-EVT` stamp (LED **PC13**, CH340 USART0; → [156](156-board-lckfb-gd32vw553.md)), Wi‑Fi API (→ [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [137](137-gd32v-wifi-sdk.md)), BLE, user key (AN154 SW1 is NRST only), V3.0 LED map, vendoring the wireless SDK.
 
 **Scaffold:** `klin init gd32vw553h-start` — freestanding RGB-red blink via
 bundled `templates/gd32vw553h-start/` ([075](075-board-pack-init-host.md)).
@@ -55,5 +55,6 @@ klin init gd32vw553h-start my_blink
 - SDK UART: [`uart.h`](https://github.com/GigaDeviceSemiconductor/GD32VW55x_WiFi_BLE_SDK/blob/main/MSDK/plf/src/uart/uart.h)  
 - Chip: [136](136-machine-gd32v-gd32vw553.md) / [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)  
 - EVAL sibling: [138](138-board-gd32vw553h-eval.md) / [`gd32vw553h_eval`](https://github.com/klin-lang/gd32vw553h_eval)  
+- LCKFB / `GD32VW553HMQ-EVT` stamp: [156](156-board-lckfb-gd32vw553.md)  
 - Radio sibling: [137](137-gd32v-wifi-sdk.md) / [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi)  
 - `klin init`: [075](075-board-pack-init-host.md)

@@ -145,6 +145,14 @@ klin init gd32vw553h-start my_start
 cd my_start && klin get && make emit
 ```
 
+**LCKFB / silk `GD32VW553HMQ-EVT`** — stamp module with CH340 USB-C and
+external JTAG. **Not** START or EVAL: user LED is **PC13**, KEY **PA0**,
+log UART is USART0 PB15/PA8 (same COM0 pins as EVAL, different LED).
+No `klin init` id yet — use [`machine_gd32v`](https://github.com/klin-lang/machine_gd32v)
+`*_vw553` with those pins, or wait for a board pack
+([156](../issues/156-board-lckfb-gd32vw553.md)). Wiki:
+https://wiki.lckfb.com/zh-hans/gd32vw553/
+
 ## What you do not do
 
 - Import host stdlib (`io`, `mem`, `time`) on these scaffolds — they
