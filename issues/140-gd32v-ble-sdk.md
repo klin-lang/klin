@@ -244,6 +244,7 @@ On the **`mesh_enable` node** (not provisioner):
 ## Out of scope (this tag)
 
 - Runtime Friend queue-size setters (SDK CONFIG only) / further vendor models  
+- iBeacon — staged [157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md) **V1** (tag on this package or thin sibling)  
 - Wi‑Fi — [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) [137](137-gd32v-wifi-sdk.md)  
 - Board packs — [138](138-board-gd32vw553h-eval.md) / [139](139-board-gd32vw553h-start.md) (no radio API)  
 - Vendoring `GD32VW55x_WiFi_BLE_SDK`  
