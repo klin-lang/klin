@@ -1,7 +1,10 @@
 # Patch seed: waveshare_rp2350_lcd_096 — lcd_counter + PICOTOOL.md
 
 Upstream: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096)
-(`@v0.13.0` base). Cloud agent cannot push that repo (403) — apply from Klin.
+(`@v0.13.0` base). **Open pack PR:**
+[#14](https://github.com/klin-lang/waveshare_rp2350_lcd_096/pull/14).
+
+This folder is a Klin-side mirror of that PR.
 
 ## Contents
 
@@ -9,19 +12,19 @@ Upstream: [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/wa
 |---|---|
 | `PICOTOOL.md` | UF2 / `picotool` flash guide (BOOT = bootloader only) |
 | `examples/lcd_counter/` | White LCD, black `x:` ++ once per second |
-| `README.md` | Checklist + link to `PICOTOOL.md` (see sibling `.patch`) |
+| `README.md` | Checklist + link to `PICOTOOL.md` (in the `.patch`) |
 
-Also: [`../waveshare_rp2350_lcd_096-lcd-counter.patch`](../waveshare_rp2350_lcd_096-lcd-counter.patch)
-(full `git format-patch` including README edits).
+Also: [`../waveshare_rp2350_lcd_096-lcd-counter.patch`](../waveshare_rp2350_lcd_096-lcd-counter.patch).
 
-## Apply
+## Apply (if needed offline)
 
 ```sh
 cd /path/to/waveshare_rp2350_lcd_096
 git checkout main && git pull
 git apply /path/to/klin/patches/waveshare_rp2350_lcd_096-lcd-counter.patch
-# or copy PICOTOOL.md + examples/lcd_counter/ from this folder
 ```
+
+Prefer merging [PR #14](https://github.com/klin-lang/waveshare_rp2350_lcd_096/pull/14).
 
 ## Run
 

@@ -124,9 +124,9 @@ klin get github/klin-lang/waveshare_rp2350_lcd_096@v0.13.0
 ## Links
 
 - Repo: https://github.com/klin-lang/waveshare_rp2350_lcd_096  
-- Flash + `lcd_counter` seed (pack push 403 — apply patch):
-  [`patches/waveshare_rp2350_lcd_096-lcd-counter/`](../patches/waveshare_rp2350_lcd_096-lcd-counter/),
-  [`.patch`](../patches/waveshare_rp2350_lcd_096-lcd-counter.patch)  
+- Flash + `lcd_counter`: [pack PR #14](https://github.com/klin-lang/waveshare_rp2350_lcd_096/pull/14)
+  (`PICOTOOL.md`, `examples/lcd_counter`); Klin mirror
+  [`patches/waveshare_rp2350_lcd_096-lcd-counter/`](../patches/waveshare_rp2350_lcd_096-lcd-counter/)  
 - Wiki: https://www.waveshare.com/wiki/RP2350-LCD-0.96  
 - Chip port: [062](062-targets-esp-rp.md) / [`machine_rp`](https://github.com/klin-lang/machine_rp)  
 - Board pack model: [075](075-board-pack-init-host.md)  
