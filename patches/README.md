@@ -11,6 +11,7 @@ as a mirror after the first tag if useful for offline `-I`.
 | [klin_ad9850-v0.1.0/](klin_ad9850-v0.1.0/) | [`klin-lang/klin_ad9850`](https://github.com/klin-lang/klin_ad9850) **published** → [`v0.1.0`](https://github.com/klin-lang/klin_ad9850/releases/tag/v0.1.0) | [153](../issues/153-klin-ad9850.md) ✅ |
 | [klin_ad9850-v0.2.0/](klin_ad9850-v0.2.0/) | [`klin-lang/klin_ad9850`](https://github.com/klin-lang/klin_ad9850) **published** → [`v0.2.0`](https://github.com/klin-lang/klin_ad9850/releases/tag/v0.2.0) (typed `u8`/`u32` + numeric `cast`) | [153](../issues/153-klin-ad9850.md) ✅ |
 | [rotary_encoder-v0.1.0/](rotary_encoder-v0.1.0/) | [`klin-lang/rotary_encoder`](https://github.com/klin-lang/rotary_encoder) seed — quadrature A/B + switch `Wire`; tag when published | [155](../issues/155-rotary-encoder.md) 🔨 |
+| [waveshare_rp2350_lcd_096-lcd-counter/](waveshare_rp2350_lcd_096-lcd-counter/) + [`.patch`](waveshare_rp2350_lcd_096-lcd-counter.patch) | [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) — `PICOTOOL.md` + `examples/lcd_counter` → [PR #14](https://github.com/klin-lang/waveshare_rp2350_lcd_096/pull/14) | [095](../issues/095-board-waveshare-rp2350-lcd-096.md) 🔨 |
 
 ```sh
 cd /path/to/machine_avr

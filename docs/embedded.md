@@ -106,7 +106,10 @@ make flash
 ```
 
 **Waveshare RP2350-LCD-0.96** — same Arm GNU recipe; the app toggles
-the backlight, not GPIO25.
+the backlight, not GPIO25. Flash + white LCD counter:
+[waveshare_rp2350_lcd_096#14](https://github.com/klin-lang/waveshare_rp2350_lcd_096/pull/14)
+(`PICOTOOL.md`, `examples/lcd_counter`). Mirror:
+[`patches/waveshare_rp2350_lcd_096-lcd-counter/`](../patches/waveshare_rp2350_lcd_096-lcd-counter/).
 
 **Waveshare ESP32-S3-Pico** — **not** freestanding `startup.s` /
 `linker.ld`. Boot and flash are ESP-IDF. The Klin steps stay `init` +
