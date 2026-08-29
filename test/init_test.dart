@@ -235,6 +235,39 @@ void main() {
     expect(makefile, contains('board/linker.ld'));
   });
 
+  test('scaffold lckfb-gd32vw553', () {
+    final dest = p.join(tmp.path, 'lckfb_vw553_blink');
+    final created = scaffoldBoardInit(
+      boardId: 'lckfb-gd32vw553',
+      destDir: dest,
+      packageRoot: packageRoot,
+    );
+    expect(
+      created,
+      containsAll([
+        'main.kl',
+        'Makefile',
+        'klin.mod',
+        'README.md',
+        'board/startup.S',
+        'board/linker.ld',
+      ]),
+    );
+    final main = File(p.join(dest, 'main.kl')).readAsStringSync();
+    expect(main, contains('pin_out_vw553'));
+    expect(main, contains('Port.C'));
+    expect(main, contains('board/startup.S'));
+    final mod = File(p.join(dest, 'klin.mod')).readAsStringSync();
+    expect(mod, contains('machine_gd32v'));
+    expect(mod, isNot(contains('gd32vw553h_eval')));
+    expect(mod, isNot(contains('gd32vw553h_start')));
+    final makefile = File(p.join(dest, 'Makefile')).readAsStringSync();
+    expect(makefile, contains('CC := riscv64-unknown-elf-gcc'));
+    expect(makefile, contains('board/linker.ld'));
+    final ld = File(p.join(dest, 'board/linker.ld')).readAsStringSync();
+    expect(ld, contains('4096K'));
+  });
+
   test('scaffold weact-f411', () {
     final dest = p.join(tmp.path, 'weact_blink');
     final created = scaffoldBoardInit(

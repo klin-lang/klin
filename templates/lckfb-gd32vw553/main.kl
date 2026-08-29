@@ -1,0 +1,15 @@
+// LCKFB GD32VW553 (silk GD32VW553HMQ-EVT) — user LED PC13 blink.
+// Scaffold from `klin init lckfb-gd32vw553`. Run `klin get` once, then `make emit` / `make elf`.
+import "github/klin-lang/machine_gd32v" machine
+
+@[link("board/startup.S")]
+fn main() {
+    let led = machine.pin_out_vw553(machine.Port.C, 13)
+    while true {
+        led.toggle()
+        let mut i: i32 = 0
+        while i < 400000 {
+            i = i + 1
+        }
+    }
+}
