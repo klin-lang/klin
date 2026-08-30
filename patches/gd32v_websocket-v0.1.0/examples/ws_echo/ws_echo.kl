@@ -1,0 +1,38 @@
+// GD32VW553 WebSocket echo — needs Wi‑Fi IP + LwIP (cleartext ws://).
+import "github/klin-lang/gd32v_wifi" wifi
+import "github/klin-lang/gd32v_websocket" ws
+
+fn main() {
+    let mut e = wifi.sta_init()
+    if e != wifi.err_ok() {
+        return
+    }
+    e = wifi.sta_connect("myssid", "mypass")
+    if e != wifi.err_ok() {
+        return
+    }
+    e = wifi.sta_wait_ip(20000)
+    if e != wifi.err_ok() {
+        return
+    }
+
+    e = ws.connect("ws://echo.websocket.events/")
+    if e != ws.err_ok() {
+        return
+    }
+    let mut msg: [4]u8
+    msg[0] = 112
+    msg[1] = 105
+    msg[2] = 110
+    msg[3] = 103
+    e = ws.send_text(cast(*u8, &msg[0]), 4)
+    if e != ws.err_ok() {
+        return
+    }
+    let mut out: [256]u8
+    let mut n = ws.recv(cast(*mut u8, &out[0]), 256)
+    if n < 0 {
+        return
+    }
+    let _d = ws.disconnect()
+}

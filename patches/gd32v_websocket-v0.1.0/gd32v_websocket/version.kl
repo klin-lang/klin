@@ -1,0 +1,5 @@
+module gd32v_websocket
+
+pub fn version(): i32 {
+    return 1
+}

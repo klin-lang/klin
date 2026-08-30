@@ -1,0 +1,79 @@
+/// GD32VW55x WebSocket (RFC 6455) **client** — thin Klin surface over `ws_sdk.c`.
+/// Does **not** bring up Wi‑Fi — use [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi)
+/// first. Sibling of [`gd32v_sockets`](https://github.com/klin-lang/gd32v_sockets)
+/// / [`gd32v_http`](https://github.com/klin-lang/gd32v_http).
+/// Cleartext `ws://` only in `@v0.1.0` (`wss://` + PEM = later tag).
+/// Frames use **caller** buffers. Minimal TCP encode/decode — not tinyws FFI.
+/// Not a WebSocket server.
+module gd32v_websocket
+
+@[link("ws_sdk.c")]
+@[cimport, codename("klin_gd32v_ws_connect")]
+fn klin_gd32v_ws_connect(uri: str): i32
+
+@[cimport, codename("klin_gd32v_ws_disconnect")]
+fn klin_gd32v_ws_disconnect(): i32
+
+@[cimport, codename("klin_gd32v_ws_connected")]
+fn klin_gd32v_ws_connected(): i32
+
+@[cimport, codename("klin_gd32v_ws_send_text")]
+fn klin_gd32v_ws_send_text(data: *u8, len: i32): i32
+
+@[cimport, codename("klin_gd32v_ws_send_bin")]
+fn klin_gd32v_ws_send_bin(data: *u8, len: i32): i32
+
+@[cimport, codename("klin_gd32v_ws_recv")]
+fn klin_gd32v_ws_recv(out: *mut u8, out_max: i32): i32
+
+@[cimport, codename("klin_gd32v_ws_last_opcode")]
+fn klin_gd32v_ws_last_opcode(): i32
+
+pub fn err_ok(): i32 {
+    return 0
+}
+
+/// Opcode for text frames (`1`).
+pub fn opcode_text(): i32 {
+    return 1
+}
+
+/// Opcode for binary frames (`2`).
+pub fn opcode_bin(): i32 {
+    return 2
+}
+
+/// Connect to `ws://host[:port]/path` (default port 80).
+pub fn connect(uri: str): i32 {
+    return klin_gd32v_ws_connect(uri)
+}
+
+pub fn disconnect(): i32 {
+    return klin_gd32v_ws_disconnect()
+}
+
+pub fn connected(): bool {
+    return klin_gd32v_ws_connected() != 0
+}
+
+/// Send a text frame. Payload is a caller buffer.
+pub fn send_text(data: *u8, len: i32): i32 {
+    return klin_gd32v_ws_send_text(data, len)
+}
+
+/// Send a binary frame.
+pub fn send_bin(data: *u8, len: i32): i32 {
+    return klin_gd32v_ws_send_bin(data, len)
+}
+
+/// Receive one data frame into a caller buffer.
+/// Returns payload bytes, `0` if none/timeout, `-1` on error/closed.
+/// PING is answered with PONG inside C (not returned).
+pub fn recv(out: *mut u8, out_max: i32): i32 {
+    return klin_gd32v_ws_recv(out, out_max)
+}
+
+/// Last data opcode after a successful `recv` (`1` / `2`), else `0`.
+pub fn last_opcode(): i32 {
+    return klin_gd32v_ws_last_opcode()
+}

@@ -1,0 +1,24 @@
+/// Host smoke: WebSocket client stubs (no LwIP).
+import "../../gd32v_websocket" ws
+
+fn main() {
+    let mut e = ws.connect("ws://127.0.0.1/echo")
+    if e != ws.err_ok() {
+        return
+    }
+    let mut msg: [4]u8
+    msg[0] = 112
+    msg[1] = 105
+    msg[2] = 110
+    msg[3] = 103
+    e = ws.send_text(cast(*u8, &msg[0]), 4)
+    if e != ws.err_ok() {
+        return
+    }
+    let mut out: [16]u8
+    let mut n = ws.recv(cast(*mut u8, &out[0]), 16)
+    if n < 0 {
+        return
+    }
+    let _d = ws.disconnect()
+}

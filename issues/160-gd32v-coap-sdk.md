@@ -44,7 +44,7 @@ CoAP is a distinct UDP protocol contract (CON/NON, codes, Uri-Path options). Kee
 ## Out of scope
 
 - Bringing up Wi‑Fi (→ [137](137-gd32v-wifi-sdk.md))  
-- WebSocket / Wi‑Fi Mesh / cloud ([157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md) V3+)  
+- WebSocket / Wi‑Fi Mesh / cloud ([157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md) V3+; WS → [161](161-gd32v-websocket-sdk.md))  
 - Folding into `machine_gd32v` or board packs  
 - Vendoring `GD32VW55x_WiFi_BLE_SDK` / libcoap into the package tree  
 - Changing the Klin compiler  
