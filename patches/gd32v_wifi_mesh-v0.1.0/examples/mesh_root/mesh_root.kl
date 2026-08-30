@@ -1,0 +1,23 @@
+// GD32VW553 Wi‑Fi Mesh-Smart root sketch — needs SDK + CONFIG_WIFI_MESH_SMART.
+import "github/klin-lang/gd32v_wifi" wifi
+import "github/klin-lang/gd32v_wifi_mesh" mesh
+
+fn main() {
+    let mut e = wifi.sta_init()
+    if e != wifi.err_ok() {
+        return
+    }
+    e = mesh.init()
+    if e != mesh.err_ok() {
+        return
+    }
+    // First boot: provision upstream router credentials (persisted in NVDS).
+    e = mesh.config_rootap("myssid", "mypass")
+    if e != mesh.err_ok() {
+        return
+    }
+    // Poll until SoftAP started (joined). Real boards: wait in a loop.
+    if mesh.joined() == false {
+        return
+    }
+}

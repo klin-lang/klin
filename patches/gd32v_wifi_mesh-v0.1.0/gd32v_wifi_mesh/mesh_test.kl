@@ -1,0 +1,40 @@
+module gd32v_wifi_mesh
+
+import testing
+
+fn test_version_is_one() {
+    testing.assert_eq_i32(version(), 1)
+}
+
+fn test_err_ok_is_zero() {
+    testing.assert_eq_i32(err_ok(), 0)
+}
+
+fn test_role_constants() {
+    testing.assert_eq_i32(role_root(), 0)
+    testing.assert_eq_i32(role_router(), 1)
+    testing.assert_eq_i32(role_leaf(), 2)
+}
+
+/// Must run before any `init` in this file (host static state).
+fn test_config_rootap_without_init() {
+    testing.assert_eq_i32(config_rootap("a", "b"), 0 - 1)
+}
+
+fn test_init_config_rootap_host_stub() {
+    testing.assert_eq_i32(init(), 0)
+    testing.assert(started())
+    testing.assert(joined() == false)
+    testing.assert_eq_i32(config_rootap("myssid", "mypassword"), 0)
+    testing.assert(joined())
+    testing.assert_eq_i32(role(), role_root())
+    testing.assert_eq_i32(level(), 1)
+    testing.assert_eq_i32(node_id(), 1)
+    testing.assert_eq_i32(softap_stop(), 0)
+    testing.assert(joined() == false)
+}
+
+fn test_config_rejects_empty_ssid() {
+    testing.assert_eq_i32(init(), 0)
+    testing.assert_eq_i32(config_rootap("", "pass"), 0 - 1)
+}
