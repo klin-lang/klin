@@ -15,6 +15,7 @@ as a mirror after the first tag if useful for offline `-I`.
 | [espnow-v0.1.0/](espnow-v0.1.0/) | [`klin-lang/espnow`](https://github.com/klin-lang/espnow) seed — ESP-IDF ESP-NOW peer/broadcast; tag when published | [159](../issues/159-esp-now-idf.md) 🔨 |
 | [gd32v_coap-v0.1.0/](gd32v_coap-v0.1.0/) | [`klin-lang/gd32v_coap`](https://github.com/klin-lang/gd32v_coap) seed — CoAP GET/PUT client; tag when published | [160](../issues/160-gd32v-coap-sdk.md) 🔨 |
 | [gd32v_websocket-v0.1.0/](gd32v_websocket-v0.1.0/) | [`klin-lang/gd32v_websocket`](https://github.com/klin-lang/gd32v_websocket) seed — WebSocket client (`ws://`); tag when published | [161](../issues/161-gd32v-websocket-sdk.md) 🔨 |
+| [gd32v_wifi_mesh-v0.1.0/](gd32v_wifi_mesh-v0.1.0/) | [`klin-lang/gd32v_wifi_mesh`](https://github.com/klin-lang/gd32v_wifi_mesh) seed — Wi‑Fi Mesh-Smart self-organize; tag when published | [162](../issues/162-gd32v-wifi-mesh-sdk.md) 🔨 |
 | [waveshare_rp2350_lcd_096-lcd-counter/](waveshare_rp2350_lcd_096-lcd-counter/) + [`.patch`](waveshare_rp2350_lcd_096-lcd-counter.patch) | [`klin-lang/waveshare_rp2350_lcd_096`](https://github.com/klin-lang/waveshare_rp2350_lcd_096) — `PICOTOOL.md` + `examples/lcd_counter` → [PR #14](https://github.com/klin-lang/waveshare_rp2350_lcd_096/pull/14) | [095](../issues/095-board-waveshare-rp2350-lcd-096.md) 🔨 |
 
 ```sh

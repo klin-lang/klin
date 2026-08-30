@@ -1,0 +1,7 @@
+module gd32v_wifi_mesh
+
+import testing
+
+fn test_version_ok() {
+    testing.assert_eq_i32(version(), 1)
+}

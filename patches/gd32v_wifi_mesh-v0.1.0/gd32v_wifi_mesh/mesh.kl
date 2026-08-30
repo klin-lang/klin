@@ -1,0 +1,95 @@
+/// GD32VW55x **Wi‑Fi Mesh-Smart** — thin Klin surface over `mesh_sdk.c`.
+/// Engine = GigaDevice `wifi_mesh_smart` (`CONFIG_WIFI_MESH_SMART`).
+/// **Not** BLE Mesh ([`gd32v_ble`](https://github.com/klin-lang/gd32v_ble)).
+/// Sibling of [`gd32v_wifi`](https://github.com/klin-lang/gd32v_wifi) — call
+/// after Wi‑Fi management is up (`sta_init` / SDK `wifi_init`).
+/// Self-organize join; Root AP credentials via `config_rootap`.
+/// After join, use IP apps ([`gd32v_sockets`](https://github.com/klin-lang/gd32v_sockets)
+/// / MQTT / …) — no separate mesh datagram API in `@v0.1.0`.
+module gd32v_wifi_mesh
+
+@[link("mesh_sdk.c")]
+@[cimport, codename("klin_gd32v_mesh_init")]
+fn klin_gd32v_mesh_init(): i32
+
+@[cimport, codename("klin_gd32v_mesh_config_rootap")]
+fn klin_gd32v_mesh_config_rootap(ssid: str, password: str): i32
+
+@[cimport, codename("klin_gd32v_mesh_softap_stop")]
+fn klin_gd32v_mesh_softap_stop(): i32
+
+@[cimport, codename("klin_gd32v_mesh_started")]
+fn klin_gd32v_mesh_started(): i32
+
+@[cimport, codename("klin_gd32v_mesh_joined")]
+fn klin_gd32v_mesh_joined(): i32
+
+@[cimport, codename("klin_gd32v_mesh_status")]
+fn klin_gd32v_mesh_status(): i32
+
+@[cimport, codename("klin_gd32v_mesh_role")]
+fn klin_gd32v_mesh_role(): i32
+
+@[cimport, codename("klin_gd32v_mesh_level")]
+fn klin_gd32v_mesh_level(): i32
+
+@[cimport, codename("klin_gd32v_mesh_node_id")]
+fn klin_gd32v_mesh_node_id(): i32
+
+pub fn err_ok(): i32 {
+    return 0
+}
+
+/// `MESH_SMART_NODE_TYPE_ROOT` (0).
+pub fn role_root(): i32 {
+    return 0
+}
+
+/// `MESH_SMART_NODE_TYPE_ROUTER` (1).
+pub fn role_router(): i32 {
+    return 1
+}
+
+/// `MESH_SMART_NODE_TYPE_LEAF` (2).
+pub fn role_leaf(): i32 {
+    return 2
+}
+
+/// Start Mesh-Smart (SDK async self-organize).
+pub fn init(): i32 {
+    return klin_gd32v_mesh_init()
+}
+
+/// Set upstream Root AP SSID/password (provisioning). Caller strings.
+pub fn config_rootap(ssid: str, password: str): i32 {
+    return klin_gd32v_mesh_config_rootap(ssid, password)
+}
+
+pub fn softap_stop(): i32 {
+    return klin_gd32v_mesh_softap_stop()
+}
+
+pub fn started(): bool {
+    return klin_gd32v_mesh_started() != 0
+}
+
+/// True when status is `STA_CONNECTED_SOFTAP_STARTED`.
+pub fn joined(): bool {
+    return klin_gd32v_mesh_joined() != 0
+}
+
+pub fn status(): i32 {
+    return klin_gd32v_mesh_status()
+}
+
+pub fn role(): i32 {
+    return klin_gd32v_mesh_role()
+}
+
+pub fn level(): i32 {
+    return klin_gd32v_mesh_level()
+}
+
+pub fn node_id(): i32 {
+    return klin_gd32v_mesh_node_id()
+}

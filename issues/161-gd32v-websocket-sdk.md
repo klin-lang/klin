@@ -41,7 +41,7 @@
 ## Out of scope
 
 - Bringing up Wi‑Fi (→ [137](137-gd32v-wifi-sdk.md))  
-- Wi‑Fi Mesh / cloud ([157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md) V4+)  
+- Wi‑Fi Mesh / cloud ([157](157-later-tracks-gd32v-coap-ws-ibeacon-mesh-cloud.md) V4+; Mesh → [162](162-gd32v-wifi-mesh-sdk.md))  
 - Folding into `machine_gd32v` or board packs  
 - Vendoring `GD32VW55x_WiFi_BLE_SDK` / tinyws into the package tree  
 
