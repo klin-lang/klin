@@ -1,9 +1,12 @@
 # Tags for suite filtering (see AGENTS.md / CI).
 #   dart test --tags unit
 #   dart test --tags e2e
-#   dart test                         # both
+#   dart test --tags e2e --exclude-tags e2e_net   # skip network get
+#   dart test                         # all
 tags:
   unit:
     description: "In-process frontend checks (no host CC / klin CLI spawn)."
   e2e:
-    description: "Emit→gcc→run goldens, klin CLI, package get, board init CLI."
+    description: "Emit→host CC→run goldens, klin CLI, package get, board init CLI."
+  e2e_net:
+    description: "Subset of e2e that hits the network (klin get remote packages)."

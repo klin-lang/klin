@@ -8,8 +8,14 @@ import 'package:klin/lexer.dart';
 import 'package:klin/version.dart';
 import 'package:test/test.dart';
 
+import 'support/klin_cli.dart';
+
 
 void main() {
+  setUpAll(() async {
+    await ensureKlinE2eBin();
+  });
+
   late Directory tmp;
 
   setUp(() async {
@@ -35,10 +41,7 @@ void main() {
     expect(lexer.comments.single.text, '// trail');
 
     // stdout (`fmt` without -w) must keep comments
-    final stdoutProc = await Process.run(
-      'dart',
-      ['run', 'bin/klin.dart', 'fmt', 'test/fmt_comments.kl'],
-    );
+    final stdoutProc = await runKlin(['fmt', 'test/fmt_comments.kl']);
     expect(stdoutProc.exitCode, 0, reason: stdoutProc.stderr.toString());
     expect(stdoutProc.stdout, expected);
     expect(stdoutProc.stdout, contains('// file header'));
@@ -49,10 +52,7 @@ void main() {
     addTearDown(() => dir.deleteSync(recursive: true));
     final copy = File('${dir.path}/fmt_comments.kl')
       ..writeAsStringSync(ugly);
-    final writeProc = await Process.run(
-      'dart',
-      ['run', 'bin/klin.dart', 'fmt', '-w', copy.path],
-    );
+    final writeProc = await runKlin(['fmt', '-w', copy.path]);
     expect(writeProc.exitCode, 0, reason: writeProc.stderr.toString());
     final written = copy.readAsStringSync();
     expect(written, expected);
@@ -69,10 +69,7 @@ void main() {
     expect(once, expected);
     expect(formatSource(once), once);
 
-    final proc = await Process.run(
-      'dart',
-      ['run', 'bin/klin.dart', 'fmt', 'test/fmt_ugly.kl'],
-    );
+    final proc = await runKlin(['fmt', 'test/fmt_ugly.kl']);
     expect(proc.exitCode, 0, reason: proc.stderr.toString());
     expect(proc.stdout, expected);
 
@@ -95,10 +92,7 @@ void main() {
 
   test('klin test runs *_test.kl and reports assert failures (issue 035)',
       () async {
-    final pass = await Process.run(
-      'dart',
-      ['run', 'bin/klin.dart', 'test', 'examples/add_test.kl'],
-    );
+    final pass = await runKlin(['test', 'examples/add_test.kl']);
     expect(pass.exitCode, 0, reason: pass.stderr.toString());
     expect(pass.stdout.toString(), contains('ok\texamples/add_test.kl'));
     expect(pass.stdout.toString(), contains('PASS'));
@@ -110,14 +104,10 @@ fn test_boom() {
   testing.assert_eq_i32(1, 2)
 }
 ''');
-    final fail = await Process.run(
-      'dart',
-      ['run', 'bin/klin.dart', 'test', '${dir.path}/fail_test.kl'],
-      environment: {
+    final fail = await runKlin(['test', '${dir.path}/fail_test.kl'], environment: {
         ...Platform.environment,
         'KLIN_STDLIB': Directory('stdlib').absolute.path,
-      },
-    );
+      },);
     expect(fail.exitCode, isNot(0));
     expect(fail.stdout.toString(), contains('FAIL'));
     expect(
@@ -138,14 +128,10 @@ fn test_value() {
   testing.assert_eq_i32(lib_with_main.value(), 7)
 }
 ''');
-    final imported = await Process.run(
-      'dart',
-      ['run', 'bin/klin.dart', 'test', '${dir.path}/import_main_test.kl'],
-      environment: {
+    final imported = await runKlin(['test', '${dir.path}/import_main_test.kl'], environment: {
         ...Platform.environment,
         'KLIN_STDLIB': Directory('stdlib').absolute.path,
-      },
-    );
+      },);
     expect(imported.exitCode, 0, reason: imported.stderr.toString());
     expect(imported.stdout.toString(), contains('ok\t'));
     expect('${imported.stdout}${imported.stderr}', isNot(contains('imported-main')));
@@ -158,30 +144,23 @@ fn test_color() {
   testing.assert_eq_i32(cast(i32, Color.Green), 1)
 }
 ''');
-    final withEnum = await Process.run(
-      'dart',
-      ['run', 'bin/klin.dart', 'test', '${dir.path}/enum_harness_test.kl'],
-      environment: {
+    final withEnum = await runKlin(['test', '${dir.path}/enum_harness_test.kl'], environment: {
         ...Platform.environment,
         'KLIN_STDLIB': Directory('stdlib').absolute.path,
-      },
-    );
+      },);
     expect(withEnum.exitCode, 0, reason: withEnum.stderr.toString());
     expect(withEnum.stdout.toString(), contains('ok\t'));
   });
 
   test('klin run compiles and executes a program', () async {
-    final proc = await Process.run(
-      'dart',
-      ['run', 'bin/klin.dart', 'run', 'test/hello.kl'],
-    );
+    final proc = await runKlin(['run', 'test/hello.kl']);
     expect(proc.exitCode, 0, reason: proc.stderr.toString());
     expect(proc.stdout, await File('test/hello.out').readAsString());
   });
 
   test('klin --version and -v print package version', () async {
     for (final flag in ['--version', '-v']) {
-      final proc = await Process.run('dart', ['run', 'bin/klin.dart', flag]);
+      final proc = await runKlin([flag]);
       expect(proc.exitCode, 0, reason: '$flag: ${proc.stderr}');
       expect(proc.stdout.toString().trim(), 'klin $klinVersion');
     }
@@ -189,7 +168,7 @@ fn test_color() {
 
   test('klin --help and -h print usage on stdout', () async {
     for (final flag in ['--help', '-h']) {
-      final proc = await Process.run('dart', ['run', 'bin/klin.dart', flag]);
+      final proc = await runKlin([flag]);
       expect(proc.exitCode, 0, reason: '$flag: ${proc.stderr}');
       expect(proc.stdout.toString(), contains('usage:'));
       expect(proc.stdout.toString(), contains('--version'));
@@ -205,53 +184,39 @@ fn test_color() {
       ['-Os'],
       ['-g', '-O0'],
     ]) {
-      final proc = await Process.run('dart', [
-        'run',
-        'bin/klin.dart',
-        'run',
+      final proc = await runKlin(['run',
         ...flags,
-        'test/hello.kl',
-      ]);
+        'test/hello.kl']);
       expect(proc.exitCode, 0, reason: '$flags: ${proc.stderr}');
       expect(proc.stdout, await File('test/hello.out').readAsString());
     }
   });
 
   test('klin run --opt invalid prints usage', () async {
-    final proc = await Process.run('dart', [
-      'run',
-      'bin/klin.dart',
-      'run',
+    final proc = await runKlin(['run',
       '--opt',
       'fast',
-      'test/hello.kl',
-    ]);
+      'test/hello.kl']);
     expect(proc.exitCode, isNot(0));
     expect(proc.stderr.toString(), contains('usage:'));
   });
 
   test('klin with no args prints help on stdout', () async {
-    final proc = await Process.run('dart', ['run', 'bin/klin.dart']);
+    final proc = await runKlin([]);
     expect(proc.exitCode, 0, reason: proc.stderr.toString());
     expect(proc.stdout.toString(), contains('usage:'));
     expect(proc.stderr.toString(), isEmpty);
   });
 
   test('klin run without a file prints usage', () async {
-    final proc = await Process.run(
-      'dart',
-      ['run', 'bin/klin.dart', 'run'],
-    );
+    final proc = await runKlin(['run']);
     expect(proc.exitCode, isNot(0));
     expect(proc.stderr.toString(), contains('usage:'));
     expect(proc.stderr.toString(), contains('klin run'));
   });
 
   test('bare file path remains an alias for run', () async {
-    final proc = await Process.run(
-      'dart',
-      ['run', 'bin/klin.dart', 'test/hello.kl'],
-    );
+    final proc = await runKlin(['test/hello.kl']);
     expect(proc.exitCode, 0, reason: proc.stderr.toString());
     expect(proc.stdout, await File('test/hello.out').readAsString());
   });
