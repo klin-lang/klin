@@ -1,0 +1,44 @@
+/// TF card (microSD) via ESP-IDF SDMMC 1-bit + VFS Fat.
+/// Not `klin_sd_spi` — this board slot is SDMMC (CLK/CMD/D0), not SPI.
+module waveshare_esp32_s3_rlcd_42
+
+@[link("tf_idf.c")]
+@[cinclude("tf_idf.h")]
+@[cimport, codename("klin_rlcd_tf_mount")]
+fn klin_rlcd_tf_mount(): i32
+
+@[cimport, codename("klin_rlcd_tf_unmount")]
+fn klin_rlcd_tf_unmount(): i32
+
+@[cimport, codename("klin_rlcd_tf_ready")]
+fn klin_rlcd_tf_ready(): i32
+
+@[cimport, codename("klin_rlcd_tf_write")]
+fn klin_rlcd_tf_write(path: str, data: *u8, len: i32): i32
+
+@[cimport, codename("klin_rlcd_tf_read")]
+fn klin_rlcd_tf_read(path: str, buf: *mut u8, max: i32): i32
+
+/// Mount FAT at `/sdcard`. Returns IDF `esp_err_t` as `i32` (0 = OK).
+pub fn tf_mount(): i32 {
+    return klin_rlcd_tf_mount()
+}
+
+pub fn tf_unmount(): i32 {
+    return klin_rlcd_tf_unmount()
+}
+
+/// `1` if mounted and the card responds.
+pub fn tf_ready(): i32 {
+    return klin_rlcd_tf_ready()
+}
+
+/// Write `len` bytes to `path` (use `/sdcard/…`). `0` = OK.
+pub fn tf_write(path: str, data: *u8, len: i32): i32 {
+    return klin_rlcd_tf_write(path, data, len)
+}
+
+/// Read up to `max` bytes; return count or `<0`.
+pub fn tf_read(path: str, buf: *mut u8, max: i32): i32 {
+    return klin_rlcd_tf_read(path, buf, max)
+}

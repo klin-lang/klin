@@ -40,7 +40,7 @@ on Nucleo, the SVD). Compile / `make` stay offline after that.
 | `pico2` | RP2350 (Arm) | `arm-none-eabi-gcc` | GPIO25 LED via `machine_rp` (not Hazard3) |
 | `waveshare-rp2350-lcd-096` | RP2350 | `arm-none-eabi-gcc` | LCD backlight via board pack |
 | `waveshare-esp32-s3-pico` | ESP32-S3 | ESP-IDF v5.x | D10 LED via `machine_esp` + IDF |
-| `waveshare-esp32-s3-rlcd-42` | ESP32-S3 | ESP-IDF v5.x | ST7305 via `klin_st7305` + 18650 |
+| `waveshare-esp32-s3-rlcd-42` | ESP32-S3 | ESP-IDF v5.x | ST7305 via `klin_st7305` + 18650 + TF SDMMC |
 | `gd32vw553h-eval` | GD32VW553 | `riscv64-unknown-elf-gcc` | LED1 (PA4) via `machine_gd32v` + board pack |
 | `gd32vw553h-start` | GD32VW553 | `riscv64-unknown-elf-gcc` | RGB red (PB0) via `machine_gd32v` + board pack |
 | `lckfb-gd32vw553` | GD32VW553HMQ | `riscv64-unknown-elf-gcc` | PC13 LED via `machine_gd32v` (LCKFB / HMQ-EVT stamp) |

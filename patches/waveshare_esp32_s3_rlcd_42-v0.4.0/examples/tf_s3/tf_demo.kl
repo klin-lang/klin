@@ -1,0 +1,38 @@
+// Hardware TF: mount / write / read / unmount (ESP-IDF SDMMC).
+import "github/klin-lang/waveshare_esp32_s3_rlcd_42" board
+
+@[cexport, codename("klin_app_main")]
+fn app_main_klin() {
+  let mut e = board.tf_mount()
+  if e != 0 {
+    return
+  }
+  if board.tf_ready() != 1 {
+    return
+  }
+  let mut msg: [4]u8
+  msg[0] = cast(u8, 75)
+  msg[1] = cast(u8, 76)
+  msg[2] = cast(u8, 73)
+  msg[3] = cast(u8, 78)
+  e = board.tf_write("/sdcard/klin.bin", cast(*u8, &msg[0]), 4)
+  if e != 0 {
+    return
+  }
+  let mut out: [4]u8
+  let n = board.tf_read("/sdcard/klin.bin", cast(*mut u8, &out[0]), 4)
+  if n != 4 {
+    return
+  }
+  let _u = board.tf_unmount()
+  while true {
+    let mut i: i32 = 0
+    while i < 20000000 {
+      i = i + 1
+    }
+  }
+}
+
+fn main() {
+  app_main_klin()
+}

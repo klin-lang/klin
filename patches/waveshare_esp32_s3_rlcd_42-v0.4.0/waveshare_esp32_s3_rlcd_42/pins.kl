@@ -1,0 +1,79 @@
+/// Waveshare ESP32-S3-RLCD-4.2 pin map (silkscreen / schematic).
+/// Display bus + KEY/BOOT + I2C + battery ADC. No radio / audio / sensor API.
+module waveshare_esp32_s3_rlcd_42
+
+pub fn lcd_sck(): i32 {
+    return 11
+}
+
+pub fn lcd_mosi(): i32 {
+    return 12
+}
+
+pub fn lcd_dc(): i32 {
+    return 5
+}
+
+pub fn lcd_cs(): i32 {
+    return 40
+}
+
+pub fn lcd_rst(): i32 {
+    return 41
+}
+
+pub fn key(): i32 {
+    return 18
+}
+
+pub fn boot(): i32 {
+    return 0
+}
+
+pub fn i2c_sda(): i32 {
+    return 13
+}
+
+pub fn i2c_scl(): i32 {
+    return 14
+}
+
+/// Battery sense (ADC1), after a ×3 resistor divider.
+pub fn battery_gpio(): i32 {
+    return 4
+}
+
+/// Panel width (landscape RAM addressing).
+pub fn lcd_width(): i32 {
+    return 400
+}
+
+/// Panel height (landscape RAM addressing).
+pub fn lcd_height(): i32 {
+    return 300
+}
+
+/// Caller framebuffer size in bytes: (width/2)*(height/4) = 15000.
+pub fn fb_bytes(): i32 {
+    return 15000
+}
+
+/// TF SDMMC CLK (1-bit).
+pub fn tf_clk(): i32 {
+    return 38
+}
+
+/// TF SDMMC CMD.
+pub fn tf_cmd(): i32 {
+    return 21
+}
+
+/// TF SDMMC D0.
+pub fn tf_d0(): i32 {
+    return 39
+}
+
+/// VFS mount point used by `tf_mount`.
+pub fn tf_mount_path(): str {
+    return "/sdcard"
+}
