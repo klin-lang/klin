@@ -173,6 +173,45 @@ void main() {
     expect(sdk, contains('esp32s3'));
   });
 
+  test('scaffold waveshare-esp32-s3-rlcd-42 (ESP-IDF ST7305)', () {
+    final dest = p.join(tmp.path, 's3_rlcd');
+    final created = scaffoldBoardInit(
+      boardId: 'waveshare-esp32-s3-rlcd-42',
+      destDir: dest,
+      packageRoot: packageRoot,
+    );
+    expect(
+      created,
+      containsAll([
+        'main.kl',
+        'Makefile',
+        'klin.mod',
+        'README.md',
+        'CMakeLists.txt',
+        'sdkconfig.defaults',
+        'main/app_main.c',
+        'main/CMakeLists.txt',
+      ]),
+    );
+    expect(created, isNot(contains('board/startup.s')));
+    final main = File(p.join(dest, 'main.kl')).readAsStringSync();
+    expect(main, contains('waveshare_esp32_s3_rlcd_42'));
+    expect(main, contains('klin_app_main'));
+    expect(main, contains('flush'));
+    final mod = File(p.join(dest, 'klin.mod')).readAsStringSync();
+    expect(mod, contains('waveshare_esp32_s3_rlcd_42'));
+    expect(mod, contains('machine_esp'));
+    final makefile = File(p.join(dest, 'Makefile')).readAsStringSync();
+    expect(makefile, contains('idf.py'));
+    expect(makefile, contains('esp32s3'));
+    final sdk = File(p.join(dest, 'sdkconfig.defaults')).readAsStringSync();
+    expect(sdk, contains('esp32s3'));
+    expect(sdk, contains('SPIRAM'));
+    final readme = File(p.join(dest, 'README.md')).readAsStringSync();
+    expect(readme, contains('waveshare.com/esp32-s3-rlcd-4.2'));
+    expect(readme, contains('163'));
+  });
+
   test('scaffold gd32vw553h-eval', () {
     final dest = p.join(tmp.path, 'vw553_blink');
     final created = scaffoldBoardInit(
