@@ -209,7 +209,7 @@ void main() {
     expect(mod, contains('klin_st7305'));
     expect(mod, contains('klin_shtc3'));
     expect(mod, contains('klin_pcf85063'));
-    expect(mod, contains('v0.7.0'));
+    expect(mod, contains('v0.8.0'));
     final makefile = File(p.join(dest, 'Makefile')).readAsStringSync();
     expect(makefile, contains('idf.py'));
     expect(makefile, contains('esp32s3'));

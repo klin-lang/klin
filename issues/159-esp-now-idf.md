@@ -1,7 +1,7 @@
 # 159 — ESP-NOW as a separate IDF package (`espnow`)
 
-**Status:** 🔨 seed [`patches/espnow-v0.1.0/`](../patches/espnow-v0.1.0/)
-(awaiting upstream [`klin-lang/espnow`](https://github.com/klin-lang/espnow) `@v0.1.0`)  
+**Status:** ✅ published [`espnow@v0.1.0`](https://github.com/klin-lang/espnow/releases/tag/v0.1.0)
+(mirror [`patches/espnow-v0.1.0/`](../patches/espnow-v0.1.0/))  
 **Depends on:** [021](021-c-libraries.md), [024](024-rtos.md), [049](049-remote-imports.md),
 [061](061-micropython-machine-api.md), [062](062-targets-esp-rp.md), [101](101-esp-wifi-idf.md)
 
@@ -10,7 +10,7 @@
 | Question | Answer |
 |---|---|
 | Change the Klin compiler? | **No** |
-| Where does the code live? | External: `klin-lang/espnow`; seed under `patches/` until published |
+| Where does the code live? | External: [`klin-lang/espnow`](https://github.com/klin-lang/espnow) `@v0.1.0` |
 | Package / module name | **`espnow`** (no underscore) — Klin C symbols must not collide with IDF `esp_now_*` |
 | Engine | **ESP-IDF** v5.x (`esp_wifi` STA + `esp_now_*` / NVS / event loop) — not MMIO |
 | Relation to `machine_esp` | **Separate.** Same class as [`esp_wifi`](https://github.com/klin-lang/esp_wifi) / [`esp_ble`](https://github.com/klin-lang/esp_ble): IDF radio stack, not `machine_*`. |
@@ -68,13 +68,6 @@
 klin get github/klin-lang/espnow@v0.1.0
 ```
 
-Until publish, use the seed:
-
-```sh
-cd patches/espnow-v0.1.0/examples/smoke
-make emit KLIN=/path/to/klin/bin/klin.dart
-```
-
 ```klin
 import "github/klin-lang/espnow" now
 
@@ -98,9 +91,11 @@ fn app() {
 
 ## Links
 
-- Seed: [`patches/espnow-v0.1.0/`](../patches/espnow-v0.1.0/)  
-- Planned repo: https://github.com/klin-lang/espnow  
+- Pack: https://github.com/klin-lang/espnow  
+- Tag: [v0.1.0](https://github.com/klin-lang/espnow/releases/tag/v0.1.0)  
+- Mirror: [`patches/espnow-v0.1.0/`](../patches/espnow-v0.1.0/)  
 - Wi‑Fi sibling: [101](101-esp-wifi-idf.md) / https://github.com/klin-lang/esp_wifi  
 - BLE sibling: [106](106-esp-ble-idf.md) / https://github.com/klin-lang/esp_ble  
 - Network later: [104](104-later-tracks-esp-network.md)  
 - Targets: [062](062-targets-esp-rp.md)  
+- Board RLCD-4.2 (uses separately): [163](163-board-waveshare-esp32-s3-rlcd-42.md)  
