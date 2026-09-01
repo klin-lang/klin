@@ -1,0 +1,117 @@
+/// Waveshare ESP32-S3-RLCD-4.2 — board glue over `klin_st7305` + IDF SPI Wire.
+/// Panel packing/init/flush: github/klin-lang/klin_st7305. Battery ADC stays here.
+module waveshare_esp32_s3_rlcd_42
+
+import "github/klin-lang/klin_st7305" panel
+
+@[link("bus_idf.c")]
+@[cinclude("bus_idf.h")]
+@[cimport, codename("klin_rlcd_bus_init")]
+fn klin_rlcd_bus_init(): i32
+
+@[cimport, codename("klin_rlcd_wire_cmd")]
+fn klin_rlcd_wire_cmd(ctx: *mut u8, b: i32)
+
+@[cimport, codename("klin_rlcd_wire_data")]
+fn klin_rlcd_wire_data(ctx: *mut u8, b: i32)
+
+@[cimport, codename("klin_rlcd_wire_data_n")]
+fn klin_rlcd_wire_data_n(ctx: *mut u8, p: *u8, n: i32)
+
+@[cimport, codename("klin_rlcd_wire_delay_ms")]
+fn klin_rlcd_wire_delay_ms(ctx: *mut u8, ms: i32)
+
+@[cimport, codename("klin_rlcd_wire_rst")]
+fn klin_rlcd_wire_rst(ctx: *mut u8)
+
+@[cimport, codename("klin_rlcd_battery_adc_raw")]
+fn klin_rlcd_battery_adc_raw(): i32
+
+@[cimport, codename("klin_rlcd_battery_mv")]
+fn klin_rlcd_battery_mv(): i32
+
+fn wire_cmd(ctx: *mut u8, b: i32) {
+    klin_rlcd_wire_cmd(ctx, b)
+}
+
+fn wire_data(ctx: *mut u8, b: i32) {
+    klin_rlcd_wire_data(ctx, b)
+}
+
+fn wire_data_n(ctx: *mut u8, p: *u8, n: i32) {
+    klin_rlcd_wire_data_n(ctx, p, n)
+}
+
+fn wire_delay(ctx: *mut u8, ms: i32) {
+    klin_rlcd_wire_delay_ms(ctx, ms)
+}
+
+fn wire_rst(ctx: *mut u8) {
+    klin_rlcd_wire_rst(ctx)
+}
+
+fn board_wire(): panel.Wire {
+    return panel.Wire{
+        ctx: cast(*mut u8, 0),
+        cmd: wire_cmd,
+        data: wire_data,
+        data_n: wire_data_n,
+        delay_ms: wire_delay,
+        rst: wire_rst
+    }
+}
+
+pub fn err_ok(): i32 {
+    return panel.err_ok()
+}
+
+pub fn width(): i32 {
+    return panel.width()
+}
+
+pub fn height(): i32 {
+    return panel.height()
+}
+
+pub fn fb_len(): i32 {
+    return panel.fb_bytes()
+}
+
+/// SPI bus + ST7305 init via `klin_st7305.attach`.
+pub fn init(): i32 {
+    let e = klin_rlcd_bus_init()
+    if e != 0 {
+        return e
+    }
+    let _lcd = panel.attach(board_wire())
+    return panel.err_ok()
+}
+
+pub fn clear(fb: []u8): i32 {
+    return panel.clear(fb)
+}
+
+pub fn fill_black(fb: []u8): i32 {
+    return panel.fill_black(fb)
+}
+
+pub fn set_pixel(fb: []u8, x: i32, y: i32, color: i32): i32 {
+    return panel.set_pixel(fb, x, y, color)
+}
+
+pub fn rect(fb: []u8, x0: i32, y0: i32, x1: i32, y1: i32, color: i32): i32 {
+    return panel.rect(fb, x0, y0, x1, y1, color)
+}
+
+pub fn flush(fb: []u8): i32 {
+    let lcd = panel.bound(board_wire())
+    return lcd.flush(fb)
+}
+
+pub fn battery_adc_raw(): i32 {
+    return klin_rlcd_battery_adc_raw()
+}
+
+pub fn battery_mv(): i32 {
+    return klin_rlcd_battery_mv()
+}

@@ -201,6 +201,8 @@ void main() {
     final mod = File(p.join(dest, 'klin.mod')).readAsStringSync();
     expect(mod, contains('waveshare_esp32_s3_rlcd_42'));
     expect(mod, contains('machine_esp'));
+    expect(mod, contains('klin_st7305'));
+    expect(mod, contains('v0.3.0'));
     final makefile = File(p.join(dest, 'Makefile')).readAsStringSync();
     expect(makefile, contains('idf.py'));
     expect(makefile, contains('esp32s3'));
@@ -210,6 +212,9 @@ void main() {
     final readme = File(p.join(dest, 'README.md')).readAsStringSync();
     expect(readme, contains('waveshare.com/esp32-s3-rlcd-4.2'));
     expect(readme, contains('163'));
+    expect(readme, contains('klin_st7305'));
+    expect(main, contains('fb[:]'));
+    expect(main, contains('draw_text'));
   });
 
   test('scaffold gd32vw553h-eval', () {

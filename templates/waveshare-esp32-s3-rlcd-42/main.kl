@@ -1,4 +1,4 @@
-// Waveshare ESP32-S3-RLCD-4.2 — clear panel + black bar + flush.
+// Waveshare ESP32-S3-RLCD-4.2 — clear / bar / text / flush.
 // Scaffold from `klin init waveshare-esp32-s3-rlcd-42`.
 // Run `klin get` once, then `make emit` / `make build` (needs ESP-IDF).
 // After inserting 18650: connect USB-C once to wake battery protection.
@@ -11,15 +11,24 @@ fn app_main_klin() {
     return
   }
   let mut fb: [15000]u8
-  e = board.clear(cast(*mut u8, &fb[0]), 15000)
+  e = board.clear(fb[:])
   if e != board.err_ok() {
     return
   }
-  e = board.rect(cast(*mut u8, &fb[0]), 15000, 20, 40, 380, 80, 0)
+  e = board.rect(fb[:], 20, 40, 380, 80, 0)
   if e != board.err_ok() {
     return
   }
-  e = board.flush(cast(*u8, &fb[0]), 15000)
+  let mut msg: [4]i32
+  msg[0] = 75
+  msg[1] = 76
+  msg[2] = 73
+  msg[3] = 78
+  e = board.draw_text(fb[:], 24, 100, msg[:], board.color_black(), board.color_white())
+  if e != board.err_ok() {
+    return
+  }
+  e = board.flush(fb[:])
   if e != board.err_ok() {
     return
   }

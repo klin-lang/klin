@@ -33,7 +33,8 @@ Chip Wi‑Fi (silicon radio) → separate [`esp_wifi`](https://github.com/klin-l
 **Scaffold:** `klin init waveshare-esp32-s3-pico` — ESP-IDF blink (D10) via
 bundled `templates/waveshare-esp32-s3-pico/` ([075](075-board-pack-init-host.md)).
 
-Sibling RLCD board (ST7305 + 18650): [163](163-board-waveshare-esp32-s3-rlcd-42.md) /
+Sibling RLCD board (ST7305 via [`klin_st7305`](https://github.com/klin-lang/klin_st7305) + 18650): [163](163-board-waveshare-esp32-s3-rlcd-42.md) /
+[164](164-klin-st7305.md) /
 [`waveshare_esp32_s3_rlcd_42`](https://github.com/klin-lang/waveshare_esp32_s3_rlcd_42).
 
 ## Usage

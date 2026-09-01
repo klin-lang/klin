@@ -1,0 +1,5 @@
+module klin_st7305
+
+pub fn version(): i32 {
+    return 2
+}

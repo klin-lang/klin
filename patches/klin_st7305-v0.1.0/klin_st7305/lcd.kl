@@ -1,0 +1,273 @@
+/// ST7305 reflective LCD chip driver (4-wire SPI). No MCU types — app supplies `Wire`.
+/// Caller owns the monochrome framebuffer (15000 bytes for 400×300 landscape).
+/// Not Arduino. Not in the Klin stdlib. No heap.
+module klin_st7305
+
+/// Explicit SPI + GPIO hooks. Function pointers, no capture.
+/// `cmd` / `data` send one byte (DC low / high). `data_n` is a bulk write (DC high).
+/// `rst` is the hardware reset pulse. `delay_ms` is caller-owned wait.
+pub struct Wire {
+    ctx: *mut u8
+    cmd: fn(*mut u8,i32):void
+    data: fn(*mut u8,i32):void
+    data_n: fn(*mut u8,*u8,i32):void
+    delay_ms: fn(*mut u8,i32):void
+    rst: fn(*mut u8):void
+}
+
+pub struct Lcd {
+    wire: Wire
+}
+
+fn cmd(lcd: Lcd, c: i32) {
+    let f = lcd.wire.cmd
+    f(lcd.wire.ctx, c)
+}
+
+fn data_u8(lcd: Lcd, v: i32) {
+    let f = lcd.wire.data
+    f(lcd.wire.ctx, v & 255)
+}
+
+fn data_buf(lcd: Lcd, p: *u8, n: i32) {
+    let f = lcd.wire.data_n
+    f(lcd.wire.ctx, p, n)
+}
+
+fn delay_ms(lcd: Lcd, ms: i32) {
+    let f = lcd.wire.delay_ms
+    f(lcd.wire.ctx, ms)
+}
+
+fn data2(lcd: Lcd, a: i32, b: i32) {
+    let mut buf: [2]u8
+    buf[0] = cast(u8, a & 255)
+    buf[1] = cast(u8, b & 255)
+    data_buf(lcd, cast(*u8, &buf[0]), 2)
+}
+
+fn data3(lcd: Lcd, a: i32, b: i32, c: i32) {
+    let mut buf: [3]u8
+    buf[0] = cast(u8, a & 255)
+    buf[1] = cast(u8, b & 255)
+    buf[2] = cast(u8, c & 255)
+    data_buf(lcd, cast(*u8, &buf[0]), 3)
+}
+
+fn data4(lcd: Lcd, a: i32, b: i32, c: i32, d: i32) {
+    let mut buf: [4]u8
+    buf[0] = cast(u8, a & 255)
+    buf[1] = cast(u8, b & 255)
+    buf[2] = cast(u8, c & 255)
+    buf[3] = cast(u8, d & 255)
+    data_buf(lcd, cast(*u8, &buf[0]), 4)
+}
+
+fn data8(lcd: Lcd, a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32) {
+    let mut buf: [8]u8
+    buf[0] = cast(u8, a & 255)
+    buf[1] = cast(u8, b & 255)
+    buf[2] = cast(u8, c & 255)
+    buf[3] = cast(u8, d & 255)
+    buf[4] = cast(u8, e & 255)
+    buf[5] = cast(u8, f & 255)
+    buf[6] = cast(u8, g & 255)
+    buf[7] = cast(u8, h & 255)
+    data_buf(lcd, cast(*u8, &buf[0]), 8)
+}
+
+fn data10(lcd: Lcd, a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32, i: i32, j: i32) {
+    let mut buf: [10]u8
+    buf[0] = cast(u8, a & 255)
+    buf[1] = cast(u8, b & 255)
+    buf[2] = cast(u8, c & 255)
+    buf[3] = cast(u8, d & 255)
+    buf[4] = cast(u8, e & 255)
+    buf[5] = cast(u8, f & 255)
+    buf[6] = cast(u8, g & 255)
+    buf[7] = cast(u8, h & 255)
+    buf[8] = cast(u8, i & 255)
+    buf[9] = cast(u8, j & 255)
+    data_buf(lcd, cast(*u8, &buf[0]), 10)
+}
+
+/// Waveshare ESP32-S3-RLCD-4.2 ST7305 init (landscape CASET/RASET).
+fn panel_init(lcd: Lcd) {
+    cmd(lcd, 0xD6)
+    data2(lcd, 0x17, 0x02)
+    cmd(lcd, 0xD1)
+    data_u8(lcd, 0x01)
+
+    cmd(lcd, 0xC0)
+    data2(lcd, 0x11, 0x04)
+    cmd(lcd, 0xC1)
+    data4(lcd, 0x41, 0x41, 0x41, 0x41)
+    cmd(lcd, 0xC2)
+    data4(lcd, 0x19, 0x19, 0x19, 0x19)
+    cmd(lcd, 0xC4)
+    data4(lcd, 0x41, 0x41, 0x41, 0x41)
+    cmd(lcd, 0xC5)
+    data4(lcd, 0x19, 0x19, 0x19, 0x19)
+
+    cmd(lcd, 0xD8)
+    data2(lcd, 0xA6, 0xE9)
+
+    cmd(lcd, 0xB2)
+    data_u8(lcd, 0x05)
+    cmd(lcd, 0xB3)
+    data10(lcd, 0xE5, 0xF6, 0x05, 0x46, 0x77, 0x77, 0x77, 0x77, 0x76, 0x45)
+    cmd(lcd, 0xB4)
+    data8(lcd, 0x05, 0x46, 0x77, 0x77, 0x77, 0x77, 0x76, 0x45)
+    cmd(lcd, 0x62)
+    data3(lcd, 0x32, 0x03, 0x1F)
+
+    cmd(lcd, 0xB7)
+    data_u8(lcd, 0x13)
+    cmd(lcd, 0xB0)
+    data_u8(lcd, 0x64)
+
+    cmd(lcd, 0x11)
+    delay_ms(lcd, 200)
+
+    cmd(lcd, 0xC9)
+    data_u8(lcd, 0x00)
+    cmd(lcd, 0x36)
+    data_u8(lcd, 0x48)
+    cmd(lcd, 0x3A)
+    data_u8(lcd, 0x11)
+    cmd(lcd, 0xB9)
+    data_u8(lcd, 0x20)
+    cmd(lcd, 0xB8)
+    data_u8(lcd, 0x29)
+    cmd(lcd, 0x21)
+
+    cmd(lcd, 0x2A)
+    data2(lcd, caset_start(), caset_end())
+    cmd(lcd, 0x2B)
+    data2(lcd, raset_start(), raset_end())
+
+    cmd(lcd, 0x35)
+    data_u8(lcd, 0x00)
+    cmd(lcd, 0xD0)
+    data_u8(lcd, 0xFF)
+    cmd(lcd, 0x38)
+    cmd(lcd, 0x29)
+}
+
+/// Hardware reset + Waveshare ST7305 init. No framebuffer allocation.
+pub fn attach(wire: Wire): Lcd {
+    let lcd = Lcd{ wire: wire }
+    let pulse = lcd.wire.rst
+    pulse(lcd.wire.ctx)
+    panel_init(lcd)
+    return lcd
+}
+
+/// Bind a wire without re-running init (panel already attached).
+pub fn bound(wire: Wire): Lcd {
+    return Lcd{ wire: wire }
+}
+
+/// White fill (`0xFF`). `fb.len` must be `fb_bytes()`.
+pub fn clear(fb: []u8): i32 {
+    if fb.len != fb_bytes() {
+        return err_bad_arg()
+    }
+    let mut i = 0
+    while i < fb.len {
+        fb[i] = cast(u8, 255)
+        i = i + 1
+    }
+    return err_ok()
+}
+
+/// Black fill (`0x00`).
+pub fn fill_black(fb: []u8): i32 {
+    if fb.len != fb_bytes() {
+        return err_bad_arg()
+    }
+    let mut i = 0
+    while i < fb.len {
+        fb[i] = cast(u8, 0)
+        i = i + 1
+    }
+    return err_ok()
+}
+
+/// `color` 0 = black, non-zero = white. Packing matches Waveshare landscape ST7305.
+pub fn set_pixel(fb: []u8, x: i32, y: i32, color: i32): i32 {
+    if fb.len != fb_bytes() {
+        return err_bad_arg()
+    }
+    if x < 0 || y < 0 || x >= width() || y >= height() {
+        return err_bad_arg()
+    }
+    let inv_y = height() - 1 - y
+    let idx = (x >> 1) * (height() >> 2) + (inv_y >> 2)
+    let bit = 7 - (((inv_y & 3) << 1) | (x & 1))
+    let mask = 1 << bit
+    let cur = cast(i32, fb[idx])
+    if color != 0 {
+        fb[idx] = cast(u8, (cur | mask) & 255)
+    } else {
+        fb[idx] = cast(u8, (cur & (255 - mask)) & 255)
+    }
+    return err_ok()
+}
+
+/// Filled axis-aligned rect (inclusive edges, clipped to panel).
+pub fn rect(fb: []u8, x0: i32, y0: i32, x1: i32, y1: i32, color: i32): i32 {
+    if fb.len != fb_bytes() {
+        return err_bad_arg()
+    }
+    let mut xa = x0
+    let mut xb = x1
+    let mut ya = y0
+    let mut yb = y1
+    if xa > xb {
+        let t = xa
+        xa = xb
+        xb = t
+    }
+    if ya > yb {
+        let t = ya
+        ya = yb
+        yb = t
+    }
+    if xa < 0 {
+        xa = 0
+    }
+    if ya < 0 {
+        ya = 0
+    }
+    if xb >= width() {
+        xb = width() - 1
+    }
+    if yb >= height() {
+        yb = height() - 1
+    }
+    let mut y = ya
+    while y <= yb {
+        let mut x = xa
+        while x <= xb {
+            let _e = set_pixel(fb, x, y, color)
+            x = x + 1
+        }
+        y = y + 1
+    }
+    return err_ok()
+}
+
+/// Push full framebuffer to the panel (CASET/RASET + RAMWR + bulk data).
+pub fn (lcd: Lcd) flush(fb: []u8): i32 {
+    if fb.len != fb_bytes() {
+        return err_bad_arg()
+    }
+    cmd(lcd, 0x2A)
+    data2(lcd, caset_start(), caset_end())
+    cmd(lcd, 0x2B)
+    data2(lcd, raset_start(), raset_end())
+    cmd(lcd, 0x2C)
+    data_buf(lcd, cast(*u8, &fb[0]), fb.len)
+    return err_ok()
+}

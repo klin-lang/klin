@@ -1,0 +1,48 @@
+/// ST7305 Waveshare landscape geometry (ESP32-S3-RLCD-4.2 defaults).
+/// Caller owns the framebuffer; no heap.
+module klin_st7305
+
+/// Landscape panel width in pixels.
+pub fn width(): i32 {
+    return 400
+}
+
+/// Landscape panel height in pixels.
+pub fn height(): i32 {
+    return 300
+}
+
+/// Framebuffer bytes: (width/2)*(height/4) = 15000.
+pub fn fb_bytes(): i32 {
+    return 15000
+}
+
+/// CASET start (Waveshare landscape RAM window).
+pub fn caset_start(): i32 {
+    return 0x12
+}
+
+pub fn caset_end(): i32 {
+    return 0x2A
+}
+
+/// RASET start / end (Waveshare landscape).
+pub fn raset_start(): i32 {
+    return 0x00
+}
+
+pub fn raset_end(): i32 {
+    return 0xC7
+}
+
+pub fn err_ok(): i32 {
+    return 0
+}
+
+pub fn err_bad_arg(): i32 {
+    return 0 - 1
+}
+
+pub fn err_bad_state(): i32 {
+    return 0 - 2
+}

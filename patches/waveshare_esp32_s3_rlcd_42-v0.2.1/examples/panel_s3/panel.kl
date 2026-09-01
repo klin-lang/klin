@@ -1,0 +1,34 @@
+// Hardware panel clear / bar / flush (ESP-IDF).
+import "github/klin-lang/waveshare_esp32_s3_rlcd_42" board
+
+@[cexport, codename("klin_app_main")]
+fn app_main_klin() {
+  let mut e = board.init()
+  if e != board.err_ok() {
+    return
+  }
+  let mut fb: [15000]u8
+  e = board.clear(fb[:])
+  if e != board.err_ok() {
+    return
+  }
+  e = board.rect(fb[:], 20, 40, 380, 80, 0)
+  if e != board.err_ok() {
+    return
+  }
+  e = board.flush(fb[:])
+  if e != board.err_ok() {
+    return
+  }
+  while true {
+    let _mv = board.battery_mv()
+    let mut i: i32 = 0
+    while i < 20000000 {
+      i = i + 1
+    }
+  }
+}
+
+fn main() {
+  app_main_klin()
+}
