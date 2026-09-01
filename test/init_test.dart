@@ -207,7 +207,9 @@ void main() {
     expect(mod, contains('waveshare_esp32_s3_rlcd_42'));
     expect(mod, contains('machine_esp'));
     expect(mod, contains('klin_st7305'));
-    expect(mod, contains('v0.5.0'));
+    expect(mod, contains('klin_shtc3'));
+    expect(mod, contains('klin_pcf85063'));
+    expect(mod, contains('v0.6.0'));
     final makefile = File(p.join(dest, 'Makefile')).readAsStringSync();
     expect(makefile, contains('idf.py'));
     expect(makefile, contains('esp32s3'));
