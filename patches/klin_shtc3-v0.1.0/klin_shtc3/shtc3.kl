@@ -1,0 +1,157 @@
+/// Sensirion SHTC3 temperature/humidity (I2C). No MCU types — app supplies `Wire`.
+/// Not Arduino. Not in the Klin stdlib. No heap.
+module klin_shtc3
+
+/// Explicit I2C hooks. Function pointers, no capture.
+/// `write` / `read` / `write_read` return `0` on success.
+/// `delay_ms` is caller-owned wait (measurement settle ~15 ms).
+pub struct Wire {
+    ctx: *mut u8
+    write: fn(*mut u8, i32, *u8, i32): i32
+    read: fn(*mut u8, i32, *mut u8, i32): i32
+    write_read: fn(*mut u8, i32, *u8, i32, *mut u8, i32): i32
+    delay_ms: fn(*mut u8, i32): void
+}
+
+pub struct Dev {
+    wire: Wire
+}
+
+pub fn err_ok(): i32 {
+    return 0
+}
+
+pub fn err_bad_arg(): i32 {
+    return 1
+}
+
+pub fn err_io(): i32 {
+    return 2
+}
+
+pub fn err_crc(): i32 {
+    return 3
+}
+
+/// 7-bit I2C address.
+pub fn addr7(): i32 {
+    return 0x70
+}
+
+/// Wake: 0x3517 (big-endian command word).
+pub fn cmd_wake(): i32 {
+    return 0x3517
+}
+
+/// Sleep: 0xB098.
+pub fn cmd_sleep(): i32 {
+    return 0xB098
+}
+
+/// Measure T then RH, polling (no clock stretch): 0x7866.
+pub fn cmd_meas_t_rh_polling(): i32 {
+    return 0x7866
+}
+
+/// Typical settle after measure command (ms).
+pub fn meas_delay_ms(): i32 {
+    return 15
+}
+
+/// Sensirion CRC8: poly 0x31, init 0xFF.
+pub fn crc8(bytes: []u8): i32 {
+    let mut crc: i32 = 0xFF
+    let mut i: i32 = 0
+    while i < bytes.len {
+        crc = crc ^ cast(i32, bytes[i])
+        let mut bit: i32 = 0
+        while bit < 8 {
+            if (crc & 0x80) != 0 {
+                crc = ((crc << 1) ^ 0x31) & 0xFF
+            } else {
+                crc = (crc << 1) & 0xFF
+            }
+            bit = bit + 1
+        }
+        i = i + 1
+    }
+    return crc & 0xFF
+}
+
+/// Millidegree C from 16-bit raw: -45000 + (175000 * raw) / 65536
+/// (computed as -45000 + (21875 * raw) / 8192 to stay in i32).
+pub fn temp_mC_from_raw(raw_t: i32): i32 {
+    let r = raw_t & 0xFFFF
+    return -45000 + (21875 * r) / 8192
+}
+
+/// Milli-%RH from 16-bit raw: (100000 * raw) / 65536
+/// (computed as (12500 * raw) / 8192 to stay in i32).
+pub fn hum_mRh_from_raw(raw_rh: i32): i32 {
+    let r = raw_rh & 0xFFFF
+    return (12500 * r) / 8192
+}
+
+fn put_cmd(dev: Dev, cmd: i32): i32 {
+    let mut buf: [2]u8
+    buf[0] = cast(u8, (cmd >> 8) & 0xFF)
+    buf[1] = cast(u8, cmd & 0xFF)
+    let w = dev.wire.write
+    return w(dev.wire.ctx, addr7(), cast(*u8, &buf[0]), 2)
+}
+
+fn do_delay(dev: Dev, ms: i32) {
+    let d = dev.wire.delay_ms
+    d(dev.wire.ctx, ms)
+}
+
+/// Store the wire. No hidden bus init.
+pub fn attach(wire: Wire): Dev {
+    return Dev{ wire: wire }
+}
+
+/// Wake → measure (T then RH, polling) → settle → read 6 bytes → sleep.
+/// On success writes `out_temp_mC` / `out_hum_mRh`. Returns `err_*`.
+pub fn (dev: Dev) measure(out_temp_mC: *mut i32, out_hum_mRh: *mut i32): i32 {
+    let e0 = put_cmd(dev, cmd_wake())
+    if e0 != 0 {
+        return err_io()
+    }
+    do_delay(dev, 1)
+    let e1 = put_cmd(dev, cmd_meas_t_rh_polling())
+    if e1 != 0 {
+        let _s = put_cmd(dev, cmd_sleep())
+        return err_io()
+    }
+    do_delay(dev, meas_delay_ms())
+    let mut raw: [6]u8
+    raw[0] = cast(u8, 0)
+    raw[1] = cast(u8, 0)
+    raw[2] = cast(u8, 0)
+    raw[3] = cast(u8, 0)
+    raw[4] = cast(u8, 0)
+    raw[5] = cast(u8, 0)
+    let r = dev.wire.read
+    let e2 = r(dev.wire.ctx, addr7(), cast(*mut u8, &raw[0]), 6)
+    let _sl = put_cmd(dev, cmd_sleep())
+    if e2 != 0 {
+        return err_io()
+    }
+    let mut tpair: [2]u8
+    tpair[0] = raw[0]
+    tpair[1] = raw[1]
+    if crc8(tpair[:]) != cast(i32, raw[2]) {
+        return err_crc()
+    }
+    let mut hpair: [2]u8
+    hpair[0] = raw[3]
+    hpair[1] = raw[4]
+    if crc8(hpair[:]) != cast(i32, raw[5]) {
+        return err_crc()
+    }
+    let raw_t = (cast(i32, raw[0]) << 8) | cast(i32, raw[1])
+    let raw_rh = (cast(i32, raw[3]) << 8) | cast(i32, raw[4])
+    *out_temp_mC = temp_mC_from_raw(raw_t)
+    *out_hum_mRh = hum_mRh_from_raw(raw_rh)
+    return err_ok()
+}

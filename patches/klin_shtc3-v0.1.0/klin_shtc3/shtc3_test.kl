@@ -1,0 +1,150 @@
+module klin_shtc3
+import testing
+
+@[cimport, codename("memcpy")]
+fn memcpy(dst: *mut u8, src: *u8, n: i32): *mut u8
+
+struct Rec {
+    nwrite: i32
+    nread: i32
+    delays: i32
+    last_addr: i32
+    reply: [6]u8
+    fail_write: i32
+    fail_read: i32
+    writes: [8]i32
+}
+
+fn rec_write(ctx: *mut u8, addr7: i32, data: *u8, len: i32): i32 {
+    let r = cast(*mut Rec, ctx)
+    (*r).nwrite = (*r).nwrite + 1
+    (*r).last_addr = addr7
+    if len >= 2 {
+        let mut tmp: [2]u8
+        let _cp1 = memcpy(cast(*mut u8, &tmp[0]), data, 2)
+        let cmd = (cast(i32, tmp[0]) << 8) | cast(i32, tmp[1])
+        if (*r).nwrite <= 8 {
+            (*r).writes[(*r).nwrite - 1] = cmd
+        }
+    }
+    if (*r).fail_write != 0 {
+        return 1
+    }
+    return 0
+}
+
+fn rec_read(ctx: *mut u8, addr7: i32, buf: *mut u8, len: i32): i32 {
+    let r = cast(*mut Rec, ctx)
+    (*r).nread = (*r).nread + 1
+    (*r).last_addr = addr7
+    if (*r).fail_read != 0 {
+        return 1
+    }
+    let n = pick len < 6 { len } { 6 }
+    let _cp2 = memcpy(buf, cast(*u8, &(*r).reply[0]), n)
+    return 0
+}
+
+fn rec_write_read(ctx: *mut u8, addr7: i32, wdata: *u8, wlen: i32, rbuf: *mut u8, rlen: i32): i32 {
+    let _a = addr7
+    let _w = wdata
+    let _wl = wlen
+    let _r = rbuf
+    let _rl = rlen
+    let _c = ctx
+    return 1
+}
+
+fn rec_delay(ctx: *mut u8, ms: i32) {
+    let r = cast(*mut Rec, ctx)
+    (*r).delays = (*r).delays + ms
+}
+
+fn mock_wire(rec: *mut Rec): Wire {
+    return Wire{
+        ctx: cast(*mut u8, rec),
+        write: rec_write,
+        read: rec_read,
+        write_read: rec_write_read,
+        delay_ms: rec_delay
+    }
+}
+
+fn test_version() {
+    testing.assert_eq_i32(version(), 1)
+}
+
+fn test_addr_cmds() {
+    testing.assert_eq_i32(addr7(), 0x70)
+    testing.assert_eq_i32(cmd_wake(), 0x3517)
+    testing.assert_eq_i32(cmd_sleep(), 0xB098)
+    testing.assert_eq_i32(cmd_meas_t_rh_polling(), 0x7866)
+}
+
+fn test_crc8() {
+    let mut p: [2]u8
+    p[0] = cast(u8, 0x66)
+    p[1] = cast(u8, 0x66)
+    testing.assert_eq_i32(crc8(p[:]), 0x93)
+    p[0] = cast(u8, 0x80)
+    p[1] = cast(u8, 0x00)
+    testing.assert_eq_i32(crc8(p[:]), 0xA2)
+}
+
+fn test_convert() {
+    testing.assert_eq_i32(temp_mC_from_raw(0x6666), 24998)
+    testing.assert_eq_i32(hum_mRh_from_raw(0x8000), 50000)
+}
+
+fn test_measure_ok() {
+    let mut rec = Rec{
+        nwrite: 0,
+        nread: 0,
+        delays: 0,
+        last_addr: 0,
+        reply: [cast(u8, 0), cast(u8, 0), cast(u8, 0), cast(u8, 0), cast(u8, 0), cast(u8, 0)],
+        fail_write: 0,
+        fail_read: 0,
+        writes: [0, 0, 0, 0, 0, 0, 0, 0]
+    }
+    rec.reply[0] = cast(u8, 0x66)
+    rec.reply[1] = cast(u8, 0x66)
+    rec.reply[2] = cast(u8, 0x93)
+    rec.reply[3] = cast(u8, 0x80)
+    rec.reply[4] = cast(u8, 0x00)
+    rec.reply[5] = cast(u8, 0xA2)
+    let dev = attach(mock_wire(&rec))
+    let mut t: i32 = 0
+    let mut h: i32 = 0
+    testing.assert_eq_i32(dev.measure(&t, &h), err_ok())
+    testing.assert_eq_i32(t, 24998)
+    testing.assert_eq_i32(h, 50000)
+    testing.assert_eq_i32(rec.writes[0], 0x3517)
+    testing.assert_eq_i32(rec.writes[1], 0x7866)
+    testing.assert_eq_i32(rec.writes[2], 0xB098)
+    testing.assert_eq_i32(pick rec.delays >= 15 { 1 } { 0 }, 1)
+}
+
+fn test_measure_crc_fail() {
+    let mut rec = Rec{
+        nwrite: 0,
+        nread: 0,
+        delays: 0,
+        last_addr: 0,
+        reply: [cast(u8, 0), cast(u8, 0), cast(u8, 0), cast(u8, 0), cast(u8, 0), cast(u8, 0)],
+        fail_write: 0,
+        fail_read: 0,
+        writes: [0, 0, 0, 0, 0, 0, 0, 0]
+    }
+    rec.reply[0] = cast(u8, 0x66)
+    rec.reply[1] = cast(u8, 0x66)
+    rec.reply[2] = cast(u8, 0x00)
+    rec.reply[3] = cast(u8, 0x80)
+    rec.reply[4] = cast(u8, 0x00)
+    rec.reply[5] = cast(u8, 0xA2)
+    let dev = attach(mock_wire(&rec))
+    let mut t: i32 = 0
+    let mut h: i32 = 0
+    testing.assert_eq_i32(dev.measure(&t, &h), err_crc())
+}
+

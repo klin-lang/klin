@@ -1,0 +1,5 @@
+module klin_pcf85063
+
+pub fn version(): i32 {
+    return 1
+}

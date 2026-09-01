@@ -1,0 +1,74 @@
+module app
+import klin_shtc3 sht
+
+@[cimport, codename("memcpy")]
+fn memcpy(dst: *mut u8, src: *u8, n: i32): *mut u8
+
+struct Rec {
+    nwrite: i32
+    nread: i32
+    delays: i32
+    reply: [6]u8
+}
+
+fn mock_write(ctx: *mut u8, addr7: i32, data: *u8, len: i32): i32 {
+    let r = cast(*mut Rec, ctx)
+    (*r).nwrite = (*r).nwrite + 1
+    let _a = addr7
+    let _d = data
+    let _l = len
+    return 0
+}
+
+fn mock_read(ctx: *mut u8, addr7: i32, buf: *mut u8, len: i32): i32 {
+    let r = cast(*mut Rec, ctx)
+    (*r).nread = (*r).nread + 1
+    let _a = addr7
+    let n = pick len < 6 { len } { 6 }
+    let _cp1 = memcpy(buf, cast(*u8, &(*r).reply[0]), n)
+    return 0
+}
+
+fn mock_write_read(ctx: *mut u8, addr7: i32, wdata: *u8, wlen: i32, rbuf: *mut u8, rlen: i32): i32 {
+    let _c = ctx
+    let _a = addr7
+    let _w = wdata
+    let _wl = wlen
+    let _r = rbuf
+    let _rl = rlen
+    return 1
+}
+
+fn mock_delay(ctx: *mut u8, ms: i32) {
+    let r = cast(*mut Rec, ctx)
+    (*r).delays = (*r).delays + ms
+}
+
+fn main() {
+    printf("klin_shtc3 %d\n", sht.version())
+    printf("addr 0x%x\n", sht.addr7())
+    let mut rec = Rec{
+        nwrite: 0,
+        nread: 0,
+        delays: 0,
+        reply: [cast(u8, 0), cast(u8, 0), cast(u8, 0), cast(u8, 0), cast(u8, 0), cast(u8, 0)]
+    }
+    rec.reply[0] = cast(u8, 0x66)
+    rec.reply[1] = cast(u8, 0x66)
+    rec.reply[2] = cast(u8, 0x93)
+    rec.reply[3] = cast(u8, 0x80)
+    rec.reply[4] = cast(u8, 0x00)
+    rec.reply[5] = cast(u8, 0xA2)
+    let wire = sht.Wire{
+        ctx: cast(*mut u8, &rec),
+        write: mock_write,
+        read: mock_read,
+        write_read: mock_write_read,
+        delay_ms: mock_delay
+    }
+    let dev = sht.attach(wire)
+    let mut t: i32 = 0
+    let mut h: i32 = 0
+    let e = dev.measure(&t, &h)
+    printf("measure e=%d T=%d mC RH=%d mRh\n", e, t, h)
+}

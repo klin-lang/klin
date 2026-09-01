@@ -1,0 +1,145 @@
+/// NXP PCF85063 RTC (I2C). No MCU types — app supplies `Wire`.
+/// Not Arduino. Not in the Klin stdlib. No heap.
+module klin_pcf85063
+
+/// Explicit I2C hooks. Function pointers, no capture.
+/// `write` / `read` / `write_read` return `0` on success.
+pub struct Wire {
+    ctx: *mut u8
+    write: fn(*mut u8, i32, *u8, i32): i32
+    read: fn(*mut u8, i32, *mut u8, i32): i32
+    write_read: fn(*mut u8, i32, *u8, i32, *mut u8, i32): i32
+    delay_ms: fn(*mut u8, i32): void
+}
+
+pub struct Dev {
+    wire: Wire
+}
+
+pub fn err_ok(): i32 {
+    return 0
+}
+
+pub fn err_bad_arg(): i32 {
+    return 1
+}
+
+pub fn err_io(): i32 {
+    return 2
+}
+
+/// 7-bit I2C address.
+pub fn addr7(): i32 {
+    return 0x51
+}
+
+/// Seconds register (datetime block starts here through years).
+pub fn reg_seconds(): i32 {
+    return 0x04
+}
+
+pub fn bcd_to_bin(v: i32): i32 {
+    let x = v & 0xFF
+    return ((x >> 4) * 10) + (x & 0x0F)
+}
+
+pub fn bin_to_bcd(v: i32): i32 {
+    let x = v
+    return (((x / 10) & 0x0F) << 4) | ((x % 10) & 0x0F)
+}
+
+/// Store the wire. No hidden bus init.
+pub fn attach(wire: Wire): Dev {
+    return Dev{ wire: wire }
+}
+
+
+/// Read SC..YR (7 bytes). Year is 0..99 (register years). Month 1..12. Wday 0..6.
+pub fn (dev: Dev) read_time(
+    sec: *mut i32,
+    min: *mut i32,
+    hour: *mut i32,
+    day: *mut i32,
+    wday: *mut i32,
+    month: *mut i32,
+    year: *mut i32
+): i32 {
+    let mut reg: [1]u8
+    reg[0] = cast(u8, reg_seconds())
+    let mut raw: [7]u8
+    raw[0] = cast(u8, 0)
+    raw[1] = cast(u8, 0)
+    raw[2] = cast(u8, 0)
+    raw[3] = cast(u8, 0)
+    raw[4] = cast(u8, 0)
+    raw[5] = cast(u8, 0)
+    raw[6] = cast(u8, 0)
+    let wr = dev.wire.write_read
+    let e = wr(
+        dev.wire.ctx,
+        addr7(),
+        cast(*u8, &reg[0]),
+        1,
+        cast(*mut u8, &raw[0]),
+        7
+    )
+    if e != 0 {
+        return err_io()
+    }
+    *sec = bcd_to_bin(cast(i32, raw[0]) & 0x7F)
+    *min = bcd_to_bin(cast(i32, raw[1]) & 0x7F)
+    *hour = bcd_to_bin(cast(i32, raw[2]) & 0x3F)
+    *day = bcd_to_bin(cast(i32, raw[3]) & 0x3F)
+    *wday = cast(i32, raw[4]) & 0x07
+    *month = bcd_to_bin(cast(i32, raw[5]) & 0x1F)
+    *year = bcd_to_bin(cast(i32, raw[6]) & 0xFF)
+    return err_ok()
+}
+
+/// Write SC..YR. Year 0..99, month 1..12, wday 0..6.
+pub fn (dev: Dev) set_time(
+    sec: i32,
+    min: i32,
+    hour: i32,
+    day: i32,
+    wday: i32,
+    month: i32,
+    year: i32
+): i32 {
+    if sec < 0 || sec > 59 {
+        return err_bad_arg()
+    }
+    if min < 0 || min > 59 {
+        return err_bad_arg()
+    }
+    if hour < 0 || hour > 23 {
+        return err_bad_arg()
+    }
+    if day < 1 || day > 31 {
+        return err_bad_arg()
+    }
+    if wday < 0 || wday > 6 {
+        return err_bad_arg()
+    }
+    if month < 1 || month > 12 {
+        return err_bad_arg()
+    }
+    if year < 0 || year > 99 {
+        return err_bad_arg()
+    }
+    let mut buf: [8]u8
+    buf[0] = cast(u8, reg_seconds())
+    buf[1] = cast(u8, bin_to_bcd(sec) & 0x7F)
+    buf[2] = cast(u8, bin_to_bcd(min) & 0x7F)
+    buf[3] = cast(u8, bin_to_bcd(hour) & 0x3F)
+    buf[4] = cast(u8, bin_to_bcd(day) & 0x3F)
+    buf[5] = cast(u8, wday & 0x07)
+    buf[6] = cast(u8, bin_to_bcd(month) & 0x1F)
+    buf[7] = cast(u8, bin_to_bcd(year) & 0xFF)
+    let w = dev.wire.write
+    let e = w(dev.wire.ctx, addr7(), cast(*u8, &buf[0]), 8)
+    if e != 0 {
+        return err_io()
+    }
+    return err_ok()
+}

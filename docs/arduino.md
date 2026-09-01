@@ -54,7 +54,7 @@ These keep the Arduino **name / form factor**, but need another package:
 Board packs Klin already has that are *Arduino-adjacent* (same chips, other brands):
 
 - Waveshare ESP32-S3-Pico → [`waveshare_esp32_s3_pico`](https://github.com/klin-lang/waveshare_esp32_s3_pico) [100](../issues/100-board-waveshare-esp32-s3-pico.md)
-- Waveshare ESP32-S3-RLCD-4.2 → [`waveshare_esp32_s3_rlcd_42`](https://github.com/klin-lang/waveshare_esp32_s3_rlcd_42) + [`klin_st7305`](https://github.com/klin-lang/klin_st7305) (TF=SDMMC; I2C bus) [163](../issues/163-board-waveshare-esp32-s3-rlcd-42.md) / [164](../issues/164-klin-st7305.md)
+- Waveshare ESP32-S3-RLCD-4.2 → [`waveshare_esp32_s3_rlcd_42`](https://github.com/klin-lang/waveshare_esp32_s3_rlcd_42) + [`klin_st7305`](https://github.com/klin-lang/klin_st7305) + [`klin_shtc3`](https://github.com/klin-lang/klin_shtc3) / [`klin_pcf85063`](https://github.com/klin-lang/klin_pcf85063) (TF=SDMMC; I2C sensors) [163](../issues/163-board-waveshare-esp32-s3-rlcd-42.md) / [164](../issues/164-klin-st7305.md)
 - Adafruit RP2040 CAN Feather → [`adafruit_rp2040_can_feather`](https://github.com/klin-lang/adafruit_rp2040_can_feather) [098](../issues/098-board-adafruit-rp2040-can-feather.md)
 - Nucleo-F411RE (STM32, not Arduino brand) → [`nucleo_f411re`](https://github.com/klin-lang/nucleo_f411re) [096](../issues/096-board-nucleo-f411re.md)
 - WeAct Black Pill F411CE → `klin init weact-f411` (`make flash` = `dfu-util`, same tool STM32duino uses) [147](../issues/147-board-weact-f411.md)
