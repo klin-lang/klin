@@ -28,5 +28,10 @@ jobs:
       - name: Analyze
         run: dart analyze
 
-      - name: Test
-        run: dart test
+      # Suites are split across files so Dart can run them in parallel.
+      # Tags: `unit` (frontend only) vs `e2e` (gcc / klin CLI / get).
+      - name: Test unit
+        run: dart test --tags unit --concurrency=$(nproc)
+
+      - name: Test e2e
+        run: dart test --tags e2e --concurrency=$(nproc)

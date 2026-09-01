@@ -1,3 +1,6 @@
+@Tags(['unit'])
+library;
+
 import 'dart:io';
 
 import 'package:klin/svd/emit.dart';

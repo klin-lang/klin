@@ -1,0 +1,9 @@
+# Tags for suite filtering (see AGENTS.md / CI).
+#   dart test --tags unit
+#   dart test --tags e2e
+#   dart test                         # both
+tags:
+  unit:
+    description: "In-process frontend checks (no host CC / klin CLI spawn)."
+  e2e:
+    description: "Emit→gcc→run goldens, klin CLI, package get, board init CLI."

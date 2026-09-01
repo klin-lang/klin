@@ -30,10 +30,22 @@ tasks:
       - dart analyze
 
   test:
-    desc: golden tests
+    desc: all tests (unit + e2e); suites run in parallel by default
     deps: [get]
     cmds:
       - dart test
+
+  test:unit:
+    desc: frontend-only tests (no gcc / klin CLI)
+    deps: [get]
+    cmds:
+      - dart test --tags unit
+
+  test:e2e:
+    desc: emit→gcc→run, klin CLI, package get
+    deps: [get]
+    cmds:
+      - dart test --tags e2e
 
   check:
     desc: analyze + test
