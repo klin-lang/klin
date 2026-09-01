@@ -168,4 +168,4 @@ See [docs/03-name-license.md](docs/03-name-license.md).
 ## Roadmap and contributing
 
 Work order (what compiles): [`issues/sorted.md`](issues/sorted.md).
-Compiler tests: `dart test`. Agent rules: [`CLAUDE.md`](CLAUDE.md).
+Compiler tests: `dart test` (`--tags unit` / `--tags e2e`). Agent rules: [`CLAUDE.md`](CLAUDE.md).

@@ -22,8 +22,11 @@ update script only runs `dart pub get`.
 
 Common commands (all from the repo root):
 - Lint: `dart analyze` (CI's required `test` job runs `dart analyze` then `dart test`).
-- Tests: `dart test` (~1 min; `test/pipeline_test.dart` shells out to `gcc`, so a
-  host C compiler must be on `PATH`).
+- Tests: `dart test` (CI runs `--tags unit` then `--tags e2e`, each with
+  `--concurrency=$(nproc)`). Pipeline coverage lives in
+  `test/pipeline_*_test.dart` (`unit` = frontend only; `e2e` shells out to
+  `gcc` / `dart run bin/klin.dart`, so a host C compiler must be on `PATH`).
+  Local fast loop: `dart test --tags unit`. Full: `dart test`.
 - Run a program end-to-end: `dart run bin/klin.dart run examples/hello.kl`
   (parse → check → emit C → compile with host `cc` → execute).
 - Inspect generated C without running: `dart run bin/klin.dart --emit-c <file.kl>`.

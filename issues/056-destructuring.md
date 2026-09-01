@@ -107,7 +107,7 @@ field subset, order irrelevant, source evaluated once (copy to temporary when
 not a name), lowered to `.field`. Example
 [`examples/destructure.kl`](../examples/destructure.kl), tests in
 [`test/destruct_struct.kl`](../test/destruct_struct.kl) +
-`test/pipeline_test.dart`.
+`test/pipeline_*_test.dart`.
 
 **Phase C (done):** `let [a, b] = xs` and `let mut [a, b] = xs` for fixed-length
 arrays `[N]T`, where `N` == pattern count (full coverage, no
@@ -117,7 +117,7 @@ frontend: slice `[]T` (runtime length), length mismatch, source other than
 variable/array literal, nested array element. Example
 [`examples/destructure.kl`](../examples/destructure.kl), tests
 in [`test/destruct_array.kl`](../test/destruct_array.kl) +
-`test/pipeline_test.dart`.
+`test/pipeline_*_test.dart`.
 
 **Phase B (done):** multi-assign `a, b = b, a` — ≥2 assignable targets and as many
 values. Values computed into temporaries before any write, so
@@ -125,21 +125,21 @@ swap/rotation work without a temporary in the source. Targets follow normal
 lvalue/`mut` rules; rejected: whole-array target and values with `or`/`!`/`match`
 (assign them in a separate statement). Example
 [`examples/multi_assign.kl`](../examples/multi_assign.kl), tests in
-[`test/multi_assign.kl`](../test/multi_assign.kl) + `test/pipeline_test.dart`.
+[`test/multi_assign.kl`](../test/multi_assign.kl) + `test/pipeline_*_test.dart`.
 
 **Phase D (done):** struct field rename `let { x: px, y: py } = p` (mixable
 with unchanged field names) and `_` as skip position in array
 `let [_, b, _, d] = xs` (full coverage still required, min. one real
 binding; indices preserved). Tests in
 [`test/destruct_phase_d.kl`](../test/destruct_phase_d.kl) +
-`test/pipeline_test.dart`.
+`test/pipeline_*_test.dart`.
 
 **Phase A′ (done — structs):** bare `{ x, y } = p` and rename `{ x: cel } = p`
 assign fields to existing places (variables or any lvalue). Block vs
 pattern distinguished by limited lookahead (`=` after matched `}`); source
 copied once, so target can safely alias source. Example
 [`examples/destructure.kl`](../examples/destructure.kl), tests in
-[`test/struct_assign.kl`](../test/struct_assign.kl) + `test/pipeline_test.dart`.
+[`test/struct_assign.kl`](../test/struct_assign.kl) + `test/pipeline_*_test.dart`.
 
 **Bare `[ … ] = xs` — deliberately skipped:** with whitespace-insensitive
 grammar, a statement starting with `[` glues to the previous expression as

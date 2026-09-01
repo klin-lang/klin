@@ -1,3 +1,6 @@
+@Tags(['unit'])
+library;
+
 import 'package:klin/analyze.dart';
 import 'package:klin/complete.dart';
 import 'package:test/test.dart';
