@@ -1,0 +1,8 @@
+module app
+import klin_st7305 lcd
+
+fn main() {
+    printf("klin_st7305 %d\n", lcd.version())
+    printf("geom %dx%d fb=%d\n", lcd.width(), lcd.height(), lcd.fb_bytes())
+    printf("caset %d..%d\n", lcd.caset_start(), lcd.caset_end())
+}

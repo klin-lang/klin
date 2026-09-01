@@ -19,7 +19,7 @@ Demo: clear the ST7305 RLCD, draw a black bar, flush.
   CMakeLists.txt
   sdkconfig.defaults      # esp32s3 + octal PSRAM 80MHz
   Makefile                # emit → idf.py build/flash
-  klin.mod                # machine_esp + waveshare_esp32_s3_rlcd_42
+  klin.mod                # machine_esp + klin_st7305 + waveshare_esp32_s3_rlcd_42
   README.md
 ```
 
@@ -40,8 +40,9 @@ battery protection circuit (Waveshare FAQ). Then you can run on battery.
 
 ## Links
 
-- Issue [163](../../issues/163-board-waveshare-esp32-s3-rlcd-42.md), [075](../../issues/075-board-pack-init-host.md), [099](../../issues/099-machine-esp-esp32-s3.md)
+- Issue [163](../../issues/163-board-waveshare-esp32-s3-rlcd-42.md), [164](../../issues/164-klin-st7305.md), [075](../../issues/075-board-pack-init-host.md), [099](../../issues/099-machine-esp-esp32-s3.md)
 - Pack: https://github.com/klin-lang/waveshare_esp32_s3_rlcd_42
+- Panel driver: https://github.com/klin-lang/klin_st7305
 - Chip: https://github.com/klin-lang/machine_esp
 - Waveshare product: https://www.waveshare.com/esp32-s3-rlcd-4.2.htm
 - Waveshare docs: https://docs.waveshare.com/ESP32-S3-RLCD-4.2
