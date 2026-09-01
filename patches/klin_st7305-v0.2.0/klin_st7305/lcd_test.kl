@@ -1,0 +1,140 @@
+module klin_st7305
+import testing
+
+struct Rec {
+    ncmd: i32
+    ndata: i32
+    ndatan: i32
+    datan_len: i32
+    delays: i32
+    rsts: i32
+    last_cmd: i32
+}
+
+fn rec_cmd(ctx: *mut u8, c: i32) {
+    let r = cast(*mut Rec, ctx)
+    (*r).ncmd = (*r).ncmd + 1
+    (*r).last_cmd = c
+}
+
+fn rec_data(ctx: *mut u8, v: i32) {
+    let r = cast(*mut Rec, ctx)
+    (*r).ndata = (*r).ndata + 1
+    let _keep = v * 0
+}
+
+fn rec_data_n(ctx: *mut u8, p: *u8, n: i32) {
+    let r = cast(*mut Rec, ctx)
+    (*r).ndatan = (*r).ndatan + 1
+    (*r).datan_len = (*r).datan_len + n
+    let _ = n * 0
+}
+
+fn rec_delay(ctx: *mut u8, ms: i32) {
+    let r = cast(*mut Rec, ctx)
+    (*r).delays = (*r).delays + ms
+}
+
+fn rec_rst(ctx: *mut u8) {
+    let r = cast(*mut Rec, ctx)
+    (*r).rsts = (*r).rsts + 1
+}
+
+fn mock_wire(rec: *mut Rec): Wire {
+    return Wire{
+        ctx: cast(*mut u8, rec),
+        cmd: rec_cmd,
+        data: rec_data,
+        data_n: rec_data_n,
+        delay_ms: rec_delay,
+        rst: rec_rst
+    }
+}
+
+fn test_version() {
+    testing.assert_eq_i32(version(), 2)
+}
+
+fn test_geom() {
+    testing.assert_eq_i32(width(), 400)
+    testing.assert_eq_i32(height(), 300)
+    testing.assert_eq_i32(fb_bytes(), 15000)
+    testing.assert_eq_i32(caset_start(), 0x12)
+    testing.assert_eq_i32(caset_end(), 0x2A)
+    testing.assert_eq_i32(raset_end(), 0xC7)
+}
+
+fn test_clear_fill_pixel() {
+    let mut fb: [15000]u8
+    testing.assert_eq_i32(clear(fb[:]), err_ok())
+    testing.assert_eq_i32(cast(i32, fb[0]), 255)
+    testing.assert_eq_i32(cast(i32, fb[14999]), 255)
+    testing.assert_eq_i32(fill_black(fb[:]), err_ok())
+    testing.assert_eq_i32(cast(i32, fb[0]), 0)
+    testing.assert_eq_i32(set_pixel(fb[:], 0, 0, 1), err_ok())
+    testing.assert_eq_i32(set_pixel(fb[:], 0, 0, 0), err_ok())
+    testing.assert_eq_i32(set_pixel(fb[:], 400, 0, 1), err_bad_arg())
+    testing.assert_eq_i32(clear(fb[:]), err_ok())
+    testing.assert_eq_i32(rect(fb[:], 10, 10, 20, 15, 0), err_ok())
+}
+
+fn test_attach_flush() {
+    let mut rec = Rec{
+        ncmd: 0,
+        ndata: 0,
+        ndatan: 0,
+        datan_len: 0,
+        delays: 0,
+        rsts: 0,
+        last_cmd: 0
+    }
+    let lcd = attach(mock_wire(&rec))
+    testing.assert_eq_i32(rec.rsts, 1)
+    testing.assert_eq_i32(pick rec.delays >= 200 { 1 } { 0 }, 1)
+    testing.assert_eq_i32(pick rec.ncmd > 10 { 1 } { 0 }, 1)
+    let mut fb: [15000]u8
+    testing.assert_eq_i32(clear(fb[:]), err_ok())
+    let before = rec.ndatan
+    testing.assert_eq_i32(lcd.flush(fb[:]), err_ok())
+    testing.assert_eq_i32(pick rec.ndatan > before { 1 } { 0 }, 1)
+    testing.assert_eq_i32(pick rec.datan_len >= 15000 { 1 } { 0 }, 1)
+    testing.assert_eq_i32(rec.last_cmd, 0x2C)
+    let lcd2 = bound(mock_wire(&rec))
+    testing.assert_eq_i32(lcd2.flush(fb[:]), err_ok())
+}
+
+fn test_font_and_lines() {
+    testing.assert_eq_i32(font_char_w(), 6)
+    testing.assert_eq_i32(font_char_h(), 8)
+    testing.assert_eq_i32(font5x7_col(32, 0), 0)
+    testing.assert_eq_i32(pick font5x7_col(65, 0) != 0 { 1 } { 0 }, 1)
+    testing.assert_eq_i32(color_black(), 0)
+    testing.assert_eq_i32(color_white(), 1)
+    let mut fb: [15000]u8
+    testing.assert_eq_i32(clear(fb[:]), err_ok())
+    testing.assert_eq_i32(hline(fb[:], 10, 20, 30, color_black()), err_ok())
+    testing.assert_eq_i32(vline(fb[:], 10, 20, 40, color_black()), err_ok())
+    testing.assert_eq_i32(draw_rect(fb[:], 50, 50, 40, 20, color_black()), err_ok())
+    testing.assert_eq_i32(draw_char(fb[:], 5, 5, 65, color_black(), color_white()), err_ok())
+    let mut hi: [2]i32
+    hi[0] = 72
+    hi[1] = 73
+    testing.assert_eq_i32(draw_text(fb[:], 80, 5, hi[:], color_black(), color_white()), err_ok())
+    testing.assert_eq_i32(draw_text_n(fb[:], 80, 20, hi[:], 1, color_black(), color_white()), err_ok())
+}
+
+
+fn test_draw_char_marks_pixels() {
+    let mut fb: [15000]u8
+    testing.assert_eq_i32(clear(fb[:]), err_ok())
+    testing.assert_eq_i32(draw_char(fb[:], 0, 0, 65, color_black(), color_white()), err_ok())
+    let mut any = 0
+    let mut i = 0
+    while i < fb.len {
+        if cast(i32, fb[i]) != 255 {
+            any = 1
+        }
+        i = i + 1
+    }
+    testing.assert_eq_i32(any, 1)
+}

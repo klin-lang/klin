@@ -6,13 +6,13 @@ Scaffold from `klin init waveshare-esp32-s3-rlcd-42`. Layout:
 [163](../../issues/163-board-waveshare-esp32-s3-rlcd-42.md).
 
 Boot/flash uses **ESP-IDF** (not a freestanding `startup.s` / `linker.ld`).
-Demo: clear the ST7305 RLCD, draw a black bar, flush.
+Demo: clear the ST7305 RLCD, draw a black bar + text, flush.
 
 ## Layout
 
 ```text
 .
-  main.kl                 # app (panel clear / bar / flush)
+  main.kl                 # app (panel clear / bar / text / flush)
   main/
     app_main.c            # IDF entry → klin_app_main
     CMakeLists.txt
