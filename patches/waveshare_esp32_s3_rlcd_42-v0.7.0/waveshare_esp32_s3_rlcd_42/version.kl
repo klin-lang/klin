@@ -1,0 +1,5 @@
+module waveshare_esp32_s3_rlcd_42
+
+pub fn version(): i32 {
+    return 7
+}

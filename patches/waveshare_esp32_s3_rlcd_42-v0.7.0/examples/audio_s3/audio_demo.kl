@@ -1,0 +1,40 @@
+// Hardware: ES8311 + ES7210 — init, tone burst write, short mic read.
+import "github/klin-lang/waveshare_esp32_s3_rlcd_42" board
+
+@[cexport, codename("klin_app_main")]
+fn app_main_klin() {
+  let mut e = board.audio_init(16000)
+  if e != 0 {
+    return
+  }
+  e = board.audio_set_volume(70)
+  let _v = e
+  e = board.audio_pa_enable(1)
+  let _p = e
+
+  // ~1 ms of silence (stereo 16-bit @ 16 kHz = 64 bytes).
+  let mut pcm: [64]u8
+  let mut i: i32 = 0
+  while i < 64 {
+    pcm[i] = cast(u8, 0)
+    i = i + 1
+  }
+  e = board.audio_write(cast(*u8, &pcm[0]), 64)
+  let _w = e
+
+  let mut mic: [64]u8
+  let n = board.audio_read(cast(*mut u8, &mic[0]), 64)
+  let _n = n
+
+  let _d = board.audio_deinit()
+  while true {
+    let mut j: i32 = 0
+    while j < 20000000 {
+      j = j + 1
+    }
+  }
+}
+
+fn main() {
+  app_main_klin()
+}

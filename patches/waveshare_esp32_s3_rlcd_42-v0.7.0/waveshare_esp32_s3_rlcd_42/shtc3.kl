@@ -1,0 +1,43 @@
+/// Board glue: SHTC3 via onboard I2C + `klin_shtc3`.
+module waveshare_esp32_s3_rlcd_42
+
+import "github/klin-lang/klin_shtc3" sht
+
+fn sht_wire_write(ctx: *mut u8, addr7: i32, data: *u8, len: i32): i32 {
+    let _c = ctx
+    return i2c_write(addr7, data, len)
+}
+
+fn sht_wire_read(ctx: *mut u8, addr7: i32, buf: *mut u8, len: i32): i32 {
+    let _c = ctx
+    return i2c_read(addr7, buf, len)
+}
+
+fn sht_wire_write_read(ctx: *mut u8, addr7: i32, wdata: *u8, wlen: i32, rbuf: *mut u8, rlen: i32): i32 {
+    let _c = ctx
+    return i2c_write_read(addr7, wdata, wlen, rbuf, rlen)
+}
+
+fn sht_wire_delay(ctx: *mut u8, ms: i32) {
+    klin_rlcd_wire_delay_ms(ctx, ms)
+}
+
+fn board_i2c_wire(): sht.Wire {
+    return sht.Wire{
+        ctx: cast(*mut u8, 0),
+        write: sht_wire_write,
+        read: sht_wire_read,
+        write_read: sht_wire_write_read,
+        delay_ms: sht_wire_delay
+    }
+}
+
+/// Ensure I2C init, then SHTC3 measure into caller outs (m°C / m%RH).
+pub fn shtc3_measure(temp_mC: *mut i32, hum_mRh: *mut i32): i32 {
+    let e = i2c_init()
+    if e != 0 {
+        return e
+    }
+    let dev = sht.attach(board_i2c_wire())
+    return dev.measure(temp_mC, hum_mRh)
+}
