@@ -1,0 +1,60 @@
+/// Onboard I2C master (SDA=13, SCL=14) via ESP-IDF `i2c_master`.
+/// Thin bus only — no SHTC3 / PCF85063 protocol here.
+module waveshare_esp32_s3_rlcd_42
+
+@[link("i2c_idf.c")]
+@[cinclude("i2c_idf.h")]
+@[cimport, codename("klin_rlcd_i2c_init")]
+fn klin_rlcd_i2c_init(): i32
+
+@[cimport, codename("klin_rlcd_i2c_deinit")]
+fn klin_rlcd_i2c_deinit(): i32
+
+@[cimport, codename("klin_rlcd_i2c_ready")]
+fn klin_rlcd_i2c_ready(): i32
+
+@[cimport, codename("klin_rlcd_i2c_probe")]
+fn klin_rlcd_i2c_probe(addr7: i32): i32
+
+@[cimport, codename("klin_rlcd_i2c_write")]
+fn klin_rlcd_i2c_write(addr7: i32, data: *u8, len: i32): i32
+
+@[cimport, codename("klin_rlcd_i2c_read")]
+fn klin_rlcd_i2c_read(addr7: i32, buf: *mut u8, len: i32): i32
+
+@[cimport, codename("klin_rlcd_i2c_write_read")]
+fn klin_rlcd_i2c_write_read(addr7: i32, wdata: *u8, wlen: i32, rbuf: *mut u8, rlen: i32): i32
+
+/// Init master at 100 kHz. Returns IDF `esp_err_t` as `i32` (0 = OK).
+pub fn i2c_init(): i32 {
+    return klin_rlcd_i2c_init()
+}
+
+pub fn i2c_deinit(): i32 {
+    return klin_rlcd_i2c_deinit()
+}
+
+/// `1` after a successful `i2c_init`.
+pub fn i2c_ready(): i32 {
+    return klin_rlcd_i2c_ready()
+}
+
+/// Probe 7-bit address. `1` = ACK.
+pub fn i2c_probe(addr7: i32): i32 {
+    return klin_rlcd_i2c_probe(addr7)
+}
+
+/// Write `len` bytes. `0` = OK.
+pub fn i2c_write(addr7: i32, data: *u8, len: i32): i32 {
+    return klin_rlcd_i2c_write(addr7, data, len)
+}
+
+/// Read `len` bytes into caller buffer. `0` = OK.
+pub fn i2c_read(addr7: i32, buf: *mut u8, len: i32): i32 {
+    return klin_rlcd_i2c_read(addr7, buf, len)
+}
+
+/// Write then read with restart (register access). `0` = OK.
+pub fn i2c_write_read(addr7: i32, wdata: *u8, wlen: i32, rbuf: *mut u8, rlen: i32): i32 {
+    return klin_rlcd_i2c_write_read(addr7, wdata, wlen, rbuf, rlen)
+}
