@@ -31,7 +31,7 @@ Implementation: qualifier (alias or default = last segment) keys
 `module` name. Alias collision and alias being a C keyword are rejected.
 `ImportSpec` node in `lib/ast.dart`, parsing in `lib/parser.dart`
 (`_importSpec`), resolution/keying in `lib/project.dart`, round-trip in
-`lib/fmt.dart`. Tests in `test/pipeline_test.dart` (issue 048).
+`lib/fmt.dart`. Tests in `test/pipeline_*_test.dart` (issue 048).
 
 ## Out of scope
 

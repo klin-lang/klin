@@ -22,7 +22,7 @@ Folder and file slugs are already English (082). Nothing to `git mv`.
 | `lib/lexer.dart` | unknown escape-sequence message |
 | `lib/checker.dart` | three leftover `nieznana` / `wymaga typu` messages |
 | `lib/ast.dart` | one `lub` comment |
-| `test/pipeline_test.dart` | assertion on `ucieczki` |
+| `test/pipeline_*_test.dart` | assertion on `ucieczki` |
 
 ## Done
 
