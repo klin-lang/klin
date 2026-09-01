@@ -1,0 +1,60 @@
+/// Onboard audio: ES8311 DAC + ES7210 ADC over I2S (caller PCM buffers).
+/// Pins: MCLK=16 BCLK=9 WS=45 DOUT=8 DIN=10 PA=46; I2C 0x18 / 0x40.
+module waveshare_esp32_s3_rlcd_42
+
+@[link("audio_idf.c")]
+@[cinclude("audio_idf.h")]
+@[cimport, codename("klin_rlcd_audio_init")]
+fn klin_rlcd_audio_init(sample_rate: i32): i32
+
+@[cimport, codename("klin_rlcd_audio_deinit")]
+fn klin_rlcd_audio_deinit(): i32
+
+@[cimport, codename("klin_rlcd_audio_ready")]
+fn klin_rlcd_audio_ready(): i32
+
+@[cimport, codename("klin_rlcd_audio_pa_enable")]
+fn klin_rlcd_audio_pa_enable(on: i32): i32
+
+@[cimport, codename("klin_rlcd_audio_set_volume")]
+fn klin_rlcd_audio_set_volume(vol: i32): i32
+
+@[cimport, codename("klin_rlcd_audio_write")]
+fn klin_rlcd_audio_write(pcm: *u8, len: i32): i32
+
+@[cimport, codename("klin_rlcd_audio_read")]
+fn klin_rlcd_audio_read(buf: *mut u8, max: i32): i32
+
+/// Init I2S duplex + codecs. `sample_rate`: 16000, 24000, or 48000. `0` = OK.
+pub fn audio_init(sample_rate: i32): i32 {
+    return klin_rlcd_audio_init(sample_rate)
+}
+
+pub fn audio_deinit(): i32 {
+    return klin_rlcd_audio_deinit()
+}
+
+/// `1` after a successful `audio_init`.
+pub fn audio_ready(): i32 {
+    return klin_rlcd_audio_ready()
+}
+
+/// Speaker amp (GPIO46). Non-zero = on.
+pub fn audio_pa_enable(on: i32): i32 {
+    return klin_rlcd_audio_pa_enable(on)
+}
+
+/// ES8311 output volume 0..100.
+pub fn audio_set_volume(vol: i32): i32 {
+    return klin_rlcd_audio_set_volume(vol)
+}
+
+/// Write `len` bytes of 16-bit stereo PCM. `0` = OK.
+pub fn audio_write(pcm: *u8, len: i32): i32 {
+    return klin_rlcd_audio_write(pcm, len)
+}
+
+/// Read up to `max` PCM bytes; return count or `<0`.
+pub fn audio_read(buf: *mut u8, max: i32): i32 {
+    return klin_rlcd_audio_read(buf, max)
+}
