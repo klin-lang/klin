@@ -3,7 +3,7 @@ set(KLIN_LINK "${CMAKE_SOURCE_DIR}/out/sensors_demo.link")
 
 if(NOT EXISTS "${KLIN_C}")
     message(FATAL_ERROR
-        "Missing ${KLIN_C}. From examples/i2c_s3 run: make emit KLIN=...")
+        "Missing ${KLIN_C}. From examples/sensors_s3 run: make emit KLIN=...")
 endif()
 
 set(KLIN_EXTRA_SRCS "")
