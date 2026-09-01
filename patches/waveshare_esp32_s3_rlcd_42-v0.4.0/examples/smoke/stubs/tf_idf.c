@@ -10,6 +10,6 @@ int klin_rlcd_tf_write(const char *path, const uint8_t *data, int32_t len)
 }
 int klin_rlcd_tf_read(const char *path, uint8_t *buf, int32_t max)
 {
-    (void)path; (void)buf; (void)max;
-    return 0;
+    (void)path; (void)buf;
+    return max;
 }
