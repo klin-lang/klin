@@ -1,0 +1,91 @@
+/// Waveshare ESP32-S3-RLCD-4.2 ST7305 — thin Klin surface over `st7305_idf.c`.
+/// Caller owns the 15000-byte framebuffer. Not part of `machine_esp`.
+module waveshare_esp32_s3_rlcd_42
+
+@[link("st7305_idf.c")]
+@[cinclude("st7305_idf.h")]
+@[cimport, codename("klin_rlcd_width")]
+fn klin_rlcd_width(): i32
+
+@[cimport, codename("klin_rlcd_height")]
+fn klin_rlcd_height(): i32
+
+@[cimport, codename("klin_rlcd_fb_bytes")]
+fn klin_rlcd_fb_bytes(): i32
+
+@[cimport, codename("klin_rlcd_init")]
+fn klin_rlcd_init(): i32
+
+@[cimport, codename("klin_rlcd_clear")]
+fn klin_rlcd_clear(fb: *mut u8, len: i32): i32
+
+@[cimport, codename("klin_rlcd_fill")]
+fn klin_rlcd_fill(fb: *mut u8, len: i32): i32
+
+@[cimport, codename("klin_rlcd_set_pixel")]
+fn klin_rlcd_set_pixel(fb: *mut u8, len: i32, x: i32, y: i32, color: i32): i32
+
+@[cimport, codename("klin_rlcd_rect")]
+fn klin_rlcd_rect(fb: *mut u8, len: i32, x0: i32, y0: i32, x1: i32, y1: i32, color: i32): i32
+
+@[cimport, codename("klin_rlcd_flush")]
+fn klin_rlcd_flush(fb: *u8, len: i32): i32
+
+@[cimport, codename("klin_rlcd_battery_adc_raw")]
+fn klin_rlcd_battery_adc_raw(): i32
+
+@[cimport, codename("klin_rlcd_battery_mv")]
+fn klin_rlcd_battery_mv(): i32
+
+pub fn err_ok(): i32 {
+    return 0
+}
+
+pub fn width(): i32 {
+    return klin_rlcd_width()
+}
+
+pub fn height(): i32 {
+    return klin_rlcd_height()
+}
+
+/// Required framebuffer length (15000).
+pub fn fb_len(): i32 {
+    return klin_rlcd_fb_bytes()
+}
+
+/// SPI + ST7305 init. Returns IDF `esp_err_t` as `i32`.
+pub fn init(): i32 {
+    return klin_rlcd_init()
+}
+
+/// White fill (`0xFF`).
+pub fn clear(fb: *mut u8, len: i32): i32 {
+    return klin_rlcd_clear(fb, len)
+}
+
+/// Black fill (`0x00`).
+pub fn fill_black(fb: *mut u8, len: i32): i32 {
+    return klin_rlcd_fill(fb, len)
+}
+
+/// `color` 0 = black, non-zero = white.
+pub fn set_pixel(fb: *mut u8, len: i32, x: i32, y: i32, color: i32): i32 {
+    return klin_rlcd_set_pixel(fb, len, x, y, color)
+}
+
+pub fn rect(fb: *mut u8, len: i32, x0: i32, y0: i32, x1: i32, y1: i32, color: i32): i32 {
+    return klin_rlcd_rect(fb, len, x0, y0, x1, y1, color)
+}
+
+pub fn flush(fb: *u8, len: i32): i32 {
+    return klin_rlcd_flush(fb, len)
+}
+
+pub fn battery_adc_raw(): i32 {
+    return klin_rlcd_battery_adc_raw()
+}
+
+pub fn battery_mv(): i32 {
+    return klin_rlcd_battery_mv()
+}

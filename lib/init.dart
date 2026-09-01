@@ -9,6 +9,7 @@ const knownInitBoards = <String>[
   'pico2',
   'waveshare-rp2350-lcd-096',
   'waveshare-esp32-s3-pico',
+  'waveshare-esp32-s3-rlcd-42',
   'gd32vw553h-eval',
   'gd32vw553h-start',
   'lckfb-gd32vw553',
