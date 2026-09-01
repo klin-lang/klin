@@ -1,0 +1,90 @@
+// emit-c smoke (no ESP-IDF). Uses stubs/bus_idf.c via package @[link] override… 
+// Package links bus_idf.c from the module dir; for host smoke we emit with -I stubs.
+import "../../waveshare_esp32_s3_rlcd_42" board
+
+fn main() {
+  let mut e = board.init()
+  if e != board.err_ok() {
+    return
+  }
+  if board.fb_len() != 15000 {
+    return
+  }
+  if board.width() != 400 {
+    return
+  }
+  if board.lcd_sck() != 11 {
+    return
+  }
+  let mut fb: [15000]u8
+  e = board.clear(fb[:])
+  if e != board.err_ok() {
+    return
+  }
+  e = board.rect(fb[:], 10, 10, 50, 40, 0)
+  if e != board.err_ok() {
+    return
+  }
+  let mut ab: [2]i32
+  ab[0] = 65
+  ab[1] = 66
+  e = board.draw_text(fb[:], 0, 0, ab[:], board.color_black(), board.color_white())
+  if e != board.err_ok() {
+    return
+  }
+  e = board.flush(fb[:])
+  if e != board.err_ok() {
+    return
+  }
+  if board.tf_clk() != 38 {
+    return
+  }
+  let mut te = board.tf_mount()
+  if te != 0 {
+    return
+  }
+  if board.tf_ready() != 1 {
+    return
+  }
+  let mut msg: [4]u8
+  msg[0] = cast(u8, 75)
+  msg[1] = cast(u8, 76)
+  msg[2] = cast(u8, 73)
+  msg[3] = cast(u8, 78)
+  te = board.tf_write("/sdcard/klin.bin", cast(*u8, &msg[0]), 4)
+  if te != 0 {
+    return
+  }
+  let mut out: [4]u8
+  let n = board.tf_read("/sdcard/klin.bin", cast(*mut u8, &out[0]), 4)
+  if n != 4 {
+    return
+  }
+  let _u = board.tf_unmount()
+  if board.i2c_sda() != 13 {
+    return
+  }
+  if board.i2c_scl() != 14 {
+    return
+  }
+  let mut ie = board.i2c_init()
+  if ie != 0 {
+    return
+  }
+  if board.i2c_ready() != 1 {
+    return
+  }
+  if board.i2c_probe(0x70) != 1 {
+    return
+  }
+  let mut reg: [1]u8
+  reg[0] = cast(u8, 0)
+  let mut rbuf: [2]u8
+  ie = board.i2c_write_read(0x70, cast(*u8, &reg[0]), 1, cast(*mut u8, &rbuf[0]), 2)
+  if ie != 0 {
+    return
+  }
+  let _id = board.i2c_deinit()
+  let _mv = board.battery_mv()
+  let _v = board.version()
+}
