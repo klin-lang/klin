@@ -1,0 +1,32 @@
+// Hardware I2C: init bus, probe common onboard addrs (no sensor decode).
+import "github/klin-lang/waveshare_esp32_s3_rlcd_42" board
+
+@[cexport, codename("klin_app_main")]
+fn app_main_klin() {
+  let mut e = board.i2c_init()
+  if e != 0 {
+    return
+  }
+  if board.i2c_ready() != 1 {
+    return
+  }
+  // SHTC3 often 0x70; PCF85063 often 0x51 — probe only (may be absent).
+  let mut _p = board.i2c_probe(0x70)
+  _p = board.i2c_probe(0x51)
+  let mut reg: [1]u8
+  reg[0] = cast(u8, 0)
+  let mut buf: [2]u8
+  // Best-effort write_read; ignore errors if no device.
+  let _wr = board.i2c_write_read(0x70, cast(*u8, &reg[0]), 1, cast(*mut u8, &buf[0]), 2)
+  let _d = board.i2c_deinit()
+  while true {
+    let mut i: i32 = 0
+    while i < 20000000 {
+      i = i + 1
+    }
+  }
+}
+
+fn main() {
+  app_main_klin()
+}

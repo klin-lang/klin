@@ -105,7 +105,7 @@ fn app() {
 klin get github/klin-lang/espnow@v0.1.0
 ```
 
-Until the package repo is published, use the Klin seed:
+Offline mirror (this tree):
 
 ```sh
 klin --emit-c -I patches/espnow-v0.1.0 \
@@ -155,7 +155,9 @@ Siblings: [`esp_wifi`](https://github.com/klin-lang/esp_wifi),
 ## Links
 
 - Klin issue: https://github.com/klin-lang/klin/blob/main/issues/159-esp-now-idf.md
-- Seed (until publish): https://github.com/klin-lang/klin/tree/main/patches/espnow-v0.1.0
+- Pack: https://github.com/klin-lang/espnow
+- Tag: https://github.com/klin-lang/espnow/releases/tag/v0.1.0
+- Mirror: https://github.com/klin-lang/klin/tree/main/patches/espnow-v0.1.0
 - Wi‑Fi sibling: https://github.com/klin-lang/esp_wifi
 - BLE sibling: https://github.com/klin-lang/esp_ble
 - Chip MMIO: https://github.com/klin-lang/machine_esp
