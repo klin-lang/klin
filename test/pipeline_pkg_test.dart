@@ -6,9 +6,15 @@ import 'dart:io';
 import 'package:klin/remote.dart';
 import 'package:test/test.dart';
 
+import 'support/klin_cli.dart';
+
 import 'support/compile_and_run.dart';
 
 void main() {
+  setUpAll(() async {
+    await ensureKlinE2eBin();
+  });
+
   late Directory tmp;
 
   setUp(() async {
@@ -20,10 +26,7 @@ void main() {
   });
 
   test('--emit-pp writes expanded Klin source', () async {
-    final proc = await Process.run(
-      'dart',
-      ['run', 'bin/klin.dart', '--emit-pp', 'test/point_macro.kl'],
-    );
+    final proc = await runKlin(['--emit-pp', 'test/point_macro.kl']);
     final pp = File('out/point_macro.pp.kl');
     addTearDown(() async {
       if (await pp.exists()) await pp.delete();
@@ -99,17 +102,12 @@ fn main() { printf("%d\\n", o.version()) }
       File('test/remote_osa.kl').readAsStringSync(),
     );
     final repoRoot = Directory.current.path;
-    final klinBin = '$repoRoot/bin/klin.dart';
 
-    final get = await Process.run(
-      'dart',
-      ['run', klinBin, 'get', 'github/klin-lang/osa@v0.1.0'],
-      workingDirectory: work.path,
+    final get = await runKlin(['get', 'github/klin-lang/osa@v0.1.0'], workingDirectory: work.path,
       environment: {
         ...Platform.environment,
         'KLIN_CACHE': cache.path,
-      },
-    );
+      },);
     expect(get.exitCode, 0, reason: '${get.stderr}${get.stdout}');
     expect(File('${work.path}/klin.mod').existsSync(), isTrue);
     final mod = loadKlinMod(File('${work.path}/klin.mod'));
@@ -126,15 +124,11 @@ fn main() { printf("%d\\n", o.version()) }
     expect(readCommit(pkgDir), entry.commit);
 
     // Second get prefers lock SHA (offline-capable once cached) and keeps lock.
-    final get2 = await Process.run(
-      'dart',
-      ['run', klinBin, 'get'],
-      workingDirectory: work.path,
+    final get2 = await runKlin(['get'], workingDirectory: work.path,
       environment: {
         ...Platform.environment,
         'KLIN_CACHE': cache.path,
-      },
-    );
+      },);
     expect(get2.exitCode, 0, reason: '${get2.stderr}${get2.stdout}');
     expect(
       loadKlinLock(File('${work.path}/klin.lock'))
@@ -149,30 +143,22 @@ fn main() { printf("%d\\n", o.version()) }
       'github/klin-lang/osa v0.1.0 ${entry.commit} '
       'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n',
     );
-    final bad = await Process.run(
-      'dart',
-      ['run', klinBin, 'get'],
-      workingDirectory: work.path,
+    final bad = await runKlin(['get'], workingDirectory: work.path,
       environment: {
         ...Platform.environment,
         'KLIN_CACHE': cache.path,
-      },
-    );
+      },);
     expect(bad.exitCode, isNot(0));
     expect('${bad.stderr}', contains('hash mismatch'));
 
-    final run = await Process.run(
-      'dart',
-      ['run', klinBin, 'run', '${work.path}/app.kl'],
-      workingDirectory: repoRoot,
+    final run = await runKlin(['run', '${work.path}/app.kl'], workingDirectory: repoRoot,
       environment: {
         ...Platform.environment,
         'KLIN_CACHE': cache.path,
-      },
-    );
+      },);
     expect(run.exitCode, 0, reason: '${run.stderr}${run.stdout}');
     expect(run.stdout, await File('test/remote_osa.out').readAsString());
-  }, timeout: Timeout(Duration(minutes: 2)));
+  }, timeout: Timeout(Duration(minutes: 2)), tags: ['e2e_net']);
 
   test('klin outdated/upgrade with osa@v0.1.0 (issue 066 network)', () async {
     final cache = Directory.systemTemp.createTempSync('klin_outdated066_');
@@ -182,43 +168,29 @@ fn main() { printf("%d\\n", o.version()) }
     File('${work.path}/klin.mod').writeAsStringSync(
       'klin 1\nrequire github/klin-lang/osa v0.1.0\n',
     );
-    final repoRoot = Directory.current.path;
-    final klinBin = '$repoRoot/bin/klin.dart';
     final env = {
       ...Platform.environment,
       'KLIN_CACHE': cache.path,
     };
 
-    final get = await Process.run(
-      'dart',
-      ['run', klinBin, 'get'],
-      workingDirectory: work.path,
-      environment: env,
-    );
+    final get = await runKlin(['get'], workingDirectory: work.path,
+      environment: env,);
     expect(get.exitCode, 0, reason: '${get.stderr}${get.stdout}');
 
-    final outdated = await Process.run(
-      'dart',
-      ['run', klinBin, 'outdated'],
-      workingDirectory: work.path,
-      environment: env,
-    );
+    final outdated = await runKlin(['outdated'], workingDirectory: work.path,
+      environment: env,);
     expect(outdated.exitCode, 0, reason: '${outdated.stderr}${outdated.stdout}');
     expect(outdated.stdout, 'all packages up to date\n');
 
-    final upgrade = await Process.run(
-      'dart',
-      ['run', klinBin, 'upgrade'],
-      workingDirectory: work.path,
-      environment: env,
-    );
+    final upgrade = await runKlin(['upgrade'], workingDirectory: work.path,
+      environment: env,);
     expect(upgrade.exitCode, 0, reason: '${upgrade.stderr}${upgrade.stdout}');
     expect(upgrade.stdout, 'all packages up to date\n');
     expect(
       loadKlinMod(File('${work.path}/klin.mod')).requires['github/klin-lang/osa'],
       'v0.1.0',
     );
-  }, timeout: Timeout(Duration(minutes: 2)));
+  }, timeout: Timeout(Duration(minutes: 2)), tags: ['e2e_net']);
 
   test('remote eventloop: every_ms + run + stop (issue 029 MVP)', () async {
     final cache = Directory.systemTemp.createTempSync('klin_cache_eloop_');

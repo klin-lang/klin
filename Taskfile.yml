@@ -42,10 +42,12 @@ tasks:
       - dart test --tags unit
 
   test:e2e:
-    desc: emit→gcc→run, klin CLI, package get
+    desc: emit→host CC→run, klin CLI (builds build/klin first)
     deps: [get]
     cmds:
-      - dart test --tags e2e
+      - mkdir -p build
+      - dart compile exe bin/klin.dart -o build/klin
+      - env KLIN_E2E_BIN="$PWD/build/klin" dart test --tags e2e
 
   check:
     desc: analyze + test

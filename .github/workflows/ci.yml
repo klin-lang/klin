@@ -19,8 +19,8 @@ jobs:
         with:
           sdk: stable
 
-      - name: Install host C compiler
-        run: sudo apt-get update && sudo apt-get install -y gcc
+      - name: Install host C compilers
+        run: sudo apt-get update && sudo apt-get install -y gcc tcc
 
       - name: Pub get
         run: dart pub get
@@ -29,9 +29,17 @@ jobs:
         run: dart analyze
 
       # Suites are split across files so Dart can run them in parallel.
-      # Tags: `unit` (frontend only) vs `e2e` (gcc / klin CLI / get).
+      # Tags: `unit` (frontend only) vs `e2e` (host CC / klin CLI / get).
+      # Goldens prefer `tcc` when on PATH (`KLIN_CC` overrides).
       - name: Test unit
         run: dart test --tags unit --concurrency=$(nproc)
 
+      - name: Build klin CLI for e2e
+        run: |
+          mkdir -p build
+          dart compile exe bin/klin.dart -o build/klin
+
       - name: Test e2e
+        env:
+          KLIN_E2E_BIN: ${{ github.workspace }}/build/klin
         run: dart test --tags e2e --concurrency=$(nproc)

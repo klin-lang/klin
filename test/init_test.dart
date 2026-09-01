@@ -7,7 +7,13 @@ import 'package:klin/init.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+import 'support/klin_cli.dart';
+
 void main() {
+  setUpAll(() async {
+    await ensureKlinE2eBin();
+  });
+
   late Directory tmp;
   late String packageRoot;
 
@@ -104,11 +110,7 @@ void main() {
 
   test('CLI init nucleo-f411', () async {
     final dest = p.join(tmp.path, 'cli_blink');
-    final result = await Process.run(
-      'dart',
-      ['run', 'bin/klin.dart', 'init', 'nucleo-f411', dest],
-      workingDirectory: packageRoot,
-    );
+    final result = await runKlin(['init', 'nucleo-f411', dest], workingDirectory: packageRoot,);
     expect(result.exitCode, 0, reason: '${result.stderr}\n${result.stdout}');
     expect(result.stdout.toString(), contains('klin init: nucleo-f411'));
     expect(result.stdout.toString(), contains('board/startup.s'));
@@ -380,11 +382,7 @@ void main() {
   });
 
   test('CLI init unknown board exits non-zero', () async {
-    final result = await Process.run(
-      'dart',
-      ['run', 'bin/klin.dart', 'init', 'unknown-board'],
-      workingDirectory: packageRoot,
-    );
+    final result = await runKlin(['init', 'unknown-board'], workingDirectory: packageRoot,);
     expect(result.exitCode, isNot(0));
     expect(result.stderr.toString(), contains('unknown board'));
   });
@@ -411,10 +409,8 @@ void main() {
     File(p.join(board.path, 'main.kl')).writeAsStringSync('// from env\n');
 
     final dest = p.join(tmp.path, 'from_env');
-    final klinEntry = p.join(packageRoot, 'bin', 'klin.dart');
-    final result = Process.runSync(
-      'dart',
-      ['run', klinEntry, 'init', 'nucleo-f411', dest],
+    final result = runKlinSync(
+      ['init', 'nucleo-f411', dest],
       workingDirectory: tmp.path,
       environment: {
         ...Platform.environment,

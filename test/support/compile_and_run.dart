@@ -5,11 +5,27 @@ import 'package:klin/emit_c.dart';
 import 'package:klin/link_args.dart';
 import 'package:klin/project.dart';
 
-/// Emit C for [klPath], compile with host `gcc`, run the binary.
+/// Host C compiler for goldens: `KLIN_CC`, else `tcc` on PATH, else `gcc`.
+String resolveHostCc() {
+  final fromEnv = Platform.environment['KLIN_CC'];
+  if (fromEnv != null && fromEnv.isNotEmpty) return fromEnv;
+  if (_hasOnPath('tcc')) return 'tcc';
+  return 'gcc';
+}
+
+bool _hasOnPath(String name) {
+  if (Platform.isWindows) {
+    return Process.runSync('where', [name], runInShell: true).exitCode == 0;
+  }
+  return Process.runSync('which', [name]).exitCode == 0;
+}
+
+/// Emit C for [klPath], compile with [resolveHostCc], run the binary.
 Future<({int exitCode, String stdout, String stderr})> compileAndRun(
   String klPath,
   Directory tmp, {
   String? klinCacheDir,
+  String? cc,
 }) async {
   final program = loadProject(klPath, klinCacheDir: klinCacheDir);
   Checker().check(program);
@@ -25,12 +41,13 @@ Future<({int exitCode, String stdout, String stderr})> compileAndRun(
     program: program,
     sourceDir: sourceDir,
   );
-  final compile = await Process.run('gcc', ccArgs);
+  final compiler = cc ?? resolveHostCc();
+  final compile = await Process.run(compiler, ccArgs);
   if (compile.exitCode != 0) {
     return (
       exitCode: compile.exitCode,
       stdout: compile.stdout.toString(),
-      stderr: 'gcc: ${compile.stderr}',
+      stderr: '$compiler: ${compile.stderr}',
     );
   }
 
