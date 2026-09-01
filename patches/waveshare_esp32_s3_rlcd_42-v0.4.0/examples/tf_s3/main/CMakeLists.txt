@@ -1,10 +1,9 @@
-# Klin emit must run before configure (see ../Makefile `emit`).
-set(KLIN_C "${CMAKE_SOURCE_DIR}/out/main.c")
-set(KLIN_LINK "${CMAKE_SOURCE_DIR}/out/main.link")
+set(KLIN_C "${CMAKE_SOURCE_DIR}/out/tf_demo.c")
+set(KLIN_LINK "${CMAKE_SOURCE_DIR}/out/tf_demo.link")
 
 if(NOT EXISTS "${KLIN_C}")
     message(FATAL_ERROR
-        "Missing ${KLIN_C}. From project root run: make emit KLIN=...")
+        "Missing ${KLIN_C}. From examples/tf_s3 run: make emit KLIN=...")
 endif()
 
 set(KLIN_EXTRA_SRCS "")

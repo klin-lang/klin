@@ -61,6 +61,8 @@ klin test klin_fatfs
 klin run -I path/to/klin_fatfs examples/host_ram/main.kl
 ```
 
+Board with **SDMMC** TF (not SPI): Waveshare ESP32-S3-RLCD-4.2 uses board-pack `tf_*` ([163](163-board-waveshare-esp32-s3-rlcd-42.md)), not `klin_sd_spi`.
+
 ## Links
 
 - Touch: [149](149-klin-xpt2046.md)  
