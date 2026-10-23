@@ -2682,6 +2682,39 @@ fn main() {
 ''', 'ambiguous call `cb`');
   });
 
+  test('error: private method and function field are ambiguous', () {
+    final dir = Directory.systemTemp.createTempSync('klin_fn_field_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    File('${dir.path}/holder.kl').writeAsStringSync('''
+module holder
+pub struct Holder {
+  cb: fn(i32): i32
+}
+fn (h: Holder) cb(x: i32): i32 { return x }
+''');
+    File('${dir.path}/app.kl').writeAsStringSync('''
+module app
+import holder
+fn inc(x: i32): i32 { return x + 1 }
+fn main() {
+  let h = holder.Holder{ cb: inc }
+  h.cb(1)
+}
+''');
+    final program = loadProject('${dir.path}/app.kl');
+    expect(
+      () => Checker().check(program),
+      throwsA(
+        predicate(
+          (e) =>
+              e is CheckError &&
+              e.toString().contains('ambiguous call `cb`') &&
+              e.toString().contains('holder.Holder'),
+        ),
+      ),
+    );
+  });
+
   test('error: call a non-function field', () {
     expectRange('''
 struct Holder { n: i32 }

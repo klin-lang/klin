@@ -13,6 +13,11 @@ fn bump(p: *mut i32, xs: []i32): []i32 {
     return xs
 }
 
+fn mark(p: *mut i32): i32 {
+    *p = *p + 1
+    return 1
+}
+
 fn main() {
     let mut xs: [5]i32 = [10, 20, 30, 40, 50]
     let mid = xs[1:4]
@@ -36,4 +41,14 @@ fn main() {
 
     let bytes = b"hello"[1:4]
     printf("%d %d\n", bytes.len, bytes[0])
+
+    let mut m = 0
+    let once = xs[mark(&m):]
+    printf("%d %d\n", once.len, m)
+
+    let mut i = 0
+    while bump(&n, xs[:])[1:].len > 0 && i < 2 {
+        i = i + 1
+    }
+    printf("%d\n", n)
 }

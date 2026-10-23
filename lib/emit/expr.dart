@@ -563,11 +563,17 @@ String _cConstInt(BigInt value, PrimKind kind) {
 
 /// `xs[a:b]` / `xs[a:]` / `xs[:b]` / `xs[:]`. No bounds check (D15).
 /// An array is used once as the pointer base; its length is the constant
-/// `N`. A slice that is not a plain place is stored once when both `.ptr`
-/// and `.len` are read (`s[a:]`, `s[:]`).
+/// `N`. `s[:]` on a slice is that header. `s[a:]` that would read a call
+/// twice, or a start bound twice, is `klin_slice_tail_*` — an expression,
+/// so a loop condition evaluates it on every check.
 String _emitSliceFrom(Expr array, Expr? start, Expr? end, _ExprCtx ctx) {
   final type = array.resolvedType;
   if (type is ArrayType) {
+    if (_sliceOpenTailNeedsHelper(array, start, end)) {
+      final base = _emitArrayObject(array, ctx);
+      final header = '(${_sliceCName(type.elem)}){ $base, ${type.len} }';
+      return _emitSliceTailCall(type.elem, header, start!, ctx);
+    }
     final base = _emitArrayObject(array, ctx);
     final ptr = start == null
         ? base
@@ -578,24 +584,48 @@ String _emitSliceFrom(Expr array, Expr? start, Expr? end, _ExprCtx ctx) {
   if (type is! SliceType) {
     throw StateError('emit: slice range without an array or slice');
   }
-  // End omitted means the length comes from the header, so both fields
-  // are read. A call must not run twice.
-  final needsLen = end == null;
-  final String src;
-  if (needsLen && !_exprIsSimplePlace(array)) {
-    final tmp = ctx.state.nextValueTemp();
-    final pad = '    ' * ctx.indent;
-    ctx.buf.writeln('$pad${_cType(type)} $tmp = ${_emitExpr(array, ctx)};');
-    src = tmp;
-  } else {
+  if (start == null && end == null) {
     final raw = _emitExpr(array, ctx);
-    src = _exprIsSimplePlace(array) ? raw : '($raw)';
+    return _exprIsSimplePlace(array) ? raw : '($raw)';
   }
+  if (_sliceOpenTailNeedsHelper(array, start, end)) {
+    // A function argument needs no extra parentheses. The call runs once.
+    return _emitSliceTailCall(type.elem, _emitExpr(array, ctx), start!, ctx);
+  }
+  final raw = _emitExpr(array, ctx);
+  final src = _exprIsSimplePlace(array) ? raw : '($raw)';
   final ptr = start == null
       ? '$src.ptr'
       : '($src.ptr) + (size_t)(${_emitExpr(start, ctx)})';
   final len = _sliceRangeLen('$src.len', start, end, ctx);
   return '(${_sliceCName(type.elem)}){ $ptr, $len }';
+}
+
+String _emitSliceTailCall(
+  KlinType elem,
+  String header,
+  Expr start,
+  _ExprCtx ctx,
+) {
+  return '${_sliceTailHelperName(elem)}($header, (size_t)(${_emitExpr(start, ctx)}))';
+}
+
+/// True when `s[a:]` must not inline `.ptr` and `.len`. A statement
+/// temporary is wrong in `while` / `for` (it runs once, before the loop).
+/// A plain place and an integer literal may be repeated: repeating them
+/// does not call a function.
+bool _sliceOpenTailNeedsHelper(Expr array, Expr? start, Expr? end) {
+  if (start == null || end != null) return false;
+  final type = array.resolvedType;
+  if (type is! ArrayType && type is! SliceType) return false;
+  if (type is SliceType && !_exprIsSimplePlace(array)) return true;
+  return !_boundRepeatsOk(start);
+}
+
+bool _boundRepeatsOk(Expr expr) {
+  final node = _peelEmitGroups(expr);
+  if (node is IntLit) return true;
+  return _exprIsSimplePlace(node);
 }
 
 /// Length of a subslice. Each bound is converted to `size_t` before the
@@ -611,7 +641,7 @@ String _sliceRangeLen(String full, Expr? start, Expr? end, _ExprCtx ctx) {
 }
 
 /// A name, or a field / index / dereference of one. Reading it twice does
-/// not call a function. Anything else is stored in a temporary.
+/// not call a function.
 bool _exprIsSimplePlace(Expr expr) {
   final node = _peelEmitGroups(expr);
   return switch (node) {

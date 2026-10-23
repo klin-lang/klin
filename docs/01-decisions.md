@@ -525,10 +525,14 @@ parameter, a byte-string literal, and a `const` do not. `&xs[a:b][i]`
 is `*mut T` or `*T` by that same place.
 
 An array subslice needs an l-value, the same rule as `xs[:]`. A slice
-subslice copies the header. When both the pointer and the length are
-read (`s[a:]`, `s[:]`) and the source is not a plain place, it is
-evaluated once into a temporary so a call does not run twice.
-`s[:b]` and `s[a:b]` read only the pointer.
+`s[:]` is that header. `s[a:]` reads the pointer and the length. When
+the source is not a plain place, or the start is not a plain place or
+an integer literal, C is one call to `klin_slice_tail_*`. That call is
+an expression, so a `while` or `for` condition evaluates it on every
+check, and the start bound is a single argument. A plain `xs[1:]`
+stays inline (`base + a`, `len - a`). `s[:b]` and `s[a:b]` read only
+the pointer. Two calls in one tail (`take(xs)[step():]`) each run
+once; C does not sequence the helper's two arguments.
 
 ```klin
 fn main() {

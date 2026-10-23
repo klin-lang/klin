@@ -11,6 +11,7 @@ part 'emit/async.dart';
 
 /// Emits the AST as one readable .c file with `#line` directives.
 String emitC(Program program, String sourcePath) {
+  _sliceTailElems.clear();
   final buf = StringBuffer();
   for (final include in _collectCIncludes(program)) {
     buf.writeln('#include $include');
@@ -138,6 +139,10 @@ String emitC(Program program, String sourcePath) {
     buf,
     sliceTypes.where(_sliceElemIsLate),
   );
+  // After every slice typedef. `s[a:]` on a call is this helper, not a
+  // statement temporary: a `while` condition must evaluate the call each
+  // time it is checked.
+  _emitSliceTailHelpers(buf);
   _emitArrayReturnTypedefs(
     buf,
     arrayReturns.where((type) {
@@ -190,7 +195,7 @@ String emitC(Program program, String sourcePath) {
       final host = _mainHostNames(param.name);
       // `char **` is not `const char **`. One cast; no copy of the strings.
       buf.writeln(
-        '    klin_slice_str ${param.name} = '
+        '    ${_sliceCName(const StrType())} ${param.name} = '
         '{ (const char **)${host.argv}, (size_t)${host.argc} };',
       );
     }

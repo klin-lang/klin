@@ -183,7 +183,9 @@ Runnable: [`examples/slice_struct.kl`](../examples/slice_struct.kl).
 `xs[a:b]`, `xs[a:]`, and `xs[:b]` on an array or a slice build a
 `[]T` over that range. `a` and `b` are integers (or an enum, the same
 way an array index is). No runtime check: a bound past the length,
-`a > b`, or a negative bound is undefined behavior.
+`a > b`, or a negative bound is undefined behavior. A call in
+`take(xs)[a:]` runs once each time that subslice is evaluated,
+including the condition of a loop.
 
 ```klin
 fn main() {

@@ -2219,9 +2219,23 @@ fn main() {
       contains('(klin_slice_i32){ (xs) + (size_t)(3), ((5) - (size_t)(3)) }'),
     );
     expect(c, contains('(klin_slice_i32){ xs, (size_t)(2) }'));
-    expect(c, contains('klin_slice_i32 klin_val_0 = id((klin_slice_i32){ xs, 5 });'));
-    expect(c, contains('klin_val_0.ptr) + (size_t)(1)'));
-    expect(c, contains('klin_val_0.len) - (size_t)(1)'));
+    expect(
+      c,
+      contains(
+        'static klin_slice_i32 klin_slice_tail_i32(klin_slice_i32 s, size_t start) {',
+      ),
+    );
+    expect(
+      c,
+      contains('return (klin_slice_i32){ s.ptr + start, s.len - start };'),
+    );
+    expect(
+      c,
+      contains(
+        'klin_slice_tail_i32(id((klin_slice_i32){ xs, 5 }), (size_t)(1))',
+      ),
+    );
+    expect(c, isNot(contains('klin_val_0')));
     expect(c, isNot(contains('id((klin_slice_i32){ xs, 5 }).ptr')));
   });
 

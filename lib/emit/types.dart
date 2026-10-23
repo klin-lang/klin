@@ -224,6 +224,41 @@ bool _sliceElemNeedsFn(KlinType elem) {
 bool _sliceElemIsLate(KlinType elem) =>
     _sliceElemNeedsFn(elem) && typeNeedsStructArrayReturn(elem);
 
+/// Element types whose `s[a:]` is emitted as `klin_slice_tail_*`.
+/// Cleared at the start of each [emitC]. Filled while walking bodies.
+final Set<KlinType> _sliceTailElems = {};
+
+void _noteSliceTail(Expr array, Expr? start, Expr? end) {
+  if (!_sliceOpenTailNeedsHelper(array, start, end)) return;
+  final type = array.resolvedType;
+  switch (type) {
+    case ArrayType(:final elem):
+    case SliceType(:final elem):
+      _sliceTailElems.add(elem);
+    default:
+      break;
+  }
+}
+
+String _sliceTailHelperName(KlinType elem) =>
+    'klin_slice_tail_${_sliceElemToken(elem)}';
+
+/// One evaluation of a slice header and its start bound. An expression,
+/// so it is valid in a loop condition. The typedef already exists.
+void _emitSliceTailHelpers(StringBuffer buf) {
+  if (_sliceTailElems.isEmpty) return;
+  final list = _sliceTailElems.toList()
+    ..sort((a, b) => _sliceCName(a).compareTo(_sliceCName(b)));
+  for (final elem in list) {
+    final slice = _sliceCName(elem);
+    final name = _sliceTailHelperName(elem);
+    buf.writeln('static $slice $name($slice s, size_t start) {');
+    buf.writeln('    return ($slice){ s.ptr + start, s.len - start };');
+    buf.writeln('}');
+    buf.writeln();
+  }
+}
+
 void _emitSliceTypedefs(StringBuffer buf, Iterable<KlinType> elems) {
   final list = elems.toList()
     ..sort((a, b) {
@@ -447,6 +482,7 @@ void _collectResultTypesFromExpr(Expr expr, Set<ResultType> output) {
       _collectResultTypesFromExpr(array, output);
       if (start != null) _collectResultTypesFromExpr(start, output);
       if (end != null) _collectResultTypesFromExpr(end, output);
+      _noteSliceTail(array, start, end);
     case AwaitExpr(:final operand):
       _collectResultTypesFromExpr(operand, output);
     case InterpolatedStringExpr(:final parts):
