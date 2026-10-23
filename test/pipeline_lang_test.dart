@@ -1905,6 +1905,55 @@ fn main() {
     expect(c, isNot(contains('9223372036854775808')));
   });
 
+  test('checker: integer constant expressions fold outside const', () {
+    const source = '''
+const N: u8 = 10
+struct Pair { n: u8 }
+fn take(n: u8): u8 { return n + 1 }
+fn three(): u8 { return 1 + 2 }
+fn main() {
+  let a: u8 = 1 + 2
+  let b: u8 = N + 5
+  let c: i32 = 200 + 100
+  let d: i64 = (-1) << 2
+  let e: u8 = ~0
+  let f: i8 = -128
+  let g: i64 = -9223372036854775807 - 1
+  let h: u64 = ~0 + 0
+  let xs: [1]u8 = [1 + 2]
+  let nested: [1][1]u8 = [[4 + 5]]
+  let row = Pair{ n: 20 + 3 }
+  let y: u8 = 4
+  let z: u8 = y + 1
+  let w: f64 = 1 + 2
+  let p: u8 = pick true { 1 + 2 } { 4 }
+  take(40 + 2)
+  three()
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'fold_let.kl');
+    expect(c, contains('uint8_t a = 3;'));
+    expect(c, contains('uint8_t b = 15;'));
+    expect(c, contains('int32_t c = 300;'));
+    expect(c, contains('int64_t d = -4;'));
+    expect(c, contains('uint8_t e = ~(0);'));
+    expect(c, contains('int8_t f = -(128);'));
+    expect(c, contains('int64_t g = (-9223372036854775807LL - 1);'));
+    expect(c, contains('uint64_t h = 18446744073709551615ULL;'));
+    expect(c, contains('uint8_t xs[1] = { 3 };'));
+    expect(c, contains('uint8_t nested[1][1] = { { 9 } };'));
+    expect(c, contains('.n = 23'));
+    expect(c, contains('uint8_t z = (y + 1);'));
+    expect(c, contains('double w = (1 + 2);'));
+    expect(c, contains('uint8_t p = (true ? 3 : 4);'));
+    expect(c, contains('take(42)'));
+    expect(c, contains('klin_ret_0 = 3;'));
+    expect(c, isNot(contains('enum ')));
+    expect(c, isNot(contains('constexpr')));
+  });
+
   test('checker: & of a slice element follows place mutability', () {
     const source = '''
 fn set(p: *mut i32) { *p = 1 }

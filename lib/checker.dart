@@ -186,7 +186,6 @@ void _checkCoercedIntLiteral(Expr expr, KlinType type) {
   final node = _peelGroups(expr);
   if (node is UnaryExpr &&
       node.op == '~' &&
-      _groupedIntLit(node.operand) != null &&
       (type is! PrimType || !type.kind.isInteger)) {
     throw CheckError(
       'operator `~` requires an integer type, got `${type.displayName}`',
@@ -3401,8 +3400,9 @@ final class Checker {
           }
           if (op == '~') {
             final t = _inferExpr(operand);
-            // `~0` stays untyped so `const M: u32 = ~0` uses `u32`.
-            if (t is UntypedInt && _groupedIntLit(operand) != null) {
+            // `~0` and `~(1 + 2)` stay untyped so an expected integer
+            // type (a `let`, a parameter, a return) chooses the width.
+            if (t is UntypedInt) {
               return const UntypedInt();
             }
             final concrete = _defaultConcrete(t, operand.pos);
@@ -3419,8 +3419,9 @@ final class Checker {
             throw CheckError('unknown unary operator `$op`', pos);
           }
           final t = _inferExpr(operand);
-          // `-1` stays untyped so `let x: i64 = -1` does not need a cast.
-          if (t is UntypedInt && _groupedIntLit(operand) != null) {
+          // `-1` and `-(1 + 2)` stay untyped so `let x: i64 = -1` does
+          // not need a cast. A concrete unsigned operand is still rejected.
+          if (t is UntypedInt) {
             return const UntypedInt();
           }
           final concrete = _defaultConcrete(t, operand.pos);
@@ -3514,9 +3515,20 @@ final class Checker {
     final lt = _inferExpr(left);
     final rt = _inferExpr(right);
     final unified = _unifyNumeric(lt, rt, pos);
-    final concrete = unified is UntypedInt || unified is UntypedFloat
-        ? _defaultConcrete(unified, pos)
-        : unified;
+    // Stay untyped so `let x: u8 = 1 + 2` adopts `u8` instead of `i32`.
+    // A variable on either side is already a concrete type, so this
+    // expression stays runtime.
+    if (unified is UntypedInt) return unified;
+    if (unified is UntypedFloat) {
+      if (op == '%') {
+        throw CheckError(
+          'operator `%` requires integer types, got `f64`',
+          pos,
+        );
+      }
+      return unified;
+    }
+    final concrete = unified;
 
     if (concrete is! PrimType ||
         !(concrete.kind.isInteger || concrete.kind.isFloat)) {
@@ -3562,7 +3574,8 @@ final class Checker {
     final lt = _inferExpr(left);
     final rt = _inferExpr(right);
     final unified = _unifyNumeric(lt, rt, pos);
-    final concrete = unified is UntypedInt || unified is UntypedFloat
+    if (unified is UntypedInt) return unified;
+    final concrete = unified is UntypedFloat
         ? _defaultConcrete(unified, pos)
         : unified;
     if (concrete is! PrimType || !concrete.kind.isInteger) {
@@ -3581,6 +3594,11 @@ final class Checker {
   KlinType _inferShift(Expr left, String op, Expr right, SourcePos pos) {
     final lt = _inferExpr(left);
     final rt = _inferExpr(right);
+    // `let x: i64 = (-1) << 2` folds in `i64`. A variable on either side
+    // keeps today's rule: the untyped side defaults to `i32`.
+    if (lt is UntypedInt && rt is UntypedInt) {
+      return const UntypedInt();
+    }
     final leftConcrete = _defaultConcrete(lt, left.pos);
     final rightConcrete = _defaultConcrete(rt, right.pos);
     if (leftConcrete is! PrimType || !leftConcrete.kind.isInteger) {
@@ -3684,6 +3702,78 @@ final class Checker {
     }
   }
 
+  /// True when [expr] is an integer constant expression: literals, integer
+  /// `const` names, unary `-` / `~`, and `+ - * / % << >> & | ^`.
+  /// A local variable is not one, even when it shadows a constant.
+  bool _isIntegerConstExpr(Expr expr) {
+    final node = _peelGroups(expr);
+    if (node is IntLit) return true;
+    if (node is NameExpr) {
+      return _lookupIntegerConst(null, node.name) != null;
+    }
+    if (node is FieldExpr && node.object is NameExpr) {
+      return _lookupIntegerConst(
+            (node.object as NameExpr).name,
+            node.name,
+          ) !=
+          null;
+    }
+    if (node is UnaryExpr && (node.op == '-' || node.op == '~')) {
+      return _isIntegerConstExpr(node.operand);
+    }
+    if (node is BinaryExpr) {
+      const ops = {'+', '-', '*', '/', '%', '<<', '>>', '&', '|', '^'};
+      if (!ops.contains(node.op)) return false;
+      return _isIntegerConstExpr(node.left) && _isIntegerConstExpr(node.right);
+    }
+    return false;
+  }
+
+  /// Integer `const` named by a value. Null when the name is a local, is
+  /// missing, or is not an integer constant. Does not report errors —
+  /// [_evalConstInt] does, once this has returned non-null.
+  ConstDecl? _lookupIntegerConst(String? qualifier, String name) {
+    if (qualifier == null) {
+      if (_scope.lookup(name) != null) return null;
+      return _integerConstOrNull(_consts[_key(_currentModule, name)]);
+    }
+    if (_scope.lookup(qualifier) != null) return null;
+    final module = qualifier == _currentModule
+        ? qualifier
+        : _importAliases[_currentModule]?[qualifier];
+    if (module == null) return null;
+    return _integerConstOrNull(_consts[_key(module, name)]);
+  }
+
+  ConstDecl? _integerConstOrNull(ConstDecl? decl) {
+    final type = decl?.resolvedType;
+    if (decl == null || type is! PrimType || !type.kind.isInteger) {
+      return null;
+    }
+    return decl;
+  }
+
+  /// Gives every node of a folded constant expression the type it was
+  /// checked in, so a kept spelling (`~0`, `PAGE`) still emits.
+  void _stampConstExprType(Expr expr, PrimType type) {
+    expr.resolvedType = type;
+    var current = expr;
+    while (current is GroupExpr) {
+      current.resolvedType = type;
+      current = current.inner;
+      current.resolvedType = type;
+    }
+    final node = current;
+    if (node is UnaryExpr && (node.op == '-' || node.op == '~')) {
+      node.resolvedType = type;
+      _stampConstExprType(node.operand, type);
+    } else if (node is BinaryExpr) {
+      node.resolvedType = type;
+      _stampConstExprType(node.left, type);
+      _stampConstExprType(node.right, type);
+    }
+  }
+
   /// Assigns a concrete type to an expression and recursively to subtrees
   /// containing untyped literals.
   void _materialize(Expr expr, KlinType type, {bool checkRange = true}) {
@@ -3691,6 +3781,22 @@ final class Checker {
     if (expr is CastExpr) return;
     if (type is SliceType && expr.resolvedType is ArrayType) {
       expr.arrayToSliceFrom = expr.resolvedType as ArrayType;
+    }
+    // `let x: u8 = 1 + 2` folds in `u8`. `cast` passes checkRange: false
+    // and keeps the truncation. A variable is not a constant expression.
+    if (checkRange &&
+        type is PrimType &&
+        type.kind.isInteger &&
+        _isIntegerConstExpr(expr)) {
+      try {
+        final value = _evalConstInt(expr, type);
+        expr.foldedInt = value;
+        expr.resolvedType = type;
+        _stampConstExprType(expr, type);
+        return;
+      } on _NotConstExpr {
+        // The predicate and the evaluator disagreed. Type it normally.
+      }
     }
     expr.resolvedType = type;
     // Explicit `cast` passes checkRange: false — truncation stays a C cast.
@@ -3778,7 +3884,11 @@ final class Checker {
     final thenType = _inferExpr(thenExpr);
     final elseType = _inferExpr(elseExpr);
     final unified = _unifyNumeric(thenType, elseType, pos);
-    final concrete = _defaultConcrete(unified, pos);
+    // Untyped arms adopt the outer type (`let x: u8 = pick(c, 1 + 2, 4)`).
+    if (unified is UntypedInt || unified is UntypedFloat) {
+      return unified;
+    }
+    final concrete = unified;
     _materialize(thenExpr, concrete);
     _materialize(elseExpr, concrete);
     return concrete;

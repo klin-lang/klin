@@ -712,6 +712,12 @@ sealed class Expr {
 
   /// When an array expression is used as `[]T`, emission wraps it in a slice.
   ArrayType? arrayToSliceFrom;
+
+  /// Folded value of an integer constant expression checked against a
+  /// declared integer type. Emission prints this decimal, except a lone
+  /// literal, unary `-` / `~` on a literal, and a lone constant name,
+  /// which keep their source spelling.
+  BigInt? foldedInt;
 }
 
 /// Definition site for LSP go-to-definition / hover (issue 086 follow-up).

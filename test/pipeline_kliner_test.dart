@@ -317,6 +317,33 @@ void main() {
     expect(c, contains('.ptr[2]'));
   });
 
+  test('integer constant expressions fold outside const', () async {
+    final result = await compileAndRun('test/const_expr.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/const_expr.out').readAsString());
+
+    final program = loadProject('test/const_expr.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/const_expr.kl');
+    expect(c, contains('uint8_t a = 3;'));
+    expect(c, contains('uint8_t e = ~(0);'));
+    expect(c, contains('(-9223372036854775807LL - 1)'));
+    expect(c, contains('18446744073709551615ULL'));
+    expect(c, contains('(y + 1)'));
+    expect(c, isNot(contains('constexpr')));
+
+    final cPath = '${tmp.path}/const_expr_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/const_expr_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
   test('enum variant on the base maximum compiles and runs', () async {
     final result = await compileAndRun('test/enum_auto.kl', tmp, cc: 'gcc');
     expect(result.exitCode, 0, reason: result.stderr);

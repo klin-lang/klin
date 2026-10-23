@@ -34,7 +34,34 @@ String _emitExpr(Expr expr, _ExprCtx ctx) {
   return raw;
 }
 
+/// A lone literal, unary `-` / `~` on a literal, and a lone constant name
+/// keep their source spelling. A folded operator is the decimal.
+bool _foldKeepsSourceSpelling(Expr expr) {
+  var node = expr;
+  while (node is GroupExpr) {
+    node = node.inner;
+  }
+  if (node is IntLit || node is NameExpr) return true;
+  if (node is FieldExpr && node.constCName != null) return true;
+  if (node is UnaryExpr && (node.op == '-' || node.op == '~')) {
+    var operand = node.operand;
+    while (operand is GroupExpr) {
+      operand = operand.inner;
+    }
+    return operand is IntLit;
+  }
+  return false;
+}
+
 String _emitExprRaw(Expr expr, _ExprCtx ctx) {
+  final folded = expr.foldedInt;
+  final foldedType = expr.resolvedType;
+  if (folded != null &&
+      foldedType is PrimType &&
+      foldedType.kind.isInteger &&
+      !_foldKeepsSourceSpelling(expr)) {
+    return _cConstInt(folded, foldedType.kind);
+  }
   return switch (expr) {
     IntLit lit => _emitIntLit(lit),
     FloatLit(:final lexeme) => lexeme.replaceAll('_', ''),

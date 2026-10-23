@@ -346,8 +346,10 @@ the array it is coerced to: `let a: [2]u8 = [1, 2]`, a struct field,
 and a parameter. Each element is range-checked, so
 `let a: [2]u8 = [1, 300]` is the `u8` error. With no expected array
 type, `let a = [1, 2]` is still `[2]i32`. A length mismatch names that
-default (`got [2]i32`). An operator in an element is still `i32`
-(`let a: [1]u8 = [1 + 2]` does not fold). A function still cannot
+default (`got [2]i32`). An element that is an integer constant
+expression folds in the element type (`let a: [1]u8 = [1 + 2]` is
+`[1]u8`; `let a: [1]u8 = [200 + 100]` is the `u8` range error). A
+function still cannot
 return `[N]T`. The implicit next
 value is checked too: `enum E: u8 { A = 255, B }` is an error because
 `B` would be 256. The message names the variant, the value, the base
@@ -359,21 +361,36 @@ not the cast.
 
 Widths are the fixed integer widths. `int` is `i32`. `usize` / `isize`
 use a 64-bit range, matching LP64 `size_t` / `ptrdiff_t` in host
-emission. An operator on two untyped literals is still the `i32`
-default, not a fold into the outer type: `let x: u8 = 200 + 100` is a
-type mismatch (`i32` vs `u8`).
+emission.
 
-Unary `-` and `~` applied to an integer literal (parentheses allowed)
-stay untyped until a declared type is known: `let x: i64 = -1`,
-`take(-1)` when the parameter is `i64`, `const M: u32 = ~0`. With no
-declared type they are still `i32` (`let x = -1`). The range check
-applies to the result, so `-128` fits `i8` and `-129` does not, and
-`-1` does not fit `u8`. `~` is the complement in that type's width:
-the operand must fit, and `~0` as `u32` is `4294967295`. A `const`
-initializer and an `[N]T` length fold integer constant expressions
-(D11). Outside those two places an operator on untyped literals stays
-`i32`: `let x: u8 = 200 + 100` and `let x: i64 = (-1) << 2` are type
-mismatches, and `~x` on a variable is a runtime expression.
+An integer constant expression — literals, integer `const` names, unary
+`-` / `~`, and `+ - * / % << >> & | ^` — takes the expected integer
+type wherever a literal does: `let`, a parameter, a `return`, a struct
+field, an array element. `let x: u8 = 1 + 2` is `u8` (the value `3`).
+`let x: u8 = 200 + 100` is the same range error as `300` (`0..=255`).
+`let a: [1]u8 = [1 + 2]`, `take(1 + 2)`, `return 1 + 2`, and
+`Pair{ n: 1 + 2 }` fold the same way. `pick` arms that are still
+untyped adopt that type too. Rules match a `const` initializer (D11):
+subexpressions are not wrapped (`let x: i8 = 0 - 128` is an error
+because `128` does not fit `i8`), a named constant must already have
+that integer type, division or remainder by zero is an error, and a
+shift by a negative count or by a count at least as wide as the type
+is an error. With no expected type the expression is still `i32`
+(`let x = 1 + 2`). A float expected type adopts it the way a lone
+literal does (`let x: f64 = 1 + 2`); that is not an integer fold.
+
+Unary `-` and `~` on an integer literal, or on an integer constant
+expression, stay untyped until that type is known: `let x: i64 = -1`,
+`let x: i64 = (-1) << 2`, `take(-1)` when the parameter is `i64`,
+`const M: u32 = ~0`. The range check applies to the result, so `-128`
+fits `i8` and `-129` does not, and `-1` does not fit `u8`. `~` is the
+complement in that type's width: the operand must fit, and `~0` as
+`u32` is `4294967295`. An expression that names a variable stays
+runtime (`let x: u8 = y + 1`, `~x`). Emission of a folded operator is
+the decimal (the same portable forms as a folded `const`: `ULL` above
+`2^63-1`, and `(-9223372036854775807LL - 1)` for `i64` / `isize`
+minimum). A lone literal, unary `-` / `~` on a literal, and a lone
+constant name keep their spelling.
 
 ## D7. To decide later
 

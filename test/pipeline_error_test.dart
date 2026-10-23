@@ -2283,12 +2283,12 @@ fn main() {
 ''', 'type mismatch: expected `[3]u8`, got `[2]i32`');
   });
 
-  test('error: array literal does not fold an element operator', () {
+  test('error: array element sum is out of range', () {
     expectRange('''
 fn main() {
-  let a: [1]u8 = [1 + 2]
+  let a: [1]u8 = [200 + 100]
 }
-''', 'type mismatch: expected `[1]u8`, got `[1]i32`');
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
   });
 
   test('error: array literal argument element does not fit', () {
@@ -2340,12 +2340,68 @@ fn main() {}
 ''', 'type mismatch: expected `*mut i32`, got `*i32`');
   });
 
-  test('error: let of a sum is still i32', () {
+  test('error: let of a sum is out of range', () {
     expectRange('''
 fn main() {
-  let x: u8 = 1 + 2
+  let x: u8 = 200 + 100
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: let subtraction does not wrap the operand', () {
+    expectRange('''
+fn main() {
+  let x: i8 = 0 - 128
+}
+''', 'integer literal `128` is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: let division by zero', () {
+    expectRange('''
+fn main() {
+  let x: i32 = 1 / 0
+}
+''', 'division by zero');
+  });
+
+  test('error: let names a constant of a different integer type', () {
+    expectRange('''
+const A: i32 = 1
+fn main() {
+  let x: u8 = A + 1
 }
 ''', 'type mismatch: expected `u8`, got `i32`');
+  });
+
+  test('error: let shift wider than the type', () {
+    expectRange('''
+fn main() {
+  let x: i32 = 1 << 40
+}
+''', 'shift by `40` is wider than `i32` (width 32)');
+  });
+
+  test('error: argument sum is out of range', () {
+    expectRange('''
+fn take(n: u8) {}
+fn main() { take(200 + 100) }
+''', 'integer literal `300` is out of range for `u8`');
+  });
+
+  test('error: return sum is out of range', () {
+    expectRange('''
+fn f(): u8 { return 200 + 100 }
+fn main() {}
+''', 'integer literal `300` is out of range for `u8`');
+  });
+
+  test('error: field sum is out of range', () {
+    expectRange('''
+struct S { n: u8 }
+fn main() {
+  let s = S{ n: 200 + 100 }
+}
+''', 'integer literal `300` is out of range for `u8`');
   });
 
   test('error: negative array length expression', () {
@@ -2387,11 +2443,11 @@ fn main() {
     );
   });
 
-  test('error: shift of a negative literal stays i32', () {
+  test('error: let shift by a negative count', () {
     expectRange('''
 fn main() {
-  let x: i64 = (-1) << 2
+  let x: i32 = 1 << -1
 }
-''', 'type mismatch: expected `i64`, got `i32`');
+''', 'shift by a negative count');
   });
 }

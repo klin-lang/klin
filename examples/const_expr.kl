@@ -1,0 +1,24 @@
+const STEP: u8 = 10
+
+struct Pair {
+    n: u8
+}
+
+fn take(n: u8): i32 {
+    return cast(i32, n)
+}
+
+fn three(): u8 {
+    return 1 + 2
+}
+
+fn main() {
+    let a: u8 = 1 + 2
+    let b: u8 = STEP + 5
+    let xs: [1]u8 = [1 + 2]
+    let row = Pair{ n: 20 + 3 }
+    let y: u8 = 4
+    let z: u8 = y + 1
+    printf("%d %d %d %d %d %d\n", cast(i32, a), cast(i32, b), cast(i32, xs[0]), take(40 + 2), cast(i32, row.n), cast(i32, three()))
+    printf("%d\n", cast(i32, z))
+}

@@ -213,8 +213,10 @@ fn main() {
 - `-literal` and `~literal` take the constant's type (`const M: u32 = ~0`,
   `const MIN: i8 = -128`). A folded expression is emitted as a decimal;
   a lone literal and `~` / `-` on a literal keep their spelling when
-  that spelling is valid C. `~x` on a variable is still a runtime
-  expression, and `let x: u8 = 1 + 2` is still a type mismatch (`i32`)
+  that spelling is valid C. The same expression folds outside `const`
+  when a type is expected (`let x: u8 = 1 + 2`, `return 1 + 2`,
+  `[1 + 2]` as a `[1]u8` element). `let x: u8 = 200 + 100` is out of
+  range. `~x` on a variable is still a runtime expression
 
 ```klin
 module app
