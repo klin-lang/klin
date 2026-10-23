@@ -784,7 +784,9 @@ final class Checker {
         init.resolvedType = type;
         return;
       }
-      if (init is UnaryExpr && init.op == '-' && init.operand is IntLit) {
+      if (init is UnaryExpr &&
+          (init.op == '-' || init.op == '~') &&
+          init.operand is IntLit) {
         _checkCoercedIntLiteral(init, type);
         init.resolvedType = type;
         init.operand.resolvedType = type;
@@ -3044,6 +3046,10 @@ final class Checker {
           }
           if (op == '~') {
             final t = _inferExpr(operand);
+            // `~0` stays untyped so `const M: u32 = ~0` uses `u32`.
+            if (t is UntypedInt && _groupedIntLit(operand) != null) {
+              return const UntypedInt();
+            }
             final concrete = _defaultConcrete(t, operand.pos);
             if (concrete is! PrimType || !concrete.kind.isInteger) {
               throw CheckError(
@@ -3058,6 +3064,10 @@ final class Checker {
             throw CheckError('unknown unary operator `$op`', pos);
           }
           final t = _inferExpr(operand);
+          // `-1` stays untyped so `let x: i64 = -1` does not need a cast.
+          if (t is UntypedInt && _groupedIntLit(operand) != null) {
+            return const UntypedInt();
+          }
           final concrete = _defaultConcrete(t, operand.pos);
           if (concrete is! PrimType ||
               !(concrete.kind.isInteger || concrete.kind.isFloat)) {

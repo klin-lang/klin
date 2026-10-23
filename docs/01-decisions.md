@@ -315,6 +315,16 @@ emission. An operator on two untyped literals is still the `i32`
 default, not a fold into the outer type: `let x: u8 = 200 + 100` is a
 type mismatch (`i32` vs `u8`).
 
+Unary `-` and `~` applied to an integer literal (parentheses allowed)
+stay untyped until a declared type is known: `let x: i64 = -1`,
+`take(-1)` when the parameter is `i64`, `const M: u32 = ~0`. With no
+declared type they are still `i32` (`let x = -1`). The range check
+applies to the result, so `-128` fits `i8` and `-129` does not, and
+`-1` does not fit `u8`. `~` is the complement in that type's width:
+the operand must fit, and `~0` as `u32` is `4294967295`. This is not
+general constant folding — `1 + 2`, `~x`, and shifts stay ordinary
+expressions.
+
 ## D7. To decide later
 
 - Closures — at all? Nelua does not have them outside top-level. A struct

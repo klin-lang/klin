@@ -47,6 +47,10 @@ fn main() {
 - An integer literal must fit the type it is coerced to. `let x: u8 = 300`,
   `const X: u8 = 0x12C`, and `const X: u8 = -1` are errors. The message
   names the type and its inclusive range. `cast(u8, 300)` still truncates
+- `-1` and `~0` on an integer literal take the expected type:
+  `let x: i64 = -1`, `take(-1)` for an `i64` parameter, `const M: u32 = ~0`.
+  The range check applies to the result (`-128` fits `i8`). A sum or a
+  shift is not folded that way
 
 `:=` is sugar for `let mut` ([14-short-decl.md](14-short-decl.md)).
 

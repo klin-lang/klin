@@ -239,8 +239,9 @@ void _line(StringBuffer buf, int line, String path) {
 String _emitConstInitializer(Expr init) {
   return switch (init) {
     IntLit(:final lexeme) => _cIntLiteral(lexeme),
-    UnaryExpr(:final op, :final operand) when op == '-' && operand is IntLit =>
-      '-${_cIntLiteral(operand.lexeme)}',
+    UnaryExpr(:final op, :final operand)
+        when (op == '-' || op == '~') && operand is IntLit =>
+      '$op${_cIntLiteral(operand.lexeme)}',
     BoolLit(:final value) => value ? 'true' : 'false',
     ByteStringLit(:final value) => () {
         final elem = const PrimType(PrimKind.u8);

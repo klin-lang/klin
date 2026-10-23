@@ -2110,4 +2110,50 @@ fn main() {
 }
 ''', 'integer literal `3000000000` is out of range for `i32`');
   });
+
+  test('error: let negative literal does not fit unsigned', () {
+    expectRange('''
+fn main() {
+  let x: u8 = -1
+}
+''', 'integer literal `-1` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: negated literal below i8 minimum', () {
+    expectRange('''
+fn main() {
+  let x: i8 = -129
+}
+''', 'integer literal `-129` is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: complement operand does not fit the target type', () {
+    expectRange('''
+const M: i8 = ~128
+fn main() {}
+''', 'integer literal `128` is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: complement of a literal is not a float', () {
+    expectRange('''
+fn main() {
+  let x: f64 = ~0
+}
+''', 'operator `~` requires an integer type, got `f64`');
+  });
+
+  test('error: const does not fold a sum of literals', () {
+    expectRange('''
+const X: i64 = -1 + 0
+fn main() {}
+''', 'integer constant must be an integer literal');
+  });
+
+  test('error: shift of a negative literal stays i32', () {
+    expectRange('''
+fn main() {
+  let x: i64 = (-1) << 2
+}
+''', 'type mismatch: expected `i64`, got `i32`');
+  });
 }

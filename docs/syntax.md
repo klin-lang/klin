@@ -200,6 +200,9 @@ fn main() {
 - The literal must fit the declared integer type (`const X: u8 = 300`
   and `const X: u8 = -1` are errors). Same rule for a `let` of that
   type. `cast` still truncates ([D12](01-decisions.md))
+- `-literal` and `~literal` take the constant's type (`const M: u32 = ~0`,
+  `const MIN: i8 = -128`). The range check is on the result. Not `~x`,
+  not `1 + 2`, not a shift
 
 ```klin
 module app

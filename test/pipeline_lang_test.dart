@@ -1747,4 +1747,31 @@ fn main() {
     expect(c, contains("static const uint8_t CH = 'A';"));
     expect(c, contains('(uint8_t)(300)'));
   });
+
+  test('checker: unary - and ~ on a literal take the expected type', () {
+    const source = '''
+const M: u32 = ~0
+const MIN: i8 = -128
+fn take(n: i64): i64 { return -1 }
+fn main() {
+  let a: i64 = -1
+  let b: i8 = -128
+  let c: u8 = ~0
+  let d: i32 = -(1)
+  let e: f64 = -1
+  let f = -1
+  take(-1)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'ops.kl');
+    expect(c, contains('static const uint32_t M = ~0;'));
+    expect(c, contains('static const int8_t MIN = -128;'));
+    expect(c, contains('int64_t a = -(1);'));
+    expect(c, contains('int8_t b = -(128);'));
+    expect(c, contains('uint8_t c = ~(0);'));
+    expect(c, contains('int32_t f = -(1);'));
+    expect(c, contains('klin_ret_0 = -(1);'));
+  });
 }

@@ -212,4 +212,21 @@ void main() {
     expect(c, contains('static const int8_t int_range_LO = -128;'));
     expect(c, contains('static const uint8_t int_range_CH = \'A\';'));
   });
+
+  test('unary - and ~ on an integer literal use the expected type', () async {
+    final result =
+        await compileAndRun('test/int_literal_op.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+        result.stdout, await File('test/int_literal_op.out').readAsString());
+
+    final program = loadProject('test/int_literal_op.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/int_literal_op.kl');
+    expect(c, contains('static const uint32_t int_literal_op_M = ~0;'));
+    expect(c, contains('static const uint8_t int_literal_op_NIB = ~0x0F;'));
+    expect(c, contains('static const int8_t int_literal_op_MIN = -128;'));
+    expect(c, contains('int64_t a = -(1);'));
+    expect(c, contains('int_literal_op_take(-(1))'));
+  });
 }
