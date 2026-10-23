@@ -2055,6 +2055,57 @@ fn main() {}
     expect(c, contains('take((st->a).v);'));
   });
 
+  test('checker: array destructure of a call evaluates once', () {
+    const source = '''
+struct Box { n: i32 }
+fn pair(n: *mut i32): [2]i32 {
+  *n = *n + 1
+  return [10, 20]
+}
+fn (b: Box) pair(): [2]i32 {
+  return [b.n, 4]
+}
+fn main() {
+  let mut n: i32 = 0
+  let [x, y] = pair(&n)
+  let [_, z] = (pair(&n))
+  let b = Box{ n: 3 }
+  let [p, q] = b.pair()
+  let k: i32 = 1
+  let [a, c] = pick true { pair(&n) } { [7, 8] }
+  let [m, r] = match k {
+    0 { [1, 2] }
+    else { pair(&n) }
+  }
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'destruct_call.kl');
+    expect(c, contains('klin_arr2_i32 klin_val_0 = pair(&(n));'));
+    expect(c, contains('int32_t x = klin_val_0.v[0];'));
+    expect(c, contains('int32_t y = klin_val_0.v[1];'));
+    expect(c, contains('klin_arr2_i32 klin_val_1 = (pair(&(n)));'));
+    expect(c, contains('int32_t z = klin_val_1.v[1];'));
+    expect(c, contains('klin_arr2_i32 klin_val_2 = Box_pair(b);'));
+    expect(c, contains('int32_t p = klin_val_2.v[0];'));
+    expect(c, contains('int32_t q = klin_val_2.v[1];'));
+    expect(
+      c,
+      contains(
+        'klin_arr2_i32 klin_val_3 = (true ? pair(&(n)) : (klin_arr2_i32){ .v = { 7, 8 } });',
+      ),
+    );
+    expect(c, contains('klin_arr2_i32 klin_val_4;'));
+    expect(c, contains('klin_val_4 = (klin_arr2_i32){ .v = { 1, 2 } };'));
+    expect(c, contains('klin_val_4 = pair(&(n));'));
+    expect(c, contains('int32_t m = klin_val_4.v[0];'));
+    expect(c, contains('int32_t r = klin_val_4.v[1];'));
+    expect(c, isNot(contains('(pair(&(n))).v')));
+    expect('pair(&(n))'.allMatches(c).length, 4);
+    expect('Box_pair(b)'.allMatches(c).length, 1);
+  });
+
   test('checker: mutable slice place can assign an element', () {
     const source = '''
 fn main() {

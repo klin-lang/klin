@@ -453,4 +453,34 @@ void main() {
     ]);
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
+
+  test('array destructure of a call runs once under pedantic C', () async {
+    final result = await compileAndRun(
+      'test/array_destructure_call.kl',
+      tmp,
+      cc: 'gcc',
+    );
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+      result.stdout,
+      await File('test/array_destructure_call.out').readAsString(),
+    );
+
+    final program = loadProject('test/array_destructure_call.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/array_destructure_call.kl');
+    expect('pair(&(n))'.allMatches(c).length, 1);
+    expect(c, contains('.v[0]'));
+    expect(c, isNot(contains('(pair(&(n))).v')));
+    final cPath = '${tmp.path}/array_destructure_call_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/array_destructure_call_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
 }

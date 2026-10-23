@@ -173,7 +173,24 @@ fn main() {
       throwsA(
         predicate((e) =>
             e is CheckError &&
-            e.toString().contains('array variable or literal')),
+            e.toString().contains('requires a fixed-length array')),
+      ),
+    );
+  });
+
+  test('error: array destructuring rejects a non-array expression', () {
+    const source = '''
+fn main() {
+  let [a, b] = 1 + 2
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(
+        predicate((e) =>
+            e is CheckError &&
+            e.toString().contains('or a call, pick, or match')),
       ),
     );
   });

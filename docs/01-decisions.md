@@ -452,6 +452,11 @@ index is not evaluated twice. A struct field copied from a call,
 copies `tmp.v[i]` — the call is not repeated per element. A field
 copied from a variable stays `a.v[0], a.v[1]`.
 
+`let [x, y] = pair()` uses that same temporary: the call runs once,
+then the bindings are `tmp.v[0]` and `tmp.v[1]`. `pick` and `match`
+do too (`match` assigns the temporary inside each arm). A name and a
+literal stay element reads and do not build the wrapper.
+
 An array literal in `return` takes the element type from the
 declaration (`fn pair(): [2]u8 { return [1, 2] }`). `return [300]` is
 the `u8` range error. `return [1 + 2]` folds (D12).

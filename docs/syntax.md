@@ -129,6 +129,13 @@ let mut y = 0
 let xs: [4]i32 = [10, 20, 30, 40]
 let [a, b, c, d] = xs         // `[N]T` only; count must equal N
 let [_, mid, _, last] = xs    // `_` skips a slot
+
+fn pair(n: *mut i32): [2]i32 {
+    *n = *n + 1
+    return [10, 20]
+}
+let mut n: i32 = 0
+let [x, y] = pair(&n)         // one call, then tmp.v[i]
 ```
 
 ```klin
@@ -138,7 +145,10 @@ a, b = b, a                   // multi-assign; temps in the .c
 ```
 
 Each form lowers to `.field` / `xs[i]` / ordinary temps. The source
-of a `{}` / `[]` unpack is evaluated once.
+of a `{}` / `[]` unpack is evaluated once. A call, `pick`, or `match`
+that produces `[N]T` is stored once (`klin_arrN_… tmp`, then `tmp.v[i]`).
+`match` assigns that temporary in each arm. A name and a literal stay
+element reads and do not build the wrapper.
 
 Not supported: slice `[]T` (length is runtime), bare `[a, b] = xs`
 (a leading `[` is an index), tuples, patterns in `if` / `match`.

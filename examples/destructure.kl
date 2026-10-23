@@ -54,6 +54,18 @@ fn show_array_literal() {
     printf("literal = %d, %d\n", p, q)
 }
 
+fn pair_once(n: *mut i32): [2]i32 {
+    *n = *n + 1
+    return [10, 20]
+}
+
+fn show_array_call() {
+    // A returned `[N]T` is evaluated once, then read from the temporary.
+    let mut n: i32 = 0
+    let [x, y] = pair_once(&n)
+    printf("call = %d %d (n = %d)\n", x, y, n)
+}
+
 fn show_rename() {
     // Rename fields to different local names (phase D).
     let p = Vec2{ x: 3, y: 4 }
@@ -84,6 +96,7 @@ fn main() {
     show_expr_source()
     show_array()
     show_array_literal()
+    show_array_call()
     show_rename()
     show_skip()
     show_bare_assign()

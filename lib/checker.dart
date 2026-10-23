@@ -1792,11 +1792,20 @@ final class Checker {
           :final source,
           :final pos
         ):
-        // The source must be indexable without side effects or an invalid C
-        // array copy, so restrict phase C to array variables and literals.
-        if (source is! NameExpr && source is! ArrayLitExpr) {
+        // A name or a literal is read in place. A call, method call, `pick`,
+        // or `match` is an array value: emission stores it once, then reads
+        // `tmp.v[i]`. Anything else (a slice, `1 + 2`, an index) is rejected
+        // before inference so the message stays about the source shape.
+        final peeled = _unwrapGroups(source);
+        if (peeled is! NameExpr &&
+            peeled is! ArrayLitExpr &&
+            peeled is! CallExpr &&
+            peeled is! MethodCallExpr &&
+            peeled is! PickExpr &&
+            peeled is! MatchExpr) {
           throw CheckError(
-            'array destructuring source must be an array variable or literal',
+            'array destructuring source must be an array variable, a literal, '
+            'or a call, pick, or match',
             source.pos,
           );
         }

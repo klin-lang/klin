@@ -1,0 +1,10 @@
+fn pair(n: *mut i32): [2]i32 {
+    *n = *n + 1
+    return [10, 20]
+}
+
+fn main() {
+    let mut n: i32 = 0
+    let [x, y] = pair(&n)
+    printf("%d %d %d\n", x, y, n)
+}

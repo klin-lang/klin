@@ -281,7 +281,8 @@ void _emitStmt(
       ):
       _line(buf, pos.line, sourcePath);
       final et = elemType!;
-      if (source is ArrayLitExpr) {
+      final peeled = _peelEmitGroups(source);
+      if (peeled is ArrayLitExpr) {
         // Evaluate every element into a fresh temp before binding, so a swap
         // like `let [a, b] = [b, a]` reads the outer values, not new bindings.
         // `_` positions are still evaluated (side effects are part of the
@@ -291,20 +292,51 @@ void _emitStmt(
           final t = state.nextValueTemp();
           temps.add(t);
           buf.writeln(
-              '$pad${_cDecl(et, t)} = ${_emitExpr(source.elements[i], ctx)};');
+              '$pad${_cDecl(et, t)} = ${_emitExpr(peeled.elements[i], ctx)};');
         }
         for (var i = 0; i < names.length; i++) {
           final name = names[i];
           if (name == null) continue; // `_` skip: evaluated above, not bound
           buf.writeln('$pad${_cDecl(et, name)} = ${temps[i]};');
         }
+      } else if (peeled is! NameExpr && _exprIsArrayValue(source)) {
+        // One call / pick / match. `match` already lowers to assignments, so
+        // it fills the temporary in each arm instead of being emitted twice.
+        final valueType = source.resolvedType;
+        if (valueType is! ArrayType) {
+          throw StateError('emit: array destructure without an array type');
+        }
+        final tmp = state.nextValueTemp();
+        if (peeled is MatchExpr) {
+          buf.writeln('$pad${_cValueType(valueType)} $tmp;');
+          _emitMatchAssign(
+            buf,
+            target: tmp,
+            targetType: valueType,
+            match: peeled,
+            sourcePath: sourcePath,
+            indent: indent,
+            bareReturnAsZero: bareReturnAsZero,
+            returnCType: returnCType,
+            state: state,
+          );
+        } else {
+          buf.writeln(
+            '$pad${_cValueType(valueType)} $tmp = ${_emitArrayValue(source, ctx)};',
+          );
+        }
+        for (var i = 0; i < names.length; i++) {
+          final name = names[i];
+          if (name == null) continue; // `_` skip
+          buf.writeln('$pad${_cDecl(et, name)} = $tmp.v[$i];');
+        }
       } else {
         // A plain array variable is indexed in place. If a binding shadows the
         // source name, capture the array via a pointer first so later reads do
-        // not index a freshly-declared scalar.
+        // not index a freshly-declared scalar. A by-value name is `name.v`.
         final base = _emitArrayObject(source, ctx);
         final String indexed;
-        if (source is NameExpr && names.contains(source.name)) {
+        if (peeled is NameExpr && names.contains(peeled.name)) {
           final tmp = state.nextValueTemp();
           buf.writeln('$pad${_cType(et)} *$tmp = $base;');
           indexed = tmp;
