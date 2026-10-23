@@ -26,6 +26,10 @@ fn (c: Color) name(): str {
   variant (or a final `else`). A `when` guard does not count — it can
   fail. `else` is the hatch for a leftover after `cast`.
 - Number conversion is explicit: `cast(i32, s)`, `cast(Status, 5)`
+- An implicit next value must fit the base type. `enum E: u8 { A = 255, B }`
+  is an error (`B` would be 256). `enum E: u8 { A = 255 }` is fine — the
+  unused next value is not a variant. An explicit `= 300` is still the
+  integer-literal range error
 - Receiver methods work like on structs
 - Emission is a `typedef` plus integer constants (portable; not C23
   `enum E : T`)

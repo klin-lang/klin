@@ -36,7 +36,10 @@ enum Color { Red, Green, Blue }         // default underlying type (int)
 enum Status: u8 { Ok, Warn = 5, Err }   // optional underlying type + explicit values
 ```
 
-- Values default to 0,1,2… (like C); explicit `= N` allowed.
+- Values default to 0,1,2… (like C); explicit `= N` allowed. An implicit
+  next value that does not fit the base type is a checker error
+  (`enum E: u8 { A = 255, B }`). The unused value after the last variant
+  is not.
 - Optional underlying type: `enum E: u8 { … }` (C23 `enum E : uint8_t`).
 - Enum is a **separate type** in checker (not `i32` alias); `==` comparisons,
   use in `match` ([014](014-match.md)).

@@ -330,7 +330,11 @@ character literals (`'A'` is 65; character literals are ASCII), and a
 negative literal (`const X: u8 = -1`). It applies wherever that literal
 is coerced to a declared integer type: `const`, `let`, a parameter, a
 return, a struct field, an array whose element type is already that
-integer, an enum variant (`enum E: u8 { A = 300 }`).
+integer, an enum variant (`enum E: u8 { A = 300 }`). The implicit next
+value is checked too: `enum E: u8 { A = 255, B }` is an error because
+`B` would be 256. The message names the variant, the value, the base
+type, and the inclusive range. The counter after the last variant is
+not an error.
 
 `cast(u8, 300)` is still a C truncation. The check is the coercion,
 not the cast.

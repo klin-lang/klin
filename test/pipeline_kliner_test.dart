@@ -261,4 +261,10 @@ void main() {
     expect(c, isNot(contains('[fold_TWICE]')));
     expect(c, isNot(contains('[os_PAGE]')));
   });
+
+  test('enum variant on the base maximum compiles and runs', () async {
+    final result = await compileAndRun('test/enum_auto.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/enum_auto.out').readAsString());
+  });
 }

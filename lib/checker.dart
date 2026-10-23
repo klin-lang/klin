@@ -867,6 +867,9 @@ final class Checker {
         }
         if (value is IntLit) _checkCoercedIntLiteral(value, base);
       }
+      // Implicit `A = 255, B` must not wrap. The value after the last
+      // variant is not a variant, so it is not an error.
+      _enumDiscriminants(decl);
     }
   }
 
@@ -1428,24 +1431,35 @@ final class Checker {
   String _key(String module, String name) => '$module.$name';
 
   /// C rules: 0,1,2,… unless `= N` restarts the sequence.
-  List<(String name, int value, SourcePos pos)> _enumDiscriminants(
+  ///
+  /// An implicit next value that does not fit [EnumDecl.baseType] is an
+  /// error. Explicit values are range-checked by [_checkCoercedIntLiteral]
+  /// before this runs. The counter is [BigInt] so `i64` max + 1 does not
+  /// wrap through a host `int`.
+  List<(String name, BigInt value, SourcePos pos)> _enumDiscriminants(
     EnumDecl decl,
   ) {
-    var next = 0;
-    final out = <(String, int, SourcePos)>[];
+    var next = BigInt.zero;
+    final out = <(String, BigInt, SourcePos)>[];
+    final base = decl.baseType;
     for (final variant in decl.variants) {
       final valueExpr = variant.value;
       if (valueExpr is IntLit) {
-        final parsed =
-            _parseIntLiteralValue(valueExpr.lexeme.replaceAll('_', ''));
+        final parsed = _bigLitValue(valueExpr);
         if (parsed == null) {
           throw CheckError(
               'enum value must be an integer literal', valueExpr.pos);
         }
         next = parsed;
+      } else if (base != null && !_bigIntFits(next, base.kind)) {
+        throw CheckError(
+          'enum variant `${variant.name}` value $next is out of range for '
+          '`${base.displayName}` (${_intRangeText(base.kind)})',
+          variant.pos,
+        );
       }
       out.add((variant.name, next, variant.pos));
-      next += 1;
+      next += BigInt.one;
     }
     return out;
   }
@@ -1462,9 +1476,9 @@ final class Checker {
         pos,
       );
     }
-    final n = objectType.len;
+    final n = BigInt.from(objectType.len);
     for (final (name, value, _) in _enumDiscriminants(decl)) {
-      if (value < 0 || value >= n) {
+      if (value.isNegative || value >= n) {
         throw CheckError(
           'enum `${decl.name}` does not fit `[${n}]` '
           '(variant `$name` = $value)',

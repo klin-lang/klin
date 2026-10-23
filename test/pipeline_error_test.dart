@@ -2083,6 +2083,34 @@ fn main() {}
 ''', 'integer literal `300` is out of range for `u8` (0..=255)');
   });
 
+  test('error: automatic enum variant overflows u8', () {
+    expectRange('''
+enum E: u8 { A = 255, B }
+fn main() {}
+''', 'enum variant `B` value 256 is out of range for `u8` (0..=255)');
+  });
+
+  test('error: automatic enum variant overflows i8', () {
+    expectRange('''
+enum E: i8 { A = 127, B }
+fn main() {}
+''', 'enum variant `B` value 128 is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: automatic enum variant overflows a later variant', () {
+    expectRange('''
+enum E: u8 { A = 254, B, C }
+fn main() {}
+''', 'enum variant `C` value 256 is out of range for `u8` (0..=255)');
+  });
+
+  test('error: automatic enum variant overflows i64', () {
+    expectRange('''
+enum E: i64 { A = 9223372036854775807, B }
+fn main() {}
+''', 'enum variant `B` value 9223372036854775808 is out of range for `i64`');
+  });
+
   test('error: return literal does not fit', () {
     expectRange('''
 fn f(): u8 { return 300 }

@@ -1,0 +1,7 @@
+enum Hi: u8 { A = 254, B }
+enum Signed: i8 { A = 126, B }
+enum Top: u8 { A = 255 }
+
+fn main() {
+    printf("%d %d %d %d %d\n", cast(i32, Hi.A), cast(i32, Hi.B), cast(i32, Signed.A), cast(i32, Signed.B), cast(i32, Top.A))
+}

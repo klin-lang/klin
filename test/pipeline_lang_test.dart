@@ -1830,4 +1830,21 @@ fn main() {
     expect(c, isNot(contains('enum ')));
     expect(c, isNot(contains('constexpr')));
   });
+
+  test('checker: enum variant may sit on the base type maximum', () {
+    const source = '''
+enum Hi: u8 { A = 255 }
+enum Next: u8 { A = 254, B }
+enum Signed: i8 { A = 126, B }
+enum Restart: u8 { A = 255, B = 0 }
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'enum_max.kl');
+    expect(c, contains('enum { Hi_A = 255 };'));
+    expect(c, contains('enum { Next_A = 254, Next_B };'));
+    expect(c, contains('enum { Signed_A = 126, Signed_B };'));
+    expect(c, contains('enum { Restart_A = 255, Restart_B = 0 };'));
+  });
 }
