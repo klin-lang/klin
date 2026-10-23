@@ -379,7 +379,7 @@ Not in core: global default loop, auto-async `main`, Promise, hidden scheduler.
 #### 5. Hard no for the first async PR (scope cap)
 
 - Top-level `async fn` only — **no** async methods on structs yet.
-- Body MVP: `let`, `if` / `while`, calls, `.await`, `return`.
+- Body MVP: `let`, `if` / `while`, calls, `.await`, `return`, and indexing a `[N]T` or `[]T`. An array literal or an array parameter is copied element by element.
 - Async result MVP: **void** (sketch `ticker`); `!T` / value-returning async later.
 - No recursive async.
 - IDE keyword highlight only after syntax lands on `main`.

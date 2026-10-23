@@ -2079,6 +2079,49 @@ fn main() {}
     expect(c, contains('take((st->a).v);'));
   });
 
+  test('checker: async fn can index arrays and slices', () {
+    const source = '''
+fn pair(): [2]i32 { return [3, 4] }
+fn take(xs: [2]i32): i32 { return xs[0] + xs[1] }
+async fn work(xs: [2]i32, s: []i32) {
+  let local: [2]i32 = [10, 20]
+  let row: [1][2]i32 = [[4, 5]]
+  let i = 1
+  let a = pair()
+  let p = pick true { [7, 8] } { pair() }
+  take(local)
+  take([1, 2])
+  printf("%d\\n", local[i] + xs[0] + s[1] + a[0] + row[0][1] + p[1])
+}
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'async_index.kl');
+    expect(c, contains('st->local[0] = 10;'));
+    expect(c, contains('st->local[1] = 20;'));
+    expect(c, contains('st->row[0][0] = 4;'));
+    expect(c, contains('st->row[0][1] = 5;'));
+    expect(c, contains('st->xs[0] = xs[0];'));
+    expect(c, contains('st->xs[1] = xs[1];'));
+    expect(c, isNot(contains('st->xs = xs;')));
+    expect(c, isNot(contains('st->local = ')));
+    expect(c, contains('(st->local)[st->i]'));
+    expect(c, contains('(st->xs)[0]'));
+    expect(c, contains('(st->s).ptr[1]'));
+    expect(c, contains('(st->a).v[0]'));
+    expect(c, contains('((st->row)[0])[1]'));
+    expect(c, contains('take(st->local);'));
+    expect(c, contains('take((int32_t[2]){ 1, 2 });'));
+    expect(c, contains('st->a = pair();'));
+    expect(
+      c,
+      contains(
+        'st->p = (true ? (klin_arr2_i32){ .v = { 7, 8 } } : pair());',
+      ),
+    );
+  });
+
   test('checker: array destructure of a call evaluates once', () {
     const source = '''
 struct Box { n: i32 }

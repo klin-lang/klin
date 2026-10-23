@@ -35,7 +35,7 @@ These compile. They are not “missing.”
 | `$fn` … `$name(args)` | **this is the generic** ([04-macros.md](04-macros.md)) |
 | `module` / `import` / `pub` | [12-modules.md](12-modules.md) |
 | `fn(T…): Ret` | function pointer; **no capture** |
-| `async fn` / `.await` | desugar over an **explicit** executor |
+| `async fn` / `.await` | desugar over an **explicit** executor. The body can index a `[N]T` or `[]T`. An array literal or an array parameter is copied element by element (a C array cannot be assigned) |
 | `asm("…")` | → `asm volatile("…");` — not an assembler |
 | `@[cimport]` / `@[cexport]` / `@[link]` / `@[isr]` / `codename` | FFI and vectors; no `c("…")` |
 | `&&` `\|\|` / bitwise | `or` stays error-handling |

@@ -1,0 +1,12 @@
+fn pair(): [2]i32 {
+    return [3, 4]
+}
+
+async fn work(xs: [2]i32, s: []i32) {
+    let local: [3]i32 = [10, 20, 30]
+    let i = 1
+    let a = pair()
+    printf("%d %d %d %d\n", local[i], xs[0], s[1], a[0])
+}
+
+fn main() {}

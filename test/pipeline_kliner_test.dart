@@ -529,4 +529,41 @@ void main() {
     ]);
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
+
+  test('async fn indexes an array and runs under pedantic C', () async {
+    final program = loadProject('test/async_index.kl');
+    Checker().check(program);
+    var c = emitC(program, 'test/async_index.kl');
+    expect(c, contains('(st->local)[st->i]'));
+    expect(c, contains('(st->a).v[0]'));
+    const driver = '''
+int main(void) {
+    int32_t xs[2] = { 7, 8 };
+    int32_t buf[2] = { 5, 6 };
+    klin_slice_i32 s = { buf, 2 };
+    async_index_work_State st;
+    async_index_work_init(&st, xs, s);
+    return async_index_work_poll(&st) == 1 ? 0 : 1;
+}
+''';
+    expect(c, contains('int main(void) {'));
+    c = c.replaceFirst(
+      RegExp(r'int main\(void\) \{[^}]*\}'),
+      driver.trim(),
+    );
+    final cPath = '${tmp.path}/async_index.c';
+    await File(cPath).writeAsString(c);
+    final bin = '${tmp.path}/async_index';
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      bin,
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+    final run = await Process.run(bin, []);
+    expect(run.exitCode, 0, reason: run.stderr.toString());
+    expect(run.stdout, await File('test/async_index.out').readAsString());
+  });
 }
