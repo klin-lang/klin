@@ -209,6 +209,8 @@ fn main() {
   `&s[i]` on a slice is `*mut` when that slice place is mutable
   (`let mut s`, or `&xs[:][i]` when `xs` is `let mut`) and `*T` when
   it is not (an immutable binding, a slice parameter, an immutable array).
+  Writing `s[i]` uses that same place: an immutable slice cannot be
+  assigned (`s[i] = …`, `s[i] += …`). `let mut s` can.
 - `[N]T` — fixed array. `N` is an integer constant expression: a
   literal, an integer module `const`, or arithmetic on those
   (`[N * 2]T`, `[1 + 2]T`). The C bound is the folded value.

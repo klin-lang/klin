@@ -2055,6 +2055,26 @@ fn main() {}
     expect(c, contains('take((st->a).v);'));
   });
 
+  test('checker: mutable slice place can assign an element', () {
+    const source = '''
+fn main() {
+  let mut xs: [2]u8 = [1, 2]
+  let mut s = xs[:]
+  s[0] = 9
+  s[1] += 1
+  xs[:][0] = 3
+  let mut bytes = b"fn"
+  bytes[0] = 1
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'slice_mut.kl');
+    expect(c, contains('s.ptr[0] = 9;'));
+    expect(c, contains('s.ptr[1] += 1;'));
+    expect(c, contains('(klin_slice_u8){ xs, 2 }.ptr[0] = 3;'));
+  });
+
   test('checker: & of a slice element follows place mutability', () {
     const source = '''
 fn set(p: *mut i32) { *p = 1 }

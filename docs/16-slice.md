@@ -62,11 +62,14 @@ Numeric (`$fn slice_num_ops`, numeric types only):
 Instances: `slice_ops` for `i32`/`u8`/`i64`/`f64`; `slice_num_ops` for the same
 numeric types.
 
-Writing `dst[i]` on a slice is allowed (header is by value; buffer shared
-with caller — like Go). `&dst[i]` is `*mut T` when that slice place is
+Writing `dst[i]` follows the slice place, the same rule as `&dst[i]`.
+An immutable binding and a slice parameter cannot write (`s[i] = …`,
+`s[i] += …`). `let mut s` can. `xs[:][i] = …` follows the array.
+`map_into` / `filter_into` / `copy_into` / `reverse_into` copy the
+header (`let mut w = dst`) and write through `w`; the pointer is the
+caller's buffer. `&dst[i]` is `*mut T` when that slice place is
 mutable and `*T` when it is not. `&xs[:][i]` follows the array: `*mut`
-for `let mut xs`, `*T` for an immutable array. An immutable
-`let s = xs[:]` and a slice parameter stay `*T`.
+for `let mut xs`, `*T` for an immutable array.
 
 Example: [`examples/slice_ops.kl`](../examples/slice_ops.kl).  
 Golden: `test/slice_ops.kl`.

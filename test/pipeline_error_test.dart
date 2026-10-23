@@ -2316,6 +2316,32 @@ fn main() {
 ''', 'type mismatch: expected `*mut i32`, got `*i32`');
   });
 
+  test('error: cannot assign through an immutable slice', () {
+    expectRange('''
+fn main() {
+  let mut xs: [2]u8 = [1, 2]
+  let s = xs[:]
+  s[0] = 9
+}
+''', 'cannot assign through an immutable slice');
+  });
+
+  test('error: cannot assign through a slice parameter', () {
+    expectRange('''
+fn f(s: []u8) { s[0] += 1 }
+fn main() {}
+''', 'cannot assign through an immutable slice');
+  });
+
+  test('error: slice index of an immutable array cannot be assigned', () {
+    expectRange('''
+fn main() {
+  let xs: [2]u8 = [1, 2]
+  xs[:][0] = 9
+}
+''', 'cannot assign to an immutable array');
+  });
+
   test('error: immutable slice binding does not yield *mut', () {
     expectRange('''
 fn main() {

@@ -169,9 +169,11 @@ fn main() {
 ```
 
 The slice points at static bytes (no allocation). Those bytes are
-read-only: `b"fn"[0] = 1` is an error. The check is only on the literal
-(or a `[]u8` constant) itself — writing through a copy or a `[]u8`
-parameter compiles and crashes at run time. Copy into a `[N]u8` to modify.
+read-only: `b"fn"[0] = 1` is an error, and so is a write through an
+immutable slice (`let s = b"fn"` then `s[0] = 1`, or a `[]u8`
+parameter). `let mut s = b"fn"` then `s[0] = 1` still compiles and
+can crash — a mutable slice has no read-only flavor. Copy into a
+`[N]u8` to modify.
 
 ## Constants
 

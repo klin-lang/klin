@@ -2933,13 +2933,14 @@ final class Checker {
       // Slice header is a value; element storage is shared with the caller (Go-like).
       if (objectType is SliceType) {
         // `b"..."` points at static read-only bytes. A slice view of an
-        // array is a different buffer and stays writable.
+        // array is a different buffer; writability follows the place.
         if (_unwrapGroups(place.object) is ByteStringLit) {
           throw CheckError('cannot assign through a byte-string literal', pos);
         }
         if (_placeIsConst(place.object)) {
           throw CheckError('cannot assign through a constant', pos);
         }
+        _requireMutableSlicePlace(place.object, pos);
         return _inferExpr(place);
       }
       final type = _inferExpr(place);
@@ -2966,13 +2967,42 @@ final class Checker {
         immutableExprMessage: 'cannot assign through an immutable expression',
       );
 
+  /// `s[i] = …` follows the slice place, the same chain as `&s[i]`.
+  /// An immutable binding or a slice parameter cannot write. `xs[:][i]`
+  /// follows the array. `(*p)[i]` follows the pointer.
+  void _requireMutableSlicePlace(Expr object, SourcePos pos) {
+    final base = _unwrapGroups(object);
+    if (base is SliceFromExpr) {
+      _requireMutableArrayPlace(base.array, pos);
+      return;
+    }
+    if (base is NameExpr) {
+      final symbol = _scope.lookup(base.name);
+      if (symbol == null) {
+        throw CheckError('unknown variable `${base.name}`', pos);
+      }
+      if (!symbol.isMut) {
+        throw CheckError('cannot assign through an immutable slice', pos);
+      }
+      base.isPtrReceiver = symbol.isPtrReceiver;
+      base.arrayByValue = symbol.arrayByValue;
+      return;
+    }
+    _requireMutablePlace(
+      object,
+      pos,
+      immutableVarMessage: 'cannot assign through an immutable slice',
+      immutableExprMessage: 'cannot assign through an immutable slice',
+    );
+  }
+
   /// Recursively verifies that [object] is a mutable place (an lvalue chain).
   ///
   /// Accepts nested places — struct fields, fixed-array elements reached through
   /// a `mut` receiver or variable, and writes through a `*mut` dereference —
   /// the same chain `&` uses ([_isMutablePlace]). A mutating method uses this
-  /// too. Slice element storage is shared with the caller (Go-like), so it
-  /// stays writable. The two message parameters preserve the caller's context
+  /// too. A slice element uses the slice place ([_requireMutableSlicePlace]).
+  /// The two message parameters preserve the caller's context
   /// (field vs array vs method) for the terminal error.
   void _requireMutablePlace(
     Expr object,
@@ -3003,7 +3033,15 @@ final class Checker {
       return;
     }
     if (base is IndexExpr) {
-      if (_inferExpr(base.object) is SliceType) return;
+      final indexed = _unwrapGroups(base.object);
+      if (indexed is SliceFromExpr) {
+        _requireMutableArrayPlace(indexed.array, pos);
+        return;
+      }
+      if (_inferExpr(base.object) is SliceType) {
+        _requireMutableSlicePlace(base.object, pos);
+        return;
+      }
       _requireMutablePlace(
         base.object,
         pos,

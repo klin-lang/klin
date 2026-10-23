@@ -61,6 +61,8 @@ void main() {
         'typedef struct { int32_t *ptr; size_t len; } klin_slice_i32;'));
     expect(c, contains('klin_slice_i32 s = (klin_slice_i32){ xs, 3 };'));
     expect(c, contains('s.ptr[0] = 7;'));
+    expect(c, contains('s.ptr[1] += 1;'));
+    expect(c, contains('(klin_slice_i32){ xs, 3 }.ptr[2] = 8;'));
   });
 
   test('byte-string literal is []u8 with .len', () async {

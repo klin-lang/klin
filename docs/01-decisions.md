@@ -158,8 +158,14 @@ mutable and `*T` when it is not. `xs[:]` is a view of the array, so
 `&xs[:][i]` is `*mut` when `xs` is `let mut` or reached through `*mut`,
 and `*T` when `xs` is immutable. An immutable binding (`let s = xs[:]`)
 and a slice parameter stay `*T` even if the underlying array was
-mutable. `&xs[:]` is not a place. The call still passes a pointer;
-`mut` is not in the C.
+mutable. Assignment uses the same place: `s[i] = …`, `s[i] += …`, and
+`s[i].field = …` through an immutable slice are checker errors
+(`cannot assign through an immutable slice`). `let mut s = xs[:]` can
+write, and `xs[:][i] = …` follows the array (`let mut xs` can write;
+an immutable array cannot). A slice parameter is immutable; a function
+that must write copies the header first (`let mut w = dst`). That copy
+is the two words `{ptr, len}`, not the buffer. `&xs[:]` is not a place.
+The call still passes a pointer; `mut` is not in the C.
 
 ---
 
@@ -240,11 +246,13 @@ tables, messages, and paths want the bytes. A second literal keeps
   not `strlen`. The C literal spells that byte as `\000`, so a following
   digit is not swallowed. The extra NUL the C compiler appends is not
   part of `.len`.
-- The bytes are read-only (C string-literal storage). The checker only
-  rejects a direct write: `b"fn"[0] = 1` and `KW[0] = 1` on a `[]u8`
-  constant. A write through a copy (`let s = b"fn"` then `s[0] = 1`) or
-  through a `[]u8` parameter compiles and crashes at run time — `[]u8`
-  has no read-only flavor. Copy into a `[N]u8` to modify.
+- The bytes are read-only (C string-literal storage). The checker
+  rejects a direct write (`b"fn"[0] = 1`, `KW[0] = 1` on a `[]u8`
+  constant) and a write through an immutable slice (`let s = b"fn"`
+  then `s[0] = 1`, or a `[]u8` parameter). `[]u8` has no read-only
+  flavor on a mutable place: `let mut s = b"fn"` then `s[0] = 1`
+  still compiles and can crash at run time. Copy into a `[N]u8` to
+  modify.
 - `.len` is the UTF-8 byte count.
 
 ```klin
