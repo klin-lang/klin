@@ -32,6 +32,8 @@ fn main() {
 - `module name` — module declaration for the file (or all files in a directory package)
 - `import name` — qualifier in use: `name.Symbol`
 - without `pub` = private in **module**; `pub` = visible after `import`
+- `pub const NAME: Type = literal` — immutable module value (integer,
+  `bool`, or `b"..."`). Private `const` is `static` in C. No mutable globals
 
 ## C emission
 

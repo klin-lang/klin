@@ -1,0 +1,19 @@
+fn is_kw(s: []u8): bool {
+    let k = b"fn"
+    if s.len != k.len { return false }
+    let mut i = 0
+    while i < s.len {
+        if s[i] != k[i] { return false }
+        i = i + 1
+    }
+    return true
+}
+
+fn main() {
+    let kw = b"fn"
+    printf("len=%d first=%d\n", kw.len, kw[0])
+    if is_kw(b"fn") {
+        printf("keyword\n")
+    }
+    printf("esc=%d\n", b"a\n".len)
+}

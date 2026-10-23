@@ -1,0 +1,35 @@
+// `expr!` where the callee's `!T` differs from the caller's `!U`.
+struct P {
+    x: i32
+}
+
+fn wide(fail: bool): !i64 {
+    if fail { return error(2) }
+    return 40
+}
+
+fn bytes(fail: bool): ![]u8 {
+    if fail { return error(12) }
+    return b"ok"
+}
+
+fn point(fail: bool): !P {
+    let w = wide(fail)!
+    return P{ x: cast(i32, w) }
+}
+
+fn narrow(fail_w: bool, fail_b: bool): !i32 {
+    defer printf("defer\n")
+    let w = wide(fail_w)!
+    let b = bytes(fail_b)!
+    let p = point(false)!
+    return cast(i32, w) + b.len + p.x - 40
+}
+
+fn main() {
+    printf("%d\n", narrow(false, false) or { -1 })
+    printf("%d\n", narrow(true, false) or { err })
+    printf("%d\n", narrow(false, true) or { err })
+    let p = point(true) or { P{ x: err } }
+    printf("%d\n", p.x)
+}

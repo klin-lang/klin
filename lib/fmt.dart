@@ -58,14 +58,27 @@ String formatUnit(
     first = true; // next decl starts a new "group" without extra blank before first
   }
 
+  Object? prev;
   for (final decl in unit.decls) {
-    blankBefore();
+    // Keep a run of consts on consecutive lines together (syscall-number
+    // tables); every other pair of top-level decls gets one blank line.
+    final constRun = prev is ConstDecl &&
+        decl is ConstDecl &&
+        _declLine(decl) == prev.pos.line + 1;
+    if (constRun) {
+      first = false;
+    } else {
+      blankBefore();
+    }
+    prev = decl;
     out.writeLeading(_declLine(decl), '');
     switch (decl) {
       case StructDecl():
         _writeStruct(out, decl, 0);
       case EnumDecl():
         _writeEnum(out, decl, 0);
+      case ConstDecl():
+        _writeConst(out, decl, 0);
       case FuncDecl():
         _writeFunc(out, decl, 0);
       default:
@@ -84,6 +97,8 @@ int _declLine(Object decl) {
     case StructDecl(:final attrs, :final pos):
       return attrs.isNotEmpty ? attrs.first.pos.line : pos.line;
     case EnumDecl(:final attrs, :final pos):
+      return attrs.isNotEmpty ? attrs.first.pos.line : pos.line;
+    case ConstDecl(:final attrs, :final pos):
       return attrs.isNotEmpty ? attrs.first.pos.line : pos.line;
     default:
       return 1;
@@ -139,6 +154,7 @@ final class _FmtOut {
         case TokenKind.fn:
         case TokenKind.struct:
         case TokenKind.enum_:
+        case TokenKind.const_:
         case TokenKind.pub:
         case TokenKind.atSign:
         case TokenKind.async_:
@@ -257,6 +273,15 @@ void _writeEnum(_FmtOut out, EnumDecl decl, int indent) {
   final close = out.firstRBraceAfter(decl.pos);
   if (close != null) out.writeLeading(close, fieldPad);
   out.buf.writeln('$pad}');
+}
+
+void _writeConst(_FmtOut out, ConstDecl decl, int indent) {
+  _writeAttrs(out, decl.attrs, indent);
+  final pad = indentUnit * indent;
+  out.buf.write(pad);
+  if (decl.isPub) out.buf.write('pub ');
+  out.buf.write('const ${decl.name}: ${decl.typeName} = ${_expr(decl.init)}');
+  out.endLine(decl.namePos.line);
 }
 
 void _writeFunc(_FmtOut out, FuncDecl decl, int indent) {
@@ -541,6 +566,7 @@ String _expr(Expr expr, [int indent = 0]) {
     FloatLit(:final lexeme) => lexeme,
     BoolLit(:final value) => value ? 'true' : 'false',
     StringLit(:final value) => '"${_escapeString(value)}"',
+    ByteStringLit(:final value) => 'b"${_escapeString(value)}"',
     InterpolatedStringExpr(:final parts) => () {
         final out = StringBuffer('"');
         for (final part in parts) {
@@ -660,6 +686,8 @@ String _escapeString(String value) {
         buf.write(r'\r');
       case 0x09:
         buf.write(r'\t');
+      case 0x00:
+        buf.write(r'\0');
       default:
         if (unit < 0x20) {
           buf.write('\\x${unit.toRadixString(16).padLeft(2, '0')}');
@@ -690,6 +718,8 @@ String _escapeInterpText(String value) {
         buf.write(r'\r');
       case 0x09:
         buf.write(r'\t');
+      case 0x00:
+        buf.write(r'\0');
       default:
         if (unit < 0x20) {
           buf.write('\\x${unit.toRadixString(16).padLeft(2, '0')}');

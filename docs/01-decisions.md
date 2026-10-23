@@ -1,6 +1,6 @@
 # Design decisions
 
-This is the decision log (D1–D9), not an introduction. Start with
+This is the decision log (D1–D11), not an introduction. Start with
 [00-idea.md](00-idea.md). To write Klin: [guide.md](guide.md).
 
 The first three must be made **before the first line of the parser** — they permeate
@@ -202,6 +202,77 @@ Implemented in [097](../issues/097-logical-ops.md); example:
 [guide.md](guide.md) §9.
 
 ---
+
+## D10. Byte-string literal `b"..."` — DECIDED
+
+**Choice: `b"fn"` has type `[]u8`.** The bytes of the text, plus `.len`.
+Not a `str`.
+
+`str` is `const char*` — a C string, no length, no indexing. Keyword
+tables, messages, and paths want the bytes. A second literal keeps
+`"..."` as `str` and does not allocate.
+
+- Escapes are the same as `"..."` (`\n` `\t` `\\` `\"` `\$` `\0`). No
+  interpolation (`$` is a byte).
+- `\0` is one NUL byte in both `"..."` and `b"..."`. It is not a
+  multi-digit octal escape: `b"\00"` is a NUL followed by the character
+  `0`. `"..."` accepts it because the two literals share one escape
+  list. `str` is still `const char*` with no length, so `puts` and
+  other C string operations stop at the first NUL. Counted bytes
+  (a syscall path, a keyword table) use `b"..."`.
+- Emission is a pointer at a static C string and an explicit length.
+  The length is the number of bytes, including any embedded NUL. It is
+  not `strlen`. The C literal spells that byte as `\000`, so a following
+  digit is not swallowed. The extra NUL the C compiler appends is not
+  part of `.len`.
+- The bytes are read-only (C string-literal storage). The checker only
+  rejects a direct write: `b"fn"[0] = 1` and `KW[0] = 1` on a `[]u8`
+  constant. A write through a copy (`let s = b"fn"` then `s[0] = 1`) or
+  through a `[]u8` parameter compiles and crashes at run time — `[]u8`
+  has no read-only flavor. Copy into a `[N]u8` to modify.
+- `.len` is the UTF-8 byte count.
+
+```klin
+let kw = b"fn"
+printf("%d\n", kw.len)                 // 2
+printf("%d\n", b"ab\0".len)            // 3
+printf("%d\n", b"/proc/self/cmdline\0".len)  // 19
+```
+
+## D11. Module-level `const` — DECIDED
+
+**Choice: `pub? const Name: Type = literal`.** Immutable. No mutable
+globals, and no `let` at module scope.
+
+A keyword table, a page size, or a syscall number should be a named
+value with no storage surprise. The initializer is the value; emission
+is a C constant.
+
+- Top level only. A local binding stays `let` (and a local shadows a
+  constant of the same name).
+- The type is required. Allowed: an integer prim (`i8`…`i64`, `u8`…`u64`,
+  `usize` / `isize`, `int`), `bool`, or `[]u8`.
+- The initializer is a literal: an integer (including `-N`, hex, `'A'`),
+  `true` / `false`, or `b"..."`. Not `1 + 2`, not another constant, not
+  a float or a `str`.
+- The C name is `module_NAME`. `pub` emits `const`, private emits
+  `static const`. All modules share one `.c`, so visibility is enforced
+  by the checker (`mod.NAME` on a private constant is an error), not by
+  C linkage.
+- A constant is not a C constant expression. `[N]T` still wants the
+  length written as an integer literal.
+- `NAME = …` and `NAME[i] = …` on a `[]u8` constant are checker errors.
+  `let s = NAME` copies the `{ptr, len}` header; `s` points at the same
+  read-only bytes (see D10).
+
+```klin
+pub const PAGE: i64 = 4096
+const KW: []u8 = b"fn"
+
+fn main() {
+    printf("%d %d\n", cast(i32, PAGE), KW.len)
+}
+```
 
 ## D7. To decide later
 

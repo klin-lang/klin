@@ -1600,4 +1600,161 @@ fn main() {
     );
   });
 
+  test('error: assign through a byte-string literal', () {
+    const source = '''
+fn main() {
+  b"fn"[0] = 65
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('byte-string literal'),
+      )),
+    );
+  });
+
+  test('error: const without a type', () {
+    const source = '''
+const N = 1
+fn main() {}
+''';
+    expect(
+      () => Parser(Lexer(source).tokenize()).parse(),
+      throwsA(predicate(
+        (e) => e is ParseError && e.toString().contains('after constant name'),
+      )),
+    );
+  });
+
+  test('error: const type must be integer, bool, or []u8', () {
+    const source = '''
+const X: f64 = 1.5
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('integer, bool, or []u8'),
+      )),
+    );
+  });
+
+  test('error: const initializer must be a literal', () {
+    const source = '''
+const N: i32 = 1 + 2
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('integer literal'),
+      )),
+    );
+  });
+
+  test('error: bool const must be true or false', () {
+    const source = '''
+const F: bool = 1
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError && e.toString().contains('true or false'),
+      )),
+    );
+  });
+
+  test('error: assign to a constant', () {
+    const source = '''
+const N: i32 = 1
+fn main() {
+  N = 2
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError && e.toString().contains('cannot assign to constant'),
+      )),
+    );
+  });
+
+  test('error: assign through a []u8 constant', () {
+    const source = '''
+const S: []u8 = b"ab"
+fn main() {
+  S[0] = 1
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('cannot assign through a constant'),
+      )),
+    );
+  });
+
+  test('error: private imported const', () {
+    final program = loadProject('test/const_mod/bad.kl');
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('constant `os.HIDDEN` is private'),
+      )),
+    );
+  });
+
+  test('error: unknown escape in a byte string', () {
+    const source = '''
+fn main() {
+  let s = b"\\q"
+}
+''';
+    expect(
+      () => Lexer(source).tokenize(),
+      throwsA(predicate(
+        (e) => e is LexError && e.toString().contains('unknown escape'),
+      )),
+    );
+  });
+
+  test('error: attribute on a module const', () {
+    const source = '''
+@[cexport]
+const X: i32 = 1
+
+fn main() {
+  printf("%d\\n", X)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('attributes are not allowed on a constant'),
+      )),
+    );
+  });
 }

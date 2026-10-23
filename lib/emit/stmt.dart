@@ -93,7 +93,16 @@ String _emitPropagate(Expr result, _ExprCtx ctx) {
     returnCType: ctx.returnCType,
     state: ctx.state,
   );
-  ctx.buf.writeln('${'    ' * (ctx.indent + 1)}return $temp;');
+  final innerPad = '    ' * (ctx.indent + 1);
+  final resultCType = _cType(resultType);
+  if (resultCType == ctx.returnCType) {
+    ctx.buf.writeln('${innerPad}return $temp;');
+  } else {
+    // `a()!` with `a(): !i64` inside `fn b(): !i32` — same error code,
+    // different result struct: rebuild it as the caller's `!T`.
+    ctx.buf.writeln(
+        '${innerPad}return (${ctx.returnCType}){ .is_err = true, .u.err = $temp.u.err };');
+  }
   ctx.buf.writeln('$pad}');
   return temp;
 }

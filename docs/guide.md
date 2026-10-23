@@ -39,7 +39,7 @@ fn main() {
 - Integers: `i8`…`i64`, `u8`…`u64`, alias `int` → `i32`
 - Floats: `f32` / `f64`, alias `float` → `f64`
 - `bool`, `str` (C string pointer — no `==` on content; use `import str`)
-- Literals: `0xFF`, `0b1010`, `0o755`, `1_000`, `1.5e-3`, `'A'`
+- Literals: `0xFF`, `0b1010`, `0o755`, `1_000`, `1.5e-3`, `'A'`, `b"fn"` (`[]u8`, [syntax.md](syntax.md))
 - No implicit numeric truthiness: `if` wants `bool`
 - No implicit widen/narrow between concrete numeric types — use
   `cast(i64, n)` / `cast(f64, n)` ([syntax.md](syntax.md),
@@ -212,6 +212,8 @@ Use imported names with a qualifier: `geom.Vec2{ x: 3, y: 4 }`,
 - `import path alias` — same module, shorter qualifier
 - `pub` — visible after import; without `pub` the symbol is private
   (`static` in the generated C)
+- `const NAME: Type = literal` — module-level immutable integer, `bool`,
+  or `b"..."` ([syntax.md](syntax.md)). No mutable globals
 - The whole program is still **one** `.c`
 
 Search paths (`lib/`, `-I`, `KLIN_PATH`, remote `klin get`):

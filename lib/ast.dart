@@ -1,11 +1,12 @@
 import 'token.dart';
 import 'type.dart';
 
-/// program := (struct | enum | func)+
+/// program := (struct | enum | const | func)+
 final class Program {
   final List<StructDecl> structs;
   final List<FuncDecl> funcs;
   final List<EnumDecl> enums;
+  final List<ConstDecl> consts;
   final SourcePos pos;
 
   /// Per module: maps an `import X` alias to the loaded file’s actual `module` name.
@@ -16,6 +17,7 @@ final class Program {
     this.funcs,
     this.pos, {
     this.enums = const [],
+    this.consts = const [],
     this.importAliases = const {},
   });
 }
@@ -66,8 +68,9 @@ final class ModuleUnit {
   final List<StructDecl> structs;
   final List<EnumDecl> enums;
   final List<FuncDecl> funcs;
+  final List<ConstDecl> consts;
 
-  /// Top-level declarations in source order (`StructDecl` / `EnumDecl` / `FuncDecl`).
+  /// Top-level declarations in source order (`StructDecl` / `EnumDecl` / `FuncDecl` / `ConstDecl`).
   final List<Object> decls;
   final SourcePos pos;
 
@@ -77,6 +80,7 @@ final class ModuleUnit {
     required this.structs,
     required this.enums,
     required this.funcs,
+    this.consts = const [],
     required this.decls,
     required this.pos,
   });
@@ -162,6 +166,39 @@ final class EnumVariant {
     required this.value,
     required this.pos,
   });
+}
+
+/// `pub? const Name: Type = literal` at module scope.
+///
+/// Immutable. No mutable globals. The initializer is a literal
+/// (integer, `true`/`false`, or `b"..."`).
+final class ConstDecl {
+  final String name;
+  final String typeName;
+  final Expr init;
+  final List<Attr> attrs;
+  final SourcePos pos;
+
+  /// Position of the name ident.
+  final SourcePos namePos;
+  bool isPub;
+  String moduleName;
+  String? sourcePath;
+
+  /// Filled by the checker.
+  KlinType? resolvedType;
+
+  ConstDecl({
+    required this.name,
+    required this.typeName,
+    required this.init,
+    this.attrs = const [],
+    required this.pos,
+    SourcePos? namePos,
+    this.isPub = false,
+    this.moduleName = '',
+    this.sourcePath,
+  }) : namePos = namePos ?? pos;
 }
 
 /// name: primitive-type
@@ -709,6 +746,14 @@ final class StringLit extends Expr {
   StringLit(this.value, this.pos);
 }
 
+/// `b"..."` — the bytes of the text, type `[]u8`. Not interpolated.
+final class ByteStringLit extends Expr {
+  final String value;
+  final SourcePos pos;
+
+  ByteStringLit(this.value, this.pos);
+}
+
 /// Literal `$` in interpolated strings (lexer escape `\$`).
 const String kInterpEscapedDollar = '\u{E000}';
 
@@ -756,6 +801,9 @@ final class NameExpr extends Expr {
   /// Top-level function used as a value (fn-pointer decay); C symbol to emit.
   String? resolvedFnCName;
 
+  /// Module-level `const` used as a value; C symbol to emit.
+  String? resolvedConstCName;
+
   /// Binding / function definition (LSP).
   ResolvedDef? resolvedDef;
 
@@ -770,6 +818,9 @@ final class FieldExpr extends Expr {
   /// Filled by the checker when `object.name` is an enum constant
   /// (`Color.Red`): the C constant to emit instead of a field access.
   String? enumConstCName;
+
+  /// Filled by the checker when `object.name` is `mod.CONST`.
+  String? constCName;
 
   /// Field or enum-variant definition (LSP).
   ResolvedDef? resolvedDef;

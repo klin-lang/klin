@@ -1,16 +1,29 @@
 part of '../emit_c.dart';
 
-void _collectStructKeys(KlinType? type, Set<String> output) {
+/// Structs named by [type].
+///
+/// [throughPointer] is true when the caller needs the pointee present at all
+/// (a header should still define it). It is false for emission order: a
+/// pointer does not need a complete type, and counting it would make
+/// `struct Node { next: *Node }` a cycle. The pointee is spelled
+/// `struct Tag *`, so the tag can be completed later.
+void _collectStructKeys(
+  KlinType? type,
+  Set<String> output, {
+  bool throughPointer = true,
+}) {
   if (type == null) return;
   switch (type) {
     case StructType(:final moduleName, :final name):
       output.add('$moduleName.$name');
     case PtrType(:final pointee):
-      _collectStructKeys(pointee, output);
+      if (throughPointer) {
+        _collectStructKeys(pointee, output, throughPointer: throughPointer);
+      }
     case ArrayType(:final elem):
-      _collectStructKeys(elem, output);
+      _collectStructKeys(elem, output, throughPointer: throughPointer);
     case ResultType(:final ok):
-      _collectStructKeys(ok, output);
+      _collectStructKeys(ok, output, throughPointer: throughPointer);
     default:
       break;
   }

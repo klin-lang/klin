@@ -301,8 +301,9 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
     FloatLit(:final lexeme) => lexeme.replaceAll('_', ''),
     BoolLit(:final value) => value ? 'true' : 'false',
     StringLit(:final value) => '"${_escapeC(value)}"',
-    NameExpr(:final name, :final resolvedFnCName) =>
-      resolvedFnCName ?? 'st->$name',
+    ByteStringLit(:final value) => _emitByteString(value),
+    NameExpr(:final name, :final resolvedFnCName, :final resolvedConstCName) =>
+      resolvedConstCName ?? resolvedFnCName ?? 'st->$name',
     UnaryExpr(:final op, :final operand) =>
       '$op(${_emitAsyncExpr(operand, ctx)})',
     BinaryExpr(:final left, :final op, :final right) =>
@@ -328,8 +329,8 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
             '${receiverByRef ? '&' : ''}${_emitAsyncExpr(receiver, ctx)}';
         return args.isEmpty ? '$callee($recv)' : '$callee($recv, $argList)';
       }(),
-    FieldExpr(:final object, :final name) =>
-      '${_emitAsyncExpr(object, ctx)}.$name',
+    FieldExpr(:final object, :final name, :final constCName) =>
+      constCName ?? '${_emitAsyncExpr(object, ctx)}.$name',
     CastExpr(:final resolvedType, :final expr) => () {
         final target = resolvedType;
         if (target == null) throw StateError('emit async: cast without type');

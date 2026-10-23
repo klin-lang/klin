@@ -1,0 +1,17 @@
+module cond
+import os
+
+fn main() {
+    if os.VERBOSE {
+        printf("verbose\n")
+    }
+    let mut i = 0
+    while i < os.LIMIT {
+        i = i + 1
+    }
+    let mut n = 0
+    for j := 0; j < os.KW.len; j += 1 {
+        n = n + 1
+    }
+    printf("%d %d %d %d\n", i, n, os.KW[1], cast(i32, os.CH))
+}

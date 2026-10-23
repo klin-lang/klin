@@ -1,0 +1,12 @@
+struct T {
+    k: Tok
+    n: i32
+}
+
+enum Tok: u8 { Ident, Number = 4 }
+
+fn main() {
+    let t = T{ k: Tok.Ident, n: 8 }
+    let u = T{ k: Tok.Number, n: 1 }
+    printf("%d %d %d\n", cast(i32, t.k), cast(i32, u.k), t.n)
+}

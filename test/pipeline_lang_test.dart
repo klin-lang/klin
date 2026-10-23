@@ -159,6 +159,14 @@ fn main() {
     expect(formatSource(once), once);
   });
 
+  test('klin fmt: keeps consecutive consts together', () {
+    final ugly = File('test/fmt_const.kl').readAsStringSync();
+    final expected = File('test/fmt_const.fmt.kl').readAsStringSync();
+    final once = formatSource(ugly);
+    expect(once, expected);
+    expect(formatSource(once), once);
+  });
+
   test('klin fmt: preserves = in for-init assign (issue 151)', () {
     final ugly = File('test/fmt_for_c_init_assign.kl').readAsStringSync();
     final expected =
@@ -1661,6 +1669,30 @@ fn main() {
 ''';
     final program = Parser(Lexer(source).tokenize()).parse();
     Checker().check(program);
+  });
+
+  test('fmt keeps a byte-string literal', () {
+    const source = 'fn main() {\n    let s = b"a\\n"\n}\n';
+    expect(formatSource(source), source);
+  });
+
+  test('fmt keeps a NUL escape in byte and plain strings', () {
+    const source = 'fn main() {\n    let s = b"ab\\0"\n    let t = "a\\0b"\n}\n';
+    expect(formatSource(source), source);
+  });
+
+  test('fmt keeps a module-level const', () {
+    const source = '''
+pub const PAGE: i64 = 4096
+
+const NEG: i32 = -100
+
+const KW: []u8 = b"fn"
+
+fn main() {
+}
+''';
+    expect(formatSource(source), source);
   });
 
 }

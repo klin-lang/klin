@@ -227,10 +227,15 @@ final class Lexer {
       buf.write(_advance());
     }
     final lexeme = buf.toString();
+    // `b"..."` is one token. A bare `b` stays an identifier.
+    if (lexeme == 'b' && !_atEnd && _peek == '"') {
+      return _byteString(start);
+    }
     return switch (lexeme) {
       'fn' => Token(TokenKind.fn, lexeme, start),
       'struct' => Token(TokenKind.struct, lexeme, start),
       'enum' => Token(TokenKind.enum_, lexeme, start),
+      'const' => Token(TokenKind.const_, lexeme, start),
       'pub' => Token(TokenKind.pub, lexeme, start),
       'module' => Token(TokenKind.module, lexeme, start),
       'import' => Token(TokenKind.import, lexeme, start),
@@ -355,6 +360,8 @@ final class Lexer {
           case '\$':
             // Literal `$` in an interpolated string (see [kInterpEscapedDollar]).
             buf.write('\u{E000}');
+          case '0':
+            buf.writeCharCode(0);
           default:
             throw LexError('unknown escape sequence `\\$esc`', start);
         }
@@ -365,6 +372,44 @@ final class Lexer {
     if (_atEnd) throw LexError('unterminated string', start);
     _advance(); // closing "
     return Token(TokenKind.string, buf.toString(), start);
+  }
+
+  /// `b"..."` — same escapes as [_string], but `\$` is a literal `$`
+  /// (byte strings are not interpolated).
+  Token _byteString(SourcePos start) {
+    _advance(); // opening "
+    final buf = StringBuffer();
+    while (!_atEnd && _peek != '"') {
+      if (_peek == '\n') {
+        throw LexError('unterminated byte string', start);
+      }
+      if (_peek == '\\') {
+        _advance();
+        if (_atEnd) throw LexError('unterminated byte string', start);
+        final esc = _advance();
+        switch (esc) {
+          case 'n':
+            buf.write('\n');
+          case 't':
+            buf.write('\t');
+          case '\\':
+            buf.write('\\');
+          case '"':
+            buf.write('"');
+          case '\$':
+            buf.write('\$');
+          case '0':
+            buf.writeCharCode(0);
+          default:
+            throw LexError('unknown escape sequence `\\$esc`', start);
+        }
+      } else {
+        buf.write(_advance());
+      }
+    }
+    if (_atEnd) throw LexError('unterminated byte string', start);
+    _advance(); // closing "
+    return Token(TokenKind.byteString, buf.toString(), start);
   }
 
   /// Character literal → [TokenKind.intLit] with source spelling (`'A'`, `'\n'`).

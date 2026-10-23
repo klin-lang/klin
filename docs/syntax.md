@@ -143,6 +143,68 @@ Runnable: [`examples/destructure.kl`](../examples/destructure.kl),
 [`examples/multi_assign.kl`](../examples/multi_assign.kl).
 Issue: [056](../issues/056-destructuring.md).
 
+## Byte strings
+
+`"..."` is `str` (`const char*`). `b"..."` is `[]u8`: the bytes of the
+text and a length. No interpolation. Escapes match `"..."`:
+`\n`, `\t`, `\\`, `\"`, `\$`, `\0`.
+
+`\0` is a single NUL byte in both forms. `.len` on a byte string counts
+it (`b"ab\0".len` is 3). `str` has no length, so a C string operation on
+`"..."` stops at the first NUL; a counted buffer uses `b"..."`. `\0` is
+not an octal number — `b"\00"` is NUL then the character `0`.
+
+```klin
+fn take(s: []u8): i32 { return s.len }
+
+fn main() {
+    let kw = b"fn"
+    printf("%d %d\n", kw.len, kw[0])   // 2, 102
+    printf("%d\n", take(b"ab\n"))      // 3
+}
+```
+
+The slice points at static bytes (no allocation). Those bytes are
+read-only: `b"fn"[0] = 1` is an error. The check is only on the literal
+(or a `[]u8` constant) itself — writing through a copy or a `[]u8`
+parameter compiles and crashes at run time. Copy into a `[N]u8` to modify.
+
+## Constants
+
+`const` is a module-level immutable value. Not a mutable global, and
+not a local (`let` stays the local form).
+
+```klin
+pub const PAGE: i64 = 4096
+const FLAG: bool = true
+const NEG: i32 = -100
+const KW: []u8 = b"fn"
+
+fn main() {
+    printf("%d %d\n", cast(i32, PAGE), KW.len)   // 4096, 2
+}
+```
+
+- Type is required: an integer, `bool`, or `[]u8`
+- Initializer is a literal (`-100`, `'A'`, `0x10`, `true`, `b"..."`).
+  Not `1 + 2` and not another constant
+- `pub` is visible as `mod.NAME` after `import`. Private is
+  `static const` in the generated C
+- `NAME = …` is an error. `KW[0] = 1` is an error. A local of the same
+  name shadows the constant
+- `[N]T` does not take a constant as its length
+
+```klin
+module app
+import os
+
+fn main() {
+    printf("%d\n", cast(i32, os.AT_FDCWD))
+}
+```
+
+Runnable: [`examples/module_const.kl`](../examples/module_const.kl).
+
 ## Already documented elsewhere
 
 | Topic | Where |

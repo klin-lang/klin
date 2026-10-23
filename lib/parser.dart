@@ -90,6 +90,7 @@ final class Parser {
       unit.funcs,
       unit.pos,
       enums: unit.enums,
+      consts: unit.consts,
     );
     if (_errors.isNotEmpty) {
       throw ParseErrors(_errors, program: program);
@@ -113,6 +114,7 @@ final class Parser {
     final funcs = <FuncDecl>[];
     final structs = <StructDecl>[];
     final enums = <EnumDecl>[];
+    final consts = <ConstDecl>[];
     final decls = <Object>[];
     String? declaredName;
     final imports = <ImportSpec>[];
@@ -139,6 +141,10 @@ final class Parser {
           final decl = _enum(isPub, attrs);
           enums.add(decl);
           decls.add(decl);
+        } else if (_check(TokenKind.const_)) {
+          final decl = _constDecl(isPub, attrs);
+          consts.add(decl);
+          decls.add(decl);
         } else if (_check(TokenKind.async_)) {
           _advance();
           if (!_check(TokenKind.fn)) {
@@ -153,7 +159,8 @@ final class Parser {
           decls.add(decl);
         } else {
           throw ParseError(
-              'expected struct, enum or function declaration', _current.pos);
+              'expected struct, enum, const or function declaration',
+              _current.pos);
         }
       } on ParseError catch (e) {
         if (!collectErrors) rethrow;
@@ -162,7 +169,10 @@ final class Parser {
         _synchronizeDecl();
       }
     }
-    if (funcs.isEmpty && structs.isEmpty && enums.isEmpty) {
+    if (funcs.isEmpty &&
+        structs.isEmpty &&
+        enums.isEmpty &&
+        consts.isEmpty) {
       if (_errors.isEmpty) {
         throw ParseError('expected declaration', _current.pos);
       }
@@ -172,6 +182,7 @@ final class Parser {
         structs: structs,
         enums: enums,
         funcs: funcs,
+        consts: consts,
         decls: decls,
         pos: _current.pos,
       );
@@ -181,15 +192,18 @@ final class Parser {
         ? structs.first.pos
         : enums.isNotEmpty
             ? enums.first.pos
-            : funcs.isNotEmpty
-                ? funcs.first.pos
-                : _current.pos;
+            : consts.isNotEmpty
+                ? consts.first.pos
+                : funcs.isNotEmpty
+                    ? funcs.first.pos
+                    : _current.pos;
     return ModuleUnit(
       declaredName: declaredName,
       imports: imports,
       structs: structs,
       enums: enums,
       funcs: funcs,
+      consts: consts,
       decls: decls,
       pos: pos,
     );
@@ -201,6 +215,7 @@ final class Parser {
       if (_check(TokenKind.fn) ||
           _check(TokenKind.struct) ||
           _check(TokenKind.enum_) ||
+          _check(TokenKind.const_) ||
           _check(TokenKind.async_) ||
           _check(TokenKind.pub) ||
           _check(TokenKind.atSign)) {
@@ -293,6 +308,26 @@ final class Parser {
     return StructDecl(
       name: name.lexeme,
       fields: fields,
+      attrs: attrs,
+      pos: keyword.pos,
+      namePos: name.pos,
+      isPub: isPub,
+    );
+  }
+
+  /// `pub? const Name: Type = literal`
+  ConstDecl _constDecl(bool isPub, List<Attr> attrs) {
+    final keyword = _expect(TokenKind.const_, 'expected `const`');
+    final name = _expect(TokenKind.ident, 'expected constant name');
+    _rejectCKeyword(name, 'a constant name');
+    _expect(TokenKind.colon, 'expected `:` after constant name');
+    final typeName = _typeName();
+    _expect(TokenKind.equal, 'expected `=` after constant type');
+    final init = _expr();
+    return ConstDecl(
+      name: name.lexeme,
+      typeName: typeName,
+      init: init,
       attrs: attrs,
       pos: keyword.pos,
       namePos: name.pos,
@@ -991,6 +1026,7 @@ final class Parser {
         TokenKind.intLit ||
         TokenKind.floatLit ||
         TokenKind.string ||
+        TokenKind.byteString ||
         TokenKind.true_ ||
         TokenKind.false_ ||
         TokenKind.ident ||
@@ -1371,6 +1407,10 @@ final class Parser {
         _advance();
         expr = _stringLitOrInterp(t);
         break;
+      case TokenKind.byteString:
+        _advance();
+        expr = ByteStringLit(t.lexeme, t.pos);
+        break;
       case TokenKind.true_:
         _advance();
         expr = BoolLit(true, t.pos);
@@ -1407,7 +1447,9 @@ final class Parser {
               args: _argList(),
               pos: t.pos,
             );
-          } else if (_check(TokenKind.lBrace)) {
+          } else if (_check(TokenKind.lBrace) && !_noStructLit) {
+            // In `if` / `while` / `match` heads, `{` opens the body:
+            // `if n < os.MAX {` is a constant, not `os.MAX{ … }`.
             expr = _structLit(member, moduleName: t.lexeme);
           } else if (_check(TokenKind.dot)) {
             // `mod.Type.Variant` / `mod.Type.func(...)` — continue in the
@@ -1418,7 +1460,12 @@ final class Parser {
               pos: member.pos,
             );
           } else {
-            throw ParseError('expected call or struct literal', member.pos);
+            // `mod.CONST` — a module-level constant used as a value.
+            expr = FieldExpr(
+              object: NameExpr(t.lexeme, t.pos),
+              name: member.lexeme,
+              pos: member.pos,
+            );
           }
         } else if (_callParenSameLine(t.pos)) {
           _rejectCKeyword(t, 'a call name');

@@ -61,7 +61,8 @@ String _cType(KlinType type) => switch (type) {
       EnumType(:final moduleName, :final name) =>
         _enumCName(moduleName, name),
       PtrType(:final pointee, :final isVolatile) =>
-        '${isVolatile ? 'volatile ' : ''}${_cType(pointee)} *',
+        '${isVolatile ? 'volatile ' : ''}'
+        '${pointee is StructType ? 'struct ${_structCName(pointee.moduleName, pointee.name)}' : _cType(pointee)} *',
       ArrayType(:final elem) => _cType(elem),
       SliceType(:final elem) => _sliceCName(elem),
       ResultType(:final ok) => _resultCName(ok),
@@ -144,6 +145,30 @@ void _collectResultTypes(KlinType? type, Set<ResultType> output) {
   }
 }
 
+/// Set while walking bodies so a slice that exists only as a local
+/// (`let s = xs[:]`) still gets a `klin_slice_*` typedef.
+Set<PrimType>? _sliceTypesFromWalk;
+
+void _noteSliceType(KlinType? type) {
+  final dest = _sliceTypesFromWalk;
+  if (dest == null) return;
+  _collectSliceTypes(type, dest);
+}
+
+/// Slice typedefs are emitted from signatures and struct fields. Locals and
+/// temporaries are not on those lists — walk bodies when [output] is the
+/// set about to be emitted.
+void _collectSliceTypesInBodies(Program program, Set<PrimType> output) {
+  final saved = _sliceTypesFromWalk;
+  _sliceTypesFromWalk = output;
+  final unused = <ResultType>{};
+  for (final func in program.funcs) {
+    final body = func.body;
+    if (body != null) _collectResultTypesFromBlock(body, unused);
+  }
+  _sliceTypesFromWalk = saved;
+}
+
 /// Local `!T` from `match` / `error(n)` (issue 132) may not appear on a
 /// function signature — walk bodies so typedefs still emit.
 void _collectResultTypesFromBlock(Block block, Set<ResultType> output) {
@@ -156,6 +181,7 @@ void _collectResultTypesFromStmt(Stmt stmt, Set<ResultType> output) {
   switch (stmt) {
     case LetStmt(:final init, :final resolvedType):
       _collectResultTypes(resolvedType, output);
+      _noteSliceType(resolvedType);
       if (init != null) _collectResultTypesFromExpr(init, output);
     case LetDestructureStmt(:final source):
       _collectResultTypesFromExpr(source, output);
@@ -212,6 +238,7 @@ void _collectResultTypesFromStmt(Stmt stmt, Set<ResultType> output) {
 
 void _collectResultTypesFromExpr(Expr expr, Set<ResultType> output) {
   _collectResultTypes(expr.resolvedType, output);
+  _noteSliceType(expr.resolvedType);
   switch (expr) {
     case BinaryExpr(:final left, :final right):
       _collectResultTypesFromExpr(left, output);
