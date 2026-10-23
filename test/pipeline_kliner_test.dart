@@ -454,7 +454,7 @@ void main() {
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
 
-  test('array destructure of a call runs once under pedantic C', () async {
+  test('array destructure of a call, pick, or match runs under pedantic C', () async {
     final result = await compileAndRun(
       'test/array_destructure_call.kl',
       tmp,
@@ -469,7 +469,7 @@ void main() {
     final program = loadProject('test/array_destructure_call.kl');
     Checker().check(program);
     final c = emitC(program, 'test/array_destructure_call.kl');
-    expect('pair(&(n))'.allMatches(c).length, 1);
+    expect('pair(&(n))'.allMatches(c).length, 3);
     expect(c, contains('.v[0]'));
     expect(c, isNot(contains('(pair(&(n))).v')));
     final cPath = '${tmp.path}/array_destructure_call_pedantic.c';

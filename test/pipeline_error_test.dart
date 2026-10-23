@@ -1646,6 +1646,15 @@ fn main() {
       ),
       (
         '''
+fn main() {
+  let s = (b"fn")
+  let mut w = s
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
 const KW: []u8 = b"fn"
 fn main() {
   let mut s = KW

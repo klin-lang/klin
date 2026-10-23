@@ -5,6 +5,12 @@ fn pair(n: *mut i32): [2]i32 {
 
 fn main() {
     let mut n: i32 = 0
+    let k = 1
     let [x, y] = pair(&n)
-    printf("%d %d %d\n", x, y, n)
+    let [a, b] = match k {
+        0 { [1, 2] }
+        else { pair(&n) }
+    }
+    let [p, q] = pick k == 1 { pair(&n) } { [7, 8] }
+    printf("%d %d %d %d %d %d %d\n", x, y, a, b, p, q, n)
 }
