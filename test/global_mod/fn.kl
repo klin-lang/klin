@@ -1,0 +1,12 @@
+module fnapp
+import store
+
+let mut n: i32 = 0
+let mut op: fn(i32): i32 = store.inc
+let mut missing: fn(i32): i32
+
+fn main() {
+    for n = 1; n < 4; n += 1 {
+    }
+    printf("%d %d\n", n, op(4))
+}

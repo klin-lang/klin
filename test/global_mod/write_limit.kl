@@ -1,0 +1,6 @@
+module writer
+import store
+
+fn main() {
+    store.limit = 1
+}

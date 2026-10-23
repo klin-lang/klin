@@ -1,12 +1,13 @@
 import 'token.dart';
 import 'type.dart';
 
-/// program := (struct | enum | const | func)+
+/// program := (struct | enum | const | global | func)+
 final class Program {
   final List<StructDecl> structs;
   final List<FuncDecl> funcs;
   final List<EnumDecl> enums;
   final List<ConstDecl> consts;
+  final List<GlobalDecl> globals;
   final SourcePos pos;
 
   /// Per module: maps an `import X` alias to the loaded file’s actual `module` name.
@@ -18,6 +19,7 @@ final class Program {
     this.pos, {
     this.enums = const [],
     this.consts = const [],
+    this.globals = const [],
     this.importAliases = const {},
   });
 }
@@ -69,8 +71,10 @@ final class ModuleUnit {
   final List<EnumDecl> enums;
   final List<FuncDecl> funcs;
   final List<ConstDecl> consts;
+  final List<GlobalDecl> globals;
 
-  /// Top-level declarations in source order (`StructDecl` / `EnumDecl` / `FuncDecl` / `ConstDecl`).
+  /// Top-level declarations in source order
+  /// (`StructDecl` / `EnumDecl` / `FuncDecl` / `ConstDecl` / `GlobalDecl`).
   final List<Object> decls;
   final SourcePos pos;
 
@@ -81,6 +85,7 @@ final class ModuleUnit {
     required this.enums,
     required this.funcs,
     this.consts = const [],
+    this.globals = const [],
     required this.decls,
     required this.pos,
   });
@@ -170,9 +175,9 @@ final class EnumVariant {
 
 /// `pub? const Name: Type = expr` at module scope.
 ///
-/// Immutable. No mutable globals. The initializer is a literal
+/// A compile-time value, not storage. The initializer is a literal
 /// (`true`/`false`, `b"..."`) or, for an integer type, an integer
-/// constant expression.
+/// constant expression. A module-level place is [GlobalDecl].
 final class ConstDecl {
   final String name;
   final String typeName;
@@ -196,6 +201,42 @@ final class ConstDecl {
   BigInt? intValue;
 
   ConstDecl({
+    required this.name,
+    required this.typeName,
+    required this.init,
+    this.attrs = const [],
+    required this.pos,
+    SourcePos? namePos,
+    this.isPub = false,
+    this.moduleName = '',
+    this.sourcePath,
+  }) : namePos = namePos ?? pos;
+}
+
+/// `pub? let mut? Name: Type [= expr]` at module scope.
+///
+/// Storage, unlike [ConstDecl]. `let mut` is assignable; `let` is not.
+/// A missing initializer is zero-initialization (C static storage).
+/// The initializer, when present, is a constant expression.
+final class GlobalDecl {
+  final bool isMut;
+  final String name;
+  final String typeName;
+  final Expr? init;
+  final List<Attr> attrs;
+  final SourcePos pos;
+
+  /// Position of the name ident.
+  final SourcePos namePos;
+  bool isPub;
+  String moduleName;
+  String? sourcePath;
+
+  /// Filled by the checker.
+  KlinType? resolvedType;
+
+  GlobalDecl({
+    required this.isMut,
     required this.name,
     required this.typeName,
     required this.init,
@@ -470,7 +511,6 @@ final class StructAssignStmt extends Stmt {
   });
 }
 
-
 /// call := ident "(" (expr ("," expr)*)? ")"
 final class CallStmt extends Stmt {
   final String? moduleName;
@@ -587,6 +627,11 @@ final class ForCStmt extends Stmt {
   /// Initializer variable type for a declaring init (`:=`), filled by the checker.
   KlinType? resolvedInitType;
 
+  /// C name when `=` / the post update names a global. A local keeps the
+  /// source spelling (`initCName` / `postCName` stay null).
+  String? initCName;
+  String? postCName;
+
   ForCStmt({
     required this.initName,
     required this.initExpr,
@@ -649,6 +694,7 @@ final class MatchStmt extends Stmt {
 
 final class MatchStmtArm {
   final MatchPattern pattern;
+
   /// Optional `when <bool expr>` guard; null means no guard.
   final Expr? when;
   final Block body;
@@ -824,6 +870,9 @@ final class NameExpr extends Expr {
   /// Module-level `const` used as a value; C symbol to emit.
   String? resolvedConstCName;
 
+  /// Module-level `let` used as a place; C symbol to emit.
+  String? resolvedGlobalCName;
+
   /// Binding / function definition (LSP).
   ResolvedDef? resolvedDef;
 
@@ -841,6 +890,13 @@ final class FieldExpr extends Expr {
 
   /// Filled by the checker when `object.name` is `mod.CONST`.
   String? constCName;
+
+  /// Filled by the checker when `object.name` is `mod.global`.
+  String? globalCName;
+
+  /// Filled by the checker when `object.name` is a free function
+  /// (`mod.func` as an `fn(...)` value).
+  String? fnCName;
 
   /// Field or enum-variant definition (LSP).
   ResolvedDef? resolvedDef;
@@ -1069,6 +1125,7 @@ final class PickExpr extends Expr {
 
 final class MatchExprArm {
   final MatchPattern pattern;
+
   /// Optional `when <bool expr>` guard; null means no guard.
   final Expr? when;
   final Expr body;

@@ -1,0 +1,6 @@
+module bad
+import store
+
+fn main() {
+    printf("%d\n", store.hidden)
+}

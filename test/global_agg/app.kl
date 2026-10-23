@@ -1,0 +1,34 @@
+module app
+
+struct Point {
+    x: i32
+    y: i32
+}
+
+fn (mut pt: Point) bump() {
+    pt.x = pt.x + pt.y
+}
+
+enum Color: u8 {
+    Red = 2
+    Blue
+}
+
+let mut p: *mut i32 = &later
+let mut later: i32 = 4
+let mut xs: [3]i32 = [1, 2, 3]
+let mut pt: Point = Point{ x: 10, y: 1 }
+let origin: Point
+let mut color: Color = Color.Blue
+let mut view: []i32 = xs[:]
+let mut empty: []i32
+let mut raw: []u8 = b"Z"
+
+fn main() {
+    xs[0] = xs[0] + xs[2]
+    pt.bump()
+    *p += 5
+    view[1] = 8
+    printf("%d %d %d %d %d %d %d %d %d\n", xs[0], xs[1], pt.x, origin.x, origin.y, later, view.len, empty.len, cast(i32, color))
+    printf("%d\n", raw[0])
+}
