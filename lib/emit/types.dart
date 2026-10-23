@@ -430,8 +430,10 @@ void _collectResultTypesFromExpr(Expr expr, Set<ResultType> output) {
           _collectResultTypesFromExpr(v, output);
         }
       }
-    case SliceFromExpr(:final array):
+    case SliceFromExpr(:final array, :final start, :final end):
       _collectResultTypesFromExpr(array, output);
+      if (start != null) _collectResultTypesFromExpr(start, output);
+      if (end != null) _collectResultTypesFromExpr(end, output);
     case AwaitExpr(:final operand):
       _collectResultTypesFromExpr(operand, output);
     case InterpolatedStringExpr(:final parts):

@@ -129,7 +129,10 @@ bool _exprCallsStdio(Expr expr) => switch (expr) {
       FieldExpr(:final object) => _exprCallsStdio(object),
       IndexExpr(:final object, :final index) =>
         _exprCallsStdio(object) || _exprCallsStdio(index),
-      SliceFromExpr(:final array) => _exprCallsStdio(array),
+      SliceFromExpr(:final array, :final start, :final end) =>
+        _exprCallsStdio(array) ||
+            (start != null && _exprCallsStdio(start)) ||
+            (end != null && _exprCallsStdio(end)),
       ArrayLitExpr(:final elements) => elements.any(_exprCallsStdio),
       CastExpr(:final expr) => _exprCallsStdio(expr),
       BinaryExpr(:final left, :final right) =>

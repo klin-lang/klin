@@ -2194,4 +2194,34 @@ fn main() {
     );
     expect(c, contains('s.ptr[0].k'));
   });
+
+  test('subslice of an array is pointer plus length, no check', () {
+    const source = '''
+fn id(xs: []i32): []i32 { return xs }
+fn main() {
+  let xs: [5]i32 = [10, 20, 30, 40, 50]
+  let mid = xs[1:4]
+  let tail = xs[3:]
+  let head = xs[:2]
+  let again = id(xs)[1:]
+  printf("%d\\n", mid[0] + tail.len + head[1] + again[0])
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'slice_range_unit.kl');
+    expect(
+      c,
+      contains('(klin_slice_i32){ (xs) + (size_t)(1), ((size_t)(4) - (size_t)(1)) }'),
+    );
+    expect(
+      c,
+      contains('(klin_slice_i32){ (xs) + (size_t)(3), ((5) - (size_t)(3)) }'),
+    );
+    expect(c, contains('(klin_slice_i32){ xs, (size_t)(2) }'));
+    expect(c, contains('klin_slice_i32 klin_val_0 = id((klin_slice_i32){ xs, 5 });'));
+    expect(c, contains('klin_val_0.ptr) + (size_t)(1)'));
+    expect(c, contains('klin_val_0.len) - (size_t)(1)'));
+    expect(c, isNot(contains('id((klin_slice_i32){ xs, 5 }).ptr')));
+  });
 }

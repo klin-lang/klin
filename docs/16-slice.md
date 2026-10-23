@@ -118,6 +118,12 @@ structs (`[][N]Token`) is rejected. The stdlib templates below are
 still instantiated for numeric primitives; the language accepts the
 other element types without a `$fn` instance.
 
+`xs[a:b]`, `xs[a:]`, and `xs[:b]` are a subslice of an array or a
+slice ([D15](01-decisions.md)). The result is `[]T` over the same
+elements. There is no runtime bounds check — an out-of-range bound,
+`a > b`, or a negative bound is undefined behavior, the same policy
+as `xs[i]`. Mutability of the view follows the source place.
+
 ## Non-goals
 
 - Bare `xs.map(f)` / hidden `malloc`

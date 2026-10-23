@@ -174,6 +174,28 @@ is a slice of the same struct.
 
 Runnable: [`examples/slice_struct.kl`](../examples/slice_struct.kl).
 
+## Subslice
+
+`xs[a:b]`, `xs[a:]`, and `xs[:b]` on an array or a slice build a
+`[]T` over that range. `a` and `b` are integers (or an enum, the same
+way an array index is). No runtime check: a bound past the length,
+`a > b`, or a negative bound is undefined behavior.
+
+```klin
+fn main() {
+    let mut xs: [5]i32 = [10, 20, 30, 40, 50]
+    let mut mid = xs[1:4]
+    mid[0] = 7
+    printf("%d %d\n", mid.len, xs[1])
+}
+```
+
+`xs[a:b][i] = …` follows the source place (`let mut xs`, a `let mut`
+slice). A new binding follows that binding: `let mid = xs[a:b]` cannot
+write, `let mut mid` can. A slice parameter, `b"…"`, and a `const`
+cannot. An array subslice needs an l-value. Runnable:
+[`examples/slice_range.kl`](../examples/slice_range.kl).
+
 ## Byte strings
 
 `"..."` is `str` (`const char*`). `b"..."` is `[]u8`: the bytes of the

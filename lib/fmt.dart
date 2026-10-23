@@ -619,7 +619,8 @@ String _expr(Expr expr, [int indent = 0]) {
           : '$op(${_expr(operand, indent)})',
     IndexExpr(:final object, :final index) =>
       '${_expr(object, indent)}[${_expr(index, indent)}]',
-    SliceFromExpr(:final array) => '${_expr(array, indent)}[:]',
+    SliceFromExpr(:final array, :final start, :final end) =>
+      '${_expr(array, indent)}[${start == null ? '' : _expr(start, indent)}:${end == null ? '' : _expr(end, indent)}]',
     ArrayLitExpr(:final elements) =>
       '[${elements.map((e) => _expr(e, indent)).join(', ')}]',
     CastExpr(:final typeName, :final expr) =>

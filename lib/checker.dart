@@ -2972,10 +2972,12 @@ final class Checker {
       if (objectType is SliceType) {
         // `b"..."` points at static read-only bytes. A slice view of an
         // array is a different buffer; writability follows the place.
-        if (_unwrapGroups(place.object) is ByteStringLit) {
+        // `b"…"[a:b][i]` and `CONST[a:b][i]` walk through the subslice
+        // back to the literal or the constant. A copied binding does not.
+        if (_sliceRoot(place.object) is ByteStringLit) {
           throw CheckError('cannot assign through a byte-string literal', pos);
         }
-        if (_placeIsConst(place.object)) {
+        if (_placeIsConst(_sliceRoot(place.object))) {
           throw CheckError('cannot assign through a constant', pos);
         }
         _requireMutableSlicePlace(place.object, pos);
@@ -3011,6 +3013,11 @@ final class Checker {
   void _requireMutableSlicePlace(Expr object, SourcePos pos) {
     final base = _unwrapGroups(object);
     if (base is SliceFromExpr) {
+      final src = base.array.resolvedType ?? _inferExpr(base.array);
+      if (src is SliceType) {
+        _requireMutableSlicePlace(base.array, pos);
+        return;
+      }
       _requireMutableArrayPlace(base.array, pos);
       return;
     }
@@ -3073,7 +3080,7 @@ final class Checker {
     if (base is IndexExpr) {
       final indexed = _unwrapGroups(base.object);
       if (indexed is SliceFromExpr) {
-        _requireMutableArrayPlace(indexed.array, pos);
+        _requireMutableSlicePlace(indexed, pos);
         return;
       }
       if (_inferExpr(base.object) is SliceType) {
@@ -3099,6 +3106,31 @@ final class Checker {
       return;
     }
     throw CheckError(immutableExprMessage, pos);
+  }
+
+  /// `xs[a:b][i]` stores through the same place as `xs[i]`. Walk past
+  /// every subslice to that place.
+  Expr _sliceRoot(Expr expr) {
+    var current = _unwrapGroups(expr);
+    while (current is SliceFromExpr) {
+      current = _unwrapGroups(current.array);
+    }
+    return current;
+  }
+
+  /// A subslice bound uses the same types as an index: an integer, or an
+  /// enum that fits a fixed array. No range check is emitted (D15).
+  void _checkSliceBound(Expr bound, KlinType indexed) {
+    final indexType = _defaultConcrete(_inferExpr(bound), bound.pos);
+    if (indexType is EnumType) {
+      _checkEnumIndex(indexType, indexed, bound.pos);
+    } else if (indexType is! PrimType || !indexType.kind.isInteger) {
+      throw CheckError(
+        'slice bound requires an integer or enum type',
+        bound.pos,
+      );
+    }
+    _materialize(bound, indexType);
   }
 
   Expr _unwrapGroups(Expr expr) {
@@ -3238,22 +3270,33 @@ final class Checker {
               ),
           };
         }(),
-      SliceFromExpr(:final array, :final pos) => () {
-          if (!_isAddressablePlace(array)) {
+      SliceFromExpr(:final array, :final start, :final end, :final pos) => () {
+          final src = _inferExpr(array);
+          final KlinType elem;
+          if (src is ArrayType) {
+            // The pointer is the array itself. A temporary has nowhere
+            // stable to point (same rule as `xs[:]`).
+            if (!_isAddressablePlace(array)) {
+              throw CheckError(
+                start == null && end == null
+                    ? '`[:]` requires an array l-value, not a literal or temporary expression'
+                    : 'a subslice requires an array l-value, not a literal or temporary expression',
+                pos,
+              );
+            }
+            _requireSliceElem(src.elem, pos);
+            elem = src.elem;
+          } else if (src is SliceType) {
+            elem = src.elem;
+          } else {
             throw CheckError(
-              '`[:]` requires an array l-value, not a literal or temporary expression',
+              'a slice range requires an array or slice, got `${src.displayName}`',
               pos,
             );
           }
-          final arrayType = _inferExpr(array);
-          if (arrayType is! ArrayType) {
-            throw CheckError(
-              '`[:]` requires an array, got `${arrayType.displayName}`',
-              pos,
-            );
-          }
-          _requireSliceElem(arrayType.elem, pos);
-          return SliceType(arrayType.elem);
+          if (start != null) _checkSliceBound(start, src);
+          if (end != null) _checkSliceBound(end, src);
+          return SliceType(elem);
         }(),
       ArrayLitExpr(:final elements, :final pos) => () {
           // `[]` stays untyped until an expected `[0]T` adopts it
@@ -4133,8 +4176,10 @@ final class Checker {
         case IndexExpr(:final object, :final index):
           walk(object);
           walk(index);
-        case SliceFromExpr(:final array):
+        case SliceFromExpr(:final array, :final start, :final end):
           walk(array);
+          if (start != null) walk(start);
+          if (end != null) walk(end);
         case ArrayLitExpr(:final elements):
           for (final element in elements) {
             walk(element);

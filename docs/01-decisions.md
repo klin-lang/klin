@@ -504,6 +504,41 @@ fn sum_kind(xs: []Token): i32 {
 }
 ```
 
+## D15. Subslice — DECIDED
+
+**Choice: `xs[a:b]`, `xs[a:]`, and `xs[:b]` are a header. No runtime bounds check.**
+
+Same policy as indexing. Issue 007 considered a check and did not add
+one; a subslice does not add a hidden branch either. `a` and `b` are
+integers, or an enum used the same way as an array index (it must fit
+a fixed array; a slice rejects it). The pointer is `base + a` (`base`
+when `a` is omitted). The length is `b - a`, or `len - a` when `b` is
+omitted, or `b` when `a` is omitted. Each bound is converted to
+`size_t` so the header field stays `size_t`. Out of range, `a > b`,
+and a negative bound are undefined behavior — not a Klin error and
+not a check in the generated C.
+
+The result is `[]T` over the same elements. Mutability follows the
+source place (D5), including through another subslice: `let mut xs`
+makes `xs[a:b][i] = …` a write; an immutable binding, a slice
+parameter, a byte-string literal, and a `const` do not. `&xs[a:b][i]`
+is `*mut T` or `*T` by that same place.
+
+An array subslice needs an l-value, the same rule as `xs[:]`. A slice
+subslice copies the header. When both the pointer and the length are
+read (`s[a:]`, `s[:]`) and the source is not a plain place, it is
+evaluated once into a temporary so a call does not run twice.
+`s[:b]` and `s[a:b]` read only the pointer.
+
+```klin
+fn main() {
+    let mut xs: [5]i32 = [10, 20, 30, 40, 50]
+    let mut mid = xs[1:4]
+    mid[0] = 7
+    printf("%d %d\n", mid.len, xs[1])
+}
+```
+
 ## D7. To decide later
 
 - Closures — at all? Nelua does not have them outside top-level. A struct

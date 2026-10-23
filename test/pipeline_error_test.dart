@@ -2625,4 +2625,57 @@ fn main() {
 }
 ''', 'cannot assign through an immutable slice');
   });
+
+  test('error: subslice of an immutable array', () {
+    expectRange('''
+fn main() {
+  let xs: [3]i32 = [1, 2, 3]
+  xs[1:3][0] = 9
+}
+''', 'cannot assign to an immutable array');
+  });
+
+  test('error: subslice of an immutable slice parameter', () {
+    expectRange('''
+fn f(s: []i32) {
+  s[0:1][0] = 1
+}
+fn main() {}
+''', 'cannot assign through an immutable slice');
+  });
+
+  test('error: subslice of a byte string', () {
+    expectRange('''
+fn main() {
+  b"fn"[0:1][0] = 65
+}
+''', 'cannot assign through a byte-string literal');
+  });
+
+  test('error: subslice of a []u8 constant', () {
+    expectRange('''
+const S: []u8 = b"ab"
+fn main() {
+  S[0:1][0] = 1
+}
+''', 'cannot assign through a constant');
+  });
+
+  test('error: slice bound must be an integer', () {
+    expectRange('''
+fn main() {
+  let xs: [3]i32 = [1, 2, 3]
+  let s = xs[1:true]
+}
+''', 'slice bound requires an integer or enum type');
+  });
+
+  test('error: slice range on a non-array', () {
+    expectRange('''
+fn main() {
+  let x = 1
+  let s = x[0:1]
+}
+''', 'a slice range requires an array or slice');
+  });
 }

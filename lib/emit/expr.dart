@@ -211,13 +211,8 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         }
         return '${_emitArrayObject(object, ctx)}[$indexC]';
       }(),
-    SliceFromExpr(:final array) => () {
-        final type = array.resolvedType;
-        if (type is! ArrayType) {
-          throw StateError('emit: `[:]` without an array type');
-        }
-        return '(${_sliceCName(type.elem)}){ ${_emitArrayObject(array, ctx)}, ${type.len} }';
-      }(),
+    SliceFromExpr(:final array, :final start, :final end) =>
+      _emitSliceFrom(array, start, end, ctx),
     ArrayLitExpr lit => _emitArrayLit(lit, ctx),
     CastExpr(:final resolvedType, :final expr) => () {
         final target = resolvedType;
@@ -539,6 +534,70 @@ String _cConstInt(BigInt value, PrimKind kind) {
   if (value.isNegative) return value.toString();
   if (value > _i64Max) return '${value}ULL';
   return value.toString();
+}
+
+/// `xs[a:b]` / `xs[a:]` / `xs[:b]` / `xs[:]`. No bounds check (D15).
+/// An array is used once as the pointer base; its length is the constant
+/// `N`. A slice that is not a plain place is stored once when both `.ptr`
+/// and `.len` are read (`s[a:]`, `s[:]`).
+String _emitSliceFrom(Expr array, Expr? start, Expr? end, _ExprCtx ctx) {
+  final type = array.resolvedType;
+  if (type is ArrayType) {
+    final base = _emitArrayObject(array, ctx);
+    final ptr = start == null
+        ? base
+        : '($base) + (size_t)(${_emitExpr(start, ctx)})';
+    final len = _sliceRangeLen('${type.len}', start, end, ctx);
+    return '(${_sliceCName(type.elem)}){ $ptr, $len }';
+  }
+  if (type is! SliceType) {
+    throw StateError('emit: slice range without an array or slice');
+  }
+  // End omitted means the length comes from the header, so both fields
+  // are read. A call must not run twice.
+  final needsLen = end == null;
+  final String src;
+  if (needsLen && !_exprIsSimplePlace(array)) {
+    final tmp = ctx.state.nextValueTemp();
+    final pad = '    ' * ctx.indent;
+    ctx.buf.writeln('$pad${_cType(type)} $tmp = ${_emitExpr(array, ctx)};');
+    src = tmp;
+  } else {
+    final raw = _emitExpr(array, ctx);
+    src = _exprIsSimplePlace(array) ? raw : '($raw)';
+  }
+  final ptr = start == null
+      ? '$src.ptr'
+      : '($src.ptr) + (size_t)(${_emitExpr(start, ctx)})';
+  final len = _sliceRangeLen('$src.len', start, end, ctx);
+  return '(${_sliceCName(type.elem)}){ $ptr, $len }';
+}
+
+/// Length of a subslice. Each bound is converted to `size_t` before the
+/// subtraction so the header field stays `size_t`. A negative bound or
+/// `a > b` is undefined behavior, not a check.
+String _sliceRangeLen(String full, Expr? start, Expr? end, _ExprCtx ctx) {
+  if (start == null && end == null) return full;
+  if (start == null) return '(size_t)(${_emitExpr(end!, ctx)})';
+  if (end == null) {
+    return '(($full) - (size_t)(${_emitExpr(start, ctx)}))';
+  }
+  return '((size_t)(${_emitExpr(end, ctx)}) - (size_t)(${_emitExpr(start, ctx)}))';
+}
+
+/// A name, or a field / index / dereference of one. Reading it twice does
+/// not call a function. Anything else is stored in a temporary.
+bool _exprIsSimplePlace(Expr expr) {
+  final node = _peelEmitGroups(expr);
+  return switch (node) {
+    NameExpr() => true,
+    FieldExpr(:final object) => _exprIsSimplePlace(object),
+    IndexExpr(:final object, :final index) =>
+      _exprIsSimplePlace(object) && _exprIsSimplePlace(index),
+    UnaryExpr(:final op, :final operand) when op == '*' =>
+      _exprIsSimplePlace(operand),
+    _ => false,
+  };
 }
 
 /// `b"..."` → `[]u8` over a static C string. `.len` is the byte count and

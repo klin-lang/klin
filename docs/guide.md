@@ -230,7 +230,10 @@ fn main() {
   a function, or an array that is not an array of structs.
   `xs[:]` on `[N]Token` is `[]Token`; `s[i].kind` reads a field.
   A slice of an array of structs (`[][N]Token`) is an error.
-  Writes and `&s[i]` follow the slice place, same as `[]i32`
+  Writes and `&s[i]` follow the slice place, same as `[]i32`.
+  `xs[a:b]`, `xs[a:]`, and `xs[:b]` are a subslice of an array or a
+  slice: a new `{ptr, len}` over the same elements, no bounds check.
+  A write through that view follows the source place
 - No hidden allocation. Heap is `import mem` and an explicit
   `Allocator` ([14-allocator.md](14-allocator.md))
 

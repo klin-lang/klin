@@ -497,4 +497,28 @@ void main() {
     ]);
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
+
+  test('subslice of an array and a slice', () async {
+    final result = await compileAndRun('test/slice_range.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/slice_range.out').readAsString());
+
+    final program = loadProject('test/slice_range.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/slice_range.kl');
+    expect(c, contains('(xs) + (size_t)(1)'));
+    expect(c, contains('((size_t)(4) - (size_t)(1))'));
+    expect(c, isNot(contains('if (')));
+    final cPath = '${tmp.path}/slice_range_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/slice_range_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
 }
