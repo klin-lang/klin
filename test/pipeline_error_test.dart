@@ -1600,4 +1600,35 @@ fn main() {
     );
   });
 
+  test('error: assign through a byte-string literal', () {
+    const source = '''
+fn main() {
+  b"fn"[0] = 65
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('byte-string literal'),
+      )),
+    );
+  });
+
+  test('error: unknown escape in a byte string', () {
+    const source = '''
+fn main() {
+  let s = b"\\q"
+}
+''';
+    expect(
+      () => Lexer(source).tokenize(),
+      throwsA(predicate(
+        (e) => e is LexError && e.toString().contains('unknown escape'),
+      )),
+    );
+  });
+
 }

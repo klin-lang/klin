@@ -541,6 +541,7 @@ String _expr(Expr expr, [int indent = 0]) {
     FloatLit(:final lexeme) => lexeme,
     BoolLit(:final value) => value ? 'true' : 'false',
     StringLit(:final value) => '"${_escapeString(value)}"',
+    ByteStringLit(:final value) => 'b"${_escapeString(value)}"',
     InterpolatedStringExpr(:final parts) => () {
         final out = StringBuffer('"');
         for (final part in parts) {

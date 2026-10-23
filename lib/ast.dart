@@ -709,6 +709,14 @@ final class StringLit extends Expr {
   StringLit(this.value, this.pos);
 }
 
+/// `b"..."` — the bytes of the text, type `[]u8`. Not interpolated.
+final class ByteStringLit extends Expr {
+  final String value;
+  final SourcePos pos;
+
+  ByteStringLit(this.value, this.pos);
+}
+
 /// Literal `$` in interpolated strings (lexer escape `\$`).
 const String kInterpEscapedDollar = '\u{E000}';
 

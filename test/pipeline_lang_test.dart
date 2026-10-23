@@ -1663,4 +1663,9 @@ fn main() {
     Checker().check(program);
   });
 
+  test('fmt keeps a byte-string literal', () {
+    const source = 'fn main() {\n    let s = b"a\\n"\n}\n';
+    expect(formatSource(source), source);
+  });
+
 }

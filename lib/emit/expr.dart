@@ -28,6 +28,7 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
     FloatLit(:final lexeme) => lexeme.replaceAll('_', ''),
     BoolLit(:final value) => value ? 'true' : 'false',
     StringLit(:final value) => '"${_escapeC(value)}"',
+    ByteStringLit(:final value) => _emitByteString(value),
     NameExpr(:final name, :final resolvedFnCName) =>
       resolvedFnCName ?? name,
     FieldExpr(:final object, :final name, :final enumConstCName) => () {
@@ -213,6 +214,31 @@ String _methodCName(String module, String type, String method) =>
 
 void _line(StringBuffer buf, int line, String path) {
   buf.writeln('#line $line "${_escapeC(path)}"');
+}
+
+/// `b"..."` → `[]u8` over a static C string. `.len` is the byte count and
+/// does not include the C NUL. The pointer is valid for the whole program.
+String _emitByteString(String value) {
+  final elem = const PrimType(PrimKind.u8);
+  final n = _utf8ByteLength(value);
+  return '((${_sliceCName(elem)}){ (${elem.kind.cType} *)"${_escapeC(value)}", $n })';
+}
+
+/// UTF-8 size of [s]. Matches the bytes `_escapeC` writes into the `.c` file.
+int _utf8ByteLength(String s) {
+  var n = 0;
+  for (final rune in s.runes) {
+    if (rune <= 0x7F) {
+      n += 1;
+    } else if (rune <= 0x7FF) {
+      n += 2;
+    } else if (rune <= 0xFFFF) {
+      n += 3;
+    } else {
+      n += 4;
+    }
+  }
+  return n;
 }
 
 String _escapeC(String s) {

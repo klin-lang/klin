@@ -991,6 +991,7 @@ final class Parser {
         TokenKind.intLit ||
         TokenKind.floatLit ||
         TokenKind.string ||
+        TokenKind.byteString ||
         TokenKind.true_ ||
         TokenKind.false_ ||
         TokenKind.ident ||
@@ -1370,6 +1371,10 @@ final class Parser {
       case TokenKind.string:
         _advance();
         expr = _stringLitOrInterp(t);
+        break;
+      case TokenKind.byteString:
+        _advance();
+        expr = ByteStringLit(t.lexeme, t.pos);
         break;
       case TokenKind.true_:
         _advance();

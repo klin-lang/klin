@@ -1,0 +1,25 @@
+fn take(s: []u8): i32 {
+    if s.len == 0 { return 0 }
+    return cast(i32, s[0])
+}
+
+fn is_kw(s: []u8): bool {
+    let k = b"fn"
+    if s.len != k.len { return false }
+    let mut i = 0
+    while i < s.len {
+        if s[i] != k[i] { return false }
+        i = i + 1
+    }
+    return true
+}
+
+fn main() {
+    let kw = b"fn"
+    let esc = b"a\tb\"\\$"
+    printf("%d %d %d\n", kw.len, kw[0], kw[1])
+    printf("%d %d %d %d\n", esc.len, esc[1], esc[3], esc[5])
+    printf("%d %d %d\n", take(b"ab\n"), b"ab\n".len, b"".len)
+    printf("%d\n", b"ą".len)
+    printf("%d %d\n", pick is_kw(b"fn") { 1 } { 0 }, pick is_kw(b"if") { 1 } { 0 })
+}

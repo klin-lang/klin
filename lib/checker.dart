@@ -2209,6 +2209,11 @@ final class Checker {
       final objectType = _inferExpr(place.object);
       // Slice header is a value; element storage is shared with the caller (Go-like).
       if (objectType is SliceType) {
+        // `b"..."` points at static read-only bytes. A slice view of an
+        // array is a different buffer and stays writable.
+        if (_unwrapGroups(place.object) is ByteStringLit) {
+          throw CheckError('cannot assign through a byte-string literal', pos);
+        }
         return _inferExpr(place);
       }
       final type = _inferExpr(place);
@@ -2331,6 +2336,7 @@ final class Checker {
       FloatLit() => const UntypedFloat(),
       BoolLit() => const PrimType(PrimKind.bool_),
       StringLit() => const StrType(),
+      ByteStringLit() => const SliceType(PrimType(PrimKind.u8)),
       InterpolatedStringExpr(:final pos) => throw CheckError(
           'interpolated string must be passed to puts / printf / io.print / '
           'io.println, or fmt.write(buf[:], …)',
@@ -2975,6 +2981,7 @@ final class Checker {
             FloatLit() ||
             BoolLit() ||
             StringLit() ||
+            ByteStringLit() ||
             InterpolatedStringExpr() ||
             NameExpr() ||
             CallExpr() ||

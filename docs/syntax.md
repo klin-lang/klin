@@ -143,6 +143,25 @@ Runnable: [`examples/destructure.kl`](../examples/destructure.kl),
 [`examples/multi_assign.kl`](../examples/multi_assign.kl).
 Issue: [056](../issues/056-destructuring.md).
 
+## Byte strings
+
+`"..."` is `str` (`const char*`). `b"..."` is `[]u8`: the bytes of the
+text and a length. No interpolation. Escapes match `"..."`:
+`\n`, `\t`, `\\`, `\"`, `\$`.
+
+```klin
+fn take(s: []u8): i32 { return s.len }
+
+fn main() {
+    let kw = b"fn"
+    printf("%d %d\n", kw.len, kw[0])   // 2, 102
+    printf("%d\n", take(b"ab\n"))      // 3
+}
+```
+
+The slice points at static bytes (no allocation). Those bytes are
+read-only: `b"fn"[0] = 1` is an error. Copy into a `[N]u8` to modify.
+
 ## Already documented elsewhere
 
 | Topic | Where |

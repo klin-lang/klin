@@ -24,6 +24,19 @@
       ]
     },
     "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.byte.klin",
+          "begin": "\\bb\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.klin",
+              "match": "\\\\[nt\"\\\\$]"
+            }
+          ]
+        },
+        {
       "name": "string.quoted.double.klin",
       "begin": "\"",
       "end": "\"",
@@ -53,6 +66,8 @@
               "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b"
             }
           ]
+        }
+      ]
         }
       ]
     },

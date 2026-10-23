@@ -301,6 +301,7 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
     FloatLit(:final lexeme) => lexeme.replaceAll('_', ''),
     BoolLit(:final value) => value ? 'true' : 'false',
     StringLit(:final value) => '"${_escapeC(value)}"',
+    ByteStringLit(:final value) => _emitByteString(value),
     NameExpr(:final name, :final resolvedFnCName) =>
       resolvedFnCName ?? 'st->$name',
     UnaryExpr(:final op, :final operand) =>

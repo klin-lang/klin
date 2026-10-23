@@ -58,6 +58,7 @@ enum TokenKind {
   intLit,
   floatLit,
   string,
+  byteString, // b"…" — bytes, not an interpolated str
 
   // operators and punctuation
   plus,

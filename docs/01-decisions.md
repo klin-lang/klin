@@ -1,6 +1,6 @@
 # Design decisions
 
-This is the decision log (D1–D9), not an introduction. Start with
+This is the decision log (D1–D10), not an introduction. Start with
 [00-idea.md](00-idea.md). To write Klin: [guide.md](guide.md).
 
 The first three must be made **before the first line of the parser** — they permeate
@@ -202,6 +202,28 @@ Implemented in [097](../issues/097-logical-ops.md); example:
 [guide.md](guide.md) §9.
 
 ---
+
+## D10. Byte-string literal `b"..."` — DECIDED
+
+**Choice: `b"fn"` has type `[]u8`.** The bytes of the text, plus `.len`.
+Not a `str`.
+
+`str` is `const char*` — a C string, no length, no indexing. Keyword
+tables, messages, and paths want the bytes. A second literal keeps
+`"..."` as `str` and does not allocate.
+
+- Escapes are the same as `"..."` (`\n` `\t` `\\` `\"` `\$`). No
+  interpolation (`$` is a byte).
+- Emission is a pointer at a static C string and an explicit length
+  (the C `NUL` is not part of `.len`).
+- The bytes are read-only. `b"fn"[0] = 1` is a checker error. Copy
+  into a `[N]u8` to modify.
+- `.len` is the UTF-8 byte count.
+
+```klin
+let kw = b"fn"
+printf("%d\n", kw.len)   // 2
+```
 
 ## D7. To decide later
 

@@ -62,4 +62,17 @@ void main() {
     expect(c, contains('klin_slice_i32 s = (klin_slice_i32){ xs, 3 };'));
     expect(c, contains('s.ptr[0] = 7;'));
   });
+
+  test('byte-string literal is []u8 with .len', () async {
+    final result = await compileAndRun('test/byte_string.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/byte_string.out').readAsString());
+
+    final program = loadProject('test/byte_string.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/byte_string.kl');
+    expect(c, contains('klin_slice_u8'));
+    expect(c, contains('(uint8_t *)"fn", 2'));
+    expect(c, contains(r'(uint8_t *)"a\tb\"\\$", 6'));
+  });
 }

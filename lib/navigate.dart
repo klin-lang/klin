@@ -336,7 +336,7 @@ final class _CollectNav {
         walkExpr(cond);
         walkExpr(thenExpr);
         walkExpr(elseExpr);
-      case IntLit() || FloatLit() || BoolLit() || StringLit():
+      case IntLit() || FloatLit() || BoolLit() || StringLit() || ByteStringLit():
         break;
     }
   }
@@ -522,7 +522,7 @@ final class _NavWalker {
         walkExpr(cond);
         walkExpr(thenExpr);
         walkExpr(elseExpr);
-      case IntLit() || FloatLit() || BoolLit() || StringLit():
+      case IntLit() || FloatLit() || BoolLit() || StringLit() || ByteStringLit():
         break;
     }
   }
