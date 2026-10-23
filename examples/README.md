@@ -45,6 +45,7 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `slice_range.kl` | Subslice `xs[a:b]` / `xs[a:]` / `xs[:b]` ([D15](../docs/01-decisions.md)) |
 | `fn_field.kl` | Call a function field `h.cb(1)` ([D16](../docs/01-decisions.md)) |
 | `ptr_int_cast.kl` | `cast(usize, &x)` and back ([D17](../docs/01-decisions.md)) |
+| `main_args.kl` | `fn main(args: []str)` ([D18](../docs/01-decisions.md)) |
 | `fn_ptr.kl` | Function pointers without capture ([017](../issues/017-collection-methods.md) phase 2) |
 | `slice_ops.kl` | `stdlib/slice` map/filter/reduce ([017](../issues/017-collection-methods.md), [docs/16](../docs/16-slice.md)) |
 | `slice_alloc_demo.kl` | `stdlib/slice_alloc` + explicit `Allocator` ([017](../issues/017-collection-methods.md), [docs/16](../docs/16-slice.md)) |

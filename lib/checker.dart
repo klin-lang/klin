@@ -407,16 +407,12 @@ final class Checker {
         throw CheckError(
             'a project can contain only one `main` function', main[1].pos);
       }
-      if (main.single.params.isNotEmpty) {
-        throw CheckError(
-            '`main` function cannot have parameters', main.single.pos);
-      }
+      _checkMainSignature(main.single);
     } else if (main.length > 1) {
       throw CheckError(
           'a project can contain only one `main` function', main[1].pos);
-    } else if (main.length == 1 && main.single.params.isNotEmpty) {
-      throw CheckError(
-          '`main` function cannot have parameters', main.single.pos);
+    } else if (main.length == 1) {
+      _checkMainSignature(main.single);
     }
 
     final collected = <CheckError>[];
@@ -436,6 +432,21 @@ final class Checker {
     if (collected.isNotEmpty) {
       throw CheckErrors(collected);
     }
+  }
+
+  /// `fn main()` or `fn main(args: []str)`. Anything else is an error.
+  /// `[]str` is the argv header: no hidden strlen, and `char **` converts
+  /// with one cast (D18). `[][]u8` would walk each argument.
+  void _checkMainSignature(FuncDecl main) {
+    if (main.params.isEmpty) return;
+    final type = main.params.singleOrNull?.resolvedType;
+    if (main.params.length == 1 && type is SliceType && type.elem is StrType) {
+      return;
+    }
+    throw CheckError(
+      '`main` takes no parameters, or one parameter of type `[]str`',
+      main.pos,
+    );
   }
 
   void _checkFuncBody(FuncDecl func) {

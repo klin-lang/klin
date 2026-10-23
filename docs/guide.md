@@ -25,6 +25,11 @@ fn main() {
 `puts` and `printf` are the only C functions allowed without a
 declaration. Everything else needs `@[cimport]` ([09-ffi-c.md](09-ffi-c.md)).
 
+`fn main()` takes no arguments. `fn main(args: []str)` is the process
+arguments: `args.len` is `argc` (including the program name) and
+`args[0]` is `argv[0]`. The slice is immutable. Other signatures are
+an error ([D18](01-decisions.md)).
+
 ## 2. Values
 
 ```klin

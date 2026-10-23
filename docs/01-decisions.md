@@ -597,6 +597,28 @@ fn main() {
 }
 ```
 
+## D18. `main` arguments — DECIDED
+
+**Choice: `fn main()` or `fn main(args: []str)`. Not `[][]u8`.**
+
+`[]str` is the argv pointer and the count. One cast from `char **` to
+`const char **`, no loop, no allocation. `[][]u8` would measure every
+argument (`strlen`) and build a slice per argument — hidden work, so
+it is not the signature. Kliner can still read `/proc/self/cmdline`;
+the language path is this parameter.
+
+`args.len` is `argc`, including `argv[0]`. The slice is immutable
+(a parameter, D5). A negative `argc` is not checked; the host does
+not pass one. C parameters are `klin_argc` and `klin_argv` so a
+parameter named `argc` does not collide. `main()` with no parameters
+stays `int main(void)`. `async fn main` stays rejected.
+
+```klin
+fn main(args: []str) {
+    printf("%d\n", cast(i32, args.len))
+}
+```
+
 ## D7. To decide later
 
 - Closures — at all? Nelua does not have them outside top-level. A struct

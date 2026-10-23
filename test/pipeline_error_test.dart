@@ -2710,6 +2710,32 @@ fn main() {
 ''', 'cast from a pointer requires an integer type');
   });
 
+  test('error: main with an integer parameter', () {
+    expectRange('''
+fn main(argc: i32) {}
+''', '`main` takes no parameters, or one parameter of type `[]str`');
+  });
+
+  test('error: main with [][]u8', () {
+    expectRange('''
+fn main(args: [][]u8) {}
+''', '`main` takes no parameters, or one parameter of type `[]str`');
+  });
+
+  test('error: main with two parameters', () {
+    expectRange('''
+fn main(args: []str, extra: i32) {}
+''', '`main` takes no parameters, or one parameter of type `[]str`');
+  });
+
+  test('error: assign through main args', () {
+    expectRange('''
+fn main(args: []str) {
+  args[0] = "no"
+}
+''', 'cannot assign through an immutable slice');
+  });
+
   test('error: slice range on a non-array', () {
     expectRange('''
 fn main() {

@@ -1,0 +1,3 @@
+fn main(args: []str) {
+    printf("%d %s\n", cast(i32, args.len), args[0])
+}

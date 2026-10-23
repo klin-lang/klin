@@ -1,7 +1,20 @@
 part of '../emit_c.dart';
 
+/// C names for `argc` / `argv`. They stay off the user's `[]str` parameter
+/// unless that parameter is already one of these names.
+({String argc, String argv}) _mainHostNames(String param) {
+  if (param == 'klin_argc' || param == 'klin_argv') {
+    return (argc: 'klin_main_argc', argv: 'klin_main_argv');
+  }
+  return (argc: 'klin_argc', argv: 'klin_argv');
+}
+
 String _functionHeader(FuncDecl func) {
-  if (func.name == 'main') return 'int main(void)';
+  if (func.name == 'main') {
+    if (func.params.isEmpty) return 'int main(void)';
+    final host = _mainHostNames(func.params.single.name);
+    return 'int main(int ${host.argc}, char **${host.argv})';
+  }
   final returnType = func.resolvedReturnType;
   if (returnType == null) {
     throw StateError('emit: missing return type for function `${func.name}`');

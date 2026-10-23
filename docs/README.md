@@ -35,7 +35,7 @@ Landing and [00-idea.md](00-idea.md) explain **why** Klin. To go from
 |---|---|
 | [language.md](language.md) | What is in `.kl` vs a library vs not Klin |
 | [00-idea.md](00-idea.md) | Principle, C backend, neighbors, non-goals |
-| [01-decisions.md](01-decisions.md) | D1–D17 (memory, errors, generics, `b"…"`, `const`, returning `[N]T`, slice elements, subslice, function fields, pointer casts, …) |
+| [01-decisions.md](01-decisions.md) | D1–D18 (memory, errors, generics, `b"…"`, `const`, returning `[N]T`, slice elements, subslice, function fields, pointer casts, `main` args, …) |
 | [02-architecture.md](02-architecture.md) | Pipeline and engineering rules Z1–Z6 |
 | [03-name-license.md](03-name-license.md) | Name, `.kl`, MIT, generated C is yours |
 

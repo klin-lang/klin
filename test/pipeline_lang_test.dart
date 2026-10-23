@@ -2272,4 +2272,55 @@ fn main() {
     expect(c, contains('(int32_t *)(uintptr_t)(u)'));
     expect(c, contains('(int32_t *)(uintptr_t)(0)'));
   });
+
+  test('main() stays int main(void)', () {
+    const source = '''
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'main_void_unit.kl');
+    expect(c, contains('int main(void)'));
+    expect(c, isNot(contains('klin_argc')));
+  });
+
+  test('main(args: []str) is argc/argv under names that do not collide', () {
+    const source = '''
+fn main(args: []str) {
+  printf("%d\\n", cast(i32, args.len))
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'main_args_unit.kl');
+    expect(c, contains('int main(int klin_argc, char **klin_argv)'));
+    expect(
+      c,
+      contains(
+        'klin_slice_str args = { (const char **)klin_argv, (size_t)klin_argc };',
+      ),
+    );
+    expect(c, isNot(contains('strlen')));
+  });
+
+  test('main parameter named klin_argc uses a different C name', () {
+    const source = '''
+fn main(klin_argc: []str) {
+  printf("%d\\n", cast(i32, klin_argc.len))
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'main_argc_name_unit.kl');
+    expect(
+      c,
+      contains('int main(int klin_main_argc, char **klin_main_argv)'),
+    );
+    expect(
+      c,
+      contains(
+        'klin_slice_str klin_argc = { (const char **)klin_main_argv, (size_t)klin_main_argc };',
+      ),
+    );
+  });
 }

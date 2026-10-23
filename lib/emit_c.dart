@@ -185,6 +185,15 @@ String emitC(Program program, String sourcePath) {
     if (func.isAsync) continue;
     _line(buf, func.pos.line, func.sourcePath ?? sourcePath);
     buf.writeln('${_functionHeader(func)} {');
+    if (func.name == 'main' && func.params.isNotEmpty) {
+      final param = func.params.single;
+      final host = _mainHostNames(param.name);
+      // `char **` is not `const char **`. One cast; no copy of the strings.
+      buf.writeln(
+        '    klin_slice_str ${param.name} = '
+        '{ (const char **)${host.argv}, (size_t)${host.argc} };',
+      );
+    }
     _emitBlock(
       buf,
       func.body!,

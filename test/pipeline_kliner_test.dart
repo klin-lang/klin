@@ -571,4 +571,37 @@ void main() {
     ]);
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
+
+  test('main(args: []str) receives argc and argv', () async {
+    final result = await compileAndRun('test/main_args.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/main_args.out').readAsString());
+
+    final again = await Process.run('${tmp.path}/main_args', ['hello']);
+    expect(again.exitCode, 0, reason: again.stderr.toString());
+    expect(again.stdout, '2\nhello\n');
+
+    final program = loadProject('test/main_args.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/main_args.kl');
+    expect(c, contains('int main(int klin_argc, char **klin_argv)'));
+    expect(
+      c,
+      contains(
+        'klin_slice_str args = { (const char **)klin_argv, (size_t)klin_argc };',
+      ),
+    );
+    expect(c, isNot(contains('strlen')));
+    final cPath = '${tmp.path}/main_args_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/main_args_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
 }

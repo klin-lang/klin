@@ -200,6 +200,16 @@ write, `let mut mid` can. A slice parameter, `b"…"`, and a `const`
 cannot. An array subslice needs an l-value. Runnable:
 [`examples/slice_range.kl`](../examples/slice_range.kl).
 
+## `main` arguments
+
+`fn main()` or `fn main(args: []str)`. The parameter is the process
+arguments as an immutable slice: `.len` is `argc` (it counts `argv[0]`),
+and `args[i]` is `argv[i]`. C is `int main(int klin_argc, char **klin_argv)`
+plus one header. No copy and no check that `argc` is negative.
+`[][]u8` is not this parameter — that would walk each string.
+See [D18](01-decisions.md). Runnable:
+[`examples/main_args.kl`](../examples/main_args.kl).
+
 ## Function field call
 
 `h.cb(1)` calls a field of type `fn(…)`. `(*p).cb(1)` does too.
