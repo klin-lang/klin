@@ -2159,4 +2159,68 @@ fn main() {
     expect(c, isNot(contains('(pair()).v[0]')));
     expect(c, isNot(contains('memcpy')));
   });
+
+  test('checker: match and pick arms adopt the expected integer type', () {
+    const source = '''
+fn main() {
+  let k = 1
+  let y: u8 = 4
+  let x: u8 = match k {
+    0 { 1 + 2 }
+    else { 4 }
+  }
+  let p: u8 = pick k == 0 { 10 + 1 } { 6 }
+  let row: [2]u8 = match k {
+    0 { [1 + 2, 4] }
+    else { [8, 9] }
+  }
+  let xs: [2]u8 = [9, 8]
+  let mixed: [2]u8 = pick true { xs } { [1 + 2, 4] }
+  let wide: u64 = match k {
+    else { ~0 }
+  }
+  let runtime: u8 = match k {
+    else { y + 1 }
+  }
+  let plain = match k {
+    0 { 1 + 2 }
+    else { 4 }
+  }
+  let z: u8 = match k {
+    0 { 1 + 2 }
+    else { error(1) }
+  } or { 7 }
+  let mut w: u8 = 0
+  w = match k {
+    0 { 2 + 2 }
+    else { 5 }
+  }
+  printf("%d\\n", cast(i32, x) + cast(i32, p) + cast(i32, row[0]) + cast(i32, mixed[0]) + cast(i32, runtime) + cast(i32, z) + cast(i32, w) + plain)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'match_arm.kl');
+    expect(c, contains('uint8_t x;'));
+    expect(c, contains('x = 3;'));
+    expect(c, contains('x = 4;'));
+    expect(c, contains('uint8_t p = ((k == 0) ? 11 : 6);'));
+    expect(c, contains('row = (klin_arr2_u8){ .v = { 3, 4 } };'));
+    expect(c, contains('row = (klin_arr2_u8){ .v = { 8, 9 } };'));
+    expect(
+      c,
+      contains(
+        'klin_arr2_u8 mixed = (true ? (klin_arr2_u8){ .v = { xs[0], xs[1] } } : (klin_arr2_u8){ .v = { 3, 4 } });',
+      ),
+    );
+    expect(c, contains('uint64_t wide;'));
+    expect(c, contains('wide = ~(0);'));
+    expect(c, contains('runtime = (y + 1);'));
+    expect(c, contains('int32_t plain;'));
+    expect(c, contains('plain = 3;'));
+    expect(c, contains('.u.ok = 3'));
+    expect(c, contains('z = 7;'));
+    expect(c, contains('w = 4;'));
+    expect(c, contains('w = 5;'));
+  });
 }

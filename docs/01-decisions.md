@@ -388,8 +388,17 @@ type wherever a literal does: `let`, a parameter, a `return`, a struct
 field, an array element. `let x: u8 = 1 + 2` is `u8` (the value `3`).
 `let x: u8 = 200 + 100` is the same range error as `300` (`0..=255`).
 `let a: [1]u8 = [1 + 2]`, `take(1 + 2)`, `return 1 + 2`, and
-`Pair{ n: 1 + 2 }` fold the same way. `pick` arms that are still
-untyped adopt that type too. Rules match a `const` initializer (D11):
+`Pair{ n: 1 + 2 }` fold the same way. `pick` and `match` arms that are
+still untyped adopt that type too (`let x: u8 = pick c { 1 + 2 } { 4 }`,
+`let x: u8 = match k { 0 { 1 + 2 } else { 4 } }`, and
+`let row: [2]u8 = match k { 0 { [1, 2] } else { [3, 4] } }`).
+`let x: u8 = match k { 0 { 300 } else { 1 } }` is the `u8` range error.
+A `match` success arm next to `error(n)` stays open, so
+`let x: u8 = match k { 0 { 1 + 2 } else { error(1) } } or { 4 }` folds
+in `u8`. A concrete fallback (`or { n }` where `n` is already `i32`)
+fixes that arm as `i32`. With no expected type the arm is still `i32`
+(`let x = match k { 0 { 1 + 2 } else { 4 } }`). Rules match a `const`
+initializer (D11):
 subexpressions are not wrapped (`let x: i8 = 0 - 128` is an error
 because `128` does not fit `i8`), a named constant must already have
 that integer type, division or remainder by zero is an error, and a

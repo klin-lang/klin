@@ -3457,12 +3457,24 @@ final class Checker {
               _checkStmt(stmt);
             }
             final fallbackType = _inferExpr(fallback.value);
-            _expectAssignable(resultType.ok, fallbackType, fallback.value.pos);
-            _materialize(fallback.value, resultType.ok);
+            final ok = resultType.ok;
+            // An untyped success arm adopts the fallback, or stays open
+            // so `let x: u8 = match … or { 4 }` folds in `u8`.
+            final KlinType unified;
+            if (_typeIsOpen(ok) || _typeIsOpen(fallbackType)) {
+              unified = _unifyMatch(ok, fallbackType, fallback.value.pos);
+            } else {
+              _expectAssignable(ok, fallbackType, fallback.value.pos);
+              unified = ok;
+            }
+            if (!_typeIsOpen(unified)) {
+              _materialize(result, ResultType(unified));
+              _materialize(fallback.value, unified);
+            }
+            return unified;
           } finally {
             _scope = _scope.parent!;
           }
-          return resultType.ok;
         }(),
       UnaryExpr(:final op, :final operand, :final pos) => () {
           if (op == '&') {
@@ -3969,7 +3981,18 @@ final class Checker {
         _materialize(right, type, checkRange: checkRange);
       case GroupExpr(:final inner):
         _materialize(inner, type, checkRange: checkRange);
-      case PropagateExpr() || OrExpr() || AwaitExpr():
+      case OrExpr(:final result, :final fallback):
+        // `match { 1 + 2, else error(1) } or { 4 }` stays untyped until
+        // the outer type is known. A finished `!i32` is left alone.
+        final resultType = result.resolvedType;
+        if (resultType is ResultType && _typeIsOpen(resultType.ok)) {
+          _materialize(result, ResultType(type), checkRange: checkRange);
+        }
+        final fallbackType = fallback.value.resolvedType;
+        if (fallbackType == null || _typeIsOpen(fallbackType)) {
+          _materialize(fallback.value, type, checkRange: checkRange);
+        }
+      case PropagateExpr() || AwaitExpr():
         break;
       case ErrorExpr():
         // `error(n)` only materializes when the outer type is `!T`.
@@ -4040,9 +4063,9 @@ final class Checker {
     _forbidStmtLoweringInPick(elseExpr, 'else-expression');
     final thenType = _inferExpr(thenExpr);
     final elseType = _inferExpr(elseExpr);
-    final unified = _unifyNumeric(thenType, elseType, pos);
-    // Untyped arms adopt the outer type (`let x: u8 = pick(c, 1 + 2, 4)`).
-    if (unified is UntypedInt || unified is UntypedFloat) {
+    final unified = _unifyMatch(thenType, elseType, pos);
+    // Untyped arms adopt the outer type (`let x: u8 = pick c { 1 + 2 } { 4 }`).
+    if (_typeIsOpen(unified)) {
       return unified;
     }
     final concrete = unified;
@@ -4353,13 +4376,18 @@ final class Checker {
         final piece = t is ResultType ? t.ok : t;
         ok = ok == null
             ? piece
-            : _unifyNumeric(ok, piece, arms[i].body.pos);
+            : _unifyMatch(ok, piece, arms[i].body.pos);
       }
       if (ok == null) {
         throw CheckError(
           '`error(...)` in `match` needs at least one success arm to infer `!T`',
           pos,
         );
+      }
+      // `let x: u8 = match { 1 + 2, else error(1) } or { 4 }` — do not
+      // freeze the success arm as `i32` before that outer type.
+      if (_typeIsOpen(ok)) {
+        return ResultType(ok);
       }
       final concreteOk = _defaultConcrete(ok, pos);
       final result = ResultType(concreteOk);
@@ -4378,13 +4406,33 @@ final class Checker {
     for (var i = 0; i < bodyTypes.length; i++) {
       resultType = resultType == null
           ? bodyTypes[i]
-          : _unifyNumeric(resultType, bodyTypes[i], arms[i].body.pos);
+          : _unifyMatch(resultType, bodyTypes[i], arms[i].body.pos);
     }
-    final concrete = _defaultConcrete(resultType!, pos);
+    // Untyped arms (`1`, `1 + 2`, `[1, 2]`) adopt the outer type.
+    // With no outer type, `let` still defaults them to `i32`.
+    if (_typeIsOpen(resultType!)) {
+      return resultType;
+    }
+    final concrete = _defaultConcrete(resultType, pos);
     for (final arm in arms) {
       _materialize(arm.body, concrete);
     }
     return concrete;
+  }
+
+  /// Common type of two `match` / `pick` arms. Arrays unify element-wise
+  /// so `[1, 2]` can meet a `[2]u8` sibling. Scalars use [_unifyNumeric].
+  KlinType _unifyMatch(KlinType lt, KlinType rt, SourcePos pos) {
+    if (lt is ArrayType && rt is ArrayType) {
+      if (lt.len != rt.len) {
+        throw CheckError(
+          'type mismatch: `${_typeForMismatch(lt)}` and `${_typeForMismatch(rt)}`',
+          pos,
+        );
+      }
+      return ArrayType(_unifyMatch(lt.elem, rt.elem, pos), lt.len);
+    }
+    return _unifyNumeric(lt, rt, pos);
   }
 
   void _expectAssignable(KlinType target, KlinType source, SourcePos pos) {
@@ -4455,6 +4503,11 @@ final class Checker {
     if (target is FnType && source is FnType && target == source) {
       return true;
     }
+    if (target is ResultType &&
+        source is ResultType &&
+        _isAssignable(target.ok, source.ok)) {
+      return true;
+    }
     if (target is ArrayType &&
         source is ArrayType &&
         target.len == source.len &&
@@ -4467,6 +4520,16 @@ final class Checker {
   bool _containsUntyped(KlinType type) => switch (type) {
         UntypedInt() || UntypedFloat() || UntypedEmptyArray() => true,
         ArrayType(:final elem) => _containsUntyped(elem),
+        _ => false,
+      };
+
+  /// An integer or float literal (or an array of them) that should adopt
+  /// the expected type instead of becoming `i32` / `f64` early.
+  /// `[]` is not open here: it still needs an explicit `[0]T`.
+  bool _typeIsOpen(KlinType type) => switch (type) {
+        UntypedInt() || UntypedFloat() => true,
+        ArrayType(:final elem) => _typeIsOpen(elem),
+        ResultType(:final ok) => _typeIsOpen(ok),
         _ => false,
       };
 

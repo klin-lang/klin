@@ -2588,4 +2588,70 @@ fn main() {
 }
 ''', 'type mismatch: expected `[2][0]u8`, got `[1][0]`');
   });
+
+  test('error: match arm literal does not fit the expected type', () {
+    expectRange('''
+fn main() {
+  let k = 0
+  let x: u8 = match k {
+    0 { 300 }
+    else { 1 }
+  }
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: match arm sum is out of range', () {
+    expectRange('''
+fn main() {
+  let k = 0
+  let x: u8 = match k {
+    else { 200 + 100 }
+  }
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: match arm subtraction does not wrap the operand', () {
+    expectRange('''
+fn main() {
+  let k = 0
+  let x: i8 = match k {
+    else { 0 - 128 }
+  }
+}
+''', 'integer literal `128` is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: pick arm sum is out of range', () {
+    expectRange('''
+fn main() {
+  let x: u8 = pick true { 200 + 100 } { 1 }
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: match or fallback does not fit the expected type', () {
+    expectRange('''
+fn main() {
+  let k = 0
+  let x: u8 = match k {
+    0 { 1 }
+    else { error(1) }
+  } or { 300 }
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: match success arm next to error does not fit', () {
+    expectRange('''
+fn main() {
+  let k = 0
+  let x: u8 = match k {
+    0 { 300 }
+    else { error(1) }
+  } or { 1 }
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
 }

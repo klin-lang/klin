@@ -50,6 +50,13 @@ fn main() {
     }
     printf("kind=%d\n", kind)
 
+    // Untyped arms take the annotated type (D12), including `1 + 2`.
+    let small: u8 = match x {
+        0 { 1 + 2 }
+        else { 4 }
+    }
+    printf("small=%d\n", cast(i32, small))
+
     // `break` / `continue` inside an arm belong to the enclosing loop,
     // because an arm is an `if` branch, not a C `case`.
     let mut sum = 0

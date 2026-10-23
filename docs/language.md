@@ -29,7 +29,7 @@ These compile. They are not “missing.”
 | `const Name: Type = …` | module-level immutable; integer, `bool`, or `b"..."`; an integer initializer is a constant expression (other `const`s, `+ - * / % << >> & | ^`, unary `-` / `~`) and a valid `[N]T` length; no mutable globals ([syntax.md](syntax.md)) |
 | `let` / `let mut` / `:=` | immutability by default |
 | `if` / `while` / `for` / `return` / `break` / `continue` | [guide.md](guide.md) |
-| `match` / `pick` | no fallthrough; `pick` → C `?:` |
+| `match` / `pick` | no fallthrough; `pick` → C `?:`. Untyped arms adopt the expected type (`let x: u8 = match k { 0 { 1 + 2 } else { 4 } }`) and are range-checked; with no type they are `i32` |
 | `defer` | jump to cleanup |
 | `!T`, `or { }`, `!`, `error(n)` | D2 — value (`match` arm or `fn` return); not `Result[T,E]` |
 | `$fn` … `$name(args)` | **this is the generic** ([04-macros.md](04-macros.md)) |

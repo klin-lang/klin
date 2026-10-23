@@ -24,7 +24,10 @@ let kind = pick x < 0 {
 
 - Condition must be `bool`.
 - Then/else expressions share a common type (same unification as `match`
-  expression arms / array elements).
+  expression arms / array elements). Untyped arms adopt the expected
+  type and are range-checked (`let x: u8 = pick c { 1 + 2 } { 4 }`;
+  `300` is the `u8` error). With no expected type they are `i32`
+  ([D12](01-decisions.md)).
 - `pick` is a normal expression: valid in `let` / `:=` / assignment, call
   arguments, nested inside another `pick`, etc.
 - Statement `if` is unchanged — use `pick` when you need a value.

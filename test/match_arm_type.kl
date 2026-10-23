@@ -1,0 +1,28 @@
+fn main() {
+    let k = 1
+    let x: u8 = match k {
+        0 { 1 + 2 }
+        else { 4 }
+    }
+    let y: u8 = pick k == 0 { 10 + 1 } { 6 }
+    let row: [2]u8 = match k {
+        0 { [1 + 2, 4] }
+        else { [8, 9] }
+    }
+    let z: u8 = match k {
+        0 { 1 + 2 }
+        else { error(1) }
+    } or {
+        7
+    }
+    let mut w: u8 = 0
+    w = match k {
+        0 { 2 + 2 }
+        else { 5 }
+    }
+    let plain = match k {
+        0 { 1 + 2 }
+        else { 4 }
+    }
+    printf("%d %d %d %d %d %d %d\n", cast(i32, x), cast(i32, y), cast(i32, row[0]), cast(i32, row[1]), cast(i32, z), cast(i32, w), plain)
+}

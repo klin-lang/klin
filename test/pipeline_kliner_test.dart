@@ -427,4 +427,30 @@ void main() {
     expect(result.exitCode, 0, reason: result.stderr);
     expect(result.stdout, await File('test/enum_auto.out').readAsString());
   });
+
+  test('match and pick arms adopt the expected type and run', () async {
+    final result =
+        await compileAndRun('test/match_arm_type.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+      result.stdout,
+      await File('test/match_arm_type.out').readAsString(),
+    );
+
+    final program = loadProject('test/match_arm_type.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/match_arm_type.kl');
+    expect(c, contains('x = 3;'));
+    expect(c, contains('uint8_t y = ((k == 0) ? 11 : 6);'));
+    final cPath = '${tmp.path}/match_arm_type_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/match_arm_type_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
 }
