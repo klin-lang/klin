@@ -866,6 +866,10 @@ final class MethodCallExpr extends Expr {
   /// (static) function call `Type.func(…)` — emitted with no receiver argument.
   bool isAssociated = false;
 
+  /// True when `h.cb(…)` calls a function-typed field, not a method (D16).
+  /// Emitted as `h.cb(…)`. [mangledName] stays null.
+  bool isFieldCall = false;
+
   /// Method / associated-function definition (LSP).
   ResolvedDef? resolvedDef;
 

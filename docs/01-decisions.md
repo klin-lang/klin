@@ -539,6 +539,38 @@ fn main() {
 }
 ```
 
+## D16. Function field call — DECIDED
+
+**Choice: `h.cb(1)` calls a function-typed field. A method of the same name conflicts.**
+
+The parser already treats `name(` on the same line as a call. The checker decides what it calls:
+
+- A method and no function field of that name: the method, as before.
+  A field that is not a function does not hide the method (`n: i32` and
+  `fn (b: Box) n()` — `b.n()` is the method, `b.n` is the field).
+- A function field and no method: the call is `h.cb(1)` in C (the field
+  is a function pointer). `(*p).cb(1)` is the same. There is no
+  auto-deref (`p.cb` on a `*Holder` is still not a method call) and no
+  `s[i](…)` postfix. Calling does not require the place to be mutable.
+- Both a method and a function field, including a private method:
+  `ambiguous call \`cb\`: \`Holder\` has both a method and a function field of that name`.
+- A field that is not a function, and no method:
+  `field \`cb\` has type \`i32\`, not a function`.
+- Neither: `type \`Holder\` has no method \`cb\``.
+
+```klin
+struct Holder {
+    cb: fn(i32): i32
+}
+
+fn inc(x: i32): i32 { return x + 1 }
+
+fn main() {
+    let h = Holder{ cb: inc }
+    printf("%d\n", h.cb(1))
+}
+```
+
 ## D7. To decide later
 
 - Closures — at all? Nelua does not have them outside top-level. A struct

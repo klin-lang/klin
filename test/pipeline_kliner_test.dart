@@ -521,4 +521,29 @@ void main() {
     ]);
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
+
+  test('call a function field', () async {
+    final result = await compileAndRun('test/fn_field.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/fn_field.out').readAsString());
+
+    final program = loadProject('test/fn_field.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/fn_field.kl');
+    expect(c, contains('h.cb(1)'));
+    expect(c, contains('(*(p)).cb(4)'));
+    expect(c, contains('fn_field_Box_n(b)'));
+    expect(c, isNot(contains('Holder_cb')));
+    final cPath = '${tmp.path}/fn_field_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/fn_field_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
 }

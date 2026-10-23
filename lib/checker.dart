@@ -2855,7 +2855,48 @@ final class Checker {
         throw StateError('unreachable: receiver is struct or enum');
     }
     final signature = _methods['${receiverType.displayName}.${call.name}'];
+    // A function-typed field is a call (`h.cb(1)`). A method of the same
+    // name wins only when the field is not a function. Both at once is
+    // ambiguous, including a private method (D16).
+    FieldDecl? field;
+    if (receiverType is StructType) {
+      final struct =
+          _structs[_key(receiverType.moduleName, receiverType.name)];
+      if (struct != null) {
+        for (final candidate in struct.fields) {
+          if (candidate.name == call.name) {
+            field = candidate;
+            break;
+          }
+        }
+      }
+    }
+    final fieldType = field?.resolvedType;
+    if (signature != null && fieldType is FnType) {
+      throw CheckError(
+        'ambiguous call `${call.name}`: `${receiverType.displayName}` has '
+        'both a method and a function field of that name',
+        call.pos,
+      );
+    }
     if (signature == null) {
+      if (field != null) {
+        if (fieldType is! FnType) {
+          throw CheckError(
+            'field `${call.name}` has type '
+            '`${fieldType?.displayName ?? field.typeName}`, not a function',
+            call.pos,
+          );
+        }
+        call.isFieldCall = true;
+        final struct =
+            _structs[_key(receiverModule, receiverName)];
+        if (struct != null) {
+          call.resolvedDef = ResolvedDef(field.pos, struct.sourcePath);
+        }
+        return _checkFnTypeCall(fieldType, call.name, call.args, call.pos)
+            .type;
+      }
       throw CheckError(
           'type `$receiverName` has no method `${call.name}`',
           call.pos);

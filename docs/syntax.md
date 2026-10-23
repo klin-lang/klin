@@ -196,6 +196,15 @@ write, `let mut mid` can. A slice parameter, `b"…"`, and a `const`
 cannot. An array subslice needs an l-value. Runnable:
 [`examples/slice_range.kl`](../examples/slice_range.kl).
 
+## Function field call
+
+`h.cb(1)` calls a field of type `fn(…)`. `(*p).cb(1)` does too.
+`p.cb(1)` on a pointer does not (no auto-deref). If `Holder` has both
+a method `cb` and a function field `cb`, the call is an error. A
+non-function field does not hide a method. See
+[D16](01-decisions.md). Runnable:
+[`examples/fn_field.kl`](../examples/fn_field.kl).
+
 ## Byte strings
 
 `"..."` is `str` (`const char*`). `b"..."` is `[]u8`: the bytes of the

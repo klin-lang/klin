@@ -2224,4 +2224,28 @@ fn main() {
     expect(c, contains('klin_val_0.len) - (size_t)(1)'));
     expect(c, isNot(contains('id((klin_slice_i32){ xs, 5 }).ptr')));
   });
+
+  test('function field call emits h.cb(1), a non-fn field does not hide a method', () {
+    const source = '''
+struct Holder { cb: fn(i32): i32 }
+struct Box { n: i32 }
+fn inc(x: i32): i32 { return x + 1 }
+fn (b: Box) n(): i32 { return b.n }
+fn main() {
+  let h = Holder{ cb: inc }
+  let p: *Holder = &h
+  printf("%d\\n", h.cb(1))
+  printf("%d\\n", (*p).cb(4))
+  let b = Box{ n: 3 }
+  printf("%d\\n", b.n())
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'fn_field_unit.kl');
+    expect(c, contains('h.cb(1)'));
+    expect(c, contains('(*(p)).cb(4)'));
+    expect(c, contains('Box_n(b)'));
+    expect(c, isNot(contains('Holder_cb')));
+  });
 }

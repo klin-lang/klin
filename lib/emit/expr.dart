@@ -155,15 +155,21 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
       }(),
     MethodCallExpr(
       :final receiver,
+      :final name,
       :final args,
       :final mangledName,
       :final receiverByRef,
       :final isAssociated,
+      :final isFieldCall,
     ) =>
       () {
+        final argList = args.map((arg) => _emitCallArg(arg, ctx)).join(', ');
+        // `h.cb(1)` — the field is a function pointer. Not a method.
+        if (isFieldCall) {
+          return '${_emitExpr(receiver, ctx)}.$name($argList)';
+        }
         final callee =
             mangledName ?? (throw StateError('emit: method without mangling'));
-        final argList = args.map((arg) => _emitCallArg(arg, ctx)).join(', ');
         // Associated (static) call `Type.func(...)` — no receiver argument.
         if (isAssociated) return '$callee($argList)';
         final recv = _emitMethodReceiver(receiver, receiverByRef, ctx);

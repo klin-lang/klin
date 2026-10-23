@@ -2670,6 +2670,28 @@ fn main() {
 ''', 'slice bound requires an integer or enum type');
   });
 
+  test('error: function field and method share a name', () {
+    expectRange('''
+struct Holder { cb: fn(i32): i32 }
+fn inc(x: i32): i32 { return x }
+fn (h: Holder) cb(x: i32): i32 { return x }
+fn main() {
+  let h = Holder{ cb: inc }
+  h.cb(1)
+}
+''', 'ambiguous call `cb`');
+  });
+
+  test('error: call a non-function field', () {
+    expectRange('''
+struct Holder { n: i32 }
+fn main() {
+  let h = Holder{ n: 1 }
+  h.n(1)
+}
+''', 'field `n` has type `i32`, not a function');
+  });
+
   test('error: slice range on a non-array', () {
     expectRange('''
 fn main() {
