@@ -267,12 +267,16 @@ final class _Symbol {
   /// A mut method receiver becomes a pointer parameter (`T *`) in C.
   final bool isPtrReceiver;
 
+  /// A returned `[N]T` stored as the wrapper struct, not a C array.
+  final bool arrayByValue;
+
   const _Symbol({
     required this.name,
     required this.type,
     required this.isMut,
     required this.pos,
     this.isPtrReceiver = false,
+    this.arrayByValue = false,
   });
 }
 
@@ -728,9 +732,10 @@ final class Checker {
         null || 'void' => const VoidType(),
         final name => _resolveType(name, func.pos),
       };
-      if (returnType is ArrayType) {
+      if (returnType is ArrayType && _arrayHasZeroLength(returnType)) {
         throw CheckError(
-          'function cannot return an array (use slice `[]T`)',
+          'function cannot return a zero-length array '
+          '`${returnType.displayName}`',
           func.pos,
         );
       }
@@ -775,6 +780,14 @@ final class Checker {
           throw CheckError('duplicate field `${field.name}`', field.pos);
         }
         field.resolvedType = _resolveType(field.typeName, field.pos);
+        // A field `fn(): [N]Struct` names the return wrapper, and that
+        // wrapper needs the struct to be complete. C cannot order that.
+        if (typeNeedsStructArrayReturn(field.resolvedType!)) {
+          throw CheckError(
+            'a struct field cannot be a function that returns an array of structs',
+            field.pos,
+          );
+        }
       }
     }
   }
@@ -1361,9 +1374,15 @@ final class Checker {
       }
       ret = _resolveType(name.substring(i + 1), pos);
     }
-    if (ret is ArrayType || ret is ResultType) {
+    if (ret is ResultType) {
       throw CheckError(
         'function type cannot return `${ret.displayName}`',
+        pos,
+      );
+    }
+    if (ret is ArrayType && _arrayHasZeroLength(ret)) {
+      throw CheckError(
+        'function cannot return a zero-length array `${ret.displayName}`',
         pos,
       );
     }
@@ -1674,11 +1693,17 @@ final class Checker {
             resolved = _defaultConcrete(initType, init.pos);
             _materialize(init, resolved);
           }
-          if (resolved is ArrayType && init is! ArrayLitExpr) {
-            throw CheckError(
-              'array initialization requires a `[...]` literal',
-              init.pos,
-            );
+          if (resolved is ArrayType) {
+            if (_isArrayValueExpr(init)) {
+              // `let a = pair()` stores the return struct. A literal stays
+              // a C array (`uint8_t a[N]`).
+              stmt.arrayByValue = true;
+            } else if (_unwrapGroups(init) is! ArrayLitExpr) {
+              throw CheckError(
+                'array initialization requires a `[...]` literal',
+                init.pos,
+              );
+            }
           }
         } else if (annotated != null) {
           // No initializer: use the annotated type.
@@ -1702,7 +1727,13 @@ final class Checker {
           _asyncFlatNames.add(name);
         }
         _scope.define(
-          _Symbol(name: name, type: resolved, isMut: isMut, pos: pos),
+          _Symbol(
+            name: name,
+            type: resolved,
+            isMut: isMut,
+            pos: pos,
+            arrayByValue: stmt.arrayByValue,
+          ),
         );
 
       case LetDestructureStmt(
@@ -2178,6 +2209,12 @@ final class Checker {
     }
     _expectAssignable(_currentReturn, valueType, value.pos);
     _materialize(value, _currentReturn);
+    if (_currentReturn is ArrayType && !_isStableArraySource(value)) {
+      throw CheckError(
+        'cannot use this array expression here (bind it to a variable first)',
+        value.pos,
+      );
+    }
   }
 
   /// `fmt.write(buf[:], "… $x")` — interpolate into a caller `[]u8` buffer.
@@ -2867,6 +2904,7 @@ final class Checker {
             'cannot assign to immutable variable `${place.name}`', pos);
       }
       place.isPtrReceiver = symbol.isPtrReceiver;
+      place.arrayByValue = symbol.arrayByValue;
       return symbol.type;
     }
     if (place is FieldExpr) {
@@ -2952,6 +2990,7 @@ final class Checker {
         throw CheckError(immutableVarMessage, pos);
       }
       base.isPtrReceiver = symbol.isPtrReceiver;
+      base.arrayByValue = symbol.arrayByValue;
       return;
     }
     if (base is FieldExpr) {
@@ -3034,6 +3073,7 @@ final class Checker {
           final sym = _scope.lookup(nameExpr.name);
           if (sym != null) {
             nameExpr.isPtrReceiver = sym.isPtrReceiver;
+            nameExpr.arrayByValue = sym.arrayByValue;
             nameExpr.resolvedDef =
                 ResolvedDef(sym.pos, _currentSourcePath);
             return sym.type;
@@ -3259,6 +3299,13 @@ final class Checker {
               _expectAssignable(
                   field.resolvedType!, _inferExpr(value), value.pos);
               _materialize(value, field.resolvedType!);
+              if (field.resolvedType is ArrayType &&
+                  !_isStableArraySource(value)) {
+                throw CheckError(
+                  'cannot use this array expression here (bind it to a variable first)',
+                  value.pos,
+                );
+              }
             }
           } else {
             final values = positionalFields!;
@@ -3271,6 +3318,13 @@ final class Checker {
               _expectAssignable(struct.fields[i].resolvedType!,
                   _inferExpr(values[i]), values[i].pos);
               _materialize(values[i], struct.fields[i].resolvedType!);
+              if (struct.fields[i].resolvedType is ArrayType &&
+                  !_isStableArraySource(values[i])) {
+                throw CheckError(
+                  'cannot use this array expression here (bind it to a variable first)',
+                  values[i].pos,
+                );
+              }
             }
           }
           return StructType(module, typeName);
@@ -3774,6 +3828,56 @@ final class Checker {
     }
   }
 
+  /// A call, a by-value binding, `pick`, or `match` whose type is `[N]T`.
+  /// Emission is the wrapper struct. A C array variable is not one.
+  bool _isArrayValueExpr(Expr expr) {
+    final node = _unwrapGroups(expr);
+    if (node is NameExpr) return node.arrayByValue;
+    if (node is CallExpr ||
+        node is MethodCallExpr ||
+        node is PickExpr ||
+        node is MatchExpr) {
+      return node.resolvedType is ArrayType;
+    }
+    return false;
+  }
+
+  /// A `[N]T` that can be copied into the return wrapper without evaluating
+  /// a side-effecting index twice: a literal, an array value, a variable,
+  /// or a field chain rooted at a variable.
+  bool _isStableArraySource(Expr expr) {
+    final node = _unwrapGroups(expr);
+    if (node is ArrayLitExpr) return true;
+    if (_isArrayValueExpr(expr)) return true;
+    return _isStableArrayPlace(expr);
+  }
+
+  bool _isStableArrayPlace(Expr expr) {
+    final node = _unwrapGroups(expr);
+    if (node is NameExpr) return true;
+    if (node is FieldExpr) return _isStableArrayPlace(node.object);
+    return false;
+  }
+
+  void _requireStableArraySource(Expr expr) {
+    if (_isStableArraySource(expr)) return;
+    throw CheckError(
+      'cannot use this array expression here (bind it to a variable first)',
+      expr.pos,
+    );
+  }
+
+  /// `[0]T` and `[N][0]T` are not ISO C as a return wrapper (`v[0]`).
+  bool _arrayHasZeroLength(ArrayType type) {
+    var current = type;
+    while (true) {
+      if (current.len == 0) return true;
+      final elem = current.elem;
+      if (elem is! ArrayType) return false;
+      current = elem;
+    }
+  }
+
   /// Assigns a concrete type to an expression and recursively to subtrees
   /// containing untyped literals.
   void _materialize(Expr expr, KlinType type, {bool checkRange = true}) {
@@ -3851,6 +3955,11 @@ final class Checker {
           _materialize(element, type.elem, checkRange: checkRange);
         }
       case MatchExpr(:final arms):
+        if (type is ArrayType && !_containsUntyped(type)) {
+          for (final arm in arms) {
+            _requireStableArraySource(arm.body);
+          }
+        }
         if (type is ResultType) {
           for (final arm in arms) {
             final body = _unwrapGroups(arm.body);
@@ -3866,6 +3975,10 @@ final class Checker {
           }
         }
       case PickExpr(:final thenExpr, :final elseExpr):
+        if (type is ArrayType && !_containsUntyped(type)) {
+          _requireStableArraySource(thenExpr);
+          _requireStableArraySource(elseExpr);
+        }
         _materialize(thenExpr, type, checkRange: checkRange);
         _materialize(elseExpr, type, checkRange: checkRange);
     }

@@ -214,7 +214,12 @@ fn main() {
   (`[N * 2]T`, `[1 + 2]T`). The C bound is the folded value.
   A literal `[1, 2]` takes the element type from that array
   (`let a: [2]u8 = [1, 2]`); each element must fit. Without a type,
-  it is `[2]i32`
+  it is `[2]i32`. A function may return `[N]T`. C cannot return an
+  array, so the return is a struct with one field `v` (no allocation).
+  `return [1, 2]` in `fn pair(): [2]u8` takes `u8` from the declaration.
+  A local from a literal stays a C array; a local from the call is the
+  struct (`a[0]` in Klin). A zero-length array cannot be returned
+  ([01-decisions.md](01-decisions.md) D13)
 - `[]T` — slice `{ ptr, len }` (and `cap` where allocated)
 - No hidden allocation. Heap is `import mem` and an explicit
   `Allocator` ([14-allocator.md](14-allocator.md))

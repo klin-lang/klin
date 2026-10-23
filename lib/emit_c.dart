@@ -48,6 +48,16 @@ String emitC(Program program, String sourcePath) {
         'typedef struct { ${type.kind.cType} *ptr; size_t len; } $name;');
   }
   if (sliceTypes.isNotEmpty) buf.writeln();
+  final arrayReturns = _arrayReturnTypes(program);
+  // Primitive (and pointer / enum / slice) elements do not need a struct
+  // to be complete. Function-pointer typedefs that return them come next.
+  _emitArrayReturnTypedefs(
+    buf,
+    arrayReturns.where((type) {
+      final elem = _arrayShape(type).elem;
+      return elem is! StructType && elem is! FnType;
+    }),
+  );
   final fnTypes = <FnType>{};
   for (final struct in program.structs) {
     for (final field in struct.fields) {
@@ -62,14 +72,19 @@ String emitC(Program program, String sourcePath) {
   }
   final orderedFnTypes = fnTypes.toList()
     ..sort((a, b) => _fnTypeDepth(a).compareTo(_fnTypeDepth(b)));
-  for (final type in orderedFnTypes) {
-    final name = _fnTypedefName(type);
-    final ps = type.params.isEmpty
-        ? 'void'
-        : type.params.map(_cType).join(', ');
-    buf.writeln('typedef ${_cType(type.ret)} (*$name)($ps);');
-  }
-  if (orderedFnTypes.isNotEmpty) buf.writeln();
+  final earlyFnTypes =
+      orderedFnTypes.where((type) => !typeNeedsStructArrayReturn(type)).toList();
+  final lateFnTypes =
+      orderedFnTypes.where(typeNeedsStructArrayReturn).toList();
+  _emitFnTypedefs(buf, earlyFnTypes);
+  // `[N]fn(): …` needs the function typedef first.
+  _emitArrayReturnTypedefs(
+    buf,
+    arrayReturns.where((type) {
+      final elem = _arrayShape(type).elem;
+      return elem is FnType && !typeNeedsStructArrayReturn(type);
+    }),
+  );
   if (_programNeedsTrimFrac(program)) {
     buf.writeln('#include <stdio.h>');
     buf.writeln('#include <string.h>');
@@ -99,6 +114,19 @@ String emitC(Program program, String sourcePath) {
     program.structs
         .map((s) => '${s.moduleName}.${s.name}')
         .toSet(),
+  );
+  // `uint8_t v[N]` of a struct needs that struct to be complete.
+  _emitArrayReturnTypedefs(
+    buf,
+    arrayReturns.where((type) => _arrayShape(type).elem is StructType),
+  );
+  _emitFnTypedefs(buf, lateFnTypes);
+  _emitArrayReturnTypedefs(
+    buf,
+    arrayReturns.where((type) {
+      final elem = _arrayShape(type).elem;
+      return elem is FnType && typeNeedsStructArrayReturn(type);
+    }),
   );
   final resultTypes = <ResultType>{};
   for (final struct in program.structs) {
@@ -146,8 +174,9 @@ String emitC(Program program, String sourcePath) {
       func.sourcePath ?? sourcePath,
       indent: 1,
       bareReturnAsZero: func.name == 'main',
-      returnCType:
-          func.name == 'main' ? 'int' : _cType(func.resolvedReturnType!),
+      returnCType: func.name == 'main'
+          ? 'int'
+          : _cValueType(func.resolvedReturnType!),
       state: _EmitState(),
     );
     if (func.name == 'main') buf.writeln('    return 0;');

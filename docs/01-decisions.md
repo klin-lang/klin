@@ -1,6 +1,6 @@
 # Design decisions
 
-This is the decision log (D1–D11), not an introduction. Start with
+This is the decision log (D1–D13), not an introduction. Start with
 [00-idea.md](00-idea.md). To write Klin: [guide.md](guide.md).
 
 The first three must be made **before the first line of the parser** — they permeate
@@ -349,8 +349,8 @@ type, `let a = [1, 2]` is still `[2]i32`. A length mismatch names that
 default (`got [2]i32`). An element that is an integer constant
 expression folds in the element type (`let a: [1]u8 = [1 + 2]` is
 `[1]u8`; `let a: [1]u8 = [200 + 100]` is the `u8` range error). A
-function still cannot
-return `[N]T`. The implicit next
+function may return `[N]T` (D13); the literal in that `return` uses the
+declared element type. The implicit next
 value is checked too: `enum E: u8 { A = 255, B }` is an error because
 `B` would be 256. The message names the variant, the value, the base
 type, and the inclusive range. The counter after the last variant is
@@ -391,6 +391,45 @@ the decimal (the same portable forms as a folded `const`: `ULL` above
 `2^63-1`, and `(-9223372036854775807LL - 1)` for `i64` / `isize`
 minimum). A lone literal, unary `-` / `~` on a literal, and a lone
 constant name keep their spelling.
+
+## D13. Returning `[N]T` — DECIDED
+
+C cannot return an array by value. A function that returns `[N]T`
+returns a struct with one array field `v`:
+
+```c
+typedef struct { uint8_t v[2]; } klin_arr2_u8;
+
+klin_arr2_u8 pair(void) {
+    klin_arr2_u8 klin_ret_0 = (klin_arr2_u8){ .v = { 1, 2 } };
+    return klin_ret_0;
+}
+```
+
+No allocation and no loop. The copy is that struct return. A nested
+array is one struct (`[1][2]u8` is `uint8_t v[1][2]`), not a wrapper
+around a wrapper. The field name is `v`. This is not a C enum and not
+`constexpr`.
+
+A local initialized from a literal stays a C array
+(`uint8_t a[2] = { 1, 2 }`). A local initialized from a call stores the
+struct; Klin `a[0]` is `a.v[0]` in C. Passing that local, or the call,
+to a `[N]T` parameter passes `.v` (the parameter stays a C array and
+decays to a pointer). `let b = a` copies the struct when `a` came from
+a call. Returning a C array variable copies each element into `.v` in
+the return statement (`{ a[0], a[1] }`). An index expression is not
+returned directly (`return a[i]` asks to bind the row first) so the
+index is not evaluated twice.
+
+An array literal in `return` takes the element type from the
+declaration (`fn pair(): [2]u8 { return [1, 2] }`). `return [300]` is
+the `u8` range error. `return [1 + 2]` folds (D12).
+
+A zero-length array is not returned: `uint8_t v[0]` is not ISO C
+(`fn f(): [0]u8` and `fn(): [0]u8` are errors). `![N]T` stays invalid.
+`async fn` still returns void. A struct field cannot be a function
+type that returns an array of structs — the wrapper needs that struct
+to be complete. A parameter or a local of that function type is fine.
 
 ## D7. To decide later
 

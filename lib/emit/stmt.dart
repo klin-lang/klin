@@ -63,6 +63,11 @@ void _emitValueAssignment(
     buf.writeln('$pad}');
     return;
   }
+  // A returned `[N]T` is the wrapper struct. C cannot assign an array.
+  if (targetType is ArrayType) {
+    buf.writeln('$pad$target = ${_emitArrayValue(value, ctx)};');
+    return;
+  }
   // Success value assigned into a `!T` slot (match arm / annotated let).
   if (targetType is ResultType && value.resolvedType is! ResultType) {
     buf.writeln(
@@ -167,15 +172,23 @@ void _emitStmt(
       _line(buf, pos.line, sourcePath);
       buf.writeln('${pad}asm volatile("${_escapeC(code)}");');
 
-    case LetStmt(:final name, :final init, :final pos, :final resolvedType):
+    case LetStmt(
+        :final name,
+        :final init,
+        :final pos,
+        :final resolvedType,
+        :final arrayByValue
+      ):
       _line(buf, pos.line, sourcePath);
       final ty = resolvedType;
       if (ty == null) {
         throw StateError('emit: missing type for `$name` — run the checker');
       }
       if (init != null) {
+        final byValue = ty is ArrayType && arrayByValue;
+        final decl = byValue ? '${_cValueType(ty)} $name' : _cDecl(ty, name);
         if (init is OrExpr || init is PropagateExpr) {
-          buf.writeln('$pad${_cDecl(ty, name)};');
+          buf.writeln('$pad$decl;');
           _emitValueAssignment(
             buf,
             target: name,
@@ -188,7 +201,7 @@ void _emitStmt(
             state: state,
           );
         } else if (init is MatchExpr) {
-          buf.writeln('$pad${_cDecl(ty, name)};');
+          buf.writeln('$pad$decl;');
           _emitMatchAssign(
             buf,
             target: name,
@@ -200,9 +213,15 @@ void _emitStmt(
             returnCType: returnCType,
             state: state,
           );
+        } else if (byValue) {
+          buf.writeln('$pad$decl = ${_emitArrayValue(init, ctx)};');
         } else {
-          final rhs = ty is ArrayType && init is ArrayLitExpr
-              ? _emitArrayLit(init, ctx, asInitializer: true)
+          final rhs = ty is ArrayType && _peelEmitGroups(init) is ArrayLitExpr
+              ? _emitArrayLit(
+                  _peelEmitGroups(init) as ArrayLitExpr,
+                  ctx,
+                  asInitializer: true,
+                )
               : _emitExpr(init, ctx);
           buf.writeln('$pad${_cDecl(ty, name)} = $rhs;');
         }
@@ -283,7 +302,7 @@ void _emitStmt(
         // A plain array variable is indexed in place. If a binding shadows the
         // source name, capture the array via a pointer first so later reads do
         // not index a freshly-declared scalar.
-        final base = _emitExpr(source, ctx);
+        final base = _emitArrayObject(source, ctx);
         final String indexed;
         if (source is NameExpr && names.contains(source.name)) {
           final tmp = state.nextValueTemp();
@@ -402,7 +421,7 @@ void _emitStmt(
           state: state,
         );
       } else {
-        final argList = args.map((arg) => _emitExpr(arg, ctx)).join(', ');
+        final argList = args.map((arg) => _emitCallArg(arg, ctx)).join(', ');
         buf.writeln('$pad${resolvedCallee ?? callee}($argList);');
       }
 
@@ -562,11 +581,13 @@ void _emitStmt(
         }
         final temp = state.nextReturnTemp();
         final valueType = value.resolvedType;
-        final returnValue = valueType is ResultType
-            ? _emitExpr(value, ctx)
-            : returnCType.startsWith('klin_res_')
-                ? '($returnCType){ .is_err = false, .u.ok = ${_emitExpr(value, ctx)} }'
-                : _emitExpr(value, ctx);
+        final returnValue = valueType is ArrayType
+            ? _emitArrayValue(value, ctx)
+            : valueType is ResultType
+                ? _emitExpr(value, ctx)
+                : returnCType.startsWith('klin_res_')
+                    ? '($returnCType){ .is_err = false, .u.ok = ${_emitExpr(value, ctx)} }'
+                    : _emitExpr(value, ctx);
         buf.writeln('$pad$returnCType $temp = $returnValue;');
         _emitExitCleanups(
           buf,

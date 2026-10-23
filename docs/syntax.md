@@ -237,3 +237,4 @@ Runnable: [`examples/module_const.kl`](../examples/module_const.kl).
 | `match` / `pick` | [15-match.md](15-match.md), [18-pick.md](18-pick.md) |
 | `:=` | [14-short-decl.md](14-short-decl.md) |
 | Bitwise / `&&` `\|\|` | [01-decisions.md](01-decisions.md) D8 / D9 |
+| Returning `[N]T` | [01-decisions.md](01-decisions.md) D13 |

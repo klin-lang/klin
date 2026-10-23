@@ -29,7 +29,12 @@ void _emitAsyncFunction(
   }
   for (final let in lets) {
     final ty = let.resolvedType!;
-    buf.writeln('    ${_cDecl(ty, let.name)};');
+    // A returned `[N]T` is the wrapper struct, same as a normal local.
+    if (let.arrayByValue && ty is ArrayType) {
+      buf.writeln('    ${_cValueType(ty)} ${let.name};');
+    } else {
+      buf.writeln('    ${_cDecl(ty, let.name)};');
+    }
   }
   for (var i = 0; i < awaits.length; i++) {
     final aw = awaits[i];
@@ -230,7 +235,7 @@ void _emitAsyncStmt(Stmt stmt, _AsyncEmitCtx ctx) {
           state: state,
         );
       } else {
-        final argList = args.map((a) => _emitAsyncExpr(a, ctx)).join(', ');
+        final argList = args.map((a) => _emitAsyncArg(a, ctx)).join(', ');
         buf.writeln('$pad${resolvedCallee ?? callee}($argList);');
       }
 
@@ -295,6 +300,14 @@ void _emitAsyncStmt(Stmt stmt, _AsyncEmitCtx ctx) {
   }
 }
 
+/// An array parameter wants the C array. A returned `[N]T` passes `.v`.
+String _emitAsyncArg(Expr arg, _AsyncEmitCtx ctx) {
+  if (!_exprIsArrayValue(arg)) return _emitAsyncExpr(arg, ctx);
+  final raw = _emitAsyncExpr(arg, ctx);
+  final simple = RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$').hasMatch(raw);
+  return simple ? '$raw.v' : '($raw).v';
+}
+
 String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
   return switch (expr) {
     IntLit lit => _emitIntLit(lit),
@@ -317,7 +330,7 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
       '(${_emitAsyncExpr(cond, ctx)} ? ${_emitAsyncExpr(thenExpr, ctx)} : ${_emitAsyncExpr(elseExpr, ctx)})',
     GroupExpr(:final inner) => '(${_emitAsyncExpr(inner, ctx)})',
     CallExpr(:final callee, :final args, :final resolvedCallee) =>
-      '${resolvedCallee ?? callee}(${args.map((a) => _emitAsyncExpr(a, ctx)).join(', ')})',
+      '${resolvedCallee ?? callee}(${args.map((a) => _emitAsyncArg(a, ctx)).join(', ')})',
     MethodCallExpr(
       :final receiver,
       :final args,
@@ -328,7 +341,7 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
       () {
         final callee =
             mangledName ?? (throw StateError('emit async: method without mangling'));
-        final argList = args.map((a) => _emitAsyncExpr(a, ctx)).join(', ');
+        final argList = args.map((a) => _emitAsyncArg(a, ctx)).join(', ');
         if (isAssociated) return '$callee($argList)';
         final recv =
             '${receiverByRef ? '&' : ''}${_emitAsyncExpr(receiver, ctx)}';

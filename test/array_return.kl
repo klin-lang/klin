@@ -1,0 +1,33 @@
+struct Pair {
+    n: u8
+}
+
+fn pair(): [2]u8 {
+    return [1 + 2, 4]
+}
+
+fn nested(): [1][2]u8 {
+    return [[3, 4]]
+}
+
+fn from_local(): [2]u8 {
+    let a: [2]u8 = [5, 6]
+    return a
+}
+
+fn take(xs: [2]u8): u8 {
+    return xs[0] + xs[1]
+}
+
+fn one(): [1]Pair {
+    return [Pair{ n: 7 }]
+}
+
+fn main() {
+    let a = pair()
+    let mut edited = pair()
+    edited[0] = 9
+    let row = nested()
+    let s = a[:]
+    printf("%d %d %d %d %d %d %d\n", cast(i32, a[0] + a[1]), cast(i32, take(a)), cast(i32, take(pair())), cast(i32, edited[0]), cast(i32, row[0][1]), cast(i32, from_local()[0]), cast(i32, one()[0].n + s[0]))
+}

@@ -43,7 +43,7 @@ String _functionHeader(FuncDecl func) {
           func.body != null
       ? 'static '
       : '';
-  return '$staticPrefix${_cType(returnType)} $name(${params.isEmpty ? 'void' : params.join(', ')})';
+  return '$staticPrefix${_cValueType(returnType)} $name(${params.isEmpty ? 'void' : params.join(', ')})';
 }
 
 String _receiverTypeName(Receiver receiver) =>
@@ -63,6 +63,8 @@ String _cType(KlinType type) => switch (type) {
       PtrType(:final pointee, :final isVolatile) =>
         '${isVolatile ? 'volatile ' : ''}'
         '${pointee is StructType ? 'struct ${_structCName(pointee.moduleName, pointee.name)}' : _cType(pointee)} *',
+      // An array value (a function return) is a wrapper struct. A declaration
+      // and a parameter stay a C array — see [_cDecl] and [_cValueType].
       ArrayType(:final elem) => _cType(elem),
       SliceType(:final elem) => _sliceCName(elem),
       ResultType(:final ok) => _resultCName(ok),
@@ -81,7 +83,7 @@ String _cDecl(KlinType type, String name) => switch (type) {
           final ps = params.isEmpty
               ? 'void'
               : params.map(_cType).join(', ');
-          return '${_cType(ret)} (*$name)($ps)';
+          return '${_cValueType(ret)} (*$name)($ps)';
         }(),
       _ => '${_cType(type)} $name',
     };
@@ -97,6 +99,14 @@ String _cDecl(KlinType type, String name) => switch (type) {
   }
   return (elem: elem, lens: lens);
 }
+
+/// C type of a value. `[N]T` is the return wrapper (`klin_arr2_u8`), not
+/// the element type. Parameters and locals initialized from a literal use
+/// [_cDecl] and stay C arrays.
+String _cValueType(KlinType type) =>
+    type is ArrayType ? _arrayValueCName(type) : _cType(type);
+
+String _arrayValueCName(ArrayType type) => 'klin_${_typeToken(type)}';
 
 String _fnTypedefName(FnType type) {
   final ps = type.params.map(_typeToken).join('_');
@@ -334,6 +344,124 @@ void _collectResultTypesFromExpr(Expr expr, Set<ResultType> output) {
     default:
       break;
   }
+}
+
+/// Every `[N]T` that is returned (a function, or a `fn(): [N]T` type).
+Set<ArrayType> _arrayReturnTypes(Program program) {
+  final out = <ArrayType>{};
+  void note(KlinType? type) {
+    if (type is ArrayType) out.add(type);
+  }
+
+  void walk(KlinType? type) {
+    switch (type) {
+      case null:
+        return;
+      case ArrayType(:final elem):
+        walk(elem);
+      case FnType(:final params, :final ret):
+        note(ret);
+        walk(ret);
+        for (final param in params) {
+          walk(param);
+        }
+      case PtrType(:final pointee):
+        walk(pointee);
+      case ResultType(:final ok):
+        walk(ok);
+      default:
+        return;
+    }
+  }
+
+  for (final func in program.funcs) {
+    note(func.resolvedReturnType);
+    walk(func.resolvedReturnType);
+    for (final param in func.params) {
+      walk(param.resolvedType);
+    }
+    if (func.receiver case final receiver?) {
+      walk(receiver.resolvedType);
+    }
+    final body = func.body;
+    if (body != null) {
+      _collectArrayReturnsInBlock(body, note, walk);
+    }
+  }
+  for (final struct in program.structs) {
+    for (final field in struct.fields) {
+      walk(field.resolvedType);
+    }
+  }
+  return out;
+}
+
+void _collectArrayReturnsInBlock(
+  Block block,
+  void Function(KlinType?) note,
+  void Function(KlinType?) walk,
+) {
+  for (final stmt in block.stmts) {
+    _collectArrayReturnsInStmt(stmt, note, walk);
+  }
+}
+
+void _collectArrayReturnsInStmt(
+  Stmt stmt,
+  void Function(KlinType?) note,
+  void Function(KlinType?) walk,
+) {
+  switch (stmt) {
+    case LetStmt(:final arrayByValue, :final resolvedType):
+      if (arrayByValue) note(resolvedType);
+      walk(resolvedType);
+    case BlockStmt(:final block):
+      _collectArrayReturnsInBlock(block, note, walk);
+    case IfStmt(:final thenBlock, :final elseBranch):
+      _collectArrayReturnsInBlock(thenBlock, note, walk);
+      if (elseBranch != null) {
+        _collectArrayReturnsInStmt(elseBranch, note, walk);
+      }
+    case WhileStmt(:final body):
+      _collectArrayReturnsInBlock(body, note, walk);
+    case ForRangeStmt(:final body):
+      _collectArrayReturnsInBlock(body, note, walk);
+    case ForCStmt(:final body):
+      _collectArrayReturnsInBlock(body, note, walk);
+    case MatchStmt(:final arms):
+      for (final arm in arms) {
+        _collectArrayReturnsInBlock(arm.body, note, walk);
+      }
+    case DeferStmt(:final body):
+      _collectArrayReturnsInStmt(body, note, walk);
+    default:
+      break;
+  }
+}
+
+void _emitFnTypedefs(StringBuffer buf, List<FnType> types) {
+  for (final type in types) {
+    final name = _fnTypedefName(type);
+    final ps = type.params.isEmpty
+        ? 'void'
+        : type.params.map(_cType).join(', ');
+    buf.writeln('typedef ${_cValueType(type.ret)} (*$name)($ps);');
+  }
+  if (types.isNotEmpty) buf.writeln();
+}
+
+/// `typedef struct { uint8_t v[2]; } klin_arr2_u8;`
+/// A nested `[1][2]u8` is one struct: `uint8_t v[1][2]`.
+void _emitArrayReturnTypedefs(StringBuffer buf, Iterable<ArrayType> types) {
+  final list = types.toList()
+    ..sort((a, b) => _typeToken(a).compareTo(_typeToken(b)));
+  for (final type in list) {
+    final shape = _arrayShape(type);
+    buf.writeln(
+      'typedef struct { ${_cType(shape.elem)} v[${shape.lens.join('][')}]; } ${_arrayValueCName(type)};',
+    );
+  }
+  if (list.isNotEmpty) buf.writeln();
 }
 
 String _resultCName(KlinType ok) => 'klin_res_${_typeToken(ok)}';

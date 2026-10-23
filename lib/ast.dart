@@ -334,6 +334,10 @@ final class LetStmt extends Stmt {
   /// Filled by the checker.
   KlinType? resolvedType;
 
+  /// The binding stores a returned `[N]T` (a C struct), not a C array.
+  /// Uses are `name.v`. A literal initializer stays a C array.
+  bool arrayByValue = false;
+
   LetStmt({
     required this.isMut,
     required this.name,
@@ -810,6 +814,9 @@ final class NameExpr extends Expr {
 
   /// Filled by the checker: a mut receiver is emitted as a pointer (`->`).
   bool isPtrReceiver = false;
+
+  /// This name is a returned `[N]T` stored as a struct. Emission uses `.v`.
+  bool arrayByValue = false;
 
   /// Top-level function used as a value (fn-pointer decay); C symbol to emit.
   String? resolvedFnCName;

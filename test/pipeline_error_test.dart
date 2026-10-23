@@ -2443,6 +2443,79 @@ fn main() {
     );
   });
 
+  test('error: function cannot return a zero-length array', () {
+    expectRange('''
+fn z(): [0]u8 { return [1] }
+fn main() {}
+''', 'function cannot return a zero-length array `[0]u8`');
+  });
+
+  test('error: nested zero-length array cannot be returned', () {
+    expectRange('''
+fn z(): [1][0]u8 { return [[]] }
+fn main() {}
+''', 'function cannot return a zero-length array `[1][0]u8`');
+  });
+
+  test('error: function type cannot return a zero-length array', () {
+    expectRange('''
+fn main() {
+  let f: fn(): [0]u8
+}
+''', 'function cannot return a zero-length array `[0]u8`');
+  });
+
+  test('error: result type cannot wrap an array', () {
+    expectRange('''
+fn f(): ![2]u8 { return error(1) }
+fn main() {}
+''', 'invalid result type `![2]u8`');
+  });
+
+  test('error: return array element must be bound first', () {
+    expectRange('''
+fn row(a: [2][2]u8, i: i32): [2]u8 { return a[i] }
+fn main() {}
+''', 'cannot use this array expression here (bind it to a variable first)');
+  });
+
+  test('error: copying a C array into a let still needs a literal', () {
+    expectRange('''
+fn main() {
+  let a: [2]u8 = [1, 2]
+  let b = a
+}
+''', 'array initialization requires a `[...]` literal');
+  });
+
+  test('error: array literal in a returned array is range-checked', () {
+    expectRange('''
+fn f(): [1]u8 { return [200 + 100] }
+fn main() {}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: struct field cannot be a function returning an array of structs', () {
+    expectRange('''
+struct Pair { n: u8 }
+struct Bad { f: fn(): [1]Pair }
+fn main() {}
+''', 'a struct field cannot be a function that returns an array of structs');
+  });
+
+  test('error: async fn cannot return an array', () {
+    const source = '''
+async fn f(): [2]u8 {}
+fn main() {}
+''';
+    expect(
+      () => Parser(Lexer(source).tokenize()).parse(),
+      throwsA(predicate((e) =>
+          e is ParseError &&
+          e.toString().contains('async fn MVP returns void'))),
+    );
+  });
+
   test('error: let shift by a negative count', () {
     expectRange('''
 fn main() {

@@ -8,6 +8,77 @@ bool _exprIsPtrReceiver(Expr expr) {
   return current is NameExpr && current.isPtrReceiver;
 }
 
+Expr _peelEmitGroups(Expr expr) {
+  var current = expr;
+  while (current is GroupExpr) {
+    current = current.inner;
+  }
+  return current;
+}
+
+/// A returned `[N]T`: a call, a by-value binding, `pick`, or `match`.
+/// A C array variable or literal is not one — those stay C arrays.
+bool _exprIsArrayValue(Expr expr) {
+  final node = _peelEmitGroups(expr);
+  if (node is NameExpr) return node.arrayByValue;
+  if (node is CallExpr ||
+      node is MethodCallExpr ||
+      node is PickExpr ||
+      node is MatchExpr) {
+    return node.resolvedType is ArrayType;
+  }
+  return false;
+}
+
+/// The C array object. A wrapper value is `expr.v` (the call is evaluated
+/// once). A C array is the expression itself.
+String _emitArrayObject(Expr expr, _ExprCtx ctx) {
+  if (!_exprIsArrayValue(expr)) return _emitExpr(expr, ctx);
+  final raw = _emitExpr(expr, ctx);
+  final simple = RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$').hasMatch(raw);
+  return simple ? '$raw.v' : '($raw).v';
+}
+
+/// Wrapper struct for a `[N]T` value. An array value is already that
+/// struct. A literal or a C array is copied into `.v` with no loop and
+/// no library call. The checker only allows a stable C array here, so
+/// the element list does not evaluate a side-effecting index twice.
+String _emitArrayValue(Expr expr, _ExprCtx ctx) {
+  if (_exprIsArrayValue(expr)) return _emitExpr(expr, ctx);
+  final type = expr.resolvedType;
+  if (type is! ArrayType) {
+    throw StateError('emit: array value without an array type');
+  }
+  return '(${_arrayValueCName(type)}){ .v = ${_emitArrayBrace(expr, type, ctx)} }';
+}
+
+String _emitArrayBrace(Expr expr, ArrayType type, _ExprCtx ctx) {
+  final node = _peelEmitGroups(expr);
+  if (node is ArrayLitExpr) {
+    return _emitArrayLit(node, ctx, asInitializer: true);
+  }
+  return _emitArrayElements(_emitArrayObject(node, ctx), type);
+}
+
+String _emitArrayElements(String base, ArrayType type) {
+  final elem = type.elem;
+  if (elem is ArrayType) {
+    final parts = [
+      for (var i = 0; i < type.len; i++)
+        _emitArrayElements('$base[$i]', elem),
+    ];
+    return '{ ${parts.join(', ')} }';
+  }
+  final parts = [for (var i = 0; i < type.len; i++) '$base[$i]'];
+  return '{ ${parts.join(', ')} }';
+}
+
+String _emitCallArg(Expr arg, _ExprCtx ctx) {
+  if (arg.arrayToSliceFrom != null) return _emitExpr(arg, ctx);
+  if (_exprIsArrayValue(arg)) return _emitArrayObject(arg, ctx);
+  return _emitExpr(arg, ctx);
+}
+
 /// Argument for the method's receiver.
 ///
 /// A `mut` receiver parameter is already `T *` in C. Another `mut` call
@@ -97,7 +168,7 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
       () {
         final callee =
             mangledName ?? (throw StateError('emit: method without mangling'));
-        final argList = args.map((arg) => _emitExpr(arg, ctx)).join(', ');
+        final argList = args.map((arg) => _emitCallArg(arg, ctx)).join(', ');
         // Associated (static) call `Type.func(...)` — no receiver argument.
         if (isAssociated) return '$callee($argList)';
         final recv = _emitMethodReceiver(receiver, receiverByRef, ctx);
@@ -132,15 +203,19 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
               : args.length == 1 && args[0] is InterpolatedStringExpr
                   ? _emitInterpPrintfExpr(
                       args[0] as InterpolatedStringExpr, ctx)
-                  : '${resolvedCallee ?? callee}(${args.map((arg) => _emitExpr(arg, ctx)).join(', ')})',
+                  : '${resolvedCallee ?? callee}(${args.map((arg) => _emitCallArg(arg, ctx)).join(', ')})',
     InterpolatedStringExpr() => throw StateError(
         'emit: interpolated string must be lowered via printf / fmt.write',
       ),
     UnaryExpr(:final op, :final operand, :final resolvedType) =>
       _emitUnary(op, operand, resolvedType, (inner) => _emitExpr(inner, ctx)),
-    IndexExpr(:final object, :final index) => object.resolvedType is SliceType
-        ? '${_emitExpr(object, ctx)}.ptr[${_emitExpr(index, ctx)}]'
-        : '${_emitExpr(object, ctx)}[${_emitExpr(index, ctx)}]',
+    IndexExpr(:final object, :final index) => () {
+        final indexC = _emitExpr(index, ctx);
+        if (object.resolvedType is SliceType) {
+          return '${_emitExpr(object, ctx)}.ptr[$indexC]';
+        }
+        return '${_emitArrayObject(object, ctx)}[$indexC]';
+      }(),
     SliceFromExpr(:final array) => () {
         final type = array.resolvedType;
         if (type is! ArrayType) {
@@ -150,7 +225,7 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         if (elem is! PrimType) {
           throw StateError('emit: slice has a non-primitive element type');
         }
-        return '(${_sliceCName(elem)}){ ${_emitExpr(array, ctx)}, ${type.len} }';
+        return '(${_sliceCName(elem)}){ ${_emitArrayObject(array, ctx)}, ${type.len} }';
       }(),
     ArrayLitExpr lit => _emitArrayLit(lit, ctx),
     CastExpr(:final resolvedType, :final expr) => () {
@@ -166,7 +241,9 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
     BinaryExpr(:final left, :final op, :final right) =>
       '(${_emitExpr(left, ctx)} $op ${_emitExpr(right, ctx)})',
     PickExpr(:final cond, :final thenExpr, :final elseExpr) =>
-      '(${_emitExpr(cond, ctx)} ? ${_emitExpr(thenExpr, ctx)} : ${_emitExpr(elseExpr, ctx)})',
+      expr.resolvedType is ArrayType
+          ? '(${_emitExpr(cond, ctx)} ? ${_emitArrayValue(thenExpr, ctx)} : ${_emitArrayValue(elseExpr, ctx)})'
+          : '(${_emitExpr(cond, ctx)} ? ${_emitExpr(thenExpr, ctx)} : ${_emitExpr(elseExpr, ctx)})',
     GroupExpr(:final inner) => '(${_emitExpr(inner, ctx)})',
     ErrorExpr(:final code, :final resolvedType) => () {
         if (resolvedType is! ResultType) {
@@ -209,7 +286,10 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         }
         final out = ctx.state.nextValueTemp();
         final pad = '    ' * ctx.indent;
-        ctx.buf.writeln('$pad${_cType(outType)} $out;');
+        final outC = outType is ArrayType
+            ? _cValueType(outType)
+            : _cType(outType);
+        ctx.buf.writeln('$pad$outC $out;');
         _emitMatchAssign(
           ctx.buf,
           target: out,
@@ -248,7 +328,14 @@ String _emitArrayLit(ArrayLitExpr expr, _ExprCtx ctx, {bool asInitializer = fals
 /// Struct field: an array literal initializes the member, so it is a brace
 /// list. Any other value is an ordinary expression.
 String _emitArrayInit(Expr expr, _ExprCtx ctx) {
-  if (expr is ArrayLitExpr) return _emitArrayLit(expr, ctx, asInitializer: true);
+  final node = _peelEmitGroups(expr);
+  if (node is ArrayLitExpr) {
+    return _emitArrayLit(node, ctx, asInitializer: true);
+  }
+  final type = expr.resolvedType;
+  if (type is ArrayType) {
+    return _emitArrayElements(_emitArrayObject(expr, ctx), type);
+  }
   return _emitExpr(expr, ctx);
 }
 

@@ -344,6 +344,30 @@ void main() {
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
 
+  test('function returning [N]T compiles and runs', () async {
+    final result = await compileAndRun('test/array_return.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/array_return.out').readAsString());
+
+    final program = loadProject('test/array_return.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/array_return.kl');
+    expect(c, contains('typedef struct { uint8_t v[2]; } klin_arr2_u8;'));
+    expect(c, contains('.v[0]'));
+    expect(c, isNot(contains('constexpr')));
+
+    final cPath = '${tmp.path}/array_return_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/array_return_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
   test('enum variant on the base maximum compiles and runs', () async {
     final result = await compileAndRun('test/enum_auto.kl', tmp, cc: 'gcc');
     expect(result.exitCode, 0, reason: result.stderr);
