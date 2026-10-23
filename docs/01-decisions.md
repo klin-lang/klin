@@ -1,6 +1,6 @@
 # Design decisions
 
-This is the decision log (D1–D10), not an introduction. Start with
+This is the decision log (D1–D11), not an introduction. Start with
 [00-idea.md](00-idea.md). To write Klin: [guide.md](guide.md).
 
 The first three must be made **before the first line of the parser** — they permeate
@@ -223,6 +223,39 @@ tables, messages, and paths want the bytes. A second literal keeps
 ```klin
 let kw = b"fn"
 printf("%d\n", kw.len)   // 2
+```
+
+## D11. Module-level `const` — DECIDED
+
+**Choice: `pub? const Name: Type = literal`.** Immutable. No mutable
+globals, and no `let` at module scope.
+
+A keyword table, a page size, or a syscall number should be a named
+value with no storage surprise. The initializer is the value; emission
+is a C constant.
+
+- Top level only. A local binding stays `let` (and a local shadows a
+  constant of the same name).
+- The type is required. Allowed: an integer prim (`i8`…`i64`, `u8`…`u64`,
+  `usize` / `isize`, `int`), `bool`, or `[]u8`.
+- The initializer is a literal: an integer (including `-N`, hex, `'A'`),
+  `true` / `false`, or `b"..."`. Not `1 + 2`, not another constant, not
+  a float or a `str`.
+- `pub` emits `const` (the one `.c` can name it from every module).
+  Private emits `static const`.
+- A constant is not a C constant expression. `[N]T` still wants the
+  length written as an integer literal.
+- `NAME = …` and `NAME[i] = …` on a `[]u8` constant are checker errors.
+  `let s = NAME` still copies the slice header (D10); that copy is not
+  a separate constant.
+
+```klin
+pub const PAGE: i64 = 4096
+const KW: []u8 = b"fn"
+
+fn main() {
+    printf("%d %d\n", cast(i32, PAGE), KW.len)
+}
 ```
 
 ## D7. To decide later

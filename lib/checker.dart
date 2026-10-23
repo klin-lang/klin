@@ -164,6 +164,7 @@ final class Checker {
   final Map<String, _FuncSignature> _functions = {};
   final Map<String, StructDecl> _structs = {};
   final Map<String, EnumDecl> _enums = {};
+  final Map<String, ConstDecl> _consts = {};
   final Map<String, _FuncSignature> _methods = {};
   final Map<String, _FuncSignature> _assocFuncs = {};
   final List<FuncDecl> _allFunctions = [];
@@ -199,6 +200,7 @@ final class Checker {
     _functions.clear();
     _structs.clear();
     _enums.clear();
+    _consts.clear();
     _methods.clear();
     _assocFuncs.clear();
     _allFunctions
@@ -210,6 +212,7 @@ final class Checker {
     _registerEnums(program);
     // Field types after enums so `struct T { k: Tok }` resolves `Tok`.
     _resolveStructFields(program);
+    _registerConsts(program);
     _registerFunctions(program);
     final main = program.funcs
         .where((func) =>
@@ -514,6 +517,12 @@ final class Checker {
         );
       } else {
         key = _key(func.moduleName, func.name);
+        if (_consts.containsKey(key)) {
+          throw CheckError(
+            'function `${func.name}` conflicts with constant `${func.name}`',
+            func.pos,
+          );
+        }
         collection = _functions;
       }
       if (collection.containsKey(key)) {
@@ -585,6 +594,69 @@ final class Checker {
         field.resolvedType = _resolveType(field.typeName, field.pos);
       }
     }
+  }
+
+  void _registerConsts(Program program) {
+    for (final decl in program.consts) {
+      _currentModule = decl.moduleName;
+      final key = _key(decl.moduleName, decl.name);
+      if (_consts.containsKey(key)) {
+        throw CheckError(
+            'redeclaration of constant `${decl.name}`', decl.pos);
+      }
+      if (_structs.containsKey(key) || _enums.containsKey(key)) {
+        throw CheckError(
+          'constant `${decl.name}` conflicts with type `${decl.name}`',
+          decl.pos,
+        );
+      }
+      final type = _resolveType(decl.typeName, decl.pos);
+      _checkConstInit(decl, type);
+      decl.resolvedType = type;
+      _consts[key] = decl;
+    }
+  }
+
+  /// Integer, bool, and `b"..."` literals only. Not an arbitrary expression.
+  void _checkConstInit(ConstDecl decl, KlinType type) {
+    final init = decl.init;
+    if (type is PrimType && type.kind == PrimKind.bool_) {
+      if (init is! BoolLit) {
+        throw CheckError('bool constant must be true or false', init.pos);
+      }
+      init.resolvedType = type;
+      return;
+    }
+    if (type is SliceType && type.elem.kind == PrimKind.u8) {
+      if (init is! ByteStringLit) {
+        throw CheckError('[]u8 constant must be a b"..." literal', init.pos);
+      }
+      init.resolvedType = type;
+      return;
+    }
+    if (type is PrimType && type.kind.isInteger) {
+      if (init is IntLit) {
+        init.resolvedType = type;
+        return;
+      }
+      if (init is UnaryExpr && init.op == '-' && init.operand is IntLit) {
+        if (_isUnsigned(type.kind)) {
+          throw CheckError(
+            'operator `-` is not allowed for unsigned type `${type.displayName}`',
+            init.pos,
+          );
+        }
+        init.resolvedType = type;
+        init.operand.resolvedType = type;
+        return;
+      }
+      throw CheckError(
+          'integer constant must be an integer literal', init.pos);
+    }
+    throw CheckError(
+      'constant type must be an integer, bool, or []u8',
+      decl.pos,
+    );
   }
 
   void _registerEnums(Program program) {
@@ -943,6 +1015,54 @@ final class Checker {
       module.isEmpty
           ? '${name}_$variant'
           : '${module}_${name}_$variant';
+
+  static String _constCName(String module, String name) =>
+      module.isEmpty ? name : '${module}_$name';
+
+  /// `mod.NAME` when [object] is an imported module (or this module's name).
+  /// Returns null when [object] is a value, so field access still runs.
+  KlinType? _tryModuleConst(
+    FieldExpr node,
+    Expr object,
+    String name,
+    SourcePos pos,
+  ) {
+    if (object is! NameExpr) return null;
+    if (_scope.lookup(object.name) != null) return null;
+    final module = object.name == _currentModule
+        ? object.name
+        : _importAliases[_currentModule]?[object.name];
+    if (module == null) return null;
+    final decl = _consts[_key(module, name)];
+    if (decl == null) {
+      throw CheckError('unknown constant `${object.name}.$name`', pos);
+    }
+    if (module != _currentModule && !decl.isPub) {
+      throw CheckError('constant `${object.name}.$name` is private', pos);
+    }
+    node.constCName = _constCName(decl.moduleName, decl.name);
+    node.resolvedDef = ResolvedDef(decl.namePos, decl.sourcePath);
+    return decl.resolvedType!;
+  }
+
+  /// True when [expr] is a module-level constant (not a local that shadows it).
+  bool _placeIsConst(Expr expr) {
+    final base = _unwrapGroups(expr);
+    if (base is NameExpr) {
+      if (_scope.lookup(base.name) != null) return false;
+      return _consts[_key(_currentModule, base.name)] != null;
+    }
+    if (base is FieldExpr && base.object is NameExpr) {
+      final alias = (base.object as NameExpr).name;
+      if (_scope.lookup(alias) != null) return false;
+      final module = alias == _currentModule
+          ? alias
+          : _importAliases[_currentModule]?[alias];
+      if (module == null) return false;
+      return _consts[_key(module, base.name)] != null;
+    }
+    return false;
+  }
 
   /// Maps an `import X` alias to the file module name.
   String _resolveModuleQualifier(String qualifier, SourcePos pos) {
@@ -2178,8 +2298,13 @@ final class Checker {
     final place = _unwrapGroups(target);
     if (place is NameExpr) {
       final symbol = _scope.lookup(place.name);
-      if (symbol == null)
+      if (symbol == null) {
+        if (_consts[_key(_currentModule, place.name)] != null) {
+          throw CheckError(
+              'cannot assign to constant `${place.name}`', pos);
+        }
         throw CheckError('unknown variable `${place.name}`', pos);
+      }
       if (!symbol.isMut) {
         throw CheckError(
             'cannot assign to immutable variable `${place.name}`', pos);
@@ -2188,6 +2313,9 @@ final class Checker {
       return symbol.type;
     }
     if (place is FieldExpr) {
+      if (_placeIsConst(place)) {
+        throw CheckError('cannot assign to constant `${place.name}`', pos);
+      }
       final objectType = _inferExpr(place.object);
       if (objectType is ArrayType || objectType is SliceType) {
         throw CheckError('`len` is read-only', pos);
@@ -2213,6 +2341,9 @@ final class Checker {
         // array is a different buffer and stays writable.
         if (_unwrapGroups(place.object) is ByteStringLit) {
           throw CheckError('cannot assign through a byte-string literal', pos);
+        }
+        if (_placeIsConst(place.object)) {
+          throw CheckError('cannot assign through a constant', pos);
         }
         return _inferExpr(place);
       }
@@ -2350,6 +2481,14 @@ final class Checker {
                 ResolvedDef(sym.pos, _currentSourcePath);
             return sym.type;
           }
+          final constant = _consts[_key(_currentModule, nameExpr.name)];
+          if (constant != null) {
+            nameExpr.resolvedConstCName =
+                _constCName(constant.moduleName, constant.name);
+            nameExpr.resolvedDef =
+                ResolvedDef(constant.namePos, constant.sourcePath);
+            return constant.resolvedType!;
+          }
           final fnType = _fnTypeForName(nameExpr.name, nameExpr.pos);
           if (fnType != null) {
             nameExpr.resolvedFnCName = fnType.cName;
@@ -2368,6 +2507,8 @@ final class Checker {
           // `Enum.Variant`: a type name (not a variable) followed by a variant.
           final enumConst = _tryEnumConstant(fieldExpr, object, name, pos);
           if (enumConst != null) return enumConst;
+          final moduleConst = _tryModuleConst(fieldExpr, object, name, pos);
+          if (moduleConst != null) return moduleConst;
           final objectType = _inferExpr(object);
           if (name == 'len' && objectType is ArrayType) {
             return const PrimType(PrimKind.i32);

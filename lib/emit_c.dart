@@ -26,6 +26,9 @@ String emitC(Program program, String sourcePath) {
       _collectSliceTypes(field.resolvedType, sliceTypes);
     }
   }
+  for (final constant in program.consts) {
+    _collectSliceTypes(constant.resolvedType, sliceTypes);
+  }
   for (final func in program.funcs) {
     _collectSliceTypes(func.resolvedReturnType, sliceTypes);
     for (final param in func.params) {
@@ -122,6 +125,7 @@ String emitC(Program program, String sourcePath) {
   if (_programNeedsMemHost(program)) {
     _emitMemHostHelpers(buf, program);
   }
+  _emitConsts(buf, program, sourcePath);
   for (final func in program.funcs) {
     // `@[cheader]` + `@[cimport]`: prototype lives in a C header (`cinclude`).
     if (func.attrs.any((a) => a.name == 'cheader')) continue;
@@ -175,6 +179,25 @@ void _emitEnums(StringBuffer buf, Program program, String sourcePath) {
     buf.writeln('enum { ${parts.join(', ')} };');
     buf.writeln();
   }
+}
+
+/// `static const` when private, `const` when `pub`. After typedefs so a
+/// `[]u8` constant can name `klin_slice_u8`.
+void _emitConsts(StringBuffer buf, Program program, String sourcePath) {
+  if (program.consts.isEmpty) return;
+  for (final decl in program.consts) {
+    final type = decl.resolvedType;
+    if (type == null) {
+      throw StateError('emit: missing type for constant `${decl.name}`');
+    }
+    _line(buf, decl.pos.line, decl.sourcePath ?? sourcePath);
+    final linkage = decl.isPub ? 'const' : 'static const';
+    final name = _freeCName(decl.moduleName, decl.name);
+    buf.writeln(
+      '$linkage ${_cType(type)} $name = ${_emitConstInitializer(decl.init)};',
+    );
+  }
+  buf.writeln();
 }
 
 /// Named tag so a field `next: *Node` is `struct Node *` inside the typedef.

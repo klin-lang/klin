@@ -29,10 +29,17 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
     BoolLit(:final value) => value ? 'true' : 'false',
     StringLit(:final value) => '"${_escapeC(value)}"',
     ByteStringLit(:final value) => _emitByteString(value),
-    NameExpr(:final name, :final resolvedFnCName) =>
-      resolvedFnCName ?? name,
-    FieldExpr(:final object, :final name, :final enumConstCName) => () {
+    NameExpr(:final name, :final resolvedFnCName, :final resolvedConstCName) =>
+      resolvedConstCName ?? resolvedFnCName ?? name,
+    FieldExpr(
+      :final object,
+      :final name,
+      :final enumConstCName,
+      :final constCName,
+    ) =>
+      () {
         if (enumConstCName != null) return enumConstCName;
+        if (constCName != null) return constCName;
         final objectType = object.resolvedType;
         if (name == 'len' && objectType is ArrayType) {
           return objectType.len.toString();
@@ -214,6 +221,22 @@ String _methodCName(String module, String type, String method) =>
 
 void _line(StringBuffer buf, int line, String path) {
   buf.writeln('#line $line "${_escapeC(path)}"');
+}
+
+/// Brace-initialized so a `[]u8` constant is a real object, not a cast.
+String _emitConstInitializer(Expr init) {
+  return switch (init) {
+    IntLit(:final lexeme) => _cIntLiteral(lexeme),
+    UnaryExpr(:final op, :final operand) when op == '-' && operand is IntLit =>
+      '-${_cIntLiteral(operand.lexeme)}',
+    BoolLit(:final value) => value ? 'true' : 'false',
+    ByteStringLit(:final value) => () {
+        final elem = const PrimType(PrimKind.u8);
+        final n = _utf8ByteLength(value);
+        return '{ (${elem.kind.cType} *)"${_escapeC(value)}", $n }';
+      }(),
+    _ => throw StateError('emit: constant initializer is not a literal'),
+  };
 }
 
 /// `b"..."` → `[]u8` over a static C string. `.len` is the byte count and

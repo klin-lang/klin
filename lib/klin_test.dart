@@ -166,6 +166,7 @@ Program _withoutImportedMains(Program program, String absEntry) {
     funcs,
     program.pos,
     enums: program.enums,
+    consts: program.consts,
     importAliases: program.importAliases,
   );
 }
@@ -200,6 +201,7 @@ Program _withInjectedMain(
     [...program.funcs, main],
     program.pos,
     enums: program.enums,
+    consts: program.consts,
     importAliases: program.importAliases,
   );
 }

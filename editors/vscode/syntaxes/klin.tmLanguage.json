@@ -142,7 +142,7 @@
         },
         {
           "name": "keyword.other.klin",
-          "match": "\\b(fn|struct|enum|pub|module|import|let|mut|cast|volatile|error|asm)\\b"
+          "match": "\\b(fn|struct|enum|const|pub|module|import|let|mut|cast|volatile|error|asm)\\b"
         }
       ]
     },

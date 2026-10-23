@@ -32,6 +32,7 @@ const _keywords = <String>[
   'fn',
   'struct',
   'enum',
+  'const',
   'pub',
   'module',
   'import',
@@ -173,6 +174,15 @@ List<KlinCompletionItem> _topLevelItems(Program program) {
         label: e.name,
         kind: KlinCompletionKind.enumType,
         detail: 'enum',
+      ),
+    );
+  }
+  for (final c in program.consts) {
+    out.add(
+      KlinCompletionItem(
+        label: c.name,
+        kind: KlinCompletionKind.variable,
+        detail: 'const ${c.typeName}',
       ),
     );
   }

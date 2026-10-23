@@ -162,6 +162,42 @@ fn main() {
 The slice points at static bytes (no allocation). Those bytes are
 read-only: `b"fn"[0] = 1` is an error. Copy into a `[N]u8` to modify.
 
+## Constants
+
+`const` is a module-level immutable value. Not a mutable global, and
+not a local (`let` stays the local form).
+
+```klin
+pub const PAGE: i64 = 4096
+const FLAG: bool = true
+const NEG: i32 = -100
+const KW: []u8 = b"fn"
+
+fn main() {
+    printf("%d %d\n", cast(i32, PAGE), KW.len)   // 4096, 2
+}
+```
+
+- Type is required: an integer, `bool`, or `[]u8`
+- Initializer is a literal (`-100`, `'A'`, `0x10`, `true`, `b"..."`).
+  Not `1 + 2` and not another constant
+- `pub` is visible as `mod.NAME` after `import`. Private is
+  `static const` in the generated C
+- `NAME = …` is an error. `KW[0] = 1` is an error. A local of the same
+  name shadows the constant
+- `[N]T` does not take a constant as its length
+
+```klin
+module app
+import os
+
+fn main() {
+    printf("%d\n", cast(i32, os.AT_FDCWD))
+}
+```
+
+Runnable: [`examples/module_const.kl`](../examples/module_const.kl).
+
 ## Already documented elsewhere
 
 | Topic | Where |

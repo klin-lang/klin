@@ -26,6 +26,7 @@ enum TokenKind {
   fn,
   struct,
   enum_,
+  const_,
   pub,
   module,
   import,

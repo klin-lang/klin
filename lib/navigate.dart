@@ -171,7 +171,9 @@ SemanticNavKind semanticNavKind(NavTarget t) {
     _FieldNav(:final expr) =>
       expr.enumConstCName != null
           ? SemanticNavKind.enumMember
-          : SemanticNavKind.property,
+          : expr.constCName != null
+              ? SemanticNavKind.variable
+              : SemanticNavKind.property,
     _NameNav(:final expr) =>
       (expr.resolvedFnCName != null || expr.resolvedType is FnType)
           ? SemanticNavKind.function
@@ -185,7 +187,9 @@ bool semanticNavIsDeclaration(NavTarget t) =>
 
 /// True for non-mut `let` bindings (modifier `readonly`).
 bool semanticNavIsReadonly(NavTarget t) =>
-    t is _LetNav && !t.stmt.isMut;
+    (t is _LetNav && !t.stmt.isMut) ||
+    (t is _NameNav && t.expr.resolvedConstCName != null) ||
+    (t is _FieldNav && t.expr.constCName != null);
 
 /// True when the function decl has `@[cimport]` (modifier `defaultLibrary`).
 bool semanticNavIsCimport(NavTarget t) =>

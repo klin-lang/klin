@@ -66,6 +66,8 @@ String formatUnit(
         _writeStruct(out, decl, 0);
       case EnumDecl():
         _writeEnum(out, decl, 0);
+      case ConstDecl():
+        _writeConst(out, decl, 0);
       case FuncDecl():
         _writeFunc(out, decl, 0);
       default:
@@ -84,6 +86,8 @@ int _declLine(Object decl) {
     case StructDecl(:final attrs, :final pos):
       return attrs.isNotEmpty ? attrs.first.pos.line : pos.line;
     case EnumDecl(:final attrs, :final pos):
+      return attrs.isNotEmpty ? attrs.first.pos.line : pos.line;
+    case ConstDecl(:final attrs, :final pos):
       return attrs.isNotEmpty ? attrs.first.pos.line : pos.line;
     default:
       return 1;
@@ -139,6 +143,7 @@ final class _FmtOut {
         case TokenKind.fn:
         case TokenKind.struct:
         case TokenKind.enum_:
+        case TokenKind.const_:
         case TokenKind.pub:
         case TokenKind.atSign:
         case TokenKind.async_:
@@ -257,6 +262,15 @@ void _writeEnum(_FmtOut out, EnumDecl decl, int indent) {
   final close = out.firstRBraceAfter(decl.pos);
   if (close != null) out.writeLeading(close, fieldPad);
   out.buf.writeln('$pad}');
+}
+
+void _writeConst(_FmtOut out, ConstDecl decl, int indent) {
+  _writeAttrs(out, decl.attrs, indent);
+  final pad = indentUnit * indent;
+  out.buf.write(pad);
+  if (decl.isPub) out.buf.write('pub ');
+  out.buf.write('const ${decl.name}: ${decl.typeName} = ${_expr(decl.init)}');
+  out.endLine(decl.namePos.line);
 }
 
 void _writeFunc(_FmtOut out, FuncDecl decl, int indent) {

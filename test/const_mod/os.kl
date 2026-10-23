@@ -1,0 +1,4 @@
+module os
+
+pub const AT_FDCWD: i64 = -100
+const HIDDEN: i32 = 1

@@ -75,4 +75,36 @@ void main() {
     expect(c, contains('(uint8_t *)"fn", 2'));
     expect(c, contains(r'(uint8_t *)"a\tb\"\\$", 6'));
   });
+
+  test('module-level const is a C constant', () async {
+    final result = await compileAndRun('test/module_const.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/module_const.out').readAsString());
+
+    final program = loadProject('test/module_const.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/module_const.kl');
+    expect(c, contains('const int64_t module_const_PAGE = 4096;'));
+    expect(c, isNot(contains('static const int64_t module_const_PAGE')));
+    expect(c, contains('static const bool module_const_FLAG = true;'));
+    expect(c, contains('static const int32_t module_const_NEG = -100;'));
+    expect(c, contains('static const int32_t module_const_HEX = -0x10;'));
+    expect(
+      c,
+      contains(
+          'static const klin_slice_u8 module_const_KW = { (uint8_t *)"fn", 2 };'),
+    );
+  });
+
+  test('imported pub const is visible', () async {
+    final result = await compileAndRun('test/const_mod/app.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/const_mod/app.out').readAsString());
+
+    final program = loadProject('test/const_mod/app.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/const_mod/app.kl');
+    expect(c, contains('const int64_t os_AT_FDCWD = -100;'));
+    expect(c, contains('static const int32_t os_HIDDEN = 1;'));
+  });
 }

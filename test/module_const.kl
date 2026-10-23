@@ -1,0 +1,14 @@
+pub const PAGE: i64 = 4096
+const FLAG: bool = true
+const NEG: i32 = -100
+const KW: []u8 = b"fn"
+const HEX: i32 = -0x10
+
+fn shown(): i32 {
+    let PAGE: i32 = 7
+    return PAGE
+}
+
+fn main() {
+    printf("%d %d %d %d %d %d %d\n", cast(i32, PAGE), pick FLAG { 1 } { 0 }, NEG, KW.len, KW[0], HEX, shown())
+}

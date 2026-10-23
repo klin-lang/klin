@@ -26,6 +26,7 @@ These compile. They are not “missing.”
 | `b"..."` | `[]u8` — bytes of the text and `.len`; same escapes as `"..."`; no interpolation ([syntax.md](syntax.md)) |
 | `[N]T`, `[]T`, `*T` / `*mut T` | slices are `{ptr, len}`; no hidden cap grow |
 | `struct`, `enum`, `fn`, methods, `Type.fn` | [syntax.md](syntax.md) |
+| `const Name: Type = literal` | module-level immutable; integer, `bool`, or `b"..."`; no mutable globals ([syntax.md](syntax.md)) |
 | `let` / `let mut` / `:=` | immutability by default |
 | `if` / `while` / `for` / `return` / `break` / `continue` | [guide.md](guide.md) |
 | `match` / `pick` | no fallthrough; `pick` → C `?:` |
@@ -63,6 +64,7 @@ These look like holes. They are decisions.
 | `[T]`, `Vec[T]`, `fn id[T]`, `Result[T,E]` | Generics **are** `$fn`. `!T` exists. [034](../issues/034-generic-types.md) is optional sugar later, not a gap. |
 | `map[K]V` / hash map | ❌ struck — grow on insert is a hidden resize ([060](../issues/060-map-kv.md)). Use `table[Enum.x]` or owned bsearch. |
 | Closures that capture | Not now (D7). Hidden alloc of the environment. Use `fn` pointer + explicit context. |
+| Mutable globals / module-level `let` | `const` is immutable (D11). A local stays `let`. |
 | JSON / SQLite | ❌ not doing ([125](../issues/125-drop-host-json-sqlite.md)) |
 | Exceptions, GC, borrow checker, autofree | Rejected (D1 / D2 / idea) |
 | `c("…")`, parse C headers | FFI declarations only ([09-ffi-c.md](09-ffi-c.md)) |

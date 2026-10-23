@@ -212,6 +212,8 @@ Use imported names with a qualifier: `geom.Vec2{ x: 3, y: 4 }`,
 - `import path alias` — same module, shorter qualifier
 - `pub` — visible after import; without `pub` the symbol is private
   (`static` in the generated C)
+- `const NAME: Type = literal` — module-level immutable integer, `bool`,
+  or `b"..."` ([syntax.md](syntax.md)). No mutable globals
 - The whole program is still **one** `.c`
 
 Search paths (`lib/`, `-I`, `KLIN_PATH`, remote `klin get`):

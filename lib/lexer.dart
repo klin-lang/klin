@@ -235,6 +235,7 @@ final class Lexer {
       'fn' => Token(TokenKind.fn, lexeme, start),
       'struct' => Token(TokenKind.struct, lexeme, start),
       'enum' => Token(TokenKind.enum_, lexeme, start),
+      'const' => Token(TokenKind.const_, lexeme, start),
       'pub' => Token(TokenKind.pub, lexeme, start),
       'module' => Token(TokenKind.module, lexeme, start),
       'import' => Token(TokenKind.import, lexeme, start),

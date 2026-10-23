@@ -1668,4 +1668,18 @@ fn main() {
     expect(formatSource(source), source);
   });
 
+  test('fmt keeps a module-level const', () {
+    const source = '''
+pub const PAGE: i64 = 4096
+
+const NEG: i32 = -100
+
+const KW: []u8 = b"fn"
+
+fn main() {
+}
+''';
+    expect(formatSource(source), source);
+  });
+
 }

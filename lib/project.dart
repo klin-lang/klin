@@ -26,6 +26,7 @@ Program loadProject(
 }) {
   final structs = <StructDecl>[];
   final enums = <EnumDecl>[];
+  final consts = <ConstDecl>[];
   final funcs = <FuncDecl>[];
   final importAliases = <String, Map<String, String>>{};
   final loading = <String>{};
@@ -134,6 +135,11 @@ Program loadProject(
         enumDecl.sourcePath = u.path;
         enums.add(enumDecl);
       }
+      for (final constant in u.unit.consts) {
+        constant.moduleName = moduleName;
+        constant.sourcePath = u.path;
+        consts.add(constant);
+      }
       for (final func in u.unit.funcs) {
         func.moduleName = moduleName;
         func.sourcePath = u.path;
@@ -231,6 +237,7 @@ Program loadProject(
     funcs,
     firstPos ?? const SourcePos(1, 1),
     enums: enums,
+    consts: consts,
     importAliases: importAliases,
   );
 }
