@@ -508,4 +508,25 @@ void main() {
     ]);
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
+
+  test('printf folds a constant argument and runs under pedantic C', () async {
+    final result = await compileAndRun('test/printf_fold.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/printf_fold.out').readAsString());
+
+    final program = loadProject('test/printf_fold.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/printf_fold.kl');
+    expect(c, contains('printf("%d %d\\n", 3, 23);'));
+    final cPath = '${tmp.path}/printf_fold_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/printf_fold_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
 }

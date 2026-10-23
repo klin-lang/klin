@@ -1954,6 +1954,30 @@ fn main() {
     expect(c, isNot(contains('constexpr')));
   });
 
+  test('checker: printf and puts fold untyped constant arguments', () {
+    const source = '''
+const N: i32 = 10
+fn main() {
+  let y: u8 = 4
+  printf("%d\\n", 1 + 2)
+  printf("%d\\n", N + 5)
+  printf("%d\\n", ~(0))
+  printf("%d\\n", y + 1)
+  printf("%f\\n", 1.0 + 2.0)
+  puts("hi")
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'printf_fold.kl');
+    expect(c, contains('printf("%d\\n", 3);'));
+    expect(c, contains('printf("%d\\n", 15);'));
+    expect(c, contains('printf("%d\\n", ~((0)));'));
+    expect(c, contains('printf("%d\\n", (y + 1));'));
+    expect(c, contains('printf("%f\\n", (1.0 + 2.0));'));
+    expect(c, contains('puts("hi");'));
+  });
+
   test('checker: function may return [N]T as a wrapper struct', () {
     const source = '''
 struct Pair { n: u8 }

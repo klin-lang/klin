@@ -2501,6 +2501,14 @@ fn main() {}
 ''', 'type mismatch: expected `*mut i32`, got `*i32`');
   });
 
+  test('error: printf argument does not fit i32', () {
+    expectRange('''
+fn main() {
+  printf("%d\\n", 2000000000 + 2000000000)
+}
+''', 'integer literal `4000000000` is out of range for `i32`');
+  });
+
   test('error: let of a sum is out of range', () {
     expectRange('''
 fn main() {

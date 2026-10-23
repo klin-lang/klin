@@ -411,7 +411,11 @@ because `128` does not fit `i8`), a named constant must already have
 that integer type, division or remainder by zero is an error, and a
 shift by a negative count or by a count at least as wide as the type
 is an error. With no expected type the expression is still `i32`
-(`let x = 1 + 2`). A float expected type adopts it the way a lone
+(`let x = 1 + 2`). `puts` and `printf` have no parameter types, so an
+untyped argument uses that default: `printf("%d\n", 1 + 2)` folds to
+the `i32` value `3`, and a literal that does not fit `i32` is the range
+error. An untyped float becomes `f64` and is not an integer fold.
+A float expected type adopts it the way a lone
 literal does (`let x: f64 = 1 + 2`); that is not an integer fold.
 
 Unary `-` and `~` on an integer literal, or on an integer constant

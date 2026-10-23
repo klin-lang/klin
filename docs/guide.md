@@ -24,6 +24,7 @@ fn main() {
 
 `puts` and `printf` are the only C functions allowed without a
 declaration. Everything else needs `@[cimport]` ([09-ffi-c.md](09-ffi-c.md)).
+An untyped integer argument folds as `i32` (`printf("%d\n", 1 + 2)` is `3`).
 
 ## 2. Values
 

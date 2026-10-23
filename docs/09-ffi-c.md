@@ -30,7 +30,9 @@ fn sqrt(x: f64): f64
 ### Host builtins
 
 Without declarations only **`puts`** and **`printf`** are allowed (varargs / historical
-hello-world). Every other C function requires `@[cimport]`.
+hello-world). Every other C function requires `@[cimport]`. An untyped
+argument folds like an unannotated `let`: `printf("%d\n", 1 + 2)` is the
+`i32` value `3` (D12).
 
 ### Link
 

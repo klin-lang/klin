@@ -2616,8 +2616,19 @@ final class Checker {
       // Host builtins with unknown/varargs signatures (issue 021).
       // Everything else requires an explicit `@[cimport]` declaration.
       if (callee == 'puts' || callee == 'printf') {
+        // No parameter types, so an untyped argument uses the same default
+        // as an unannotated `let` (`i32` / `f64`) and folds (D12).
         for (final arg in args) {
-          _inferExpr(arg);
+          final ty = _inferExpr(arg);
+          if (ty is UntypedInt || ty is UntypedFloat || _containsUntyped(ty)) {
+            final concrete = _defaultConcrete(ty, arg.pos);
+            _materialize(arg, concrete);
+          } else if (ty is PrimType &&
+              ty.kind.isInteger &&
+              _isIntegerConstExpr(arg)) {
+            // `N + 5` is already `i32` because `N` is. Fold it anyway.
+            _materialize(arg, ty);
+          }
         }
         return const _CheckedCall(PrimType(PrimKind.i32), null);
       }
