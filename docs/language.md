@@ -24,9 +24,9 @@ These compile. They are not “missing.”
 |---|---|
 | Integers / `float` / `bool` / `str` | `int` → `i32`, `float` → `f64` |
 | `b"..."` | `[]u8` — bytes of the text and `.len` (an embedded `\0` counts); same escapes as `"..."`; no interpolation ([syntax.md](syntax.md)) |
-| `[N]T`, `[]T`, `*T` / `*mut T` | slices are `{ptr, len}`; no hidden cap grow |
-| `struct`, `enum`, `fn`, methods, `Type.fn` | [syntax.md](syntax.md) |
-| `const Name: Type = literal` | module-level immutable; integer, `bool`, or `b"..."`; no mutable globals ([syntax.md](syntax.md)) |
+| `[N]T`, `[]T`, `*T` / `*mut T` | slices are `{ptr, len}`; no hidden cap grow. `N` is an integer literal or an integer module `const`. `&` of a place reached through `*mut` is `*mut` |
+| `struct`, `enum`, `fn`, methods, `Type.fn` | a mutating method accepts any mutable place, including one reached through `*mut` ([syntax.md](syntax.md)) |
+| `const Name: Type = literal` | module-level immutable; integer, `bool`, or `b"..."`; an integer const is a valid `[N]T` length; no mutable globals ([syntax.md](syntax.md)) |
 | `let` / `let mut` / `:=` | immutability by default |
 | `if` / `while` / `for` / `return` / `break` / `continue` | [guide.md](guide.md) |
 | `match` / `pick` | no fallthrough; `pick` → C `?:` |

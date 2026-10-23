@@ -210,9 +210,10 @@ final class Checker {
     _checkAttrs(program);
     _registerStructs(program);
     _registerEnums(program);
+    // Constants before fields and signatures so `[NAME]T` can name one.
+    _registerConsts(program);
     // Field types after enums so `struct T { k: Tok }` resolves `Tok`.
     _resolveStructFields(program);
-    _registerConsts(program);
     _registerFunctions(program);
     final main = program.funcs
         .where((func) =>
@@ -745,11 +746,10 @@ final class Checker {
       if (close == null || close < 2) {
         throw CheckError('invalid array type `$name`', pos);
       }
-      final lenText = name.substring(1, close).replaceAll('_', '');
-      final len = _parseIntLiteralValue(lenText);
-      if (len == null || len < 0 || close == name.length - 1) {
+      if (close == name.length - 1) {
         throw CheckError('invalid array type `$name`', pos);
       }
+      final len = _resolveArrayLength(name.substring(1, close), pos);
       return ArrayType(_resolveType(name.substring(close + 1), pos), len);
     }
     if (name == 'void') return const VoidType();
@@ -788,6 +788,82 @@ final class Checker {
       throw CheckError('unknown type `$qualifier.$typeName`', pos);
     }
     return _resolvePrimType(name, pos);
+  }
+
+  /// `[N]T` length: an integer literal, or an integer module constant.
+  ///
+  /// The bound stored on [ArrayType] is the integer value. Emission writes
+  /// that decimal, not the C name of the constant — a `const` variable is
+  /// not an integer constant expression, so a struct field could not use it.
+  int _resolveArrayLength(String lenText, SourcePos pos) {
+    if (_arrayLengthIsLiteral(lenText)) {
+      final len = _parseIntLiteralValue(lenText.replaceAll('_', ''));
+      if (len == null || len < 0) {
+        throw CheckError('invalid array type `[$lenText]`', pos);
+      }
+      return len;
+    }
+    final decl = _lookupArrayLengthConst(lenText, pos);
+    final value = _integerConstValue(decl);
+    final type = decl.resolvedType;
+    if (value == null || type is! PrimType || !type.kind.isInteger) {
+      final shown = type?.displayName ?? 'unknown';
+      throw CheckError(
+        'array length `$lenText` must be an integer constant, got `$shown`',
+        pos,
+      );
+    }
+    if (value < 0) {
+      throw CheckError('array length `$lenText` must be non-negative', pos);
+    }
+    return value;
+  }
+
+  static bool _arrayLengthIsLiteral(String lenText) {
+    if (lenText.isEmpty) return false;
+    final c = lenText.codeUnitAt(0);
+    return c == 0x27 || (c >= 0x30 && c <= 0x39);
+  }
+
+  ConstDecl _lookupArrayLengthConst(String lenText, SourcePos pos) {
+    final dot = lenText.indexOf('.');
+    if (dot == -1) {
+      final decl = _consts[_key(_currentModule, lenText)];
+      if (decl == null) {
+        throw CheckError('unknown constant `$lenText`', pos);
+      }
+      return decl;
+    }
+    final qualifier = lenText.substring(0, dot);
+    final name = lenText.substring(dot + 1);
+    if (name.isEmpty || name.contains('.')) {
+      throw CheckError('invalid array type `[$lenText]`', pos);
+    }
+    final module = _resolveModuleQualifier(qualifier, pos);
+    final decl = _consts[_key(module, name)];
+    if (decl == null) {
+      throw CheckError('unknown constant `$qualifier.$name`', pos);
+    }
+    if (module != _currentModule && !decl.isPub) {
+      throw CheckError('constant `$qualifier.$name` is private', pos);
+    }
+    return decl;
+  }
+
+  /// Integer value of a constant's literal initializer, including a leading `-`.
+  int? _integerConstValue(ConstDecl decl) {
+    final init = decl.init;
+    if (init is IntLit) {
+      return _parseIntLiteralValue(init.lexeme.replaceAll('_', ''));
+    }
+    if (init is UnaryExpr && init.op == '-' && init.operand is IntLit) {
+      final mag = _parseIntLiteralValue(
+        (init.operand as IntLit).lexeme.replaceAll('_', ''),
+      );
+      if (mag == null) return null;
+      return -mag;
+    }
+    return null;
   }
 
   /// Parses encoded `fn(T1,T2):Ret` from [_typeName].
@@ -2242,17 +2318,16 @@ final class Checker {
       );
     }
     if (signature.isMutReceiver) {
-      if (call.receiver is! NameExpr) {
-        throw CheckError(
-            'mutating method requires a mutable variable', call.receiver.pos);
-      }
-      final receiver = call.receiver as NameExpr;
-      final symbol = _scope.lookup(receiver.name);
-      if (symbol == null || !symbol.isMut) {
-        throw CheckError(
+      // Same place rule as assignment: a `let mut`, a `mut` receiver, or any
+      // field / index chain reached through `*mut`. A non-mut `*T` stays
+      // immutable.
+      _requireMutablePlace(
+        call.receiver,
+        call.receiver.pos,
+        immutableVarMessage:
             'cannot call a mutating method on an immutable variable',
-            call.receiver.pos);
-      }
+        immutableExprMessage: 'mutating method requires a mutable variable',
+      );
     }
     if (call.args.length != signature.paramTypes.length) {
       throw CheckError(
@@ -2383,10 +2458,10 @@ final class Checker {
   ///
   /// Accepts nested places — struct fields, fixed-array elements reached through
   /// a `mut` receiver or variable, and writes through a `*mut` dereference —
-  /// mirroring the recursive check used for `&` ([_isMutablePlace]). Slice
-  /// element storage is shared with the caller (Go-like), so it stays writable.
-  /// The two message parameters preserve the caller's context (field vs array)
-  /// for the terminal error.
+  /// the same chain `&` uses ([_isMutablePlace]). A mutating method uses this
+  /// too. Slice element storage is shared with the caller (Go-like), so it
+  /// stays writable. The two message parameters preserve the caller's context
+  /// (field vs array vs method) for the terminal error.
   void _requireMutablePlace(
     Expr object,
     SourcePos pos, {
@@ -2895,12 +2970,20 @@ final class Checker {
     if (place is NameExpr) return _scope.lookup(place.name)?.isMut ?? false;
     if (place is FieldExpr) return _isMutablePlace(place.object);
     if (place is IndexExpr) return _isMutablePlace(place.object);
+    if (place is UnaryExpr && place.op == '*') {
+      final pointer = place.operand.resolvedType ?? _inferExpr(place.operand);
+      return pointer is PtrType && pointer.isMut;
+    }
     return false;
   }
 
   bool _isAddressablePlace(Expr expr) {
     final place = _unwrapGroups(expr);
-    return place is NameExpr || place is FieldExpr || place is IndexExpr;
+    if (place is NameExpr || place is FieldExpr || place is IndexExpr) {
+      return true;
+    }
+    // `*p` is a place. `&(*p)` reborrows it; `*mut` stays `*mut`.
+    return place is UnaryExpr && place.op == '*';
   }
 
   static const _cmpOps = {'==', '!=', '<', '<=', '>', '>='};

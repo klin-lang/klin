@@ -8,6 +8,18 @@ bool _exprIsPtrReceiver(Expr expr) {
   return current is NameExpr && current.isPtrReceiver;
 }
 
+/// Argument for the method's receiver.
+///
+/// A `mut` receiver parameter is already `T *` in C. Another `mut` call
+/// passes that pointer; a by-value call dereferences it. Every other place
+/// is a value, so a `mut` call takes its address.
+String _emitMethodReceiver(Expr receiver, bool byRef, _ExprCtx ctx) {
+  final emitted = _emitExpr(receiver, ctx);
+  final alreadyPointer = _exprIsPtrReceiver(receiver);
+  if (byRef) return alreadyPointer ? emitted : '&$emitted';
+  return alreadyPointer ? '*($emitted)' : emitted;
+}
+
 String _emitExpr(Expr expr, _ExprCtx ctx) {
   final raw = _emitExprRaw(expr, ctx);
   final from = expr.arrayToSliceFrom;
@@ -61,7 +73,7 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         final argList = args.map((arg) => _emitExpr(arg, ctx)).join(', ');
         // Associated (static) call `Type.func(...)` — no receiver argument.
         if (isAssociated) return '$callee($argList)';
-        final recv = '${receiverByRef ? '&' : ''}${_emitExpr(receiver, ctx)}';
+        final recv = _emitMethodReceiver(receiver, receiverByRef, ctx);
         return args.isEmpty ? '$callee($recv)' : '$callee($recv, $argList)';
       }(),
     StructLitExpr(

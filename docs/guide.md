@@ -73,7 +73,11 @@ fn main() {
 ```
 
 `fn (v: Vec2)` copies. `fn (mut v: Vec2)` takes a pointer. Mutation is
-visible at the call site. In C, `mut` is gone — only `*` remains.
+visible at the call site. The receiver may be any mutable place: a
+`let mut`, a field or index of one, or a place reached through `*mut`
+(`(*p).translate(...)`). `&` of that place has type `*mut`. A place
+reached only through `*T` stays immutable. In C, `mut` is gone — only
+`*` remains.
 
 Parameters and fields may share a type: `fn add(a, b: i32)`,
 `struct Point { x, y: f64 }`.
@@ -189,8 +193,11 @@ fn main() {
 }
 ```
 
-- `*T` / `*mut T` — address `&x`, write `*p = …`, fields `(*p).x`
-- `[N]T` — fixed array (length in the type)
+- `*T` / `*mut T` — address `&x`, write `*p = …`, fields `(*p).x`.
+  A place reached through `*mut` is mutable: `&(*p).x` is `*mut`, and
+  a mutating method may be called on it. Through `*T` it stays immutable.
+- `[N]T` — fixed array. `N` is an integer literal or an integer module
+  `const` (the C bound is that value)
 - `[]T` — slice `{ ptr, len }` (and `cap` where allocated)
 - No hidden allocation. Heap is `import mem` and an explicit
   `Allocator` ([14-allocator.md](14-allocator.md))
@@ -213,7 +220,8 @@ Use imported names with a qualifier: `geom.Vec2{ x: 3, y: 4 }`,
 - `pub` — visible after import; without `pub` the symbol is private
   (`static` in the generated C)
 - `const NAME: Type = literal` — module-level immutable integer, `bool`,
-  or `b"..."` ([syntax.md](syntax.md)). No mutable globals
+  or `b"..."`. An integer const is a valid `[N]T` length
+  ([syntax.md](syntax.md)). No mutable globals
 - The whole program is still **one** `.c`
 
 Search paths (`lib/`, `-I`, `KLIN_PATH`, remote `klin get`):

@@ -146,6 +146,15 @@ you cannot tell whether the object will be modified.
 phenomenon, zero runtime cost. **That is a good test for every feature:
 if it does not disappear in emission, it probably breaks the overarching principle.**
 
+A mutating method accepts any mutable place, not only a `let mut` name.
+A place is mutable when it is a `let mut` local or a `mut` receiver, or
+when it is reached through a `*mut` pointer — field and index chains
+included (`(*c).err.lit(...)` where `c: *mut Ctx`). `&place` has type
+`*mut T` when that place is mutable and `*T` when it is not. A place
+reached only through a non-mut `*T` stays immutable, the same rule as
+assignment (`(*p).x = …` already rejected a write through `*T`). The
+call still passes a pointer; `mut` is not in the C.
+
 ---
 
 ## D6. Initialization — ZII
@@ -249,7 +258,7 @@ value with no storage surprise. The initializer is the value; emission
 is a C constant.
 
 - Top level only. A local binding stays `let` (and a local shadows a
-  constant of the same name).
+  constant of the same name in a value). A type still sees the constant.
 - The type is required. Allowed: an integer prim (`i8`…`i64`, `u8`…`u64`,
   `usize` / `isize`, `int`), `bool`, or `[]u8`.
 - The initializer is a literal: an integer (including `-N`, hex, `'A'`),
@@ -259,8 +268,16 @@ is a C constant.
   `static const`. All modules share one `.c`, so visibility is enforced
   by the checker (`mod.NAME` on a private constant is an error), not by
   C linkage.
-- A constant is not a C constant expression. `[N]T` still wants the
-  length written as an integer literal.
+- An integer constant is a valid `[N]T` length: `[N]T` and `[mod.NAME]T`,
+  in a local, a struct field, or a parameter — the same positions as a
+  literal length. The bound is the constant's integer value, written in
+  C as a decimal integer constant expression (the same form as a literal
+  length, so `0x1000` and `'A'` become their numeric values). A C
+  `const` variable is not an integer constant expression; naming it in
+  the bound would make a VLA and would be illegal as a struct field.
+  A `bool`, a `[]u8`, or a negative constant is an error. A local of
+  the same name does not change the length — a type resolves the module
+  constant. A local alone is not a length.
 - `NAME = …` and `NAME[i] = …` on a `[]u8` constant are checker errors.
   `let s = NAME` copies the `{ptr, len}` header; `s` points at the same
   read-only bytes (see D10).
@@ -270,7 +287,8 @@ pub const PAGE: i64 = 4096
 const KW: []u8 = b"fn"
 
 fn main() {
-    printf("%d %d\n", cast(i32, PAGE), KW.len)
+    let buf: [PAGE]u8
+    printf("%d %d %d\n", cast(i32, PAGE), KW.len, buf.len)
 }
 ```
 

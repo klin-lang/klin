@@ -181,7 +181,8 @@ const NEG: i32 = -100
 const KW: []u8 = b"fn"
 
 fn main() {
-    printf("%d %d\n", cast(i32, PAGE), KW.len)   // 4096, 2
+    let buf: [PAGE]u8
+    printf("%d %d %d\n", cast(i32, PAGE), KW.len, buf.len)   // 4096, 2, 4096
 }
 ```
 
@@ -191,8 +192,11 @@ fn main() {
 - `pub` is visible as `mod.NAME` after `import`. Private is
   `static const` in the generated C
 - `NAME = …` is an error. `KW[0] = 1` is an error. A local of the same
-  name shadows the constant
-- `[N]T` does not take a constant as its length
+  name shadows the constant in a value, not in a type
+- An integer constant is a valid `[N]T` length (`[N]u8`, `[os.PAGE]u8`)
+  in a local, a struct field, or a parameter. The C bound is that
+  integer value (a decimal constant expression). A `bool`, a `[]u8`,
+  or a negative constant is an error
 
 ```klin
 module app

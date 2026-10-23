@@ -1777,16 +1777,29 @@ final class Parser {
         _advance();
         return '[]${_typeName()}';
       }
-      final length =
-          _expect(TokenKind.intLit, 'expected array length in `[...]`');
+      final length = _arrayLengthText();
       _expect(TokenKind.rBracket, 'expected `]` after array length');
-      return '[${length.lexeme}]${_typeName()}';
+      return '[$length]${_typeName()}';
     }
     final first = _expect(TokenKind.ident, 'expected type name');
     if (!_check(TokenKind.dot)) return first.lexeme;
     _advance();
     final second = _expect(TokenKind.ident, 'expected type name after `.`');
     return '${first.lexeme}.${second.lexeme}';
+  }
+
+  /// Integer literal, or a module constant name (`N` / `mod.NAME`).
+  String _arrayLengthText() {
+    if (_check(TokenKind.intLit)) return _advance().lexeme;
+    if (_check(TokenKind.ident)) {
+      final name = _advance().lexeme;
+      if (!_check(TokenKind.dot)) return name;
+      _advance();
+      final member =
+          _expect(TokenKind.ident, 'expected constant name after `.`');
+      return '$name.${member.lexeme}';
+    }
+    throw ParseError('expected array length in `[...]`', _current.pos);
   }
 
   bool _check(TokenKind kind) => _current.kind == kind;

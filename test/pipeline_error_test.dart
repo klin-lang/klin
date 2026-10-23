@@ -1757,4 +1757,257 @@ fn main() {
       )),
     );
   });
+  test('error: mutating method through a non-mut pointer', () {
+    const source = '''
+struct Out {
+  n: i32
+}
+struct Ctx {
+  err: Out
+}
+fn (mut o: Out) add() {
+  o.n = 1
+}
+fn main() {
+  let mut ctx = Ctx{ err: Out{ n: 0 } }
+  let c: *Ctx = &ctx
+  (*c).err.add()
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('cannot write through an immutable pointer'),
+      )),
+    );
+  });
+
+  test('error: mutating method on a let mut pointer that is not *mut', () {
+    const source = '''
+struct Out {
+  n: i32
+}
+fn (mut o: Out) add() {
+  o.n = 1
+}
+fn main() {
+  let mut o = Out{ n: 0 }
+  let mut p: *Out = &o
+  (*p).add()
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('cannot write through an immutable pointer'),
+      )),
+    );
+  });
+
+  test('error: & through a non-mut pointer is not *mut', () {
+    const source = '''
+struct Out {
+  n: i32
+}
+struct Ctx {
+  err: Out
+}
+fn main() {
+  let mut ctx = Ctx{ err: Out{ n: 0 } }
+  let c: *Ctx = &ctx
+  let p: *mut Out = &(*c).err
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('type mismatch') &&
+            e.toString().contains('*mut Out'),
+      )),
+    );
+  });
+
+  test('error: & of a reborrow through *T is not *mut', () {
+    const source = '''
+struct Ctx {
+  n: i32
+}
+fn main() {
+  let mut ctx = Ctx{ n: 0 }
+  let c: *Ctx = &ctx
+  let p: *mut Ctx = &(*c)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('type mismatch') &&
+            e.toString().contains('*mut Ctx'),
+      )),
+    );
+  });
+
+  test('error: negative const array length', () {
+    const source = '''
+const NEG: i32 = -100
+struct S {
+  data: [NEG]i32
+}
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('array length `NEG` must be non-negative'),
+      )),
+    );
+  });
+
+  test('error: bool const array length', () {
+    const source = '''
+const FLAG: bool = true
+fn main() {
+  let buf: [FLAG]u8
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains(
+                'array length `FLAG` must be an integer constant, got `bool`'),
+      )),
+    );
+  });
+
+  test('error: []u8 const array length', () {
+    const source = '''
+const KW: []u8 = b"fn"
+fn take(xs: [KW]u8) {}
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains(
+                'array length `KW` must be an integer constant, got `[]u8`'),
+      )),
+    );
+  });
+
+  test('error: unknown const array length', () {
+    const source = '''
+fn main() {
+  let buf: [NOPE]u8
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError && e.toString().contains('unknown constant `NOPE`'),
+      )),
+    );
+  });
+
+  test('error: local is not an array length', () {
+    const source = '''
+fn main() {
+  let N: i32 = 4
+  let buf: [N]u8
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) => e is CheckError && e.toString().contains('unknown constant `N`'),
+      )),
+    );
+  });
+
+  test('error: array length expression is not a const name', () {
+    const source = '''
+fn main() {
+  let buf: [1 + 2]u8
+}
+''';
+    expect(
+      () => Parser(Lexer(source).tokenize()).parse(),
+      throwsA(predicate(
+        (e) =>
+            e is ParseError &&
+            e.toString().contains('expected `]` after array length'),
+      )),
+    );
+  });
+
+  test('error: private imported const array length', () {
+    final program = loadProject('test/const_len_mod/bad_private.kl');
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('constant `os.HIDDEN` is private'),
+      )),
+    );
+  });
+
+  test('error: imported bool const array length', () {
+    final program = loadProject('test/const_len_mod/bad_bool.kl');
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('array length `os.FLAG` must be an integer'),
+      )),
+    );
+  });
+
+  test('error: imported negative const array length', () {
+    final program = loadProject('test/const_len_mod/bad_neg.kl');
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('array length `os.NEG` must be non-negative'),
+      )),
+    );
+  });
+
+  test('error: imported []u8 const array length', () {
+    final program = loadProject('test/const_len_mod/bad_bytes.kl');
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('array length `os.KW` must be an integer'),
+      )),
+    );
+  });
 }

@@ -1,0 +1,6 @@
+module bad_bool
+import os
+
+fn main() {
+    let buf: [os.FLAG]u8
+}

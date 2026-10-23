@@ -1695,4 +1695,28 @@ fn main() {
     expect(formatSource(source), source);
   });
 
+  test('fmt keeps a const array length', () {
+    const source = '''
+const N: i64 = 4
+
+fn main() {
+    let buf: [N]u8
+    let page: [os.PAGE]u8
+}
+''';
+    expect(formatSource(source), source);
+  });
+
+  test('checker: zero const is a valid array length', () {
+    const source = '''
+const Z: i32 = 0
+fn main() {
+  let buf: [Z]u8
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'z.kl');
+    expect(c, contains('uint8_t buf[0]'));
+  });
 }

@@ -142,4 +142,61 @@ void main() {
     expect(
         result.stdout, await File('test/propagate_cross.out').readAsString());
   });
+  test('mutating method and & through *mut', () async {
+    final result = await compileAndRun('test/mut_place.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/mut_place.out').readAsString());
+
+    final program = loadProject('test/mut_place.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/mut_place.kl');
+    // A mut receiver is already T* in C. Another mut call passes it;
+    // a by-value call dereferences.
+    expect(c, contains('mut_place_Out_add(o, b.len);'));
+    expect(c, contains('mut_place_Out_get(*(o))'));
+    expect(c, isNot(contains('mut_place_Out_add(&o')));
+    // Place reached through *mut: address the field, do not require a let mut.
+    expect(c, contains('mut_place_Out_lit(&(*(c)).err,'));
+    expect(c, contains('mut_place_Slot_set(&(*(c)).slots[1], 9);'));
+    expect(c, contains('mut_place_Out_add(&c->err, 1);'));
+    expect(c, contains('mut_place_Out_add(&(*(p)), 5);'));
+  });
+
+  test('integer const is an array length', () async {
+    final result =
+        await compileAndRun('test/const_array_len.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+        result.stdout, await File('test/const_array_len.out').readAsString());
+
+    final program = loadProject('test/const_array_len.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/const_array_len.kl');
+    // The bound is the integer value, not the C name of the const.
+    expect(c, contains('static const int64_t const_array_len_N = 4;'));
+    expect(c, contains('static const int32_t const_array_len_HEX = 0x4;'));
+    expect(c, contains("static const uint8_t const_array_len_A = 'A';"));
+    expect(c, contains('int32_t data[4];'));
+    expect(c, contains('int32_t xs[4]'));
+    expect(c, contains('uint8_t xs[65]'));
+    expect(c, isNot(contains('data[const_array_len_N]')));
+    expect(c, isNot(contains('xs[const_array_len_HEX]')));
+  });
+
+  test('imported integer const is an array length', () async {
+    final result =
+        await compileAndRun('test/const_len_mod/app.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+        result.stdout, await File('test/const_len_mod/app.out').readAsString());
+
+    final program = loadProject('test/const_len_mod/app.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/const_len_mod/app.kl');
+    expect(c, contains('const int64_t os_PAGE = 8;'));
+    expect(c, contains('uint8_t data[8];'));
+    expect(c, contains('uint8_t buf[8]'));
+    expect(c, contains('uint8_t xs[8]'));
+    expect(c, isNot(contains('[os_PAGE]')));
+  });
 }

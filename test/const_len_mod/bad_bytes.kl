@@ -1,0 +1,6 @@
+module bad_bytes
+import os
+
+fn main() {
+    let buf: [os.KW]u8
+}

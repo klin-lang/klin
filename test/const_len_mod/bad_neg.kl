@@ -1,0 +1,6 @@
+module bad_neg
+import os
+
+fn take(xs: [os.NEG]u8) {}
+
+fn main() {}
