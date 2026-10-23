@@ -297,15 +297,20 @@ void _emitAsyncStmt(Stmt stmt, _AsyncEmitCtx ctx) {
 
 String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
   return switch (expr) {
-    IntLit(:final lexeme) => _cIntLiteral(lexeme),
+    IntLit lit => _emitIntLit(lit),
     FloatLit(:final lexeme) => lexeme.replaceAll('_', ''),
     BoolLit(:final value) => value ? 'true' : 'false',
     StringLit(:final value) => '"${_escapeC(value)}"',
     ByteStringLit(:final value) => _emitByteString(value),
     NameExpr(:final name, :final resolvedFnCName, :final resolvedConstCName) =>
       resolvedConstCName ?? resolvedFnCName ?? 'st->$name',
-    UnaryExpr(:final op, :final operand) =>
-      '$op(${_emitAsyncExpr(operand, ctx)})',
+    UnaryExpr(:final op, :final operand, :final resolvedType) =>
+      _emitUnary(
+        op,
+        operand,
+        resolvedType,
+        (inner) => _emitAsyncExpr(inner, ctx),
+      ),
     BinaryExpr(:final left, :final op, :final right) =>
       '(${_emitAsyncExpr(left, ctx)} $op ${_emitAsyncExpr(right, ctx)})',
     PickExpr(:final cond, :final thenExpr, :final elseExpr) =>

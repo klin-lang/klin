@@ -1874,6 +1874,37 @@ fn main() {
     expect(c, contains('uint8_t nested[1][2] = { { 1, 2 } };'));
   });
 
+  test('emit: i64 minimum and wide unsigned literals are portable C', () {
+    const source = r'''
+fn main() {
+  let lo: i64 = -9223372036854775808
+  let grouped: i64 = -(9223372036854775808)
+  let iz: isize = -9223372036854775808
+  let hi: u64 = 18_446_744_073_709_551_615
+  let hex: u64 = 0xFFFFFFFFFFFFFFFF
+  let xs: [1]i64 = [-9223372036854775808]
+  let flipped: u64 = ~18446744073709551615
+  let small: i8 = -128
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'wide.kl');
+    expect(c, contains('int64_t lo = (-9223372036854775807LL - 1);'));
+    expect(c, contains('int64_t grouped = (-9223372036854775807LL - 1);'));
+    expect(c, contains('ptrdiff_t iz = (-9223372036854775807LL - 1);'));
+    expect(c, contains('uint64_t hi = 18446744073709551615ULL;'));
+    expect(c, contains('uint64_t hex = 0xFFFFFFFFFFFFFFFF;'));
+    expect(c, isNot(contains('0xFFFFFFFFFFFFFFFFULL')));
+    expect(
+      c,
+      contains('int64_t xs[1] = { (-9223372036854775807LL - 1) };'),
+    );
+    expect(c, contains('~(18446744073709551615ULL)'));
+    expect(c, contains('int8_t small = -(128);'));
+    expect(c, isNot(contains('9223372036854775808')));
+  });
+
   test('checker: & of a slice element follows place mutability', () {
     const source = '''
 fn set(p: *mut i32) { *p = 1 }

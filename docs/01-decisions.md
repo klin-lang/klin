@@ -291,7 +291,12 @@ is a C constant.
   `-` / `~` on a literal (`0x4`, `'A'`, `~0`, `-128`) when that spelling
   is a valid C constant. A folded expression is a decimal. A value above
   `2^63-1` is emitted with a `ULL` suffix; `i64` / `isize` minimum is
-  `(-9223372036854775807LL - 1)`. Not a C `enum` and not `constexpr`.
+  `(-9223372036854775807LL - 1)`. The same two forms are used when that
+  literal is coerced in an expression
+  (`let x: u64 = 18446744073709551615`,
+  `let x: i64 = -9223372036854775808`), so the generated C does not
+  contain a decimal that does not fit in a signed 64-bit constant.
+  Not a C `enum` and not `constexpr`.
 - The C name is `module_NAME`. `pub` emits `const`, private emits
   `static const`. All modules share one `.c`, so visibility is enforced
   by the checker (`mod.NAME` on a private constant is an error), not by

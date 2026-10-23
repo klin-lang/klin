@@ -291,6 +291,19 @@ void main() {
     expect(c, contains('cell((uint8_t[1][2]){ { 8, 9 } })'));
   });
 
+  test('i64 minimum and u64 maximum literals compile and run', () async {
+    final result = await compileAndRun('test/wide_literal.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/wide_literal.out').readAsString());
+
+    final program = loadProject('test/wide_literal.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/wide_literal.kl');
+    expect(c, contains('(-9223372036854775807LL - 1)'));
+    expect(c, contains('18446744073709551615ULL'));
+    expect(c, isNot(contains('9223372036854775808')));
+  });
+
   test('address of a slice element follows place mutability', () async {
     final result = await compileAndRun('test/slice_addr.kl', tmp, cc: 'gcc');
     expect(result.exitCode, 0, reason: result.stderr);

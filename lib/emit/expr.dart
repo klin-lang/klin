@@ -36,7 +36,7 @@ String _emitExpr(Expr expr, _ExprCtx ctx) {
 
 String _emitExprRaw(Expr expr, _ExprCtx ctx) {
   return switch (expr) {
-    IntLit(:final lexeme) => _cIntLiteral(lexeme),
+    IntLit lit => _emitIntLit(lit),
     FloatLit(:final lexeme) => lexeme.replaceAll('_', ''),
     BoolLit(:final value) => value ? 'true' : 'false',
     StringLit(:final value) => '"${_escapeC(value)}"',
@@ -109,7 +109,8 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
     InterpolatedStringExpr() => throw StateError(
         'emit: interpolated string must be lowered via printf / fmt.write',
       ),
-    UnaryExpr(:final op, :final operand) => '$op(${_emitExpr(operand, ctx)})',
+    UnaryExpr(:final op, :final operand, :final resolvedType) =>
+      _emitUnary(op, operand, resolvedType, (inner) => _emitExpr(inner, ctx)),
     IndexExpr(:final object, :final index) => object.resolvedType is SliceType
         ? '${_emitExpr(object, ctx)}.ptr[${_emitExpr(index, ctx)}]'
         : '${_emitExpr(object, ctx)}[${_emitExpr(index, ctx)}]',
@@ -259,6 +260,81 @@ String _cIntLiteral(String lexeme) {
     return '0x${BigInt.parse(s.substring(2), radix: 8).toRadixString(16)}';
   }
   return s;
+}
+
+/// A coerced integer literal in an expression.
+///
+/// A decimal above `2^63-1` is not a C integer constant (`0x…` already
+/// is). An unsigned destination gets the same `ULL` suffix as a folded
+/// `const`. Enum constants keep calling [_cIntLiteral] directly: a C
+/// `enum` value has to stay an `int` constant.
+String _emitIntLit(IntLit lit) {
+  final spelling = _cIntLiteral(lit.lexeme);
+  if (!_decimalAboveI64Max(spelling)) return spelling;
+  final type = lit.resolvedType;
+  if (type is PrimType && !_primIsUnsigned(type.kind)) return spelling;
+  return '${spelling}ULL';
+}
+
+bool _decimalAboveI64Max(String spelling) {
+  if (spelling.isEmpty ||
+      spelling.startsWith('0x') ||
+      spelling.startsWith('0X') ||
+      spelling.startsWith("'")) {
+    return false;
+  }
+  final value = BigInt.tryParse(spelling);
+  return value != null && value > _i64Max;
+}
+
+bool _primIsUnsigned(PrimKind kind) => switch (kind) {
+      PrimKind.u8 ||
+      PrimKind.u16 ||
+      PrimKind.u32 ||
+      PrimKind.u64 ||
+      PrimKind.usize =>
+        true,
+      _ => false,
+    };
+
+/// `-(9223372036854775808)` is not a portable C constant. `i64` / `isize`
+/// minimum uses the same split form as a folded `const`.
+String _emitUnary(
+  String op,
+  Expr operand,
+  KlinType? type,
+  String Function(Expr) emitOperand,
+) {
+  if (op == '-' &&
+      type is PrimType &&
+      (type.kind == PrimKind.i64 || type.kind == PrimKind.isize)) {
+    var node = operand;
+    while (node is GroupExpr) {
+      node = node.inner;
+    }
+    if (node is IntLit) {
+      final mag = _intLitMagnitude(node.lexeme);
+      if (mag != null && mag == -_i64Min) {
+        return '(-9223372036854775807LL - 1)';
+      }
+    }
+  }
+  return '$op(${emitOperand(operand)})';
+}
+
+BigInt? _intLitMagnitude(String lexeme) {
+  if (lexeme.startsWith("'")) return null;
+  final s = lexeme.replaceAll('_', '');
+  if (s.startsWith('0b') || s.startsWith('0B')) {
+    return BigInt.tryParse(s.substring(2), radix: 2);
+  }
+  if (s.startsWith('0o') || s.startsWith('0O')) {
+    return BigInt.tryParse(s.substring(2), radix: 8);
+  }
+  if (s.startsWith('0x') || s.startsWith('0X')) {
+    return BigInt.tryParse(s.substring(2), radix: 16);
+  }
+  return BigInt.tryParse(s);
 }
 
 String _enumConstCName(String module, String name, String variant) =>

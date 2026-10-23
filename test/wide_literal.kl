@@ -1,0 +1,12 @@
+fn main() {
+    let lo: i64 = -9223372036854775808
+    let grouped: i64 = -(9223372036854775808)
+    let hi: u64 = 18446744073709551615
+    let xs: [1]i64 = [-9223372036854775808]
+    let flipped: u64 = ~18446744073709551615
+    printf("%lld\n", lo)
+    printf("%lld\n", grouped)
+    printf("%llu\n", hi)
+    printf("%lld\n", xs[0])
+    printf("%llu\n", flipped)
+}
