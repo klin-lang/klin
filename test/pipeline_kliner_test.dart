@@ -276,6 +276,21 @@ void main() {
     expect(c, contains('take((uint8_t[3]){ 7, 8, 9 })'));
   });
 
+  test('nested array keeps every bound in C', () async {
+    final result = await compileAndRun('test/nested_array.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/nested_array.out').readAsString());
+
+    final program = loadProject('test/nested_array.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/nested_array.kl');
+    expect(c, contains('uint8_t xs[1][2];'));
+    expect(c, contains('uint8_t xs[1][2])'));
+    expect(c, contains('uint8_t nested[1][2] = { { 4, 5 } };'));
+    expect(c, contains('uint8_t blank[2][2] = {0};'));
+    expect(c, contains('cell((uint8_t[1][2]){ { 8, 9 } })'));
+  });
+
   test('address of a slice element follows place mutability', () async {
     final result = await compileAndRun('test/slice_addr.kl', tmp, cc: 'gcc');
     expect(result.exitCode, 0, reason: result.stderr);

@@ -1871,7 +1871,7 @@ fn main() {
     expect(c, contains('uint8_t a[2] = { 1, 2 };'));
     expect(c, contains('int32_t plain[2] = { 1, 2 };'));
     expect(c, contains('.xs = { 3, 4 }'));
-    expect(c, contains('{ { 1, 2 } }'));
+    expect(c, contains('uint8_t nested[1][2] = { { 1, 2 } };'));
   });
 
   test('checker: & of a slice element follows place mutability', () {

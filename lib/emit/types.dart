@@ -71,7 +71,12 @@ String _cType(KlinType type) => switch (type) {
     };
 
 String _cDecl(KlinType type, String name) => switch (type) {
-      ArrayType(:final elem, :final len) => '${_cType(elem)} $name[$len]',
+      // `_cType` of an array is only the element. A declaration keeps every
+      // bound: `[1][2]u8` is `uint8_t name[1][2]`, not `uint8_t name[1]`.
+      ArrayType() => () {
+          final shape = _arrayShape(type);
+          return '${_cType(shape.elem)} $name[${shape.lens.join('][')}]';
+        }(),
       FnType(:final params, :final ret) => () {
           final ps = params.isEmpty
               ? 'void'
@@ -80,6 +85,18 @@ String _cDecl(KlinType type, String name) => switch (type) {
         }(),
       _ => '${_cType(type)} $name',
     };
+
+/// Innermost element and every bound, outer first.
+/// `[1][2]u8` → element `u8`, bounds `[1, 2]`.
+({KlinType elem, List<int> lens}) _arrayShape(ArrayType type) {
+  final lens = <int>[];
+  KlinType elem = type;
+  while (elem is ArrayType) {
+    lens.add(elem.len);
+    elem = elem.elem;
+  }
+  return (elem: elem, lens: lens);
+}
 
 String _fnTypedefName(FnType type) {
   final ps = type.params.map(_typeToken).join('_');

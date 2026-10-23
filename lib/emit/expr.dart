@@ -226,13 +226,8 @@ String _emitArrayInit(Expr expr, _ExprCtx ctx) {
 
 /// `uint8_t[2]` or `uint8_t[1][2]` for a compound literal.
 String _cArraySuffixType(ArrayType type) {
-  final lens = <int>[];
-  KlinType elem = type;
-  while (elem is ArrayType) {
-    lens.add(elem.len);
-    elem = elem.elem;
-  }
-  return '${_cType(elem)}[${lens.join('][')}]';
+  final shape = _arrayShape(type);
+  return '${_cType(shape.elem)}[${shape.lens.join('][')}]';
 }
 
 bool _arrayElemIsConcrete(ArrayType type) {

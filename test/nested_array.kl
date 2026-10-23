@@ -1,0 +1,14 @@
+struct Row {
+    xs: [1][2]u8
+}
+
+fn cell(xs: [1][2]u8): i32 {
+    return cast(i32, xs[0][1])
+}
+
+fn main() {
+    let nested: [1][2]u8 = [[4, 5]]
+    let blank: [2][2]u8
+    let row = Row{ xs: [[6, 7]] }
+    printf("%d %d %d %d %d\n", cast(i32, nested[0][1]), cell([[8, 9]]), cast(i32, row.xs[0][0]), cast(i32, blank[1][1]), nested.len)
+}
