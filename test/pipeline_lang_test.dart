@@ -1847,4 +1847,30 @@ fn main() {}
     expect(c, contains('enum { Signed_A = 126, Signed_B };'));
     expect(c, contains('enum { Restart_A = 255, Restart_B = 0 };'));
   });
+
+  test('checker: array literal takes the element type from context', () {
+    const source = '''
+struct Row {
+    xs: [2]u8
+}
+fn take(xs: [2]u8): i32 {
+    return cast(i32, xs[0])
+}
+fn main() {
+    let a: [2]u8 = [1, 2]
+    let plain = [1, 2]
+    let row = Row{ xs: [3, 4] }
+    let nested: [1][2]u8 = [[1, 2]]
+    take([5, 6])
+    let f: [2]f64 = [1, 2.5]
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'arr.kl');
+    expect(c, contains('uint8_t a[2] = { 1, 2 };'));
+    expect(c, contains('int32_t plain[2] = { 1, 2 };'));
+    expect(c, contains('.xs = { 3, 4 }'));
+    expect(c, contains('{ { 1, 2 } }'));
+  });
 }

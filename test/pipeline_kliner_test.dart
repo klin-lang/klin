@@ -262,6 +262,20 @@ void main() {
     expect(c, isNot(contains('[os_PAGE]')));
   });
 
+  test('array literal uses the expected element type', () async {
+    final result = await compileAndRun('test/array_lit.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/array_lit.out').readAsString());
+
+    final program = loadProject('test/array_lit.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/array_lit.kl');
+    expect(c, contains('uint8_t a[3] = { 1, 2, 3 };'));
+    expect(c, contains('int32_t plain[2] = { 10, 20 };'));
+    expect(c, contains('int8_t small[1] = { -(128) };'));
+    expect(c, contains('take((uint8_t[3]){ 7, 8, 9 })'));
+  });
+
   test('enum variant on the base maximum compiles and runs', () async {
     final result = await compileAndRun('test/enum_auto.kl', tmp, cc: 'gcc');
     expect(result.exitCode, 0, reason: result.stderr);

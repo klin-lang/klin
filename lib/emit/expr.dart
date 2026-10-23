@@ -83,8 +83,8 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
       :final positionalFields
     ) =>
       namedFields != null
-          ? '(${_cType(resolvedType ?? (throw StateError('emit: literal without type `$typeName`')))}){ ${namedFields.entries.map((entry) => '.${entry.key} = ${_emitExpr(entry.value, ctx)}').join(', ')} }'
-          : '(${_cType(resolvedType ?? (throw StateError('emit: literal without type `$typeName`')))}){ ${positionalFields!.map((field) => _emitExpr(field, ctx)).join(', ')} }',
+          ? '(${_cType(resolvedType ?? (throw StateError('emit: literal without type `$typeName`')))}){ ${namedFields.entries.map((entry) => '.${entry.key} = ${_emitArrayInit(entry.value, ctx)}').join(', ')} }'
+          : '(${_cType(resolvedType ?? (throw StateError('emit: literal without type `$typeName`')))}){ ${positionalFields!.map((field) => _emitArrayInit(field, ctx)).join(', ')} }',
     CallExpr(
       :final callee,
       :final args,
@@ -124,8 +124,7 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         }
         return '(${_sliceCName(elem)}){ ${_emitExpr(array, ctx)}, ${type.len} }';
       }(),
-    ArrayLitExpr(:final elements) =>
-      '{ ${elements.map((element) => _emitExpr(element, ctx)).join(', ')} }',
+    ArrayLitExpr lit => _emitArrayLit(lit, ctx),
     CastExpr(:final resolvedType, :final expr) => () {
         final target = resolvedType;
         if (target == null) throw StateError('emit: cast without type');
@@ -197,6 +196,51 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         return out;
       }(),
   };
+}
+
+/// An array literal in expression position is a compound literal
+/// (`take([1, 2])` → `take((uint8_t[2]){ 1, 2 })`). A brace list is not
+/// an expression. Nested arrays and struct fields stay brace lists,
+/// because they initialize an array.
+String _emitArrayLit(ArrayLitExpr expr, _ExprCtx ctx, {bool asInitializer = false}) {
+  final inner = expr.elements.map((element) {
+    if (element is ArrayLitExpr) {
+      return _emitArrayLit(element, ctx, asInitializer: true);
+    }
+    return _emitExpr(element, ctx);
+  }).join(', ');
+  if (!asInitializer &&
+      expr.resolvedType is ArrayType &&
+      _arrayElemIsConcrete(expr.resolvedType! as ArrayType)) {
+    return '(${_cArraySuffixType(expr.resolvedType! as ArrayType)}){ $inner }';
+  }
+  return '{ $inner }';
+}
+
+/// Struct field: an array literal initializes the member, so it is a brace
+/// list. Any other value is an ordinary expression.
+String _emitArrayInit(Expr expr, _ExprCtx ctx) {
+  if (expr is ArrayLitExpr) return _emitArrayLit(expr, ctx, asInitializer: true);
+  return _emitExpr(expr, ctx);
+}
+
+/// `uint8_t[2]` or `uint8_t[1][2]` for a compound literal.
+String _cArraySuffixType(ArrayType type) {
+  final lens = <int>[];
+  KlinType elem = type;
+  while (elem is ArrayType) {
+    lens.add(elem.len);
+    elem = elem.elem;
+  }
+  return '${_cType(elem)}[${lens.join('][')}]';
+}
+
+bool _arrayElemIsConcrete(ArrayType type) {
+  KlinType elem = type.elem;
+  while (elem is ArrayType) {
+    elem = elem.elem;
+  }
+  return elem is! UntypedInt && elem is! UntypedFloat;
 }
 
 String _structCName(String module, String name) =>

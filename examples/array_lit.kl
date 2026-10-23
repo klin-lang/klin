@@ -1,0 +1,9 @@
+struct Row {
+    xs: [3]u8
+}
+
+fn main() {
+    let a: [3]u8 = [1, 2, 3]
+    let row = Row{ xs: [4, 5, 6] }
+    printf("%d %d\n", cast(i32, a[0]) + cast(i32, a[2]), cast(i32, row.xs[1]))
+}

@@ -208,7 +208,10 @@ fn main() {
   a mutating method may be called on it. Through `*T` it stays immutable.
 - `[N]T` — fixed array. `N` is an integer constant expression: a
   literal, an integer module `const`, or arithmetic on those
-  (`[N * 2]T`, `[1 + 2]T`). The C bound is the folded value
+  (`[N * 2]T`, `[1 + 2]T`). The C bound is the folded value.
+  A literal `[1, 2]` takes the element type from that array
+  (`let a: [2]u8 = [1, 2]`); each element must fit. Without a type,
+  it is `[2]i32`
 - `[]T` — slice `{ ptr, len }` (and `cap` where allocated)
 - No hidden allocation. Heap is `import mem` and an explicit
   `Allocator` ([14-allocator.md](14-allocator.md))

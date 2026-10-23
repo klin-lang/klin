@@ -329,8 +329,15 @@ The same check covers hex (`0x12C`), binary, octal, underscores,
 character literals (`'A'` is 65; character literals are ASCII), and a
 negative literal (`const X: u8 = -1`). It applies wherever that literal
 is coerced to a declared integer type: `const`, `let`, a parameter, a
-return, a struct field, an array whose element type is already that
-integer, an enum variant (`enum E: u8 { A = 300 }`). The implicit next
+return, a struct field, an array element, an enum variant
+(`enum E: u8 { A = 300 }`). An array literal takes the element type of
+the array it is coerced to: `let a: [2]u8 = [1, 2]`, a struct field,
+and a parameter. Each element is range-checked, so
+`let a: [2]u8 = [1, 300]` is the `u8` error. With no expected array
+type, `let a = [1, 2]` is still `[2]i32`. A length mismatch names that
+default (`got [2]i32`). An operator in an element is still `i32`
+(`let a: [1]u8 = [1 + 2]` does not fold). A function still cannot
+return `[N]T`. The implicit next
 value is checked too: `enum E: u8 { A = 255, B }` is an error because
 `B` would be 256. The message names the variant, the value, the base
 type, and the inclusive range. The counter after the last variant is

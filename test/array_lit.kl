@@ -1,0 +1,20 @@
+struct Row {
+    xs: [3]u8
+}
+
+fn take(xs: [3]u8): i32 {
+    return cast(i32, xs[0]) + cast(i32, xs[2])
+}
+
+fn make(): Row {
+    return Row{ xs: [4, 5, 6] }
+}
+
+fn main() {
+    let a: [3]u8 = [1, 2, 3]
+    let plain = [10, 20]
+    let row = make()
+    let back: [2]u8 = [9, 8]
+    let small: [1]i8 = [-128]
+    printf("%d %d %d %d %d %d %d\n", take(a), take([7, 8, 9]), cast(i32, row.xs[1]), cast(i32, back[0]), plain[1], cast(i32, small[0]), a.len)
+}

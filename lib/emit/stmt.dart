@@ -201,7 +201,10 @@ void _emitStmt(
             state: state,
           );
         } else {
-          buf.writeln('$pad${_cDecl(ty, name)} = ${_emitExpr(init, ctx)};');
+          final rhs = ty is ArrayType && init is ArrayLitExpr
+              ? _emitArrayLit(init, ctx, asInitializer: true)
+              : _emitExpr(init, ctx);
+          buf.writeln('$pad${_cDecl(ty, name)} = $rhs;');
         }
       } else {
         final zero = switch (ty) {

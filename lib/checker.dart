@@ -3097,7 +3097,15 @@ final class Checker {
           return field.resolvedType!;
         }(),
       IndexExpr(:final object, :final index, :final pos) => () {
-          final objectType = _inferExpr(object);
+          var objectType = _inferExpr(object);
+          // A literal with no expected array type defaults to `i32` / `f64`
+          // elements, same as `let a = [1, 2]`. A surrounding `[N]u8` is
+          // applied later, when the literal itself is the value.
+          if (objectType is ArrayType && _containsUntyped(objectType)) {
+            final concrete = _defaultConcrete(objectType, object.pos);
+            _materialize(object, concrete);
+            objectType = concrete;
+          }
           final indexType = _defaultConcrete(_inferExpr(index), index.pos);
           if (indexType is EnumType) {
             _checkEnumIndex(indexType, objectType, index.pos);
@@ -3149,6 +3157,12 @@ final class Checker {
                         'array element type mismatch: `${elemType.displayName}` and `${nextType.displayName}`',
                         element.pos,
                       ));
+          }
+          // Keep untyped elements (and nested untyped arrays) so a later
+          // expected type can adopt them: `let a: [2]u8 = [1, 2]`.
+          // Concretizing here would freeze `[2]i32` before that context.
+          if (_containsUntyped(elemType)) {
+            return ArrayType(elemType, elements.length);
           }
           elemType = _defaultConcrete(elemType, pos);
           for (final element in elements) {
@@ -4105,12 +4119,22 @@ final class Checker {
   void _expectAssignable(KlinType target, KlinType source, SourcePos pos) {
     if (!_isAssignable(target, source)) {
       throw CheckError(
-        'type mismatch: expected `${target.displayName}`, '
-        'got `${source.displayName}`',
+        'type mismatch: expected `${_typeForMismatch(target)}`, '
+        'got `${_typeForMismatch(source)}`',
         pos,
       );
     }
   }
+
+  /// Untyped literals default to `i32` / `f64` in a mismatch. An array of
+  /// them is reported as `[N]i32`, not `[N]untyped int`.
+  String _typeForMismatch(KlinType type) => switch (type) {
+        UntypedInt() => 'i32',
+        UntypedFloat() => 'f64',
+        ArrayType(:final elem, :final len) =>
+          '[$len]${_typeForMismatch(elem)}',
+        _ => type.displayName,
+      };
 
   bool _isAssignable(KlinType target, KlinType source) {
     if (target == source) return true;
@@ -4141,8 +4165,20 @@ final class Checker {
     if (target is FnType && source is FnType && target == source) {
       return true;
     }
+    if (target is ArrayType &&
+        source is ArrayType &&
+        target.len == source.len &&
+        _isAssignable(target.elem, source.elem)) {
+      return true;
+    }
     return false;
   }
+
+  bool _containsUntyped(KlinType type) => switch (type) {
+        UntypedInt() || UntypedFloat() => true,
+        ArrayType(:final elem) => _containsUntyped(elem),
+        _ => false,
+      };
 
   KlinType _defaultConcrete(KlinType type, SourcePos pos) {
     return switch (type) {
@@ -4152,7 +4188,8 @@ final class Checker {
       StructType() => type,
       EnumType() => type,
       PtrType() => type,
-      ArrayType() => type,
+      ArrayType(:final elem, :final len) =>
+        ArrayType(_defaultConcrete(elem, pos), len),
       SliceType() => type,
       FnType() => type,
       ResultType(:final ok) => ResultType(_defaultConcrete(ok, pos)),

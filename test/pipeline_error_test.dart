@@ -2259,6 +2259,54 @@ fn main() {}
 ''', 'integer literal `18446744073709551616` is out of range for `u64`');
   });
 
+  test('error: array literal element does not fit the contextual type', () {
+    expectRange('''
+fn main() {
+  let a: [2]u8 = [1, 300]
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: nested array literal element does not fit', () {
+    expectRange('''
+fn main() {
+  let a: [1][1]u8 = [[300]]
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: array literal length does not match', () {
+    expectRange('''
+fn main() {
+  let a: [3]u8 = [1, 2]
+}
+''', 'type mismatch: expected `[3]u8`, got `[2]i32`');
+  });
+
+  test('error: array literal does not fold an element operator', () {
+    expectRange('''
+fn main() {
+  let a: [1]u8 = [1 + 2]
+}
+''', 'type mismatch: expected `[1]u8`, got `[1]i32`');
+  });
+
+  test('error: array literal argument element does not fit', () {
+    expectRange('''
+fn take(xs: [1]i8) {}
+fn main() { take([200]) }
+''', 'integer literal `200` is out of range for `i8`');
+  });
+
+  test('error: struct field array literal element does not fit', () {
+    expectRange('''
+struct Row { xs: [1]u8 }
+fn main() {
+  let row = Row{ xs: [300] }
+}
+''', 'integer literal `300` is out of range for `u8`');
+  });
+
   test('error: let of a sum is still i32', () {
     expectRange('''
 fn main() {
