@@ -212,17 +212,28 @@ Not a `str`.
 tables, messages, and paths want the bytes. A second literal keeps
 `"..."` as `str` and does not allocate.
 
-- Escapes are the same as `"..."` (`\n` `\t` `\\` `\"` `\$`). No
+- Escapes are the same as `"..."` (`\n` `\t` `\\` `\"` `\$` `\0`). No
   interpolation (`$` is a byte).
-- Emission is a pointer at a static C string and an explicit length
-  (the C `NUL` is not part of `.len`).
+- `\0` is one NUL byte in both `"..."` and `b"..."`. It is not a
+  multi-digit octal escape: `b"\00"` is a NUL followed by the character
+  `0`. `"..."` accepts it because the two literals share one escape
+  list. `str` is still `const char*` with no length, so `puts` and
+  other C string operations stop at the first NUL. Counted bytes
+  (a syscall path, a keyword table) use `b"..."`.
+- Emission is a pointer at a static C string and an explicit length.
+  The length is the number of bytes, including any embedded NUL. It is
+  not `strlen`. The C literal spells that byte as `\000`, so a following
+  digit is not swallowed. The extra NUL the C compiler appends is not
+  part of `.len`.
 - The bytes are read-only. `b"fn"[0] = 1` is a checker error. Copy
   into a `[N]u8` to modify.
 - `.len` is the UTF-8 byte count.
 
 ```klin
 let kw = b"fn"
-printf("%d\n", kw.len)   // 2
+printf("%d\n", kw.len)                 // 2
+printf("%d\n", b"ab\0".len)            // 3
+printf("%d\n", b"/proc/self/cmdline\0".len)  // 19
 ```
 
 ## D11. Module-level `const` — DECIDED

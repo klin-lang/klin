@@ -23,7 +23,7 @@ These compile. They are not “missing.”
 | Surface | Notes |
 |---|---|
 | Integers / `float` / `bool` / `str` | `int` → `i32`, `float` → `f64` |
-| `b"..."` | `[]u8` — bytes of the text and `.len`; same escapes as `"..."`; no interpolation ([syntax.md](syntax.md)) |
+| `b"..."` | `[]u8` — bytes of the text and `.len` (an embedded `\0` counts); same escapes as `"..."`; no interpolation ([syntax.md](syntax.md)) |
 | `[N]T`, `[]T`, `*T` / `*mut T` | slices are `{ptr, len}`; no hidden cap grow |
 | `struct`, `enum`, `fn`, methods, `Type.fn` | [syntax.md](syntax.md) |
 | `const Name: Type = literal` | module-level immutable; integer, `bool`, or `b"..."`; no mutable globals ([syntax.md](syntax.md)) |

@@ -1668,6 +1668,11 @@ fn main() {
     expect(formatSource(source), source);
   });
 
+  test('fmt keeps a NUL escape in byte and plain strings', () {
+    const source = 'fn main() {\n    let s = b"ab\\0"\n    let t = "a\\0b"\n}\n';
+    expect(formatSource(source), source);
+  });
+
   test('fmt keeps a module-level const', () {
     const source = '''
 pub const PAGE: i64 = 4096

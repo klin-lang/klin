@@ -147,7 +147,12 @@ Issue: [056](../issues/056-destructuring.md).
 
 `"..."` is `str` (`const char*`). `b"..."` is `[]u8`: the bytes of the
 text and a length. No interpolation. Escapes match `"..."`:
-`\n`, `\t`, `\\`, `\"`, `\$`.
+`\n`, `\t`, `\\`, `\"`, `\$`, `\0`.
+
+`\0` is a single NUL byte in both forms. `.len` on a byte string counts
+it (`b"ab\0".len` is 3). `str` has no length, so a C string operation on
+`"..."` stops at the first NUL; a counted buffer uses `b"..."`. `\0` is
+not an octal number — `b"\00"` is NUL then the character `0`.
 
 ```klin
 fn take(s: []u8): i32 { return s.len }

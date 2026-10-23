@@ -675,6 +675,8 @@ String _escapeString(String value) {
         buf.write(r'\r');
       case 0x09:
         buf.write(r'\t');
+      case 0x00:
+        buf.write(r'\0');
       default:
         if (unit < 0x20) {
           buf.write('\\x${unit.toRadixString(16).padLeft(2, '0')}');
@@ -705,6 +707,8 @@ String _escapeInterpText(String value) {
         buf.write(r'\r');
       case 0x09:
         buf.write(r'\t');
+      case 0x00:
+        buf.write(r'\0');
       default:
         if (unit < 0x20) {
           buf.write('\\x${unit.toRadixString(16).padLeft(2, '0')}');

@@ -360,6 +360,8 @@ final class Lexer {
           case '\$':
             // Literal `$` in an interpolated string (see [kInterpEscapedDollar]).
             buf.write('\u{E000}');
+          case '0':
+            buf.writeCharCode(0);
           default:
             throw LexError('unknown escape sequence `\\$esc`', start);
         }
@@ -396,6 +398,8 @@ final class Lexer {
             buf.write('"');
           case '\$':
             buf.write('\$');
+          case '0':
+            buf.writeCharCode(0);
           default:
             throw LexError('unknown escape sequence `\\$esc`', start);
         }

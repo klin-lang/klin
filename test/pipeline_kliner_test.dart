@@ -74,6 +74,11 @@ void main() {
     expect(c, contains('klin_slice_u8'));
     expect(c, contains('(uint8_t *)"fn", 2'));
     expect(c, contains(r'(uint8_t *)"a\tb\"\\$", 6'));
+    // Embedded NUL is `\000` plus an explicit length, not strlen.
+    expect(c, contains(r'(uint8_t *)"ab\000", 3'));
+    expect(c, contains(r'(uint8_t *)"/proc/self/cmdline\000", 19'));
+    expect(c, contains(r'(uint8_t *)"\000a", 2'));
+    expect(c, contains(r'"hi\000there"'));
   });
 
   test('module-level const is a C constant', () async {

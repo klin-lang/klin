@@ -240,7 +240,8 @@ String _emitConstInitializer(Expr init) {
 }
 
 /// `b"..."` → `[]u8` over a static C string. `.len` is the byte count and
-/// does not include the C NUL. The pointer is valid for the whole program.
+/// does not include the extra NUL the C compiler appends. An embedded `\0`
+/// is part of that count. The pointer is valid for the whole program.
 String _emitByteString(String value) {
   final elem = const PrimType(PrimKind.u8);
   final n = _utf8ByteLength(value);
@@ -268,6 +269,11 @@ String _escapeC(String s) {
   final out = StringBuffer();
   for (final cu in s.runes) {
     switch (cu) {
+      case 0x00:
+        // Three octal digits. `\x00` would swallow a following hex digit
+        // (`\x00a` is one byte), and a short `\0` would swallow an octal
+        // digit. The slice length is emitted separately, never via strlen.
+        out.write('\\000');
       case 0x0A: // \n
         out.write('\\n');
       case 0x09: // \t

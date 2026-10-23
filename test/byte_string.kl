@@ -14,12 +14,21 @@ fn is_kw(s: []u8): bool {
     return true
 }
 
+const PATH: []u8 = b"/proc/self/cmdline\0"
+
 fn main() {
     let kw = b"fn"
     let esc = b"a\tb\"\\$"
+    let nul = b"ab\0"
+    let glued = b"\0a"
     printf("%d %d %d\n", kw.len, kw[0], kw[1])
     printf("%d %d %d %d\n", esc.len, esc[1], esc[3], esc[5])
     printf("%d %d %d\n", take(b"ab\n"), b"ab\n".len, b"".len)
     printf("%d\n", b"ą".len)
     printf("%d %d\n", pick is_kw(b"fn") { 1 } { 0 }, pick is_kw(b"if") { 1 } { 0 })
+    printf("%d %d %d %d\n", nul.len, nul[0], nul[1], nul[2])
+    printf("%d %d\n", PATH.len, PATH[18])
+    printf("%d %d %d\n", glued.len, glued[0], glued[1])
+    printf("%d %d\n", b"\00".len, b"\00"[1])
+    puts("hi\0there")
 }
