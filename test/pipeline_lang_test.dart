@@ -159,6 +159,14 @@ fn main() {
     expect(formatSource(once), once);
   });
 
+  test('klin fmt: keeps consecutive consts together', () {
+    final ugly = File('test/fmt_const.kl').readAsStringSync();
+    final expected = File('test/fmt_const.fmt.kl').readAsStringSync();
+    final once = formatSource(ugly);
+    expect(once, expected);
+    expect(formatSource(once), once);
+  });
+
   test('klin fmt: preserves = in for-init assign (issue 151)', () {
     final ugly = File('test/fmt_for_c_init_assign.kl').readAsStringSync();
     final expected =

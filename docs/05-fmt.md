@@ -12,7 +12,7 @@ Like `gofmt`: **one style, zero flags**. Indentation debates end with
 - indentation: **4 spaces**
 - K&R / Go braces: `fn main() {` on the same line; `} else {` on one line
 - spaces around binary operators and after commas
-- blank line between top-level declarations (`struct` / `fn`)
+- blank line between top-level declarations (`struct` / `enum` / `fn` / `const`); consts on consecutive source lines stay together as one group
 - `module` / `import` at the top, then blank line, then declarations
 
 ## Usage

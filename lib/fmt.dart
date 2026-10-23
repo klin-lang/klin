@@ -58,8 +58,19 @@ String formatUnit(
     first = true; // next decl starts a new "group" without extra blank before first
   }
 
+  Object? prev;
   for (final decl in unit.decls) {
-    blankBefore();
+    // Keep a run of consts on consecutive lines together (syscall-number
+    // tables); every other pair of top-level decls gets one blank line.
+    final constRun = prev is ConstDecl &&
+        decl is ConstDecl &&
+        _declLine(decl) == prev.pos.line + 1;
+    if (constRun) {
+      first = false;
+    } else {
+      blankBefore();
+    }
+    prev = decl;
     out.writeLeading(_declLine(decl), '');
     switch (decl) {
       case StructDecl():
