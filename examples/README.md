@@ -60,7 +60,7 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `enums.kl` | Enums + enum-as-index + exhaustive `match` ([docs/syntax.md](../docs/syntax.md), [072](../issues/072-enums.md), [126](../issues/126-enum-index.md), [129](../issues/129-enum-match-exhaustive.md)) |
 | `associated_fn.kl` | Associated functions ([docs/syntax.md](../docs/syntax.md), [079](../issues/079-associated-functions.md)) |
 | `number_literals.kl` | Binary / exponent literals ([081](../issues/081-number-literals.md)) |
-| `byte_string.kl` | `b"..."` byte string (`[]u8`, [docs/syntax.md](../docs/syntax.md)) |
+| `byte_string.kl` | `b"..."` byte string (`[]u8`, read-only; copy into `[N]u8` to modify, [docs/syntax.md](../docs/syntax.md)) |
 | `module_const.kl` | Module-level `const` (integer, `bool`, `b"..."`, `[N]T` length, [docs/syntax.md](../docs/syntax.md)) |
 | `const_fold.kl` | Integer constant expressions (`N * 2`, `~0x0F`, `[1 + 2]T`, [docs/01-decisions.md](../docs/01-decisions.md) D11) |
 | `const_expr.kl` | The same fold outside `const` (`let x: u8 = 1 + 2`, array element, `return`) |

@@ -483,4 +483,29 @@ void main() {
     ]);
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
+
+  test('copying a byte string into an array runs under pedantic C', () async {
+    final result =
+        await compileAndRun('test/byte_string_copy.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+      result.stdout,
+      await File('test/byte_string_copy.out').readAsString(),
+    );
+
+    final program = loadProject('test/byte_string_copy.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/byte_string_copy.kl');
+    expect(c, contains('buf[0] ='));
+    final cPath = '${tmp.path}/byte_string_copy_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/byte_string_copy_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
 }

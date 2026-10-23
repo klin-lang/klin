@@ -11,7 +11,10 @@ fn is_kw(s: []u8): bool {
 
 fn main() {
     let kw = b"fn"
-    printf("len=%d first=%d\n", kw.len, kw[0])
+    let mut buf: [2]u8 = [0, 0]
+    buf[0] = kw[0]
+    buf[0] = buf[0] + 1
+    printf("len=%d first=%d copy=%d\n", kw.len, kw[0], buf[0])
     if is_kw(b"fn") {
         printf("keyword\n")
     }

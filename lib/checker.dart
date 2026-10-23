@@ -270,6 +270,10 @@ final class _Symbol {
   /// A returned `[N]T` stored as the wrapper struct, not a C array.
   final bool arrayByValue;
 
+  /// `[]u8` that points at a `b"..."` literal or a `[]u8` constant.
+  /// An immutable binding copies the flag. A mutable binding is rejected.
+  final bool readOnlyBytes;
+
   const _Symbol({
     required this.name,
     required this.type,
@@ -277,6 +281,7 @@ final class _Symbol {
     required this.pos,
     this.isPtrReceiver = false,
     this.arrayByValue = false,
+    this.readOnlyBytes = false,
   });
 }
 
@@ -1641,6 +1646,73 @@ final class Checker {
     return false;
   }
 
+  /// `b"..."`, a `[]u8` constant, or a local already marked as those bytes.
+  /// `pick` / `match` / `or` count when any arm is read-only: the checker
+  /// does not know which arm runs. A call, a parameter, and a struct field
+  /// are not tracked.
+  bool _isReadOnlyBytes(Expr expr) {
+    final node = _unwrapGroups(expr);
+    if (node is ByteStringLit) return true;
+    if (node is NameExpr) {
+      final sym = _scope.lookup(node.name);
+      if (sym != null) return sym.readOnlyBytes;
+      final constant = _consts[_key(_currentModule, node.name)];
+      return _isU8Slice(constant?.resolvedType);
+    }
+    if (node is FieldExpr &&
+        node.object is NameExpr &&
+        _placeIsConst(node)) {
+      final alias = (node.object as NameExpr).name;
+      final module = alias == _currentModule
+          ? alias
+          : _importAliases[_currentModule]?[alias];
+      if (module == null) return false;
+      final decl = _consts[_key(module, node.name)];
+      return _isU8Slice(decl?.resolvedType);
+    }
+    if (node is PickExpr) {
+      return _isReadOnlyBytes(node.thenExpr) ||
+          _isReadOnlyBytes(node.elseExpr);
+    }
+    if (node is MatchExpr) {
+      for (final arm in node.arms) {
+        if (_isReadOnlyBytes(arm.body)) return true;
+      }
+      return false;
+    }
+    if (node is OrExpr) {
+      return _isReadOnlyBytes(node.result) ||
+          _isReadOnlyBytes(node.fallback.value);
+    }
+    return false;
+  }
+
+  bool _isU8Slice(KlinType? type) =>
+      type is SliceType && type.elem.kind == PrimKind.u8;
+
+  void _rejectMutableReadOnlyBinding(Expr init, KlinType type) {
+    if (!_isU8Slice(type) || !_isReadOnlyBytes(init)) return;
+    throw CheckError(
+      'cannot bind read-only bytes to a mutable slice '
+      '(copy them into a `[N]u8` to modify)',
+      init.pos,
+    );
+  }
+
+  /// `let mut s = xs[:] ; s = b"fn"`. Fields are not tracked.
+  void _rejectReadOnlySliceAssign(Expr target, Expr value) {
+    final place = _unwrapGroups(target);
+    if (place is! NameExpr) return;
+    final sym = _scope.lookup(place.name);
+    if (sym == null || !sym.isMut || !_isU8Slice(sym.type)) return;
+    if (!_isReadOnlyBytes(value)) return;
+    throw CheckError(
+      'cannot assign read-only bytes to a mutable slice '
+      '(copy them into a `[N]u8` to modify)',
+      value.pos,
+    );
+  }
+
   /// Maps an `import X` alias to the file module name.
   String _resolveModuleQualifier(String qualifier, SourcePos pos) {
     if (qualifier == _currentModule) return qualifier;
@@ -1716,6 +1788,13 @@ final class Checker {
         }
 
         stmt.resolvedType = resolved;
+        if (init != null && isMut) {
+          _rejectMutableReadOnlyBinding(init, resolved);
+        }
+        final readOnlyBytes = init != null &&
+            !isMut &&
+            _isU8Slice(resolved) &&
+            _isReadOnlyBytes(init);
         if (_currentIsAsync) {
           if (_asyncFlatNames.contains(name)) {
             throw CheckError(
@@ -1733,6 +1812,7 @@ final class Checker {
             isMut: isMut,
             pos: pos,
             arrayByValue: stmt.arrayByValue,
+            readOnlyBytes: readOnlyBytes,
           ),
         );
 
@@ -1868,6 +1948,7 @@ final class Checker {
         final valueType = _inferLetOrAssignValue(value);
         _expectAssignable(targetType, valueType, value.pos);
         _materialize(value, targetType);
+        _rejectReadOnlySliceAssign(target, value);
 
       case MultiAssignStmt(:final targets, :final values):
         for (var i = 0; i < targets.length; i++) {
@@ -1893,6 +1974,7 @@ final class Checker {
           final valueType = _inferExpr(value);
           _expectAssignable(targetType, valueType, value.pos);
           _materialize(value, targetType);
+          _rejectReadOnlySliceAssign(target, value);
         }
 
       case StructAssignStmt(
@@ -2082,6 +2164,7 @@ final class Checker {
             final initTy = _inferExpr(initExpr);
             final concrete = _defaultConcrete(initTy, initExpr.pos);
             _materialize(initExpr, concrete);
+            _rejectMutableReadOnlyBinding(initExpr, concrete);
             stmt.resolvedInitType = concrete;
             _scope.define(
               _Symbol(name: initName, type: concrete, isMut: true, pos: pos),

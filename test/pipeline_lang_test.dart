@@ -2114,8 +2114,6 @@ fn main() {
   s[0] = 9
   s[1] += 1
   xs[:][0] = 3
-  let mut bytes = b"fn"
-  bytes[0] = 1
 }
 ''';
     final program = Parser(Lexer(source).tokenize()).parse();
@@ -2124,6 +2122,32 @@ fn main() {
     expect(c, contains('s.ptr[0] = 9;'));
     expect(c, contains('s.ptr[1] += 1;'));
     expect(c, contains('(klin_slice_u8){ xs, 2 }.ptr[0] = 3;'));
+  });
+
+  test('checker: read-only bytes stay immutable; holes stay untracked', () {
+    const source = '''
+struct Row { kw: []u8 }
+fn take(s: []u8) {
+  let mut w = s
+  w[0] = 1
+}
+fn main() {
+  let s = b"fn"
+  let t = s
+  let mut buf: [2]u8 = [0, 0]
+  buf[0] = t[0]
+  buf[0] = buf[0] + 1
+  take(s)
+  let mut row = Row{ kw: b"ab" }
+  row.kw = b"fn"
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'ro_bytes.kl');
+    expect(c, contains('buf[0] = t.ptr[0];'));
+    expect(c, contains('w.ptr[0] = 1;'));
+    expect(c, isNot(contains('cannot bind read-only bytes')));
   });
 
   test('checker: & of a slice element follows place mutability', () {

@@ -249,10 +249,17 @@ tables, messages, and paths want the bytes. A second literal keeps
 - The bytes are read-only (C string-literal storage). The checker
   rejects a direct write (`b"fn"[0] = 1`, `KW[0] = 1` on a `[]u8`
   constant) and a write through an immutable slice (`let s = b"fn"`
-  then `s[0] = 1`, or a `[]u8` parameter). `[]u8` has no read-only
-  flavor on a mutable place: `let mut s = b"fn"` then `s[0] = 1`
-  still compiles and can crash at run time. Copy into a `[N]u8` to
-  modify.
+  then `s[0] = 1`, or a `[]u8` parameter). A mutable slice cannot be
+  bound to those bytes: `let mut s = b"fn"`, `let mut s = KW`,
+  `let mut w = s` when `s` already points at them, and
+  `for s := b"fn"`. A mutable `[]u8` local cannot be assigned them
+  either (`let mut s = xs[:]; s = b"fn"`). `pick`, `match`, and `or`
+  count as read-only when any arm is, because the checker does not
+  know which arm runs. Copy into a `[N]u8` to modify.
+  Not tracked, so a write can still fault at run time: a `[]u8`
+  parameter (`fn f(s: []u8) { let mut w = s; w[0] = 1 }` then
+  `f(b"fn")`), a function that returns `[]u8`, and a struct field
+  (`row.kw = b"fn"`, then `row.kw[0] = 1` on a mutable struct).
 - `.len` is the UTF-8 byte count.
 
 ```klin
@@ -323,7 +330,7 @@ is a C constant.
   constant. A local alone is not a length.
 - `NAME = …` and `NAME[i] = …` on a `[]u8` constant are checker errors.
   `let s = NAME` copies the `{ptr, len}` header; `s` points at the same
-  read-only bytes (see D10).
+  read-only bytes, and `let mut s = NAME` is the D10 error.
 
 ```klin
 pub const PAGE: i64 = 4096
