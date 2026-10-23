@@ -44,6 +44,9 @@ fn main() {
 - No implicit widen/narrow between concrete numeric types — use
   `cast(i64, n)` / `cast(f64, n)` ([syntax.md](syntax.md),
   [154](../issues/154-numeric-cast.md))
+- An integer literal must fit the type it is coerced to. `let x: u8 = 300`,
+  `const X: u8 = 0x12C`, and `const X: u8 = -1` are errors. The message
+  names the type and its inclusive range. `cast(u8, 300)` still truncates
 
 `:=` is sugar for `let mut` ([14-short-decl.md](14-short-decl.md)).
 

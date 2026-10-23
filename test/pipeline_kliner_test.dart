@@ -199,4 +199,17 @@ void main() {
     expect(c, contains('uint8_t xs[8]'));
     expect(c, isNot(contains('[os_PAGE]')));
   });
+
+  test('integer literals that fit their type compile and run', () async {
+    final result = await compileAndRun('test/int_range.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/int_range.out').readAsString());
+
+    final program = loadProject('test/int_range.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/int_range.kl');
+    expect(c, contains('static const uint8_t int_range_HI = 255;'));
+    expect(c, contains('static const int8_t int_range_LO = -128;'));
+    expect(c, contains('static const uint8_t int_range_CH = \'A\';'));
+  });
 }

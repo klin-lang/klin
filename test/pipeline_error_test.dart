@@ -2010,4 +2010,104 @@ fn main() {
       )),
     );
   });
+
+  void expectRange(String source, String fragment) {
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) => e is CheckError && e.toString().contains(fragment),
+      )),
+    );
+  }
+
+  test('error: const u8 literal is out of range', () {
+    expectRange('''
+const X: u8 = 300
+fn main() {}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: let u8 literal is out of range', () {
+    expectRange('''
+fn main() {
+  let x: u8 = 300
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: negative const does not fit unsigned', () {
+    expectRange('''
+const X: u8 = -1
+fn main() {}
+''', 'integer literal `-1` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: hex literal does not fit u8', () {
+    expectRange('''
+const X: u8 = 0x12C
+fn main() {}
+''', 'integer literal `0x12C` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: i8 literal above 127', () {
+    expectRange('''
+fn main() {
+  let x: i8 = 128
+}
+''', 'integer literal `128` is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: const i8 negative literal below the minimum', () {
+    expectRange('''
+const X: i8 = -129
+fn main() {}
+''', 'integer literal `-129` is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: default i32 literal is out of range', () {
+    expectRange('''
+fn main() {
+  let x = 3000000000
+}
+''', 'integer literal `3000000000` is out of range for `i32`');
+  });
+
+  test('error: enum variant literal does not fit the base type', () {
+    expectRange('''
+enum E: u8 { A = 300 }
+fn main() {}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: return literal does not fit', () {
+    expectRange('''
+fn f(): u8 { return 300 }
+fn main() {}
+''', 'integer literal `300` is out of range for `u8`');
+  });
+
+  test('error: argument literal does not fit the parameter', () {
+    expectRange('''
+fn f(x: u8) {}
+fn main() { f(0b1_0000_0000) }
+''', 'integer literal `0b1_0000_0000` is out of range for `u8`');
+  });
+
+  test('error: field literal does not fit', () {
+    expectRange('''
+struct S { n: i8 }
+fn main() {
+  let s = S{ n: 200 }
+}
+''', 'integer literal `200` is out of range for `i8`');
+  });
+
+  test('error: i32 array element literal does not fit', () {
+    expectRange('''
+fn main() {
+  let xs: [1]i32 = [3000000000]
+}
+''', 'integer literal `3000000000` is out of range for `i32`');
+  });
 }

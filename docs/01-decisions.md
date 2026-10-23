@@ -292,6 +292,29 @@ fn main() {
 }
 ```
 
+## D12. Integer literal range — DECIDED
+
+An untyped integer literal that is coerced to a declared integer type
+must fit that type. `const X: u8 = 300` and `let x: u8 = 300` are
+checker errors, not a silent wrap to `44`. The diagnostic names the
+type and the inclusive range (`u8` is `0..=255`, `i8` is `-128..=127`).
+
+The same check covers hex (`0x12C`), binary, octal, underscores,
+character literals (`'A'` is 65; character literals are ASCII), and a
+negative literal (`const X: u8 = -1`). It applies wherever that literal
+is coerced to a declared integer type: `const`, `let`, a parameter, a
+return, a struct field, an array whose element type is already that
+integer, an enum variant (`enum E: u8 { A = 300 }`).
+
+`cast(u8, 300)` is still a C truncation. The check is the coercion,
+not the cast.
+
+Widths are the fixed integer widths. `int` is `i32`. `usize` / `isize`
+use a 64-bit range, matching LP64 `size_t` / `ptrdiff_t` in host
+emission. An operator on two untyped literals is still the `i32`
+default, not a fold into the outer type: `let x: u8 = 200 + 100` is a
+type mismatch (`i32` vs `u8`).
+
 ## D7. To decide later
 
 - Closures — at all? Nelua does not have them outside top-level. A struct

@@ -197,6 +197,9 @@ fn main() {
   in a local, a struct field, or a parameter. The C bound is that
   integer value (a decimal constant expression). A `bool`, a `[]u8`,
   or a negative constant is an error
+- The literal must fit the declared integer type (`const X: u8 = 300`
+  and `const X: u8 = -1` are errors). Same rule for a `let` of that
+  type. `cast` still truncates ([D12](01-decisions.md))
 
 ```klin
 module app

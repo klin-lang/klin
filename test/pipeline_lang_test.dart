@@ -1719,4 +1719,32 @@ fn main() {
     final c = emitC(program, 'z.kl');
     expect(c, contains('uint8_t buf[0]'));
   });
+
+  test('checker: in-range integer literals and truncating cast', () {
+    const source = '''
+const HI: u8 = 255
+const LO: i8 = -128
+const HEX: u8 = 0xFF
+const CH: u8 = 'A'
+const WIDE: u64 = 18446744073709551615
+enum E: u8 { A = 255, B = 'A' }
+fn main() {
+  let a: u8 = 0
+  let b: i8 = 127
+  let c: i32 = 200 + 100
+  let d: f64 = 300
+  let e: u8 = cast(u8, 300)
+  let f: i8 = '\\n'
+  let xs: [2]i32 = [9, 300]
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'range.kl');
+    expect(c, contains('static const uint8_t HI = 255;'));
+    expect(c, contains('static const int8_t LO = -128;'));
+    expect(c, contains('static const uint8_t HEX = 0xFF;'));
+    expect(c, contains("static const uint8_t CH = 'A';"));
+    expect(c, contains('(uint8_t)(300)'));
+  });
 }
