@@ -135,4 +135,11 @@ void main() {
     expect(result.exitCode, 0, reason: result.stderr);
     expect(result.stdout, await File('test/self_ref_fnptr.out').readAsString());
   });
+
+  test('expr! propagates between different !T result types', () async {
+    final result = await compileAndRun('test/propagate_cross.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+        result.stdout, await File('test/propagate_cross.out').readAsString());
+  });
 }
