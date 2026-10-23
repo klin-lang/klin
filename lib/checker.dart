@@ -314,6 +314,14 @@ final class Checker {
   }
 
   void _checkAttrs(Program program) {
+    // No attribute has a meaning on a module constant (it is always emitted
+    // as a C `const` with a mangled name) — reject instead of ignoring.
+    for (final constant in program.consts) {
+      if (constant.attrs.isNotEmpty) {
+        throw CheckError(
+            'attributes are not allowed on a constant', constant.attrs.first.pos);
+      }
+    }
     final cNames = <String>{};
     for (final decl in [...program.structs, ...program.funcs]) {
       final attrs = switch (decl) {

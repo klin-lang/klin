@@ -1738,4 +1738,23 @@ fn main() {
     );
   });
 
+  test('error: attribute on a module const', () {
+    const source = '''
+@[cexport]
+const X: i32 = 1
+
+fn main() {
+  printf("%d\\n", X)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('attributes are not allowed on a constant'),
+      )),
+    );
+  });
 }
