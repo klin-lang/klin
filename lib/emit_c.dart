@@ -20,6 +20,7 @@ String emitC(Program program, String sourcePath) {
   buf.writeln('#include <stdbool.h>');
   buf.writeln();
   _emitEnums(buf, program, sourcePath);
+  _emitStructForwardDecls(buf, program.structs);
   final sliceTypes = <PrimType>{};
   for (final struct in program.structs) {
     for (final field in struct.fields) {
@@ -216,6 +217,19 @@ void _writeStructTypedef(StringBuffer buf, StructDecl struct) {
   buf.writeln();
 }
 
+/// `struct m_T;` for every struct before any typedef that may spell
+/// `struct m_T *` (fn-pointer typedefs, self-referential fields). Without it,
+/// `typedef int32_t (*f)(struct m_T *);` declares a new tag scoped to the
+/// parameter list — a different type from the later `struct m_T`.
+void _emitStructForwardDecls(StringBuffer buf, Iterable<StructDecl> structs) {
+  var any = false;
+  for (final struct in structs) {
+    buf.writeln('struct ${_structCName(struct.moduleName, struct.name)};');
+    any = true;
+  }
+  if (any) buf.writeln();
+}
+
 /// Emit `typedef struct` blocks so field dependencies appear before dependents.
 /// Shared by [emitC] and [emitH] — declaration order alone breaks nested /
 /// cross-module struct fields (C needs the field type typedef first).
@@ -319,6 +333,11 @@ String emitH(Program program, String sourcePath) {
   }
   if (sliceTypes.isNotEmpty) buf.writeln();
 
+  _emitStructForwardDecls(
+    buf,
+    program.structs.where(
+        (s) => structKeys.contains('${s.moduleName}.${s.name}')),
+  );
   _emitStructTypedefs(buf, program, sourcePath, structKeys);
 
   for (final type in resultTypes) {

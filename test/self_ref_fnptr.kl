@@ -1,0 +1,38 @@
+// A fn-pointer type that names a pointer to a struct declared later, plus
+// mutual recursion through pointers (A -> B -> A).
+struct A {
+    b: *B
+    v: i32
+}
+
+struct B {
+    a: *A
+    w: i32
+}
+
+struct Node {
+    next: *Node
+    val: i32
+}
+
+fn val_of(n: *Node): i32 {
+    return (*n).val
+}
+
+fn apply(f: fn(*Node): i32, n: *Node): i32 {
+    return f(n)
+}
+
+fn main() {
+    let mut a: A
+    let mut b: B
+    a.v = 1
+    b.w = 2
+    a.b = &b
+    b.a = &a
+    let mut tail: Node
+    tail.val = 40
+    let head = Node{ next: &tail, val: 2 }
+    let sum = apply(val_of, &head) + apply(val_of, head.next)
+    printf("%d %d %d\n", (*a.b).w, (*(*a.b).a).v, sum)
+}

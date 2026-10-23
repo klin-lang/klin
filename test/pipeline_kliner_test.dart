@@ -119,4 +119,20 @@ void main() {
     expect(result.exitCode, 0, reason: result.stderr);
     expect(result.stdout, await File('test/const_mod/cond.out').readAsString());
   });
+
+  test('struct tags are forward-declared before fn-pointer typedefs', () async {
+    final program = loadProject('test/self_ref_fnptr.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/self_ref_fnptr.kl');
+    final fwd = c.indexOf('struct self_ref_fnptr_Node;');
+    final fnTypedef = c.indexOf('(struct self_ref_fnptr_Node *);');
+    expect(fwd, greaterThanOrEqualTo(0));
+    expect(fnTypedef, greaterThan(fwd));
+    expect(c, contains('struct self_ref_fnptr_A;'));
+    expect(c, contains('struct self_ref_fnptr_B;'));
+
+    final result = await compileAndRun('test/self_ref_fnptr.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/self_ref_fnptr.out').readAsString());
+  });
 }
