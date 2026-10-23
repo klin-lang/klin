@@ -831,7 +831,7 @@ final class Checker {
       init.resolvedType = type;
       return;
     }
-    if (type is SliceType && type.elem.kind == PrimKind.u8) {
+    if (type case SliceType(elem: PrimType(kind: PrimKind.u8))) {
       if (init is! ByteStringLit) {
         throw CheckError('[]u8 constant must be a b"..." literal', init.pos);
       }
@@ -917,9 +917,7 @@ final class Checker {
     }
     if (name.startsWith('[]')) {
       final elem = _resolveType(name.substring(2), pos);
-      if (elem is! PrimType) {
-        throw CheckError('slice requires a primitive element type', pos);
-      }
+      _requireSliceElem(elem, pos);
       return SliceType(elem);
     }
     if (name.startsWith('[')) {
@@ -969,6 +967,46 @@ final class Checker {
       throw CheckError('unknown type `$qualifier.$typeName`', pos);
     }
     return _resolvePrimType(name, pos);
+  }
+
+  /// Element of `[]T` (D14). A value that C can point at: primitive, struct,
+  /// enum, `str`, pointer, nested slice, function, or array. An array of
+  /// structs would need the struct to be complete inside the slice typedef
+  /// and the slice typedef to be complete inside the struct — rejected.
+  /// `!T` and `void` are not slice elements.
+  void _requireSliceElem(KlinType elem, SourcePos pos) {
+    switch (elem) {
+      case PrimType() ||
+            StructType() ||
+            EnumType() ||
+            StrType() ||
+            PtrType() ||
+            FnType():
+        return;
+      case SliceType(:final elem):
+        _requireSliceElem(elem, pos);
+      case ArrayType(:final elem):
+        _requireSliceElem(elem, pos);
+        var inner = elem;
+        while (inner is ArrayType) {
+          inner = inner.elem;
+        }
+        if (inner is StructType) {
+          throw CheckError(
+            'slice element cannot be an array of structs',
+            pos,
+          );
+        }
+      case ResultType():
+        throw CheckError('slice element cannot be a result type', pos);
+      case VoidType():
+        throw CheckError('slice element cannot be `void`', pos);
+      default:
+        throw CheckError(
+          'slice element type `${elem.displayName}` is not supported',
+          pos,
+        );
+    }
   }
 
   /// `[N]T` length: an integer literal, a module constant, or an integer
@@ -2237,7 +2275,7 @@ final class Checker {
       );
     }
     final elem = bufTy.elem;
-    if (elem.kind != PrimKind.u8) {
+    if (elem is! PrimType || elem.kind != PrimKind.u8) {
       throw CheckError(
         'fmt.write expects `[]u8` as the first argument',
         args[0].pos,
@@ -3208,11 +3246,14 @@ final class Checker {
             );
           }
           final arrayType = _inferExpr(array);
-          if (arrayType is! ArrayType || arrayType.elem is! PrimType) {
+          if (arrayType is! ArrayType) {
             throw CheckError(
-                '`[:]` requires an array with a primitive element type', pos);
+              '`[:]` requires an array, got `${arrayType.displayName}`',
+              pos,
+            );
           }
-          return SliceType(arrayType.elem as PrimType);
+          _requireSliceElem(arrayType.elem, pos);
+          return SliceType(arrayType.elem);
         }(),
       ArrayLitExpr(:final elements, :final pos) => () {
           // `[]` stays untyped until an expected `[0]T` adopts it

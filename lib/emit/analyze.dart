@@ -22,6 +22,13 @@ void _collectStructKeys(
       }
     case ArrayType(:final elem):
       _collectStructKeys(elem, output, throughPointer: throughPointer);
+    case SliceType(:final elem):
+      _collectStructKeys(elem, output, throughPointer: throughPointer);
+    case FnType(:final params, :final ret):
+      for (final param in params) {
+        _collectStructKeys(param, output, throughPointer: throughPointer);
+      }
+      _collectStructKeys(ret, output, throughPointer: throughPointer);
     case ResultType(:final ok):
       _collectStructKeys(ok, output, throughPointer: throughPointer);
     default:

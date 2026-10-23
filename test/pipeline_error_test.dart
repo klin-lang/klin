@@ -2588,4 +2588,41 @@ fn main() {
 }
 ''', 'type mismatch: expected `[2][0]u8`, got `[1][0]`');
   });
+
+  test('error: slice element cannot be a result', () {
+    expectRange('''
+fn main() {
+  let s: []!i32
+}
+''', 'slice element cannot be a result type');
+  });
+
+  test('error: slice element cannot be void', () {
+    expectRange('''
+fn main() {
+  let s: []void
+}
+''', 'slice element cannot be `void`');
+  });
+
+  test('error: slice of an array of structs', () {
+    expectRange('''
+struct Token { k: i32 }
+fn main() {
+  let rows: [1][1]Token = [[Token{ k: 1 }]]
+  let s = rows[:]
+}
+''', 'slice element cannot be an array of structs');
+  });
+
+  test('error: cannot assign a field through an immutable struct slice', () {
+    expectRange('''
+struct Token { k: i32 }
+fn main() {
+  let xs: [1]Token = [Token{ k: 1 }]
+  let s = xs[:]
+  s[0].k = 2
+}
+''', 'cannot assign through an immutable slice');
+  });
 }

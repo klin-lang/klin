@@ -108,6 +108,16 @@ Example: [`examples/slice_alloc_demo.kl`](../examples/slice_alloc_demo.kl)
 (do not name the file `slice_alloc.kl` next to `import slice_alloc` — path collision).  
 Golden: `test/slice_alloc_ops.kl`.
 
+## Element type
+
+`[]T` is not only a primitive. `[]Token`, `[]str`, `[][]u8`, a pointer,
+a function pointer, and `[][N]u8` are the same `{ptr, len}` header
+([D14](01-decisions.md)). `xs[:]` from `[N]Token` is `[]Token`.
+`s[i].field` and `&s[i]` use the element. A slice of an array of
+structs (`[][N]Token`) is rejected. The stdlib templates below are
+still instantiated for numeric primitives; the language accepts the
+other element types without a `$fn` instance.
+
 ## Non-goals
 
 - Bare `xs.map(f)` / hidden `malloc`

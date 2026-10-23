@@ -457,6 +457,53 @@ extension as `let a: [0]u8 = []` (D12), not a function return.
 type that returns an array of structs — the wrapper needs that struct
 to be complete. A parameter or a local of that function type is fine.
 
+## D14. Slice element type — DECIDED
+
+**Choice: `[]T` is `{ T *ptr; size_t len; }` for any value `T` C can point at.**
+Not only a primitive.
+
+`[]Token`, `[]str`, `[][]u8`, `[]*T`, `[]fn(i32): i32`, and `[][N]u8`
+are the same two-word header as `[]i32`. No allocation, no capacity,
+no bounds check (an index is still a C index). `.len` is the header's
+`len`. `s[i].field` is `s.ptr[i].field`.
+
+- Allowed elements: a primitive, a struct, an enum, `str`, a pointer,
+  a slice, a function pointer, or an array whose element is one of
+  those and is not itself a struct.
+- `xs[:]` on `[N]Token` has type `[]Token`. The pointer is the array
+  (it decays to `struct Token *`). `rows[i][:]` on `[N][M]Token` is
+  `[]Token` — one row. A slice whose element is the row array
+  (`[][M]Token`, or `rows[:]`) is rejected: the slice typedef would
+  need `Token` complete, and a struct that stored that slice would
+  need the typedef first.
+- `[]!T` and `[]void` are errors.
+- Writes and `&s[i]` follow the slice place (D5). `let mut s = xs[:]`
+  can write `s[i].field`. An immutable binding and a slice parameter
+  cannot. `&s[i]` is `*mut T` when that place is mutable and `*T`
+  when it is not.
+- The C typedef is `klin_slice_<element>`. A struct element uses the
+  struct tag (`struct mod_Token *ptr`) so the typedef can come before
+  the struct body. `struct Node { kids: []Node }` is that order.
+  A nested slice is `klin_slice_slice_u8` (the inner typedef first).
+  A slice of a function pointer is emitted after that function typedef.
+
+```klin
+struct Token {
+    kind: i32
+    n: i32
+}
+
+fn sum_kind(xs: []Token): i32 {
+    let mut i = 0
+    let mut acc = 0
+    while i < xs.len {
+        acc = acc + xs[i].kind
+        i = i + 1
+    }
+    return acc
+}
+```
+
 ## D7. To decide later
 
 - Closures — at all? Nelua does not have them outside top-level. A struct

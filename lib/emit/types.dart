@@ -129,10 +129,108 @@ int _fnTypeDepth(FnType type) {
   return depth;
 }
 
-String _sliceCName(PrimType elem) => 'klin_slice_${elem.kind.klinName}';
+/// `[]u8` → `klin_slice_u8`. `[][]u8` → `klin_slice_slice_u8`.
+/// A struct uses its C name (`klin_slice_mod_Token`), so two modules
+/// do not share a typedef.
+String _sliceCName(KlinType elem) => 'klin_slice_${_sliceElemToken(elem)}';
 
-void _collectSliceTypes(KlinType? type, Set<PrimType> output) {
-  if (type case SliceType(:final elem)) output.add(elem);
+/// Token used inside [_sliceCName]. Nested slices unwrap so the name does
+/// not repeat the `klin_slice_` prefix (`slice_u8`, not `klin_slice_u8`).
+/// Arrays and pointers unwrap the same way (`arr2_slice_u8`, `ptr_slice_u8`).
+String _sliceElemToken(KlinType elem) => switch (elem) {
+      SliceType(:final elem) => 'slice_${_sliceElemToken(elem)}',
+      ArrayType(:final elem, :final len) => 'arr${len}_${_sliceElemToken(elem)}',
+      PtrType(:final pointee, :final isMut, :final isVolatile) =>
+        '${isMut ? 'mut_' : ''}${isVolatile ? 'volatile_' : ''}ptr_${_sliceElemToken(pointee)}',
+      FnType(:final params, :final ret) =>
+        'fn_${params.map(_sliceElemToken).join('_')}_${_sliceElemToken(ret)}',
+      _ => _typeToken(elem),
+    };
+
+/// `ptr` field of a slice typedef. Primitive slices stay `int32_t *ptr`.
+/// A struct element uses the tag (`struct mod_Token *ptr`) so the typedef
+/// can be emitted before the struct body is complete.
+String _slicePtrField(KlinType elem) {
+  if (elem is ArrayType) {
+    final shape = _arrayShape(elem);
+    return '${_slicePointee(shape.elem)} (*ptr)[${shape.lens.join('][')}]';
+  }
+  final base = _slicePointee(elem);
+  if (base.endsWith('*')) return '$base*ptr';
+  return '$base *ptr';
+}
+
+String _slicePointee(KlinType elem) {
+  if (elem is StrType) return 'const char *';
+  if (elem is StructType) {
+    return 'struct ${_structCName(elem.moduleName, elem.name)}';
+  }
+  if (elem is PrimType) return elem.kind.cType;
+  return _cType(elem);
+}
+
+/// How many slice typedefs [type] names. Inner typedefs sort first, so
+/// `[][2][]u8` emits `klin_slice_u8` before `klin_slice_arr2_slice_u8`.
+int _sliceDepDepth(KlinType type) {
+  switch (type) {
+    case SliceType(:final elem):
+      return 1 + _sliceDepDepth(elem);
+    case ArrayType(:final elem):
+    case PtrType(pointee: final elem):
+      return _sliceDepDepth(elem);
+    case FnType(:final params, :final ret):
+      var depth = _sliceDepDepth(ret);
+      for (final param in params) {
+        final paramDepth = _sliceDepDepth(param);
+        if (paramDepth > depth) depth = paramDepth;
+      }
+      return depth;
+    default:
+      return 0;
+  }
+}
+
+/// True when the slice typedef names a function-pointer typedef.
+bool _sliceElemNeedsFn(KlinType elem) {
+  switch (elem) {
+    case FnType():
+      return true;
+    case SliceType(:final elem):
+      return _sliceElemNeedsFn(elem);
+    case ArrayType(:final elem):
+      return _sliceElemNeedsFn(elem);
+    case PtrType(:final pointee):
+      return _sliceElemNeedsFn(pointee);
+    default:
+      return false;
+  }
+}
+
+/// A function pointer that returns an array of structs is emitted after
+/// that struct. A slice of it has to follow the typedef.
+bool _sliceElemIsLate(KlinType elem) =>
+    _sliceElemNeedsFn(elem) && typeNeedsStructArrayReturn(elem);
+
+void _emitSliceTypedefs(StringBuffer buf, Iterable<KlinType> elems) {
+  final list = elems.toList()
+    ..sort((a, b) {
+      final byNest = _sliceDepDepth(a).compareTo(_sliceDepDepth(b));
+      if (byNest != 0) return byNest;
+      return _sliceCName(a).compareTo(_sliceCName(b));
+    });
+  for (final elem in list) {
+    buf.writeln(
+      'typedef struct { ${_slicePtrField(elem)}; size_t len; } ${_sliceCName(elem)};',
+    );
+  }
+  if (list.isNotEmpty) buf.writeln();
+}
+
+void _collectSliceTypes(KlinType? type, Set<KlinType> output) {
+  if (type case SliceType(:final elem)) {
+    output.add(elem);
+    _collectSliceTypes(elem, output);
+  }
   if (type case PtrType(:final pointee)) _collectSliceTypes(pointee, output);
   if (type case ArrayType(:final elem)) _collectSliceTypes(elem, output);
   if (type case ResultType(:final ok)) _collectSliceTypes(ok, output);
@@ -154,6 +252,7 @@ void _collectFnTypes(KlinType? type, Set<FnType> output) {
   }
   if (type case PtrType(:final pointee)) _collectFnTypes(pointee, output);
   if (type case ArrayType(:final elem)) _collectFnTypes(elem, output);
+  if (type case SliceType(:final elem)) _collectFnTypes(elem, output);
   if (type case ResultType(:final ok)) _collectFnTypes(ok, output);
 }
 
@@ -174,7 +273,7 @@ void _collectResultTypes(KlinType? type, Set<ResultType> output) {
 
 /// Set while walking bodies so a slice that exists only as a local
 /// (`let s = xs[:]`) still gets a `klin_slice_*` typedef.
-Set<PrimType>? _sliceTypesFromWalk;
+Set<KlinType>? _sliceTypesFromWalk;
 
 void _noteSliceType(KlinType? type) {
   final dest = _sliceTypesFromWalk;
@@ -185,7 +284,7 @@ void _noteSliceType(KlinType? type) {
 /// Slice typedefs are emitted from signatures and struct fields. Locals and
 /// temporaries are not on those lists — walk bodies when [output] is the
 /// set about to be emitted.
-void _collectSliceTypesInBodies(Program program, Set<PrimType> output) {
+void _collectSliceTypesInBodies(Program program, Set<KlinType> output) {
   final saved = _sliceTypesFromWalk;
   _sliceTypesFromWalk = output;
   final unused = <ResultType>{};
@@ -367,6 +466,8 @@ Set<ArrayType> _arrayReturnTypes(Program program) {
         }
       case PtrType(:final pointee):
         walk(pointee);
+      case SliceType(:final elem):
+        walk(elem);
       case ResultType(:final ok):
         walk(ok);
       default:

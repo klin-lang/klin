@@ -225,7 +225,12 @@ fn main() {
   A local from a literal stays a C array; a local from the call is the
   struct (`a[0]` in Klin). A zero-length array cannot be returned
   ([01-decisions.md](01-decisions.md) D13)
-- `[]T` — slice `{ ptr, len }` (and `cap` where allocated)
+- `[]T` — slice `{ ptr, len }` (and `cap` where allocated).
+  `T` is a primitive, a struct, an enum, `str`, a pointer, a slice,
+  a function, or an array that is not an array of structs.
+  `xs[:]` on `[N]Token` is `[]Token`; `s[i].kind` reads a field.
+  A slice of an array of structs (`[][N]Token`) is an error.
+  Writes and `&s[i]` follow the slice place, same as `[]i32`
 - No hidden allocation. Heap is `import mem` and an explicit
   `Allocator` ([14-allocator.md](14-allocator.md))
 

@@ -427,4 +427,74 @@ void main() {
     expect(result.exitCode, 0, reason: result.stderr);
     expect(result.stdout, await File('test/enum_auto.out').readAsString());
   });
+
+  test('slice of a struct, str, and nested slice', () async {
+    final result = await compileAndRun('test/slice_struct.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/slice_struct.out').readAsString());
+
+    final program = loadProject('test/slice_struct.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/slice_struct.kl');
+    expect(
+      c,
+      contains(
+        'typedef struct { struct slice_struct_Token *ptr; size_t len; } klin_slice_slice_struct_Token;',
+      ),
+    );
+    expect(
+      c,
+      contains(
+        'typedef struct { struct slice_struct_Node *ptr; size_t len; } klin_slice_slice_struct_Node;',
+      ),
+    );
+    expect(
+      c,
+      contains('typedef struct { const char **ptr; size_t len; } klin_slice_str;'),
+    );
+    expect(
+      c,
+      contains(
+        'typedef struct { klin_slice_u8 *ptr; size_t len; } klin_slice_slice_u8;',
+      ),
+    );
+    expect(
+      c,
+      contains(
+        'typedef struct { uint8_t (*ptr)[2]; size_t len; } klin_slice_arr2_u8;',
+      ),
+    );
+    expect(
+      c,
+      contains(
+        'typedef struct { klin_slice_u8 (*ptr)[2]; size_t len; } klin_slice_arr2_slice_u8;',
+      ),
+    );
+    expect(
+      c.indexOf('klin_slice_u8;'),
+      lessThan(c.indexOf('klin_slice_arr2_slice_u8;')),
+    );
+    final sliceTok = c.indexOf('klin_slice_slice_struct_Token;');
+    final tokenBody = c.indexOf('typedef struct slice_struct_Token {');
+    expect(sliceTok, greaterThanOrEqualTo(0));
+    expect(tokenBody, greaterThan(sliceTok));
+    final nodeSlice = c.indexOf('klin_slice_slice_struct_Node;');
+    final nodeBody = c.indexOf('typedef struct slice_struct_Node {');
+    expect(nodeBody, greaterThan(nodeSlice));
+    expect(c, contains('s.ptr[0].n = 9;'));
+    expect(c, contains('s.ptr[1] ='));
+    expect(c, contains('(*(p)).kind = 8;'));
+
+    final cPath = '${tmp.path}/slice_struct_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/slice_struct_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
 }

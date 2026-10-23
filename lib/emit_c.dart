@@ -21,7 +21,7 @@ String emitC(Program program, String sourcePath) {
   buf.writeln();
   _emitEnums(buf, program, sourcePath);
   _emitStructForwardDecls(buf, program.structs);
-  final sliceTypes = <PrimType>{};
+  final sliceTypes = <KlinType>{};
   for (final struct in program.structs) {
     for (final field in struct.fields) {
       _collectSliceTypes(field.resolvedType, sliceTypes);
@@ -42,12 +42,13 @@ String emitC(Program program, String sourcePath) {
   // `let s = xs[:]` is not on a signature. Without the typedef, `s.ptr` is
   // not a struct member in C.
   _collectSliceTypesInBodies(program, sliceTypes);
-  for (final type in sliceTypes) {
-    final name = _sliceCName(type);
-    buf.writeln(
-        'typedef struct { ${type.kind.cType} *ptr; size_t len; } $name;');
-  }
-  if (sliceTypes.isNotEmpty) buf.writeln();
+  // Primitive / struct / enum / str / pointer / nested-slice elements.
+  // A struct element is `struct Tag *`, so the body can come later.
+  // A slice of a function pointer waits until that typedef exists.
+  _emitSliceTypedefs(
+    buf,
+    sliceTypes.where((elem) => !_sliceElemNeedsFn(elem)),
+  );
   final arrayReturns = _arrayReturnTypes(program);
   // Primitive (and pointer / enum / slice) elements do not need a struct
   // to be complete. Function-pointer typedefs that return them come next.
@@ -70,6 +71,11 @@ String emitC(Program program, String sourcePath) {
       _collectFnTypes(param.resolvedType, fnTypes);
     }
   }
+  // `let s = fs[:]` where `fs` is `[N]fn(...)` is not on a signature.
+  // The slice typedef names the function typedef.
+  for (final elem in sliceTypes) {
+    _collectFnTypes(elem, fnTypes);
+  }
   final orderedFnTypes = fnTypes.toList()
     ..sort((a, b) => _fnTypeDepth(a).compareTo(_fnTypeDepth(b)));
   final earlyFnTypes =
@@ -77,6 +83,12 @@ String emitC(Program program, String sourcePath) {
   final lateFnTypes =
       orderedFnTypes.where(typeNeedsStructArrayReturn).toList();
   _emitFnTypedefs(buf, earlyFnTypes);
+  // `[]fn(i32): i32` names the function typedef. Emit it before any
+  // struct that stores that slice.
+  _emitSliceTypedefs(
+    buf,
+    sliceTypes.where((elem) => _sliceElemNeedsFn(elem) && !_sliceElemIsLate(elem)),
+  );
   // `[N]fn(): …` needs the function typedef first.
   _emitArrayReturnTypedefs(
     buf,
@@ -121,6 +133,11 @@ String emitC(Program program, String sourcePath) {
     arrayReturns.where((type) => _arrayShape(type).elem is StructType),
   );
   _emitFnTypedefs(buf, lateFnTypes);
+  // `[]fn(): [N]Struct` follows the late function typedef.
+  _emitSliceTypedefs(
+    buf,
+    sliceTypes.where(_sliceElemIsLate),
+  );
   _emitArrayReturnTypedefs(
     buf,
     arrayReturns.where((type) {
@@ -322,7 +339,7 @@ String emitH(Program program, String sourcePath) {
   buf.writeln();
   _emitEnums(buf, program, sourcePath);
 
-  final sliceTypes = <PrimType>{};
+  final sliceTypes = <KlinType>{};
   final resultTypes = <ResultType>{};
   final structKeys = <String>{};
   void collectSig(KlinType? type) {
@@ -356,18 +373,31 @@ String emitH(Program program, String sourcePath) {
         structKeys.length + sliceTypes.length + resultTypes.length > before;
   }
 
-  for (final type in sliceTypes) {
-    buf.writeln(
-        'typedef struct { ${type.kind.cType} *ptr; size_t len; } ${_sliceCName(type)};');
-  }
-  if (sliceTypes.isNotEmpty) buf.writeln();
-
+  // The slice pointer field spells `struct Tag *` for a struct element.
+  // The tag has to be in scope before that typedef.
   _emitStructForwardDecls(
     buf,
     program.structs.where(
         (s) => structKeys.contains('${s.moduleName}.${s.name}')),
   );
+  final fnTypes = <FnType>{};
+  for (final elem in sliceTypes) {
+    _collectFnTypes(elem, fnTypes);
+  }
+  final orderedFn = fnTypes.toList()
+    ..sort((a, b) => _fnTypeDepth(a).compareTo(_fnTypeDepth(b)));
+  _emitSliceTypedefs(
+    buf,
+    sliceTypes.where((elem) => !_sliceElemNeedsFn(elem)),
+  );
+  _emitFnTypedefs(buf, orderedFn.where((type) => !typeNeedsStructArrayReturn(type)).toList());
+  _emitSliceTypedefs(
+    buf,
+    sliceTypes.where((elem) => _sliceElemNeedsFn(elem) && !_sliceElemIsLate(elem)),
+  );
   _emitStructTypedefs(buf, program, sourcePath, structKeys);
+  _emitFnTypedefs(buf, orderedFn.where(typeNeedsStructArrayReturn).toList());
+  _emitSliceTypedefs(buf, sliceTypes.where(_sliceElemIsLate));
 
   for (final type in resultTypes) {
     final ok = _cType(type.ok);

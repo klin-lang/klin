@@ -207,6 +207,8 @@ bool typeNeedsStructArrayReturn(KlinType type) {
       return params.any(typeNeedsStructArrayReturn);
     case ArrayType(:final elem):
       return typeNeedsStructArrayReturn(elem);
+    case SliceType(:final elem):
+      return typeNeedsStructArrayReturn(elem);
     case PtrType(:final pointee):
       return typeNeedsStructArrayReturn(pointee);
     case ResultType(:final ok):
@@ -226,7 +228,10 @@ bool _arrayReturnOfStruct(KlinType type) {
 }
 
 final class SliceType extends KlinType {
-  final PrimType elem;
+  /// Element type. A primitive, struct, enum, `str`, pointer, slice,
+  /// function, or array. Not `void`, not `!T`, and not an array of structs
+  /// (D14). The checker rejects the cases C cannot spell as a pointer field.
+  final KlinType elem;
 
   const SliceType(this.elem);
 

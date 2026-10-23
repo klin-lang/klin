@@ -147,6 +147,33 @@ Runnable: [`examples/destructure.kl`](../examples/destructure.kl),
 [`examples/multi_assign.kl`](../examples/multi_assign.kl).
 Issue: [056](../issues/056-destructuring.md).
 
+## Slices of any value
+
+`[]T` is `{ ptr, len }`. `T` may be a primitive, a struct, an enum,
+`str`, a pointer, a slice, a function pointer, or an array that is
+not an array of structs. `[]!T` and `[]void` are errors.
+
+```klin
+struct Token {
+    kind: i32
+    n: i32
+}
+
+fn main() {
+    let mut xs: [2]Token = [Token{ kind: 1, n: 2 }, Token{ kind: 3, n: 4 }]
+    let mut s = xs[:]
+    s[0].n = 9
+    printf("%d\n", s[0].n)
+}
+```
+
+`xs[:]` needs the array as an l-value. Indexing is a C index (no
+runtime check). A write and `&s[i]` follow the slice place: `let mut`
+can write, an immutable binding cannot. `struct Node { kids: []Node }`
+is a slice of the same struct.
+
+Runnable: [`examples/slice_struct.kl`](../examples/slice_struct.kl).
+
 ## Byte strings
 
 `"..."` is `str` (`const char*`). `b"..."` is `[]u8`: the bytes of the

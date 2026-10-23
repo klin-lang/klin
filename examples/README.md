@@ -41,6 +41,7 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `point.kl` | `Vec2i` + `len_sq` (canonical Klin) |
 | `point_macro.kl` | Same via `$fn` — Klin’s generic, not `[T]` in the compiler ([docs/04-macros.md](../docs/04-macros.md)) |
 | `slice_sum.kl` | Arrays / slices |
+| `slice_struct.kl` | Slice of a struct, `s[i].field`, `&s[i]` ([D14](../docs/01-decisions.md)) |
 | `fn_ptr.kl` | Function pointers without capture ([017](../issues/017-collection-methods.md) phase 2) |
 | `slice_ops.kl` | `stdlib/slice` map/filter/reduce ([017](../issues/017-collection-methods.md), [docs/16](../docs/16-slice.md)) |
 | `slice_alloc_demo.kl` | `stdlib/slice_alloc` + explicit `Allocator` ([017](../issues/017-collection-methods.md), [docs/16](../docs/16-slice.md)) |

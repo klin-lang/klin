@@ -2159,4 +2159,39 @@ fn main() {
     expect(c, isNot(contains('(pair()).v[0]')));
     expect(c, isNot(contains('memcpy')));
   });
+
+  test('slice of a struct emits a tag pointer before the struct body', () {
+    const source = '''
+struct Token { k: i32 }
+struct Node { kids: []Node
+    value: i32 }
+fn main() {
+  let xs: [1]Token = [Token{ k: 1 }]
+  let s = xs[:]
+  let mut empty: []Node
+  let n = Node{ kids: empty, value: s[0].k }
+  printf("%d\\n", n.kids.len)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'slice_struct_unit.kl');
+    expect(
+      c,
+      contains(
+        'typedef struct { struct Token *ptr; size_t len; } klin_slice_Token;',
+      ),
+    );
+    expect(
+      c,
+      contains(
+        'typedef struct { struct Node *ptr; size_t len; } klin_slice_Node;',
+      ),
+    );
+    expect(
+      c.indexOf('klin_slice_Node;'),
+      lessThan(c.indexOf('typedef struct Node {')),
+    );
+    expect(c, contains('s.ptr[0].k'));
+  });
 }

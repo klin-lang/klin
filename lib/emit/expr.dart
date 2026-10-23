@@ -95,12 +95,7 @@ String _emitExpr(Expr expr, _ExprCtx ctx) {
   final raw = _emitExprRaw(expr, ctx);
   final from = expr.arrayToSliceFrom;
   if (from != null) {
-    final elem = from.elem;
-    if (elem is! PrimType) {
-      throw StateError(
-          'emit: array-to-slice conversion requires a primitive type');
-    }
-    return '(${_sliceCName(elem)}){ $raw, ${from.len} }';
+    return '(${_sliceCName(from.elem)}){ $raw, ${from.len} }';
   }
   return raw;
 }
@@ -221,11 +216,7 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         if (type is! ArrayType) {
           throw StateError('emit: `[:]` without an array type');
         }
-        final elem = type.elem;
-        if (elem is! PrimType) {
-          throw StateError('emit: slice has a non-primitive element type');
-        }
-        return '(${_sliceCName(elem)}){ ${_emitArrayObject(array, ctx)}, ${type.len} }';
+        return '(${_sliceCName(type.elem)}){ ${_emitArrayObject(array, ctx)}, ${type.len} }';
       }(),
     ArrayLitExpr lit => _emitArrayLit(lit, ctx),
     CastExpr(:final resolvedType, :final expr) => () {
