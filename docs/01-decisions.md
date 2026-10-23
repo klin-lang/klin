@@ -225,8 +225,11 @@ tables, messages, and paths want the bytes. A second literal keeps
   not `strlen`. The C literal spells that byte as `\000`, so a following
   digit is not swallowed. The extra NUL the C compiler appends is not
   part of `.len`.
-- The bytes are read-only. `b"fn"[0] = 1` is a checker error. Copy
-  into a `[N]u8` to modify.
+- The bytes are read-only (C string-literal storage). The checker only
+  rejects a direct write: `b"fn"[0] = 1` and `KW[0] = 1` on a `[]u8`
+  constant. A write through a copy (`let s = b"fn"` then `s[0] = 1`) or
+  through a `[]u8` parameter compiles and crashes at run time — `[]u8`
+  has no read-only flavor. Copy into a `[N]u8` to modify.
 - `.len` is the UTF-8 byte count.
 
 ```klin
@@ -252,13 +255,15 @@ is a C constant.
 - The initializer is a literal: an integer (including `-N`, hex, `'A'`),
   `true` / `false`, or `b"..."`. Not `1 + 2`, not another constant, not
   a float or a `str`.
-- `pub` emits `const` (the one `.c` can name it from every module).
-  Private emits `static const`.
+- The C name is `module_NAME`. `pub` emits `const`, private emits
+  `static const`. All modules share one `.c`, so visibility is enforced
+  by the checker (`mod.NAME` on a private constant is an error), not by
+  C linkage.
 - A constant is not a C constant expression. `[N]T` still wants the
   length written as an integer literal.
 - `NAME = …` and `NAME[i] = …` on a `[]u8` constant are checker errors.
-  `let s = NAME` still copies the slice header (D10); that copy is not
-  a separate constant.
+  `let s = NAME` copies the `{ptr, len}` header; `s` points at the same
+  read-only bytes (see D10).
 
 ```klin
 pub const PAGE: i64 = 4096

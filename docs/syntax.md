@@ -165,7 +165,9 @@ fn main() {
 ```
 
 The slice points at static bytes (no allocation). Those bytes are
-read-only: `b"fn"[0] = 1` is an error. Copy into a `[N]u8` to modify.
+read-only: `b"fn"[0] = 1` is an error. The check is only on the literal
+(or a `[]u8` constant) itself — writing through a copy or a `[]u8`
+parameter compiles and crashes at run time. Copy into a `[N]u8` to modify.
 
 ## Constants
 
