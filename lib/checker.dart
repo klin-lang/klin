@@ -3468,6 +3468,10 @@ final class Checker {
     if (place is NameExpr) return _scope.lookup(place.name)?.isMut ?? false;
     if (place is FieldExpr) return _isMutablePlace(place.object);
     if (place is IndexExpr) return _isMutablePlace(place.object);
+    // `xs[:][i]` — the slice is a view of the array place. `&` follows
+    // that place: `let mut xs` yields `*mut`, an immutable `xs` yields `*`.
+    // The view itself (`&xs[:]`) is not a place.
+    if (place is SliceFromExpr) return _isMutablePlace(place.array);
     if (place is UnaryExpr && place.op == '*') {
       final pointer = place.operand.resolvedType ?? _inferExpr(place.operand);
       return pointer is PtrType && pointer.isMut;

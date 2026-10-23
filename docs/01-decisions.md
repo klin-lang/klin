@@ -152,8 +152,14 @@ when it is reached through a `*mut` pointer — field and index chains
 included (`(*c).err.lit(...)` where `c: *mut Ctx`). `&place` has type
 `*mut T` when that place is mutable and `*T` when it is not. A place
 reached only through a non-mut `*T` stays immutable, the same rule as
-assignment (`(*p).x = …` already rejected a write through `*T`). The
-call still passes a pointer; `mut` is not in the C.
+assignment (`(*p).x = …` already rejected a write through `*T`). A
+slice element follows the place: `&s[i]` is `*mut T` when `s` is
+mutable and `*T` when it is not. `xs[:]` is a view of the array, so
+`&xs[:][i]` is `*mut` when `xs` is `let mut` or reached through `*mut`,
+and `*T` when `xs` is immutable. An immutable binding (`let s = xs[:]`)
+and a slice parameter stay `*T` even if the underlying array was
+mutable. `&xs[:]` is not a place. The call still passes a pointer;
+`mut` is not in the C.
 
 ---
 

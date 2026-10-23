@@ -2307,6 +2307,39 @@ fn main() {
 ''', 'integer literal `300` is out of range for `u8`');
   });
 
+  test('error: address of an immutable slice element is not *mut', () {
+    expectRange('''
+fn main() {
+  let xs: [2]i32 = [1, 2]
+  let p: *mut i32 = &xs[:][0]
+}
+''', 'type mismatch: expected `*mut i32`, got `*i32`');
+  });
+
+  test('error: immutable slice binding does not yield *mut', () {
+    expectRange('''
+fn main() {
+  let mut xs: [2]i32 = [1, 2]
+  let s = xs[:]
+  let p: *mut i32 = &s[0]
+}
+''', 'type mismatch: expected `*mut i32`, got `*i32`');
+  });
+
+  test('error: slice parameter element address is not *mut', () {
+    expectRange('''
+fn first(s: []i32): *mut i32 { return &s[0] }
+fn main() {}
+''', 'type mismatch: expected `*mut i32`, got `*i32`');
+  });
+
+  test('error: address through *[]T is not *mut', () {
+    expectRange('''
+fn at(p: *[]i32): *mut i32 { return &(*p)[0] }
+fn main() {}
+''', 'type mismatch: expected `*mut i32`, got `*i32`');
+  });
+
   test('error: let of a sum is still i32', () {
     expectRange('''
 fn main() {

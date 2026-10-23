@@ -276,6 +276,19 @@ void main() {
     expect(c, contains('take((uint8_t[3]){ 7, 8, 9 })'));
   });
 
+  test('address of a slice element follows place mutability', () async {
+    final result = await compileAndRun('test/slice_addr.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/slice_addr.out').readAsString());
+
+    final program = loadProject('test/slice_addr.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/slice_addr.kl');
+    expect(c, contains('klin_slice_i32'));
+    expect(c, contains('.ptr[1]'));
+    expect(c, contains('.ptr[2]'));
+  });
+
   test('enum variant on the base maximum compiles and runs', () async {
     final result = await compileAndRun('test/enum_auto.kl', tmp, cc: 'gcc');
     expect(result.exitCode, 0, reason: result.stderr);

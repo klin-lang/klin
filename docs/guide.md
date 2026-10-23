@@ -206,6 +206,9 @@ fn main() {
 - `*T` / `*mut T` — address `&x`, write `*p = …`, fields `(*p).x`.
   A place reached through `*mut` is mutable: `&(*p).x` is `*mut`, and
   a mutating method may be called on it. Through `*T` it stays immutable.
+  `&s[i]` on a slice is `*mut` when that slice place is mutable
+  (`let mut s`, or `&xs[:][i]` when `xs` is `let mut`) and `*T` when
+  it is not (an immutable binding, a slice parameter, an immutable array).
 - `[N]T` — fixed array. `N` is an integer constant expression: a
   literal, an integer module `const`, or arithmetic on those
   (`[N * 2]T`, `[1 + 2]T`). The C bound is the folded value.

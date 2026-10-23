@@ -1873,4 +1873,24 @@ fn main() {
     expect(c, contains('.xs = { 3, 4 }'));
     expect(c, contains('{ { 1, 2 } }'));
   });
+
+  test('checker: & of a slice element follows place mutability', () {
+    const source = '''
+fn set(p: *mut i32) { *p = 1 }
+fn read(p: *i32): i32 { return *p }
+fn at(p: *mut []i32): *mut i32 { return &(*p)[0] }
+fn main() {
+  let mut xs: [2]i32 = [1, 2]
+  set(&xs[:][0])
+  let mut s = xs[:]
+  set(&s[1])
+  let view = xs[:]
+  read(&view[0])
+  let p: *mut []i32 = &s
+  at(p)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+  });
 }

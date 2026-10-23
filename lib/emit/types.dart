@@ -187,9 +187,15 @@ void _collectResultTypesFromStmt(Stmt stmt, Set<ResultType> output) {
       _collectResultTypesFromExpr(source, output);
     case LetArrayDestructureStmt(:final source):
       _collectResultTypesFromExpr(source, output);
-    case AssignStmt(:final value):
+    case AssignStmt(:final target, :final value):
+      // `xs[:][i] = …` builds a slice only on the target. Walk it so the
+      // `klin_slice_*` typedef is emitted.
+      _collectResultTypesFromExpr(target, output);
       _collectResultTypesFromExpr(value, output);
-    case MultiAssignStmt(:final values):
+    case MultiAssignStmt(:final targets, :final values):
+      for (final t in targets) {
+        _collectResultTypesFromExpr(t, output);
+      }
       for (final v in values) {
         _collectResultTypesFromExpr(v, output);
       }
