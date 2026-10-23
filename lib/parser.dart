@@ -32,6 +32,17 @@ final class ParseErrors implements Exception {
   String toString() => errors.map((e) => e.toString()).join('\n');
 }
 
+/// One expression. Re-parses an array-length constant expression stored as
+/// text inside a type name (`1 + 2`, `N * 2`, `os.PAGE`).
+Expr parseExpression(String source) {
+  final parser = Parser(Lexer(source).tokenize());
+  final expr = parser._expr();
+  if (parser._current.kind != TokenKind.eof) {
+    throw ParseError('invalid constant expression', parser._current.pos);
+  }
+  return expr;
+}
+
 /// Grammar 004:
 ///   program := func+ eof
 ///   func    := "fn" ident "(" params? ")" (":" ident)? block
@@ -1788,18 +1799,34 @@ final class Parser {
     return '${first.lexeme}.${second.lexeme}';
   }
 
-  /// Integer literal, or a module constant name (`N` / `mod.NAME`).
+  /// Integer constant expression used as `[N]T`: a literal, `N`, `mod.NAME`,
+  /// or `+ - * / % << >> & | ^ ~` (and unary `-`) on those.
+  ///
+  /// The checker folds the text. Token lexemes are joined with spaces, but
+  /// not around `.`, so `os.PAGE` stays `os.PAGE`.
   String _arrayLengthText() {
-    if (_check(TokenKind.intLit)) return _advance().lexeme;
-    if (_check(TokenKind.ident)) {
-      final name = _advance().lexeme;
-      if (!_check(TokenKind.dot)) return name;
-      _advance();
-      final member =
-          _expect(TokenKind.ident, 'expected constant name after `.`');
-      return '$name.${member.lexeme}';
+    final start = _i;
+    if (_check(TokenKind.rBracket) || _check(TokenKind.eof)) {
+      throw ParseError('expected array length in `[...]`', _current.pos);
     }
-    throw ParseError('expected array length in `[...]`', _current.pos);
+    _expr();
+    if (_i == start) {
+      throw ParseError('expected array length in `[...]`', _current.pos);
+    }
+    return _joinLengthTokens(_tokens.sublist(start, _i));
+  }
+
+  /// Spaces between tokens, but not around `.`, so `os.PAGE` stays one name.
+  static String _joinLengthTokens(List<Token> tokens) {
+    final buf = StringBuffer();
+    for (var i = 0; i < tokens.length; i++) {
+      final lex = tokens[i].lexeme;
+      if (i > 0 && lex != '.' && tokens[i - 1].lexeme != '.') {
+        buf.write(' ');
+      }
+      buf.write(lex);
+    }
+    return buf.toString();
   }
 
   bool _check(TokenKind kind) => _current.kind == kind;

@@ -236,7 +236,21 @@ void _line(StringBuffer buf, int line, String path) {
 }
 
 /// Brace-initialized so a `[]u8` constant is a real object, not a cast.
-String _emitConstInitializer(Expr init) {
+///
+/// A folded integer expression is the decimal value. A lone literal, or
+/// unary `-` / `~` on a literal, keeps its source spelling (`0x4`, `'A'`,
+/// `~0`, `-128`) when that spelling is a valid C constant. `i64` minimum
+/// and an unsigned value above `2^63-1` use a form gcc accepts. The value
+/// is never a C `enum` or `constexpr`.
+String _emitConstInitializer(ConstDecl decl) {
+  final init = decl.init;
+  if (!_constKeepsSourceSpelling(decl)) {
+    final value = decl.intValue;
+    final type = decl.resolvedType;
+    if (value != null && type is PrimType && type.kind.isInteger) {
+      return _cConstInt(value, type.kind);
+    }
+  }
   return switch (init) {
     IntLit(:final lexeme) => _cIntLiteral(lexeme),
     UnaryExpr(:final op, :final operand)
@@ -250,6 +264,49 @@ String _emitConstInitializer(Expr init) {
       }(),
     _ => throw StateError('emit: constant initializer is not a literal'),
   };
+}
+
+/// `true` when the initializer's source spelling is a legal C constant.
+///
+/// `18446744073709551615` does not fit in a signed C integer. `-9223372036854775808`
+/// is not a single C literal either. `~0` and `-128` stay as written.
+bool _constKeepsSourceSpelling(ConstDecl decl) {
+  final init = decl.init;
+  final value = decl.intValue;
+  final type = decl.resolvedType;
+  if (init is UnaryExpr &&
+      init.op == '~' &&
+      init.operand is IntLit) {
+    return true;
+  }
+  if (init is UnaryExpr && init.op == '-' && init.operand is IntLit) {
+    if (value != null &&
+        type is PrimType &&
+        (type.kind == PrimKind.i64 || type.kind == PrimKind.isize) &&
+        value == _i64Min) {
+      return false;
+    }
+    return true;
+  }
+  if (init is IntLit) {
+    if (value != null && value > _i64Max) return false;
+    return true;
+  }
+  return init is BoolLit || init is ByteStringLit;
+}
+
+final BigInt _i64Max = BigInt.parse('9223372036854775807');
+final BigInt _i64Min = -BigInt.parse('9223372036854775808');
+
+/// Decimal C constant for a folded integer. Values that do not fit in a
+/// signed 64-bit literal get a suffix or a split form gcc accepts.
+String _cConstInt(BigInt value, PrimKind kind) {
+  if ((kind == PrimKind.i64 || kind == PrimKind.isize) && value == _i64Min) {
+    return '(-9223372036854775807LL - 1)';
+  }
+  if (value.isNegative) return value.toString();
+  if (value > _i64Max) return '${value}ULL';
+  return value.toString();
 }
 
 /// `b"..."` → `[]u8` over a static C string. `.len` is the byte count and

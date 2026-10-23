@@ -229,4 +229,36 @@ void main() {
     expect(c, contains('int64_t a = -(1);'));
     expect(c, contains('int_literal_op_take(-(1))'));
   });
+
+  test('folded integer constants compile and run', () async {
+    final result =
+        await compileAndRun('test/const_fold_mod/app.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+        result.stdout, await File('test/const_fold_mod/app.out').readAsString());
+
+    final program = loadProject('test/const_fold_mod/app.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/const_fold_mod/app.kl');
+    expect(c, contains('static const int32_t fold_TWICE = 6;'));
+    expect(c, contains('static const uint8_t fold_MASK = ~0x0F;'));
+    expect(c, contains('static const int32_t fold_SH = 16;'));
+    expect(
+      c,
+      contains('static const uint64_t fold_WIDE = 18446744073709551615ULL;'),
+    );
+    expect(
+      c,
+      contains(
+          'static const int64_t fold_IMIN = (-9223372036854775807LL - 1);'),
+    );
+    expect(c, contains('const int32_t os_PAGE = 4096;'));
+    expect(c, contains('int32_t data[6];'));
+    expect(c, contains('uint8_t raw[3]'));
+    expect(c, contains('uint8_t kb[4]'));
+    expect(c, contains('~(x)'));
+    expect(c, isNot(contains('constexpr')));
+    expect(c, isNot(contains('[fold_TWICE]')));
+    expect(c, isNot(contains('[os_PAGE]')));
+  });
 }

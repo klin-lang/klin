@@ -22,11 +22,11 @@ These compile. They are not “missing.”
 
 | Surface | Notes |
 |---|---|
-| Integers / `float` / `bool` / `str` | `int` → `i32`, `float` → `f64`. An integer literal coerced to a declared integer type must fit that type (`const X: u8 = 300` is an error; hex, `'A'`, and a negative value too). `cast` still truncates. Unary `-` / `~` on a literal take that type (`let x: i64 = -1`, `const M: u32 = ~0`); the range check is on the result |
+| Integers / `float` / `bool` / `str` | `int` → `i32`, `float` → `f64`. An integer literal coerced to a declared integer type must fit that type (`const X: u8 = 300` is an error; hex, `'A'`, and a negative value too). `cast` still truncates. Unary `-` / `~` on a literal take that type (`let x: i64 = -1`, `const M: u32 = ~0`); the range check is on the result. A `const` also folds `+ - * / % << >> & | ^` and other integer constants, with the same range check |
 | `b"..."` | `[]u8` — bytes of the text and `.len` (an embedded `\0` counts); same escapes as `"..."`; no interpolation ([syntax.md](syntax.md)) |
-| `[N]T`, `[]T`, `*T` / `*mut T` | slices are `{ptr, len}`; no hidden cap grow. `N` is an integer literal or an integer module `const`. `&` of a place reached through `*mut` is `*mut` |
+| `[N]T`, `[]T`, `*T` / `*mut T` | slices are `{ptr, len}`; no hidden cap grow. `N` is an integer constant expression (a literal, an integer `const`, `[N * 2]T`, `[1 + 2]T`). `&` of a place reached through `*mut` is `*mut` |
 | `struct`, `enum`, `fn`, methods, `Type.fn` | a mutating method accepts any mutable place, including one reached through `*mut` ([syntax.md](syntax.md)) |
-| `const Name: Type = literal` | module-level immutable; integer, `bool`, or `b"..."`; an integer const is a valid `[N]T` length; no mutable globals ([syntax.md](syntax.md)) |
+| `const Name: Type = …` | module-level immutable; integer, `bool`, or `b"..."`; an integer initializer is a constant expression (other `const`s, `+ - * / % << >> & | ^`, unary `-` / `~`) and a valid `[N]T` length; no mutable globals ([syntax.md](syntax.md)) |
 | `let` / `let mut` / `:=` | immutability by default |
 | `if` / `while` / `for` / `return` / `break` / `continue` | [guide.md](guide.md) |
 | `match` / `pick` | no fallthrough; `pick` → C `?:` |

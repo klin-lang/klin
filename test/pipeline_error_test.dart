@@ -1646,9 +1646,10 @@ fn main() {}
     );
   });
 
-  test('error: const initializer must be a literal', () {
+  test('error: const initializer must be a constant expression', () {
     const source = '''
-const N: i32 = 1 + 2
+fn one(): i32 { return 1 }
+const N: i32 = one()
 fn main() {}
 ''';
     final program = Parser(Lexer(source).tokenize()).parse();
@@ -1657,7 +1658,8 @@ fn main() {}
       throwsA(predicate(
         (e) =>
             e is CheckError &&
-            e.toString().contains('integer literal'),
+            e.toString().contains(
+                'integer constant must be an integer constant expression'),
       )),
     );
   });
@@ -1947,18 +1949,19 @@ fn main() {
     );
   });
 
-  test('error: array length expression is not a const name', () {
+  test('error: array length expression is not a constant', () {
     const source = '''
 fn main() {
-  let buf: [1 + 2]u8
+  let buf: [1 + missing]u8
 }
 ''';
+    final program = Parser(Lexer(source).tokenize()).parse();
     expect(
-      () => Parser(Lexer(source).tokenize()).parse(),
+      () => Checker().check(program),
       throwsA(predicate(
         (e) =>
-            e is ParseError &&
-            e.toString().contains('expected `]` after array length'),
+            e is CheckError &&
+            e.toString().contains('unknown constant `missing`'),
       )),
     );
   });
@@ -2142,11 +2145,137 @@ fn main() {
 ''', 'operator `~` requires an integer type, got `f64`');
   });
 
-  test('error: const does not fold a sum of literals', () {
+  test('error: folded const is out of range', () {
     expectRange('''
-const X: i64 = -1 + 0
+const X: u8 = 200 + 100
 fn main() {}
-''', 'integer constant must be an integer literal');
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: const division by zero', () {
+    expectRange('''
+const X: i32 = 1 / 0
+fn main() {}
+''', 'division by zero');
+  });
+
+  test('error: const remainder by zero', () {
+    expectRange('''
+const X: i32 = 1 % (2 - 2)
+fn main() {}
+''', 'remainder by zero');
+  });
+
+  test('error: const shift by a negative count', () {
+    expectRange('''
+const X: i32 = 1 << -1
+fn main() {}
+''', 'shift by a negative count');
+  });
+
+  test('error: const shift wider than the type', () {
+    expectRange('''
+const X: i32 = 1 << 32
+fn main() {}
+''', 'shift by `32` is wider than `i32` (width 32)');
+  });
+
+  test('error: negative shift count on u8 fails the range check', () {
+    expectRange('''
+const X: u8 = 1 << -1
+fn main() {}
+''', 'integer literal `-1` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: i8 subtraction does not wrap the operand', () {
+    expectRange('''
+const X: i8 = 0 - 128
+fn main() {}
+''', 'integer literal `128` is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: const names a different integer type', () {
+    expectRange('''
+const A: i32 = 1
+const B: u8 = A
+fn main() {}
+''', 'type mismatch: expected `u8`, got `i32`');
+  });
+
+  test('error: const cycle', () {
+    expectRange('''
+const A: i32 = B
+const B: i32 = A
+fn main() {}
+''', 'constant `A` depends on itself');
+  });
+
+  test('error: unknown const in an initializer', () {
+    expectRange('''
+const X: i32 = NOPE
+fn main() {}
+''', 'unknown constant `NOPE`');
+  });
+
+  test('error: const names a module that is not imported', () {
+    expectRange('''
+const X: i32 = os.PAGE
+fn main() {}
+''', 'module `os` is not imported');
+  });
+
+  test('error: u64 literal above the type does not fit', () {
+    expectRange('''
+const X: u64 = 18446744073709551616
+fn main() {}
+''', 'integer literal `18446744073709551616` is out of range for `u64`');
+  });
+
+  test('error: let of a sum is still i32', () {
+    expectRange('''
+fn main() {
+  let x: u8 = 1 + 2
+}
+''', 'type mismatch: expected `u8`, got `i32`');
+  });
+
+  test('error: negative array length expression', () {
+    expectRange('''
+fn main() {
+  let buf: [0 - 1]i32
+}
+''', 'array length `0 - 1` must be non-negative');
+  });
+
+  test('error: array length above 2^63-1', () {
+    expectRange('''
+const N: u64 = ~0 + 0
+fn main() {
+  let buf: [N]u8
+}
+''', 'array length `N` is too large');
+  });
+
+  test('error: array length mixes integer const types', () {
+    expectRange('''
+const A: i32 = 1
+const B: i64 = 2
+fn main() {
+  let buf: [A + B]u8
+}
+''', 'type mismatch: `i32` and `i64`');
+  });
+
+  test('error: private imported const in a constant expression', () {
+    final program = loadProject('test/const_fold_mod/bad_private.kl');
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('constant `os.HIDDEN` is private'),
+      )),
+    );
   });
 
   test('error: shift of a negative literal stays i32', () {

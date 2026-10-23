@@ -187,22 +187,30 @@ fn main() {
 ```
 
 - Type is required: an integer, `bool`, or `[]u8`
-- Initializer is a literal (`-100`, `'A'`, `0x10`, `true`, `b"..."`).
-  Not `1 + 2` and not another constant
+- `bool` is `true` / `false`. `[]u8` is `b"..."`. An integer initializer
+  is a constant expression: literals, unary `-` / `~`, `+ - * / % << >>
+  & | ^`, and other integer constants (`N`, `mod.NAME`, including one
+  declared later). A cycle is an error. A named constant of a different
+  integer type is a type mismatch
 - `pub` is visible as `mod.NAME` after `import`. Private is
   `static const` in the generated C
 - `NAME = …` is an error. `KW[0] = 1` is an error. A local of the same
   name shadows the constant in a value, not in a type
-- An integer constant is a valid `[N]T` length (`[N]u8`, `[os.PAGE]u8`)
-  in a local, a struct field, or a parameter. The C bound is that
-  integer value (a decimal constant expression). A `bool`, a `[]u8`,
-  or a negative constant is an error
-- The literal must fit the declared integer type (`const X: u8 = 300`
-  and `const X: u8 = -1` are errors). Same rule for a `let` of that
-  type. `cast` still truncates ([D12](01-decisions.md))
+- That expression is a valid `[N]T` length (`[N]u8`, `[os.PAGE]u8`,
+  `[N * 2]u8`, `[1 + 2]u8`) in a local, a struct field, or a parameter.
+  The C bound is the folded integer (a decimal). A `bool`, a `[]u8`, a
+  negative value, or a value above `2^63-1` is an error
+- The value must fit the declared integer type (`const X: u8 = 300`,
+  `const X: u8 = 200 + 100`, and `const X: u8 = -1` are errors). The
+  diagnostic is the same as a literal ([D12](01-decisions.md)). `cast`
+  still truncates. Division or remainder by zero is an error. A shift
+  by a negative count, or by a count at least as wide as the type, is
+  an error
 - `-literal` and `~literal` take the constant's type (`const M: u32 = ~0`,
-  `const MIN: i8 = -128`). The range check is on the result. Not `~x`,
-  not `1 + 2`, not a shift
+  `const MIN: i8 = -128`). A folded expression is emitted as a decimal;
+  a lone literal and `~` / `-` on a literal keep their spelling when
+  that spelling is valid C. `~x` on a variable is still a runtime
+  expression, and `let x: u8 = 1 + 2` is still a type mismatch (`i32`)
 
 ```klin
 module app
