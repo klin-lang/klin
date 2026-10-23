@@ -26,8 +26,9 @@ These compile. They are not “missing.”
 | `b"..."` | `[]u8` — bytes of the text and `.len` (an embedded `\0` counts); same escapes as `"..."`; no interpolation ([syntax.md](syntax.md)) |
 | `[N]T`, `[]T`, `*T` / `*mut T` | slices are `{ptr, len}`; no hidden cap grow. `N` is an integer constant expression (a literal, an integer `const`, `[N * 2]T`, `[1 + 2]T`). An array literal takes the element type from the expected array (`let a: [2]u8 = [1, 2]`, also a struct field and a parameter) and range-checks each element; an element constant expression folds in that type (`let a: [1]u8 = [1 + 2]`). Without a type it is `[N]i32`. An empty literal `[]` is `[0]T` when the expected array has length 0 (`let a: [0]u8 = []`, an argument, a field); without that array type it is an error. A function may return `[N]T`: C gets a struct with one array field, no allocation (D13). A literal in `return` takes the element type from the declaration. A zero-length array cannot be returned. `&` of a place reached through `*mut` is `*mut`. `&s[i]` is `*mut T` when the slice place is mutable (`let mut`, or `&xs[:][i]` on a `let mut` array) and `*T` through an immutable place. Assigning `s[i]` through an immutable slice (a binding or a parameter) is an error; `let mut s` can write |
 | `struct`, `enum`, `fn`, methods, `Type.fn` | a mutating method accepts any mutable place, including one reached through `*mut` ([syntax.md](syntax.md)) |
-| `const Name: Type = …` | module-level immutable; integer, `bool`, or `b"..."`; an integer initializer is a constant expression (other `const`s, `+ - * / % << >> & | ^`, unary `-` / `~`) and a valid `[N]T` length; no mutable globals ([syntax.md](syntax.md)) |
-| `let` / `let mut` / `:=` | immutability by default |
+| `const Name: Type = …` | module-level compile-time value; integer, `bool`, or `b"..."`; an integer initializer is a constant expression (other `const`s, `+ - * / % << >> & | ^`, unary `-` / `~`) and a valid `[N]T` length ([syntax.md](syntax.md)) |
+| `let` / `let mut` at module scope | storage with an address. `let` is not assignable (`&` is `*T`); `let mut` is (`&` is `*mut T`). `pub let mut` may be assigned from another module. Initializer is a constant expression, or omitted (zero). Not an `[N]T` length. No implicit synchronization ([syntax.md](syntax.md), D11) |
+| `let` / `let mut` / `:=` | immutability by default; `:=` is local only |
 | `if` / `while` / `for` / `return` / `break` / `continue` | [guide.md](guide.md) |
 | `match` / `pick` | no fallthrough; `pick` → C `?:` |
 | `defer` | jump to cleanup |
@@ -64,7 +65,6 @@ These look like holes. They are decisions.
 | `[T]`, `Vec[T]`, `fn id[T]`, `Result[T,E]` | Generics **are** `$fn`. `!T` exists. [034](../issues/034-generic-types.md) is optional sugar later, not a gap. |
 | `map[K]V` / hash map | ❌ struck — grow on insert is a hidden resize ([060](../issues/060-map-kv.md)). Use `table[Enum.x]` or owned bsearch. |
 | Closures that capture | Not now (D7). Hidden alloc of the environment. Use `fn` pointer + explicit context. |
-| Mutable globals / module-level `let` | `const` is immutable (D11). A local stays `let`. |
 | JSON / SQLite | ❌ not doing ([125](../issues/125-drop-host-json-sqlite.md)) |
 | Exceptions, GC, borrow checker, autofree | Rejected (D1 / D2 / idea) |
 | `c("…")`, parse C headers | FFI declarations only ([09-ffi-c.md](09-ffi-c.md)) |

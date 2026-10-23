@@ -246,10 +246,15 @@ Use imported names with a qualifier: `geom.Vec2{ x: 3, y: 4 }`,
 - `import path alias` — same module, shorter qualifier
 - `pub` — visible after import; without `pub` the symbol is private
   (`static` in the generated C)
-- `const NAME: Type = …` — module-level immutable integer, `bool`, or
+- `const NAME: Type = …` — module-level compile-time integer, `bool`, or
   `b"..."`. An integer initializer may name other constants and use
   `+ - * / % << >> & | ^` and unary `-` / `~`. That value is a valid
-  `[N]T` length ([syntax.md](syntax.md)). No mutable globals
+  `[N]T` length ([syntax.md](syntax.md))
+- `let` / `let mut NAME: Type = …` — module-level storage. `let` is not
+  assignable; `let mut` is. `pub let mut` may be written as `mod.name`
+  from an import. The initializer is a constant expression, or omitted
+  (zero). Not an `[N]T` length. No implicit synchronization
+  ([syntax.md](syntax.md))
 - The whole program is still **one** `.c`
 
 Search paths (`lib/`, `-I`, `KLIN_PATH`, remote `klin get`):
