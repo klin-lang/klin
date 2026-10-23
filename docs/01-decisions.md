@@ -571,6 +571,32 @@ fn main() {
 }
 ```
 
+## D17. Pointer and integer cast — DECIDED
+
+**Choice: `cast` between a pointer and an integer goes through `uintptr_t` or `intptr_t`.**
+
+`stdint.h` is already included. The cast is the only conversion; there is
+no pointer arithmetic (`p + 1` is not a pointer add).
+
+- Pointer → unsigned (`usize`, `u8`…`u64`): `(target)(uintptr_t)ptr`.
+- Pointer → signed (`isize`, `i8`…`i64`): `(target)(intptr_t)ptr`.
+  A narrower target truncates, like any other numeric cast.
+- Unsigned, untyped integer, or pointer → pointer: `(T *)(uintptr_t)…`
+  (unchanged).
+- Signed integer → pointer: `(T *)(intptr_t)…`.
+- Not a float, not `bool`, not a function pointer. `cast(f64, &x)` is
+  `cast from a pointer requires an integer type`.
+
+```klin
+fn main() {
+    let mut x: i32 = 42
+    let a = cast(usize, &x)
+    let p: *mut i32 = cast(*mut i32, a)
+    *p = 7
+    printf("%d\n", x)
+}
+```
+
 ## D7. To decide later
 
 - Closures — at all? Nelua does not have them outside top-level. A struct

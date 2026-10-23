@@ -77,7 +77,11 @@ let e: i32 = cast(i32, cast(f64, 3.9))  // toward zero → 3
   literal may target float only (`cast(i32, 1.5)` is an error — cast
   to a float first).
 - Not allowed: `bool`, struct/array/slice/`str`, float ↔ enum.
-- Pointer casts stay separate (`cast(*mut u32, addr)` via `uintptr_t`).
+- Pointer casts stay separate. Integer or pointer → pointer is
+  `(T *)(uintptr_t)…`, except a signed integer, which uses `intptr_t`.
+  Pointer → integer is `(target)(uintptr_t)ptr` for an unsigned target
+  and `(target)(intptr_t)ptr` for a signed one. Not float, not `bool`,
+  not a function pointer ([D17](01-decisions.md)).
 
 Runnable: [`examples/numeric_cast.kl`](../examples/numeric_cast.kl).
 

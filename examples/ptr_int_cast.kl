@@ -1,0 +1,7 @@
+fn main() {
+    let mut x: i32 = 42
+    let a = cast(usize, &x)
+    let p: *mut i32 = cast(*mut i32, a)
+    *p = 7
+    printf("%d\n", x)
+}

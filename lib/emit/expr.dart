@@ -223,12 +223,7 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
     CastExpr(:final resolvedType, :final expr) => () {
         final target = resolvedType;
         if (target == null) throw StateError('emit: cast without type');
-        // Pointer casts round-trip through uintptr_t; enum/integer and
-        // numeric casts are a plain C cast (issues 072, 154).
-        if (target is PtrType) {
-          return '(${_cType(target)})(uintptr_t)(${_emitExpr(expr, ctx)})';
-        }
-        return '(${_cType(target)})(${_emitExpr(expr, ctx)})';
+        return _emitCast(target, expr, (inner) => _emitExpr(inner, ctx));
       }(),
     BinaryExpr(:final left, :final op, :final right) =>
       '(${_emitExpr(left, ctx)} $op ${_emitExpr(right, ctx)})',
@@ -403,6 +398,30 @@ bool _decimalAboveI64Max(String spelling) {
   }
   final value = BigInt.tryParse(spelling);
   return value != null && value > _i64Max;
+}
+
+/// Pointer ↔ integer goes through `uintptr_t` / `intptr_t` (D17).
+/// Pointer → pointer and unsigned / untyped integer → pointer stay
+/// `uintptr_t` (existing goldens). A signed integer uses `intptr_t`.
+/// Pointer → unsigned uses `uintptr_t`; pointer → signed uses `intptr_t`.
+String _emitCast(KlinType target, Expr expr, String Function(Expr) emitInner) {
+  final inner = emitInner(expr);
+  if (target is PtrType) {
+    final src = expr.resolvedType;
+    final via = src is PrimType &&
+            src.kind.isInteger &&
+            !_primIsUnsigned(src.kind)
+        ? 'intptr_t'
+        : 'uintptr_t';
+    return '(${_cType(target)})($via)($inner)';
+  }
+  if (target is PrimType &&
+      target.kind.isInteger &&
+      expr.resolvedType is PtrType) {
+    final via = _primIsUnsigned(target.kind) ? 'uintptr_t' : 'intptr_t';
+    return '(${_cType(target)})($via)($inner)';
+  }
+  return '(${_cType(target)})($inner)';
 }
 
 bool _primIsUnsigned(PrimKind kind) => switch (kind) {

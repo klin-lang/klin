@@ -359,10 +359,7 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
     CastExpr(:final resolvedType, :final expr) => () {
         final target = resolvedType;
         if (target == null) throw StateError('emit async: cast without type');
-        if (target is PtrType) {
-          return '(${_cType(target)})(uintptr_t)(${_emitAsyncExpr(expr, ctx)})';
-        }
-        return '(${_cType(target)})(${_emitAsyncExpr(expr, ctx)})';
+        return _emitCast(target, expr, (inner) => _emitAsyncExpr(inner, ctx));
       }(),
     _ => throw StateError(
         'emit async MVP: unsupported expr `${expr.runtimeType}`',

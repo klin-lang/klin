@@ -2692,6 +2692,24 @@ fn main() {
 ''', 'field `n` has type `i32`, not a function');
   });
 
+  test('error: cast pointer to float', () {
+    expectRange('''
+fn main() {
+  let x = 1
+  let n = cast(f64, &x)
+}
+''', 'cast from a pointer requires an integer type');
+  });
+
+  test('error: cast pointer to bool', () {
+    expectRange('''
+fn main() {
+  let x = 1
+  let n = cast(bool, &x)
+}
+''', 'cast from a pointer requires an integer type');
+  });
+
   test('error: slice range on a non-array', () {
     expectRange('''
 fn main() {

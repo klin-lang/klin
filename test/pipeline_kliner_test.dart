@@ -546,4 +546,29 @@ void main() {
     ]);
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
+
+  test('pointer to integer cast round-trips', () async {
+    final result = await compileAndRun('test/ptr_int_cast.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/ptr_int_cast.out').readAsString());
+
+    final program = loadProject('test/ptr_int_cast.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/ptr_int_cast.kl');
+    expect(c, contains('(size_t)(uintptr_t)'));
+    expect(c, contains('(int64_t)(intptr_t)'));
+    expect(c, contains('(int32_t *)(intptr_t)'));
+    expect(c, contains('(int32_t *)(uintptr_t)'));
+    final cPath = '${tmp.path}/ptr_int_cast_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/ptr_int_cast_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
 }

@@ -3402,6 +3402,17 @@ final class Checker {
               source is EnumType) {
             return target;
           }
+          // Pointer → integer (D17). Not float, not bool. The reverse
+          // (integer → pointer) is the pointer-target branch above.
+          if (source is PtrType && target is PrimType && target.kind.isInteger) {
+            return target;
+          }
+          if (source is PtrType) {
+            throw CheckError(
+              'cast from a pointer requires an integer type',
+              pos,
+            );
+          }
           // Explicit numeric prim ↔ prim (issue 154). No implicit widen.
           if (target is PrimType &&
               (target.kind.isInteger || target.kind.isFloat)) {

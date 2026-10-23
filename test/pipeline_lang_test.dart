@@ -2248,4 +2248,28 @@ fn main() {
     expect(c, contains('Box_n(b)'));
     expect(c, isNot(contains('Holder_cb')));
   });
+
+  test('pointer and integer casts use uintptr_t and intptr_t', () {
+    const source = '''
+fn main() {
+  let x: i32 = 1
+  let a = cast(usize, &x)
+  let b = cast(i64, &x)
+  let n: i64 = 0
+  let u: u64 = 0
+  let p = cast(*i32, n)
+  let q = cast(*i32, u)
+  let r = cast(*i32, 0)
+  printf("%d\\n", cast(i32, a) + cast(i32, b) + *p + *q + *r)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'ptr_int_unit.kl');
+    expect(c, contains('(size_t)(uintptr_t)(&(x))'));
+    expect(c, contains('(int64_t)(intptr_t)(&(x))'));
+    expect(c, contains('(int32_t *)(intptr_t)(n)'));
+    expect(c, contains('(int32_t *)(uintptr_t)(u)'));
+    expect(c, contains('(int32_t *)(uintptr_t)(0)'));
+  });
 }

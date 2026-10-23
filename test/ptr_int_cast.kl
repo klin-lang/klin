@@ -1,0 +1,14 @@
+fn main() {
+    let mut x: i32 = 42
+    let a = cast(usize, &x)
+    let p: *mut i32 = cast(*mut i32, a)
+    *p = 7
+    let b = cast(i64, &x)
+    let q: *i32 = cast(*i32, b)
+    let z = cast(i32, cast(usize, cast(*i32, 0)))
+    let n: i64 = 0
+    let from_i64 = cast(i64, cast(*i32, n))
+    let u: u64 = 0
+    let from_u64 = cast(u64, cast(*i32, u))
+    printf("%d %d %d %d %d\n", x, *q, z, cast(i32, from_i64), cast(i32, from_u64))
+}
