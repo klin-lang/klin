@@ -2693,6 +2693,60 @@ fn main() {
 ''', 'shift by a negative count');
   });
 
+  test('error: pick and match cannot produce a zero-length array', () {
+    const cases = <String>[
+      '''
+fn main() {
+  let a: [0]u8 = pick true { [] } { [] }
+}
+''',
+      '''
+fn main() {
+  let a: [0]u8 = match 0 {
+    0 { [] }
+    else { [] }
+  }
+}
+''',
+      '''
+fn main() {
+  let a: [0]u8 = []
+  let b = pick true { a } { a }
+}
+''',
+      '''
+fn main() {
+  let a: [1][0]u8 = pick true { [[]] } { [[]] }
+}
+''',
+      '''
+struct Box { xs: [0]u8 }
+fn main() {
+  let b = Box{ xs: pick true { [] } { [] } }
+}
+''',
+      '''
+fn take(xs: [0]u8) {}
+fn main() {
+  take(pick true { [] } { [] })
+}
+''',
+    ];
+    for (final source in cases) {
+      final program = Parser(Lexer(source).tokenize()).parse();
+      expect(
+        () => Checker().check(program),
+        throwsA(predicate(
+          (e) =>
+              e is CheckError &&
+              e.toString().contains('cannot produce a zero-length array') &&
+              e.toString().contains('not ISO C'),
+        )),
+        reason: source,
+      );
+    }
+  });
+
   test('error: empty array literal needs a type', () {
     expectRange('''
 fn main() {

@@ -224,7 +224,8 @@ fn main() {
   struct with one field `v` (no allocation).
   `return [1, 2]` in `fn pair(): [2]u8` takes `u8` from the declaration.
   A local from a literal stays a C array; a local from the call is the
-  struct (`a[0]` in Klin). A zero-length array cannot be returned
+  struct (`a[0]` in Klin). A zero-length array cannot be returned, and
+  `pick` / `match` cannot produce one
   ([01-decisions.md](01-decisions.md) D13)
 - `[]T` — slice `{ ptr, len }` (and `cap` where allocated)
 - No hidden allocation. Heap is `import mem` and an explicit

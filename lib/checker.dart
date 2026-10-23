@@ -4023,6 +4023,18 @@ final class Checker {
     );
   }
 
+  /// `pick` / `match` of `[0]T` would emit a zero-size array inside the
+  /// return wrapper (`v[0]`), which is not ISO C. A literal `let a: [0]u8 = []`
+  /// stays the documented GCC extension.
+  void _rejectZeroLengthChoice(String kind, KlinType type, SourcePos pos) {
+    if (type is! ArrayType || !_arrayHasZeroLength(type)) return;
+    throw CheckError(
+      '`$kind` cannot produce a zero-length array `${type.displayName}` '
+      '(a zero-size array is not ISO C)',
+      pos,
+    );
+  }
+
   /// `[0]T` and `[N][0]T` are not ISO C as a return wrapper (`v[0]`).
   bool _arrayHasZeroLength(ArrayType type) {
     var current = type;
@@ -4125,6 +4137,7 @@ final class Checker {
           _materialize(element, type.elem, checkRange: checkRange);
         }
       case MatchExpr(:final arms):
+        _rejectZeroLengthChoice('match', type, expr.pos);
         if (type is ArrayType && !_containsUntyped(type)) {
           for (final arm in arms) {
             _requireStableArraySource(arm.body);
@@ -4145,6 +4158,7 @@ final class Checker {
           }
         }
       case PickExpr(:final thenExpr, :final elseExpr):
+        _rejectZeroLengthChoice('pick', type, expr.pos);
         if (type is ArrayType && !_containsUntyped(type)) {
           _requireStableArraySource(thenExpr);
           _requireStableArraySource(elseExpr);
@@ -4172,6 +4186,7 @@ final class Checker {
       return unified;
     }
     final concrete = unified;
+    _rejectZeroLengthChoice('pick', concrete, pos);
     _materialize(thenExpr, concrete);
     _materialize(elseExpr, concrete);
     return concrete;
@@ -4493,6 +4508,7 @@ final class Checker {
         return ResultType(ok);
       }
       final concreteOk = _defaultConcrete(ok, pos);
+      _rejectZeroLengthChoice('match', concreteOk, pos);
       final result = ResultType(concreteOk);
       for (var i = 0; i < arms.length; i++) {
         final t = bodyTypes[i];
@@ -4517,6 +4533,7 @@ final class Checker {
       return resultType;
     }
     final concrete = _defaultConcrete(resultType, pos);
+    _rejectZeroLengthChoice('match', concrete, pos);
     for (final arm in arms) {
       _materialize(arm.body, concrete);
     }
@@ -4626,11 +4643,12 @@ final class Checker {
         _ => false,
       };
 
-  /// An integer or float literal (or an array of them) that should adopt
-  /// the expected type instead of becoming `i32` / `f64` early.
-  /// `[]` is not open here: it still needs an explicit `[0]T`.
+  /// An integer or float literal, an empty array, or an array of those,
+  /// that should adopt the expected type instead of becoming `i32` / `f64`
+  /// early. `[]` stays open so `match` / `pick` can see an outer `[0]T`
+  /// and reject it; a bare `[]` still fails in [_defaultConcrete].
   bool _typeIsOpen(KlinType type) => switch (type) {
-        UntypedInt() || UntypedFloat() => true,
+        UntypedInt() || UntypedFloat() || UntypedEmptyArray() => true,
         ArrayType(:final elem) => _typeIsOpen(elem),
         ResultType(:final ok) => _typeIsOpen(ok),
         _ => false,

@@ -473,10 +473,11 @@ declaration (`fn pair(): [2]u8 { return [1, 2] }`). `return [300]` is
 the `u8` range error. `return [1 + 2]` folds (D12).
 
 A zero-length array is not returned: `uint8_t v[0]` is not ISO C
-(`fn f(): [0]u8` and `fn(): [0]u8` are errors). A `pick` or `match`
-whose result is `[0]T` is still stored in that wrapper
-(`let a: [0]u8 = pick true { [] } { [] }`). It is the same GCC
-extension as `let a: [0]u8 = []` (D12), not a function return.
+(`fn f(): [0]u8` and `fn(): [0]u8` are errors). `pick` and `match`
+cannot produce one either (`let a: [0]u8 = pick true { [] } { [] }`,
+the same for `match`, and a nested `[1][0]u8`). The wrapper would be
+`uint8_t v[0]`, which is not ISO C. A literal local stays the GCC
+extension (`let a: [0]u8 = []`, D12).
 `![N]T` stays invalid.
 `async fn` still returns void. A struct field cannot be a function
 type that returns an array of structs — the wrapper needs that struct
