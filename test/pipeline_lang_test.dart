@@ -2123,4 +2123,40 @@ fn main() {
     expect(c, isNot(contains('memcpy')));
     expect(c, isNot(contains('malloc')));
   });
+
+  test('checker: struct field copies a returned array once', () {
+    const source = '''
+struct Row { xs: [2]u8 }
+struct Grid { xs: [1][2]u8 }
+fn pair(): [2]u8 { return [1, 2] }
+fn other(): [2]u8 { return [5, 6] }
+fn nested(): [1][2]u8 { return [[3, 4]] }
+fn main() {
+  let a = pair()
+  let from_name = Row{ xs: a }
+  let from_call = Row{ xs: pair() }
+  let from_pick = Row{ xs: pick true { pair() } { other() } }
+  let grid = Grid{ xs: nested() }
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'array_field_once.kl');
+    expect(c, contains('.xs = { a.v[0], a.v[1] }'));
+    expect(c, contains('klin_arr2_u8 klin_val_0 = pair();'));
+    expect(c, contains('.xs = { klin_val_0.v[0], klin_val_0.v[1] }'));
+    expect(
+      c,
+      contains(
+        'klin_arr2_u8 klin_val_1 = (true ? pair() : other());',
+      ),
+    );
+    expect(c, contains('klin_arr1_arr2_u8 klin_val_2 = nested();'));
+    expect(
+      c,
+      contains('.xs = { { klin_val_2.v[0][0], klin_val_2.v[0][1] } }'),
+    );
+    expect(c, isNot(contains('(pair()).v[0]')));
+    expect(c, isNot(contains('memcpy')));
+  });
 }

@@ -1,0 +1,13 @@
+struct Row {
+    xs: [2]u8
+}
+
+fn pair(): [2]u8 {
+    printf("c\n")
+    return [1, 2]
+}
+
+fn main() {
+    let row = Row{ xs: pair() }
+    printf("%d\n", cast(i32, row.xs[0]))
+}

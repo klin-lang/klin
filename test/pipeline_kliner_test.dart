@@ -396,6 +396,32 @@ void main() {
     expect(pedantic.stderr.toString(), contains('zero-size array'));
   });
 
+  test('struct field copies a returned array once', () async {
+    final result =
+        await compileAndRun('test/array_field_once.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+      result.stdout,
+      await File('test/array_field_once.out').readAsString(),
+    );
+
+    final program = loadProject('test/array_field_once.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/array_field_once.kl');
+    expect(c, isNot(contains('(pair()).v[0]')));
+    final cPath = '${tmp.path}/array_field_once_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/array_field_once_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
   test('enum variant on the base maximum compiles and runs', () async {
     final result = await compileAndRun('test/enum_auto.kl', tmp, cc: 'gcc');
     expect(result.exitCode, 0, reason: result.stderr);

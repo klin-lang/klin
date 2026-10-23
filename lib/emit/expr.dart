@@ -328,7 +328,9 @@ String _emitArrayLit(ArrayLitExpr expr, _ExprCtx ctx, {bool asInitializer = fals
 }
 
 /// Struct field: an array literal initializes the member, so it is a brace
-/// list. Any other value is an ordinary expression.
+/// list. A C array place is copied element by element. A call, `pick`, or
+/// `match` is stored once, then copied — repeating `(pair()).v[i]` would
+/// run the call once per element.
 String _emitArrayInit(Expr expr, _ExprCtx ctx) {
   final node = _peelEmitGroups(expr);
   if (node is ArrayLitExpr) {
@@ -336,6 +338,14 @@ String _emitArrayInit(Expr expr, _ExprCtx ctx) {
   }
   final type = expr.resolvedType;
   if (type is ArrayType) {
+    if (_exprIsArrayValue(expr) && node is! NameExpr) {
+      final tmp = ctx.state.nextValueTemp();
+      final pad = '    ' * ctx.indent;
+      ctx.buf.writeln(
+        '$pad${_cValueType(type)} $tmp = ${_emitArrayValue(expr, ctx)};',
+      );
+      return _emitArrayElements('$tmp.v', type);
+    }
     return _emitArrayElements(_emitArrayObject(expr, ctx), type);
   }
   return _emitExpr(expr, ctx);

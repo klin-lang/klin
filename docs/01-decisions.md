@@ -438,14 +438,21 @@ decays to a pointer). `let b = a` copies the struct when `a` came from
 a call. Returning a C array variable copies each element into `.v` in
 the return statement (`{ a[0], a[1] }`). An index expression is not
 returned directly (`return a[i]` asks to bind the row first) so the
-index is not evaluated twice.
+index is not evaluated twice. A struct field copied from a call,
+`pick`, or `match` evaluates that value once into a temporary, then
+copies `tmp.v[i]` — the call is not repeated per element. A field
+copied from a variable stays `a.v[0], a.v[1]`.
 
 An array literal in `return` takes the element type from the
 declaration (`fn pair(): [2]u8 { return [1, 2] }`). `return [300]` is
 the `u8` range error. `return [1 + 2]` folds (D12).
 
 A zero-length array is not returned: `uint8_t v[0]` is not ISO C
-(`fn f(): [0]u8` and `fn(): [0]u8` are errors). `![N]T` stays invalid.
+(`fn f(): [0]u8` and `fn(): [0]u8` are errors). A `pick` or `match`
+whose result is `[0]T` is still stored in that wrapper
+(`let a: [0]u8 = pick true { [] } { [] }`). It is the same GCC
+extension as `let a: [0]u8 = []` (D12), not a function return.
+`![N]T` stays invalid.
 `async fn` still returns void. A struct field cannot be a function
 type that returns an array of structs — the wrapper needs that struct
 to be complete. A parameter or a local of that function type is fine.
