@@ -208,6 +208,8 @@ final class Checker {
     _checkAttrs(program);
     _registerStructs(program);
     _registerEnums(program);
+    // Field types after enums so `struct T { k: Tok }` resolves `Tok`.
+    _resolveStructFields(program);
     _registerFunctions(program);
     final main = program.funcs
         .where((func) =>
@@ -570,6 +572,9 @@ final class Checker {
       }
       _structs[key] = struct;
     }
+  }
+
+  void _resolveStructFields(Program program) {
     for (final struct in program.structs) {
       _currentModule = struct.moduleName;
       final names = <String>{};

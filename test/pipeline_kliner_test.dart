@@ -36,4 +36,15 @@ void main() {
     expect(c, contains('struct self_ref_struct_Item * item;'));
     expect(c, contains('typedef struct self_ref_struct_Item {'));
   });
+
+  test('enum can be a struct field', () async {
+    final result = await compileAndRun('test/enum_field.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/enum_field.out').readAsString());
+
+    final program = loadProject('test/enum_field.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/enum_field.kl');
+    expect(c, contains('enum_field_Tok k;'));
+  });
 }
