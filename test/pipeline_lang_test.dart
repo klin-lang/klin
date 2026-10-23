@@ -2094,4 +2094,33 @@ fn main() {
     final program = Parser(Lexer(source).tokenize()).parse();
     expect(() => Checker().check(program), returnsNormally);
   });
+
+  test('checker: empty array literal takes [0]T from context', () {
+    const source = '''
+struct Pair { n: u8 }
+struct Box { xs: [0]u8 }
+fn take(xs: [0]u8): i32 { return xs.len }
+fn main() {
+  let a: [0]u8 = []
+  let nested: [1][0]u8 = [[]]
+  let row: [2][0]u8 = [[], []]
+  let none: [0]Pair = []
+  let b = Box{ xs: [] }
+  let c = Box{ [] }
+  let n = take([])
+  let inner = nested[0].len
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'empty_array.kl');
+    expect(c, contains('uint8_t a[0] = { };'));
+    expect(c, contains('uint8_t nested[1][0] = { { } };'));
+    expect(c, contains('uint8_t row[2][0] = { { }, { } };'));
+    expect(c, contains('Pair none[0] = { };'));
+    expect(c, contains('.xs = { }'));
+    expect(c, contains('take((uint8_t[0]){ })'));
+    expect(c, isNot(contains('memcpy')));
+    expect(c, isNot(contains('malloc')));
+  });
 }

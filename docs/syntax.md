@@ -240,3 +240,4 @@ Runnable: [`examples/module_const.kl`](../examples/module_const.kl).
 | `:=` | [14-short-decl.md](14-short-decl.md) |
 | Bitwise / `&&` `\|\|` | [01-decisions.md](01-decisions.md) D8 / D9 |
 | Returning `[N]T` | [01-decisions.md](01-decisions.md) D13 |
+| Empty array literal `[]` | [01-decisions.md](01-decisions.md) D12 |

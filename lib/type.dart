@@ -315,6 +315,21 @@ final class UntypedFloat extends KlinType {
   int get hashCode => 2;
 }
 
+/// `[]` before an expected `[0]T` is known.
+/// Never survives a finished check / `_defaultConcrete`.
+final class UntypedEmptyArray extends KlinType {
+  const UntypedEmptyArray();
+
+  @override
+  String get displayName => '[0]';
+
+  @override
+  bool operator ==(Object other) => other is UntypedEmptyArray;
+
+  @override
+  int get hashCode => 18;
+}
+
 /// `error(n)` before its `!T` ok-type is known (match-arm unify, issue 132).
 /// Never survives a finished check / `_defaultConcrete`.
 final class BareErrorType extends KlinType {

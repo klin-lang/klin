@@ -370,6 +370,32 @@ void main() {
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
 
+  test('empty array literal takes [0]T and runs', () async {
+    final result = await compileAndRun('test/empty_array.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/empty_array.out').readAsString());
+
+    final program = loadProject('test/empty_array.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/empty_array.kl');
+    expect(c, contains('uint8_t a[0] = { };'));
+    expect(c, contains('take((uint8_t[0]){ })'));
+    expect(c, contains('.xs = { }'));
+
+    // A zero-size array is a GCC extension. Pedantic ISO C must reject it.
+    final cPath = '${tmp.path}/empty_array_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/empty_array_pedantic',
+    ]);
+    expect(pedantic.exitCode, isNot(0));
+    expect(pedantic.stderr.toString(), contains('zero-size array'));
+  });
+
   test('enum variant on the base maximum compiles and runs', () async {
     final result = await compileAndRun('test/enum_auto.kl', tmp, cc: 'gcc');
     expect(result.exitCode, 0, reason: result.stderr);

@@ -364,6 +364,17 @@ value is checked too: `enum E: u8 { A = 255, B }` is an error because
 type, and the inclusive range. The counter after the last variant is
 not an error.
 
+An empty array literal `[]` is a zero-length array from the same
+context as any other array literal: `let a: [0]u8 = []`, an argument
+of `[0]T`, and a struct field. `let a: [1][0]u8 = [[]]` types the
+inner `[]` as `[0]u8`. With no array type (`let a = []`, or
+`let x: u8 = []`) the error asks for one, for example `[0]u8`. A
+non-zero length says the literal has length 0 (`let a: [2]u8 = []`).
+The C is a zero-size array (`uint8_t a[0] = { }`), the same GCC
+extension as a written `[0]u8` local; `gcc -std=c11 -pedantic-errors`
+rejects it (`ISO C forbids zero-size array`). A function still cannot
+return `[0]T` (D13).
+
 `cast(u8, 300)` is still a C truncation. The check is the coercion,
 not the cast.
 

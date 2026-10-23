@@ -2549,4 +2549,43 @@ fn main() {
 }
 ''', 'shift by a negative count');
   });
+
+  test('error: empty array literal needs a type', () {
+    expectRange('''
+fn main() {
+  let a = []
+}
+''', 'empty array literal needs a type, for example `[0]u8`');
+  });
+
+  test('error: empty array literal has length 0', () {
+    expectRange('''
+fn main() {
+  let a: [2]u8 = []
+}
+''', 'empty array literal has length 0, expected `[2]u8`');
+  });
+
+  test('error: empty array literal is not a scalar', () {
+    expectRange('''
+fn main() {
+  let x: u8 = []
+}
+''', 'empty array literal needs an array type, for example `[0]u8`');
+  });
+
+  test('error: return of empty array into a non-zero array', () {
+    expectRange('''
+fn f(): [2]u8 { return [] }
+fn main() {}
+''', 'empty array literal has length 0, expected `[2]u8`');
+  });
+
+  test('error: nested empty array length mismatch names [0]', () {
+    expectRange('''
+fn main() {
+  let a: [2][0]u8 = [[]]
+}
+''', 'type mismatch: expected `[2][0]u8`, got `[1][0]`');
+  });
 }

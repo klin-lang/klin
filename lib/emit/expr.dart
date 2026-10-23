@@ -317,12 +317,14 @@ String _emitArrayLit(ArrayLitExpr expr, _ExprCtx ctx, {bool asInitializer = fals
     }
     return _emitExpr(element, ctx);
   }).join(', ');
+  // An empty list is `{ }`, not `{  }` from interpolating nothing.
+  final braces = inner.isEmpty ? '{ }' : '{ $inner }';
   if (!asInitializer &&
       expr.resolvedType is ArrayType &&
       _arrayElemIsConcrete(expr.resolvedType! as ArrayType)) {
-    return '(${_cArraySuffixType(expr.resolvedType! as ArrayType)}){ $inner }';
+    return '(${_cArraySuffixType(expr.resolvedType! as ArrayType)})$braces';
   }
-  return '{ $inner }';
+  return braces;
 }
 
 /// Struct field: an array literal initializes the member, so it is a brace

@@ -3215,8 +3215,11 @@ final class Checker {
           return SliceType(arrayType.elem as PrimType);
         }(),
       ArrayLitExpr(:final elements, :final pos) => () {
+          // `[]` stays untyped until an expected `[0]T` adopts it
+          // (`let a: [0]u8 = []`). No context is an error in
+          // [_defaultConcrete], not a guess of `[0]i32`.
           if (elements.isEmpty) {
-            throw CheckError('cannot infer the type of an empty array', pos);
+            return const UntypedEmptyArray();
           }
           var elemType = _inferExpr(elements.first);
           for (final element in elements.skip(1)) {
@@ -3988,6 +3991,9 @@ final class Checker {
         break;
       case ArrayLitExpr(:final elements):
         if (type is! ArrayType) break;
+        // `[]` has no elements. The expected `[0]T` is already on this
+        // node. A non-zero target was rejected before materialize.
+        if (elements.isEmpty) break;
         for (final element in elements) {
           _expectAssignable(type.elem, _inferExpr(element), element.pos);
           _materialize(element, type.elem, checkRange: checkRange);
@@ -4382,6 +4388,18 @@ final class Checker {
   }
 
   void _expectAssignable(KlinType target, KlinType source, SourcePos pos) {
+    if (source is UntypedEmptyArray && !_isAssignable(target, source)) {
+      if (target is ArrayType) {
+        throw CheckError(
+          'empty array literal has length 0, expected `${target.displayName}`',
+          pos,
+        );
+      }
+      throw CheckError(
+        'empty array literal needs an array type, for example `[0]u8`',
+        pos,
+      );
+    }
     if (!_isAssignable(target, source)) {
       throw CheckError(
         'type mismatch: expected `${_typeForMismatch(target)}`, '
@@ -4396,6 +4414,7 @@ final class Checker {
   String _typeForMismatch(KlinType type) => switch (type) {
         UntypedInt() => 'i32',
         UntypedFloat() => 'f64',
+        UntypedEmptyArray() => '[0]',
         ArrayType(:final elem, :final len) =>
           '[$len]${_typeForMismatch(elem)}',
         _ => type.displayName,
@@ -4413,6 +4432,12 @@ final class Checker {
       return true;
     }
     if (source is UntypedInt && target is PrimType && target.kind.isFloat) {
+      return true;
+    }
+    // `[]` is `[0]T` for any element, including `[0][0]u8`.
+    if (source is UntypedEmptyArray &&
+        target is ArrayType &&
+        target.len == 0) {
       return true;
     }
     if (target is SliceType &&
@@ -4440,7 +4465,7 @@ final class Checker {
   }
 
   bool _containsUntyped(KlinType type) => switch (type) {
-        UntypedInt() || UntypedFloat() => true,
+        UntypedInt() || UntypedFloat() || UntypedEmptyArray() => true,
         ArrayType(:final elem) => _containsUntyped(elem),
         _ => false,
       };
@@ -4449,6 +4474,10 @@ final class Checker {
     return switch (type) {
       UntypedInt() => const PrimType(PrimKind.i32),
       UntypedFloat() => const PrimType(PrimKind.f64),
+      UntypedEmptyArray() => throw CheckError(
+          'empty array literal needs a type, for example `[0]u8`',
+          pos,
+        ),
       PrimType() => type,
       StructType() => type,
       EnumType() => type,

@@ -216,8 +216,11 @@ fn main() {
   (`[N * 2]T`, `[1 + 2]T`). The C bound is the folded value.
   A literal `[1, 2]` takes the element type from that array
   (`let a: [2]u8 = [1, 2]`); each element must fit. Without a type,
-  it is `[2]i32`. A function may return `[N]T`. C cannot return an
-  array, so the return is a struct with one field `v` (no allocation).
+  it is `[2]i32`. An empty literal `[]` is `[0]T` from the declaration
+  (`let a: [0]u8 = []`, an argument, a field). Without an array type
+  it is an error. A zero-length array is a C extension. A function
+  may return `[N]T`. C cannot return an array, so the return is a
+  struct with one field `v` (no allocation).
   `return [1, 2]` in `fn pair(): [2]u8` takes `u8` from the declaration.
   A local from a literal stays a C array; a local from the call is the
   struct (`a[0]` in Klin). A zero-length array cannot be returned
