@@ -2283,12 +2283,12 @@ fn main() {
 ''', 'type mismatch: expected `[3]u8`, got `[2]i32`');
   });
 
-  test('error: array literal does not fold an element operator', () {
+  test('error: array element sum is out of range', () {
     expectRange('''
 fn main() {
-  let a: [1]u8 = [1 + 2]
+  let a: [1]u8 = [200 + 100]
 }
-''', 'type mismatch: expected `[1]u8`, got `[1]i32`');
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
   });
 
   test('error: array literal argument element does not fit', () {
@@ -2316,6 +2316,32 @@ fn main() {
 ''', 'type mismatch: expected `*mut i32`, got `*i32`');
   });
 
+  test('error: cannot assign through an immutable slice', () {
+    expectRange('''
+fn main() {
+  let mut xs: [2]u8 = [1, 2]
+  let s = xs[:]
+  s[0] = 9
+}
+''', 'cannot assign through an immutable slice');
+  });
+
+  test('error: cannot assign through a slice parameter', () {
+    expectRange('''
+fn f(s: []u8) { s[0] += 1 }
+fn main() {}
+''', 'cannot assign through an immutable slice');
+  });
+
+  test('error: slice index of an immutable array cannot be assigned', () {
+    expectRange('''
+fn main() {
+  let xs: [2]u8 = [1, 2]
+  xs[:][0] = 9
+}
+''', 'cannot assign to an immutable array');
+  });
+
   test('error: immutable slice binding does not yield *mut', () {
     expectRange('''
 fn main() {
@@ -2340,12 +2366,68 @@ fn main() {}
 ''', 'type mismatch: expected `*mut i32`, got `*i32`');
   });
 
-  test('error: let of a sum is still i32', () {
+  test('error: let of a sum is out of range', () {
     expectRange('''
 fn main() {
-  let x: u8 = 1 + 2
+  let x: u8 = 200 + 100
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: let subtraction does not wrap the operand', () {
+    expectRange('''
+fn main() {
+  let x: i8 = 0 - 128
+}
+''', 'integer literal `128` is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: let division by zero', () {
+    expectRange('''
+fn main() {
+  let x: i32 = 1 / 0
+}
+''', 'division by zero');
+  });
+
+  test('error: let names a constant of a different integer type', () {
+    expectRange('''
+const A: i32 = 1
+fn main() {
+  let x: u8 = A + 1
 }
 ''', 'type mismatch: expected `u8`, got `i32`');
+  });
+
+  test('error: let shift wider than the type', () {
+    expectRange('''
+fn main() {
+  let x: i32 = 1 << 40
+}
+''', 'shift by `40` is wider than `i32` (width 32)');
+  });
+
+  test('error: argument sum is out of range', () {
+    expectRange('''
+fn take(n: u8) {}
+fn main() { take(200 + 100) }
+''', 'integer literal `300` is out of range for `u8`');
+  });
+
+  test('error: return sum is out of range', () {
+    expectRange('''
+fn f(): u8 { return 200 + 100 }
+fn main() {}
+''', 'integer literal `300` is out of range for `u8`');
+  });
+
+  test('error: field sum is out of range', () {
+    expectRange('''
+struct S { n: u8 }
+fn main() {
+  let s = S{ n: 200 + 100 }
+}
+''', 'integer literal `300` is out of range for `u8`');
   });
 
   test('error: negative array length expression', () {
@@ -2387,11 +2469,123 @@ fn main() {
     );
   });
 
-  test('error: shift of a negative literal stays i32', () {
+  test('error: function cannot return a zero-length array', () {
+    expectRange('''
+fn z(): [0]u8 { return [1] }
+fn main() {}
+''', 'function cannot return a zero-length array `[0]u8`');
+  });
+
+  test('error: nested zero-length array cannot be returned', () {
+    expectRange('''
+fn z(): [1][0]u8 { return [[]] }
+fn main() {}
+''', 'function cannot return a zero-length array `[1][0]u8`');
+  });
+
+  test('error: function type cannot return a zero-length array', () {
     expectRange('''
 fn main() {
-  let x: i64 = (-1) << 2
+  let f: fn(): [0]u8
 }
-''', 'type mismatch: expected `i64`, got `i32`');
+''', 'function cannot return a zero-length array `[0]u8`');
+  });
+
+  test('error: result type cannot wrap an array', () {
+    expectRange('''
+fn f(): ![2]u8 { return error(1) }
+fn main() {}
+''', 'invalid result type `![2]u8`');
+  });
+
+  test('error: return array element must be bound first', () {
+    expectRange('''
+fn row(a: [2][2]u8, i: i32): [2]u8 { return a[i] }
+fn main() {}
+''', 'cannot use this array expression here (bind it to a variable first)');
+  });
+
+  test('error: copying a C array into a let still needs a literal', () {
+    expectRange('''
+fn main() {
+  let a: [2]u8 = [1, 2]
+  let b = a
+}
+''', 'array initialization requires a `[...]` literal');
+  });
+
+  test('error: array literal in a returned array is range-checked', () {
+    expectRange('''
+fn f(): [1]u8 { return [200 + 100] }
+fn main() {}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: struct field cannot be a function returning an array of structs', () {
+    expectRange('''
+struct Pair { n: u8 }
+struct Bad { f: fn(): [1]Pair }
+fn main() {}
+''', 'a struct field cannot be a function that returns an array of structs');
+  });
+
+  test('error: async fn cannot return an array', () {
+    const source = '''
+async fn f(): [2]u8 {}
+fn main() {}
+''';
+    expect(
+      () => Parser(Lexer(source).tokenize()).parse(),
+      throwsA(predicate((e) =>
+          e is ParseError &&
+          e.toString().contains('async fn MVP returns void'))),
+    );
+  });
+
+  test('error: let shift by a negative count', () {
+    expectRange('''
+fn main() {
+  let x: i32 = 1 << -1
+}
+''', 'shift by a negative count');
+  });
+
+  test('error: empty array literal needs a type', () {
+    expectRange('''
+fn main() {
+  let a = []
+}
+''', 'empty array literal needs a type, for example `[0]u8`');
+  });
+
+  test('error: empty array literal has length 0', () {
+    expectRange('''
+fn main() {
+  let a: [2]u8 = []
+}
+''', 'empty array literal has length 0, expected `[2]u8`');
+  });
+
+  test('error: empty array literal is not a scalar', () {
+    expectRange('''
+fn main() {
+  let x: u8 = []
+}
+''', 'empty array literal needs an array type, for example `[0]u8`');
+  });
+
+  test('error: return of empty array into a non-zero array', () {
+    expectRange('''
+fn f(): [2]u8 { return [] }
+fn main() {}
+''', 'empty array literal has length 0, expected `[2]u8`');
+  });
+
+  test('error: nested empty array length mismatch names [0]', () {
+    expectRange('''
+fn main() {
+  let a: [2][0]u8 = [[]]
+}
+''', 'type mismatch: expected `[2][0]u8`, got `[1][0]`');
   });
 }

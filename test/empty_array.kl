@@ -1,0 +1,15 @@
+struct Box {
+    xs: [0]u8
+}
+
+fn take(xs: [0]u8): i32 {
+    return xs.len
+}
+
+fn main() {
+    let a: [0]u8 = []
+    let nested: [1][0]u8 = [[]]
+    let b = Box{ xs: [] }
+    printf("%d %d %d %d\n", a.len, nested.len, nested[0].len, take([]))
+    printf("%d\n", b.xs.len)
+}

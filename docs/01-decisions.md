@@ -1,6 +1,6 @@
 # Design decisions
 
-This is the decision log (D1–D11), not an introduction. Start with
+This is the decision log (D1–D13), not an introduction. Start with
 [00-idea.md](00-idea.md). To write Klin: [guide.md](guide.md).
 
 The first three must be made **before the first line of the parser** — they permeate
@@ -158,8 +158,14 @@ mutable and `*T` when it is not. `xs[:]` is a view of the array, so
 `&xs[:][i]` is `*mut` when `xs` is `let mut` or reached through `*mut`,
 and `*T` when `xs` is immutable. An immutable binding (`let s = xs[:]`)
 and a slice parameter stay `*T` even if the underlying array was
-mutable. `&xs[:]` is not a place. The call still passes a pointer;
-`mut` is not in the C.
+mutable. Assignment uses the same place: `s[i] = …`, `s[i] += …`, and
+`s[i].field = …` through an immutable slice are checker errors
+(`cannot assign through an immutable slice`). `let mut s = xs[:]` can
+write, and `xs[:][i] = …` follows the array (`let mut xs` can write;
+an immutable array cannot). A slice parameter is immutable; a function
+that must write copies the header first (`let mut w = dst`). That copy
+is the two words `{ptr, len}`, not the buffer. `&xs[:]` is not a place.
+The call still passes a pointer; `mut` is not in the C.
 
 ---
 
@@ -240,11 +246,13 @@ tables, messages, and paths want the bytes. A second literal keeps
   not `strlen`. The C literal spells that byte as `\000`, so a following
   digit is not swallowed. The extra NUL the C compiler appends is not
   part of `.len`.
-- The bytes are read-only (C string-literal storage). The checker only
-  rejects a direct write: `b"fn"[0] = 1` and `KW[0] = 1` on a `[]u8`
-  constant. A write through a copy (`let s = b"fn"` then `s[0] = 1`) or
-  through a `[]u8` parameter compiles and crashes at run time — `[]u8`
-  has no read-only flavor. Copy into a `[N]u8` to modify.
+- The bytes are read-only (C string-literal storage). The checker
+  rejects a direct write (`b"fn"[0] = 1`, `KW[0] = 1` on a `[]u8`
+  constant) and a write through an immutable slice (`let s = b"fn"`
+  then `s[0] = 1`, or a `[]u8` parameter). `[]u8` has no read-only
+  flavor on a mutable place: `let mut s = b"fn"` then `s[0] = 1`
+  still compiles and can crash at run time. Copy into a `[N]u8` to
+  modify.
 - `.len` is the UTF-8 byte count.
 
 ```klin
@@ -346,34 +354,108 @@ the array it is coerced to: `let a: [2]u8 = [1, 2]`, a struct field,
 and a parameter. Each element is range-checked, so
 `let a: [2]u8 = [1, 300]` is the `u8` error. With no expected array
 type, `let a = [1, 2]` is still `[2]i32`. A length mismatch names that
-default (`got [2]i32`). An operator in an element is still `i32`
-(`let a: [1]u8 = [1 + 2]` does not fold). A function still cannot
-return `[N]T`. The implicit next
+default (`got [2]i32`). An element that is an integer constant
+expression folds in the element type (`let a: [1]u8 = [1 + 2]` is
+`[1]u8`; `let a: [1]u8 = [200 + 100]` is the `u8` range error). A
+function may return `[N]T` (D13); the literal in that `return` uses the
+declared element type. The implicit next
 value is checked too: `enum E: u8 { A = 255, B }` is an error because
 `B` would be 256. The message names the variant, the value, the base
 type, and the inclusive range. The counter after the last variant is
 not an error.
+
+An empty array literal `[]` is a zero-length array from the same
+context as any other array literal: `let a: [0]u8 = []`, an argument
+of `[0]T`, and a struct field. `let a: [1][0]u8 = [[]]` types the
+inner `[]` as `[0]u8`. With no array type (`let a = []`, or
+`let x: u8 = []`) the error asks for one, for example `[0]u8`. A
+non-zero length says the literal has length 0 (`let a: [2]u8 = []`).
+The C is a zero-size array (`uint8_t a[0] = { }`), the same GCC
+extension as a written `[0]u8` local; `gcc -std=c11 -pedantic-errors`
+rejects it (`ISO C forbids zero-size array`). A function still cannot
+return `[0]T` (D13).
 
 `cast(u8, 300)` is still a C truncation. The check is the coercion,
 not the cast.
 
 Widths are the fixed integer widths. `int` is `i32`. `usize` / `isize`
 use a 64-bit range, matching LP64 `size_t` / `ptrdiff_t` in host
-emission. An operator on two untyped literals is still the `i32`
-default, not a fold into the outer type: `let x: u8 = 200 + 100` is a
-type mismatch (`i32` vs `u8`).
+emission.
 
-Unary `-` and `~` applied to an integer literal (parentheses allowed)
-stay untyped until a declared type is known: `let x: i64 = -1`,
-`take(-1)` when the parameter is `i64`, `const M: u32 = ~0`. With no
-declared type they are still `i32` (`let x = -1`). The range check
-applies to the result, so `-128` fits `i8` and `-129` does not, and
-`-1` does not fit `u8`. `~` is the complement in that type's width:
-the operand must fit, and `~0` as `u32` is `4294967295`. A `const`
-initializer and an `[N]T` length fold integer constant expressions
-(D11). Outside those two places an operator on untyped literals stays
-`i32`: `let x: u8 = 200 + 100` and `let x: i64 = (-1) << 2` are type
-mismatches, and `~x` on a variable is a runtime expression.
+An integer constant expression — literals, integer `const` names, unary
+`-` / `~`, and `+ - * / % << >> & | ^` — takes the expected integer
+type wherever a literal does: `let`, a parameter, a `return`, a struct
+field, an array element. `let x: u8 = 1 + 2` is `u8` (the value `3`).
+`let x: u8 = 200 + 100` is the same range error as `300` (`0..=255`).
+`let a: [1]u8 = [1 + 2]`, `take(1 + 2)`, `return 1 + 2`, and
+`Pair{ n: 1 + 2 }` fold the same way. `pick` arms that are still
+untyped adopt that type too. Rules match a `const` initializer (D11):
+subexpressions are not wrapped (`let x: i8 = 0 - 128` is an error
+because `128` does not fit `i8`), a named constant must already have
+that integer type, division or remainder by zero is an error, and a
+shift by a negative count or by a count at least as wide as the type
+is an error. With no expected type the expression is still `i32`
+(`let x = 1 + 2`). A float expected type adopts it the way a lone
+literal does (`let x: f64 = 1 + 2`); that is not an integer fold.
+
+Unary `-` and `~` on an integer literal, or on an integer constant
+expression, stay untyped until that type is known: `let x: i64 = -1`,
+`let x: i64 = (-1) << 2`, `take(-1)` when the parameter is `i64`,
+`const M: u32 = ~0`. The range check applies to the result, so `-128`
+fits `i8` and `-129` does not, and `-1` does not fit `u8`. `~` is the
+complement in that type's width: the operand must fit, and `~0` as
+`u32` is `4294967295`. An expression that names a variable stays
+runtime (`let x: u8 = y + 1`, `~x`). Emission of a folded operator is
+the decimal (the same portable forms as a folded `const`: `ULL` above
+`2^63-1`, and `(-9223372036854775807LL - 1)` for `i64` / `isize`
+minimum). A lone literal, unary `-` / `~` on a literal, and a lone
+constant name keep their spelling.
+
+## D13. Returning `[N]T` — DECIDED
+
+C cannot return an array by value. A function that returns `[N]T`
+returns a struct with one array field `v`:
+
+```c
+typedef struct { uint8_t v[2]; } klin_arr2_u8;
+
+klin_arr2_u8 pair(void) {
+    klin_arr2_u8 klin_ret_0 = (klin_arr2_u8){ .v = { 1, 2 } };
+    return klin_ret_0;
+}
+```
+
+No allocation and no loop. The copy is that struct return. A nested
+array is one struct (`[1][2]u8` is `uint8_t v[1][2]`), not a wrapper
+around a wrapper. The field name is `v`. This is not a C enum and not
+`constexpr`.
+
+A local initialized from a literal stays a C array
+(`uint8_t a[2] = { 1, 2 }`). A local initialized from a call stores the
+struct; Klin `a[0]` is `a.v[0]` in C. Passing that local, or the call,
+to a `[N]T` parameter passes `.v` (the parameter stays a C array and
+decays to a pointer). `let b = a` copies the struct when `a` came from
+a call. Returning a C array variable copies each element into `.v` in
+the return statement (`{ a[0], a[1] }`). An index expression is not
+returned directly (`return a[i]` asks to bind the row first) so the
+index is not evaluated twice. A struct field copied from a call,
+`pick`, or `match` evaluates that value once into a temporary, then
+copies `tmp.v[i]` — the call is not repeated per element. A field
+copied from a variable stays `a.v[0], a.v[1]`.
+
+An array literal in `return` takes the element type from the
+declaration (`fn pair(): [2]u8 { return [1, 2] }`). `return [300]` is
+the `u8` range error. `return [1 + 2]` folds (D12).
+
+A zero-length array is not returned: `uint8_t v[0]` is not ISO C
+(`fn f(): [0]u8` and `fn(): [0]u8` are errors). A `pick` or `match`
+whose result is `[0]T` is still stored in that wrapper
+(`let a: [0]u8 = pick true { [] } { [] }`). It is the same GCC
+extension as `let a: [0]u8 = []` (D12), not a function return.
+`![N]T` stays invalid.
+`async fn` still returns void. A struct field cannot be a function
+type that returns an array of structs — the wrapper needs that struct
+to be complete. A parameter or a local of that function type is fine.
 
 ## D7. To decide later
 

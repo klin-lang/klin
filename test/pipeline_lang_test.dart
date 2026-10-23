@@ -1905,6 +1905,176 @@ fn main() {
     expect(c, isNot(contains('9223372036854775808')));
   });
 
+  test('checker: integer constant expressions fold outside const', () {
+    const source = '''
+const N: u8 = 10
+struct Pair { n: u8 }
+fn take(n: u8): u8 { return n + 1 }
+fn three(): u8 { return 1 + 2 }
+fn main() {
+  let a: u8 = 1 + 2
+  let b: u8 = N + 5
+  let c: i32 = 200 + 100
+  let d: i64 = (-1) << 2
+  let e: u8 = ~0
+  let f: i8 = -128
+  let g: i64 = -9223372036854775807 - 1
+  let h: u64 = ~0 + 0
+  let xs: [1]u8 = [1 + 2]
+  let nested: [1][1]u8 = [[4 + 5]]
+  let row = Pair{ n: 20 + 3 }
+  let y: u8 = 4
+  let z: u8 = y + 1
+  let w: f64 = 1 + 2
+  let p: u8 = pick true { 1 + 2 } { 4 }
+  take(40 + 2)
+  three()
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'fold_let.kl');
+    expect(c, contains('uint8_t a = 3;'));
+    expect(c, contains('uint8_t b = 15;'));
+    expect(c, contains('int32_t c = 300;'));
+    expect(c, contains('int64_t d = -4;'));
+    expect(c, contains('uint8_t e = ~(0);'));
+    expect(c, contains('int8_t f = -(128);'));
+    expect(c, contains('int64_t g = (-9223372036854775807LL - 1);'));
+    expect(c, contains('uint64_t h = 18446744073709551615ULL;'));
+    expect(c, contains('uint8_t xs[1] = { 3 };'));
+    expect(c, contains('uint8_t nested[1][1] = { { 9 } };'));
+    expect(c, contains('.n = 23'));
+    expect(c, contains('uint8_t z = (y + 1);'));
+    expect(c, contains('double w = (1 + 2);'));
+    expect(c, contains('uint8_t p = (true ? 3 : 4);'));
+    expect(c, contains('take(42)'));
+    expect(c, contains('klin_ret_0 = 3;'));
+    expect(c, isNot(contains('enum ')));
+    expect(c, isNot(contains('constexpr')));
+  });
+
+  test('checker: function may return [N]T as a wrapper struct', () {
+    const source = '''
+struct Pair { n: u8 }
+struct Row { xs: [2]u8 }
+fn pair(): [2]u8 { return [1 + 2, 4] }
+fn nested(): [1][2]u8 { return [[3, 4]] }
+fn from_local(): [2]u8 {
+  let a: [2]u8 = [5, 6]
+  return a
+}
+fn from_field(r: Row): [2]u8 { return r.xs }
+fn take(xs: [2]u8): u8 { return xs[0] + xs[1] }
+fn one(): [1]Pair { return [Pair{ n: 7 }] }
+fn choose(n: i32): [2]u8 {
+  let r = match n {
+    1 { pair() }
+    else { pair() }
+  }
+  return r
+}
+fn main() {
+  let a = pair()
+  let mut edited = pair()
+  edited[0] = 9
+  let b: [2]u8 = [7, 8]
+  let copy = a
+  let [x, y] = a
+  let f: fn(): [2]u8 = pair
+  let g = f()
+  let row = Row{ xs: a }
+  let picked: [2]u8 = pick true { [1, 2] } { [3, 4] }
+  let s = a[:]
+  let n = g[1]
+  let s0 = s[0]
+  let p0 = picked[0]
+  let c1 = copy[1]
+  take(a)
+  take(pair())
+  take(b)
+  nested()
+  from_local()
+  from_field(row)
+  one()
+  choose(1)
+  take(edited)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'array_return.kl');
+    expect(c, contains('typedef struct { uint8_t v[2]; } klin_arr2_u8;'));
+    expect(c, contains('typedef struct { uint8_t v[1][2]; } klin_arr1_arr2_u8;'));
+    expect(c, contains('typedef struct { Pair v[1]; } klin_arr1_Pair;'));
+    expect(c, contains('klin_arr2_u8 klin_ret_0 = (klin_arr2_u8){ .v = { 3, 4 } };'));
+    expect(c, contains('klin_arr1_arr2_u8 klin_ret_0 = (klin_arr1_arr2_u8){ .v = { { 3, 4 } } };'));
+    expect(c, contains('uint8_t a[2] = { 5, 6 };'));
+    expect(c, contains('klin_arr2_u8 klin_ret_0 = (klin_arr2_u8){ .v = { a[0], a[1] } };'));
+    expect(c, contains('klin_arr2_u8 klin_ret_0 = (klin_arr2_u8){ .v = { r.xs[0], r.xs[1] } };'));
+    expect(c, contains('static uint8_t take(uint8_t xs[2])'));
+    expect(c, contains('klin_arr2_u8 a = pair();'));
+    expect(c, contains('uint8_t b[2] = { 7, 8 };'));
+    expect(c, contains('klin_arr2_u8 copy = a;'));
+    expect(c, contains('edited.v[0] = 9;'));
+    expect(c, contains('uint8_t x = a.v[0];'));
+    expect(c, contains('uint8_t y = a.v[1];'));
+    expect(c, contains('klin_arr2_u8 (*f)(void) = pair;'));
+    expect(c, contains('klin_arr2_u8 g = f();'));
+    expect(c, contains('.xs = { a.v[0], a.v[1] }'));
+    expect(
+      c,
+      contains(
+        'klin_arr2_u8 picked = (true ? (klin_arr2_u8){ .v = { 1, 2 } } : (klin_arr2_u8){ .v = { 3, 4 } });',
+      ),
+    );
+    expect(c, contains('(klin_slice_u8){ a.v, 2 }'));
+    expect(c, contains('take(a.v)'));
+    expect(c, contains('take((pair()).v)'));
+    expect(c, contains('take(b)'));
+    expect(c, contains('klin_arr2_u8 klin_ret_0 = r;'));
+    expect(c, isNot(contains('constexpr')));
+    expect(c, isNot(contains('enum ')));
+  });
+
+  test('checker: async let stores a returned array as the wrapper', () {
+    const source = '''
+fn pair(): [2]u8 { return [1, 2] }
+fn take(xs: [2]u8) {}
+async fn work() {
+  let a = pair()
+  take(a)
+}
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'async_arr.kl');
+    expect(c, contains('klin_arr2_u8 a;'));
+    expect(c, contains('st->a = pair();'));
+    expect(c, contains('take((st->a).v);'));
+  });
+
+  test('checker: mutable slice place can assign an element', () {
+    const source = '''
+fn main() {
+  let mut xs: [2]u8 = [1, 2]
+  let mut s = xs[:]
+  s[0] = 9
+  s[1] += 1
+  xs[:][0] = 3
+  let mut bytes = b"fn"
+  bytes[0] = 1
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'slice_mut.kl');
+    expect(c, contains('s.ptr[0] = 9;'));
+    expect(c, contains('s.ptr[1] += 1;'));
+    expect(c, contains('(klin_slice_u8){ xs, 2 }.ptr[0] = 3;'));
+  });
+
   test('checker: & of a slice element follows place mutability', () {
     const source = '''
 fn set(p: *mut i32) { *p = 1 }
@@ -1923,5 +2093,70 @@ fn main() {
 ''';
     final program = Parser(Lexer(source).tokenize()).parse();
     expect(() => Checker().check(program), returnsNormally);
+  });
+
+  test('checker: empty array literal takes [0]T from context', () {
+    const source = '''
+struct Pair { n: u8 }
+struct Box { xs: [0]u8 }
+fn take(xs: [0]u8): i32 { return xs.len }
+fn main() {
+  let a: [0]u8 = []
+  let nested: [1][0]u8 = [[]]
+  let row: [2][0]u8 = [[], []]
+  let none: [0]Pair = []
+  let b = Box{ xs: [] }
+  let c = Box{ [] }
+  let n = take([])
+  let inner = nested[0].len
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'empty_array.kl');
+    expect(c, contains('uint8_t a[0] = { };'));
+    expect(c, contains('uint8_t nested[1][0] = { { } };'));
+    expect(c, contains('uint8_t row[2][0] = { { }, { } };'));
+    expect(c, contains('Pair none[0] = { };'));
+    expect(c, contains('.xs = { }'));
+    expect(c, contains('take((uint8_t[0]){ })'));
+    expect(c, isNot(contains('memcpy')));
+    expect(c, isNot(contains('malloc')));
+  });
+
+  test('checker: struct field copies a returned array once', () {
+    const source = '''
+struct Row { xs: [2]u8 }
+struct Grid { xs: [1][2]u8 }
+fn pair(): [2]u8 { return [1, 2] }
+fn other(): [2]u8 { return [5, 6] }
+fn nested(): [1][2]u8 { return [[3, 4]] }
+fn main() {
+  let a = pair()
+  let from_name = Row{ xs: a }
+  let from_call = Row{ xs: pair() }
+  let from_pick = Row{ xs: pick true { pair() } { other() } }
+  let grid = Grid{ xs: nested() }
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'array_field_once.kl');
+    expect(c, contains('.xs = { a.v[0], a.v[1] }'));
+    expect(c, contains('klin_arr2_u8 klin_val_0 = pair();'));
+    expect(c, contains('.xs = { klin_val_0.v[0], klin_val_0.v[1] }'));
+    expect(
+      c,
+      contains(
+        'klin_arr2_u8 klin_val_1 = (true ? pair() : other());',
+      ),
+    );
+    expect(c, contains('klin_arr1_arr2_u8 klin_val_2 = nested();'));
+    expect(
+      c,
+      contains('.xs = { { klin_val_2.v[0][0], klin_val_2.v[0][1] } }'),
+    );
+    expect(c, isNot(contains('(pair()).v[0]')));
+    expect(c, isNot(contains('memcpy')));
   });
 }

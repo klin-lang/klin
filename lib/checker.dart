@@ -186,7 +186,6 @@ void _checkCoercedIntLiteral(Expr expr, KlinType type) {
   final node = _peelGroups(expr);
   if (node is UnaryExpr &&
       node.op == '~' &&
-      _groupedIntLit(node.operand) != null &&
       (type is! PrimType || !type.kind.isInteger)) {
     throw CheckError(
       'operator `~` requires an integer type, got `${type.displayName}`',
@@ -268,12 +267,16 @@ final class _Symbol {
   /// A mut method receiver becomes a pointer parameter (`T *`) in C.
   final bool isPtrReceiver;
 
+  /// A returned `[N]T` stored as the wrapper struct, not a C array.
+  final bool arrayByValue;
+
   const _Symbol({
     required this.name,
     required this.type,
     required this.isMut,
     required this.pos,
     this.isPtrReceiver = false,
+    this.arrayByValue = false,
   });
 }
 
@@ -729,9 +732,10 @@ final class Checker {
         null || 'void' => const VoidType(),
         final name => _resolveType(name, func.pos),
       };
-      if (returnType is ArrayType) {
+      if (returnType is ArrayType && _arrayHasZeroLength(returnType)) {
         throw CheckError(
-          'function cannot return an array (use slice `[]T`)',
+          'function cannot return a zero-length array '
+          '`${returnType.displayName}`',
           func.pos,
         );
       }
@@ -776,6 +780,14 @@ final class Checker {
           throw CheckError('duplicate field `${field.name}`', field.pos);
         }
         field.resolvedType = _resolveType(field.typeName, field.pos);
+        // A field `fn(): [N]Struct` names the return wrapper, and that
+        // wrapper needs the struct to be complete. C cannot order that.
+        if (typeNeedsStructArrayReturn(field.resolvedType!)) {
+          throw CheckError(
+            'a struct field cannot be a function that returns an array of structs',
+            field.pos,
+          );
+        }
       }
     }
   }
@@ -1362,9 +1374,15 @@ final class Checker {
       }
       ret = _resolveType(name.substring(i + 1), pos);
     }
-    if (ret is ArrayType || ret is ResultType) {
+    if (ret is ResultType) {
       throw CheckError(
         'function type cannot return `${ret.displayName}`',
+        pos,
+      );
+    }
+    if (ret is ArrayType && _arrayHasZeroLength(ret)) {
+      throw CheckError(
+        'function cannot return a zero-length array `${ret.displayName}`',
         pos,
       );
     }
@@ -1675,11 +1693,17 @@ final class Checker {
             resolved = _defaultConcrete(initType, init.pos);
             _materialize(init, resolved);
           }
-          if (resolved is ArrayType && init is! ArrayLitExpr) {
-            throw CheckError(
-              'array initialization requires a `[...]` literal',
-              init.pos,
-            );
+          if (resolved is ArrayType) {
+            if (_isArrayValueExpr(init)) {
+              // `let a = pair()` stores the return struct. A literal stays
+              // a C array (`uint8_t a[N]`).
+              stmt.arrayByValue = true;
+            } else if (_unwrapGroups(init) is! ArrayLitExpr) {
+              throw CheckError(
+                'array initialization requires a `[...]` literal',
+                init.pos,
+              );
+            }
           }
         } else if (annotated != null) {
           // No initializer: use the annotated type.
@@ -1703,7 +1727,13 @@ final class Checker {
           _asyncFlatNames.add(name);
         }
         _scope.define(
-          _Symbol(name: name, type: resolved, isMut: isMut, pos: pos),
+          _Symbol(
+            name: name,
+            type: resolved,
+            isMut: isMut,
+            pos: pos,
+            arrayByValue: stmt.arrayByValue,
+          ),
         );
 
       case LetDestructureStmt(
@@ -2179,6 +2209,12 @@ final class Checker {
     }
     _expectAssignable(_currentReturn, valueType, value.pos);
     _materialize(value, _currentReturn);
+    if (_currentReturn is ArrayType && !_isStableArraySource(value)) {
+      throw CheckError(
+        'cannot use this array expression here (bind it to a variable first)',
+        value.pos,
+      );
+    }
   }
 
   /// `fmt.write(buf[:], "… $x")` — interpolate into a caller `[]u8` buffer.
@@ -2868,6 +2904,7 @@ final class Checker {
             'cannot assign to immutable variable `${place.name}`', pos);
       }
       place.isPtrReceiver = symbol.isPtrReceiver;
+      place.arrayByValue = symbol.arrayByValue;
       return symbol.type;
     }
     if (place is FieldExpr) {
@@ -2896,13 +2933,14 @@ final class Checker {
       // Slice header is a value; element storage is shared with the caller (Go-like).
       if (objectType is SliceType) {
         // `b"..."` points at static read-only bytes. A slice view of an
-        // array is a different buffer and stays writable.
+        // array is a different buffer; writability follows the place.
         if (_unwrapGroups(place.object) is ByteStringLit) {
           throw CheckError('cannot assign through a byte-string literal', pos);
         }
         if (_placeIsConst(place.object)) {
           throw CheckError('cannot assign through a constant', pos);
         }
+        _requireMutableSlicePlace(place.object, pos);
         return _inferExpr(place);
       }
       final type = _inferExpr(place);
@@ -2929,13 +2967,42 @@ final class Checker {
         immutableExprMessage: 'cannot assign through an immutable expression',
       );
 
+  /// `s[i] = …` follows the slice place, the same chain as `&s[i]`.
+  /// An immutable binding or a slice parameter cannot write. `xs[:][i]`
+  /// follows the array. `(*p)[i]` follows the pointer.
+  void _requireMutableSlicePlace(Expr object, SourcePos pos) {
+    final base = _unwrapGroups(object);
+    if (base is SliceFromExpr) {
+      _requireMutableArrayPlace(base.array, pos);
+      return;
+    }
+    if (base is NameExpr) {
+      final symbol = _scope.lookup(base.name);
+      if (symbol == null) {
+        throw CheckError('unknown variable `${base.name}`', pos);
+      }
+      if (!symbol.isMut) {
+        throw CheckError('cannot assign through an immutable slice', pos);
+      }
+      base.isPtrReceiver = symbol.isPtrReceiver;
+      base.arrayByValue = symbol.arrayByValue;
+      return;
+    }
+    _requireMutablePlace(
+      object,
+      pos,
+      immutableVarMessage: 'cannot assign through an immutable slice',
+      immutableExprMessage: 'cannot assign through an immutable slice',
+    );
+  }
+
   /// Recursively verifies that [object] is a mutable place (an lvalue chain).
   ///
   /// Accepts nested places — struct fields, fixed-array elements reached through
   /// a `mut` receiver or variable, and writes through a `*mut` dereference —
   /// the same chain `&` uses ([_isMutablePlace]). A mutating method uses this
-  /// too. Slice element storage is shared with the caller (Go-like), so it
-  /// stays writable. The two message parameters preserve the caller's context
+  /// too. A slice element uses the slice place ([_requireMutableSlicePlace]).
+  /// The two message parameters preserve the caller's context
   /// (field vs array vs method) for the terminal error.
   void _requireMutablePlace(
     Expr object,
@@ -2953,6 +3020,7 @@ final class Checker {
         throw CheckError(immutableVarMessage, pos);
       }
       base.isPtrReceiver = symbol.isPtrReceiver;
+      base.arrayByValue = symbol.arrayByValue;
       return;
     }
     if (base is FieldExpr) {
@@ -2965,7 +3033,15 @@ final class Checker {
       return;
     }
     if (base is IndexExpr) {
-      if (_inferExpr(base.object) is SliceType) return;
+      final indexed = _unwrapGroups(base.object);
+      if (indexed is SliceFromExpr) {
+        _requireMutableArrayPlace(indexed.array, pos);
+        return;
+      }
+      if (_inferExpr(base.object) is SliceType) {
+        _requireMutableSlicePlace(base.object, pos);
+        return;
+      }
       _requireMutablePlace(
         base.object,
         pos,
@@ -3035,6 +3111,7 @@ final class Checker {
           final sym = _scope.lookup(nameExpr.name);
           if (sym != null) {
             nameExpr.isPtrReceiver = sym.isPtrReceiver;
+            nameExpr.arrayByValue = sym.arrayByValue;
             nameExpr.resolvedDef =
                 ResolvedDef(sym.pos, _currentSourcePath);
             return sym.type;
@@ -3138,8 +3215,11 @@ final class Checker {
           return SliceType(arrayType.elem as PrimType);
         }(),
       ArrayLitExpr(:final elements, :final pos) => () {
+          // `[]` stays untyped until an expected `[0]T` adopts it
+          // (`let a: [0]u8 = []`). No context is an error in
+          // [_defaultConcrete], not a guess of `[0]i32`.
           if (elements.isEmpty) {
-            throw CheckError('cannot infer the type of an empty array', pos);
+            return const UntypedEmptyArray();
           }
           var elemType = _inferExpr(elements.first);
           for (final element in elements.skip(1)) {
@@ -3260,6 +3340,13 @@ final class Checker {
               _expectAssignable(
                   field.resolvedType!, _inferExpr(value), value.pos);
               _materialize(value, field.resolvedType!);
+              if (field.resolvedType is ArrayType &&
+                  !_isStableArraySource(value)) {
+                throw CheckError(
+                  'cannot use this array expression here (bind it to a variable first)',
+                  value.pos,
+                );
+              }
             }
           } else {
             final values = positionalFields!;
@@ -3272,6 +3359,13 @@ final class Checker {
               _expectAssignable(struct.fields[i].resolvedType!,
                   _inferExpr(values[i]), values[i].pos);
               _materialize(values[i], struct.fields[i].resolvedType!);
+              if (struct.fields[i].resolvedType is ArrayType &&
+                  !_isStableArraySource(values[i])) {
+                throw CheckError(
+                  'cannot use this array expression here (bind it to a variable first)',
+                  values[i].pos,
+                );
+              }
             }
           }
           return StructType(module, typeName);
@@ -3401,8 +3495,9 @@ final class Checker {
           }
           if (op == '~') {
             final t = _inferExpr(operand);
-            // `~0` stays untyped so `const M: u32 = ~0` uses `u32`.
-            if (t is UntypedInt && _groupedIntLit(operand) != null) {
+            // `~0` and `~(1 + 2)` stay untyped so an expected integer
+            // type (a `let`, a parameter, a return) chooses the width.
+            if (t is UntypedInt) {
               return const UntypedInt();
             }
             final concrete = _defaultConcrete(t, operand.pos);
@@ -3419,8 +3514,9 @@ final class Checker {
             throw CheckError('unknown unary operator `$op`', pos);
           }
           final t = _inferExpr(operand);
-          // `-1` stays untyped so `let x: i64 = -1` does not need a cast.
-          if (t is UntypedInt && _groupedIntLit(operand) != null) {
+          // `-1` and `-(1 + 2)` stay untyped so `let x: i64 = -1` does
+          // not need a cast. A concrete unsigned operand is still rejected.
+          if (t is UntypedInt) {
             return const UntypedInt();
           }
           final concrete = _defaultConcrete(t, operand.pos);
@@ -3514,9 +3610,20 @@ final class Checker {
     final lt = _inferExpr(left);
     final rt = _inferExpr(right);
     final unified = _unifyNumeric(lt, rt, pos);
-    final concrete = unified is UntypedInt || unified is UntypedFloat
-        ? _defaultConcrete(unified, pos)
-        : unified;
+    // Stay untyped so `let x: u8 = 1 + 2` adopts `u8` instead of `i32`.
+    // A variable on either side is already a concrete type, so this
+    // expression stays runtime.
+    if (unified is UntypedInt) return unified;
+    if (unified is UntypedFloat) {
+      if (op == '%') {
+        throw CheckError(
+          'operator `%` requires integer types, got `f64`',
+          pos,
+        );
+      }
+      return unified;
+    }
+    final concrete = unified;
 
     if (concrete is! PrimType ||
         !(concrete.kind.isInteger || concrete.kind.isFloat)) {
@@ -3562,7 +3669,8 @@ final class Checker {
     final lt = _inferExpr(left);
     final rt = _inferExpr(right);
     final unified = _unifyNumeric(lt, rt, pos);
-    final concrete = unified is UntypedInt || unified is UntypedFloat
+    if (unified is UntypedInt) return unified;
+    final concrete = unified is UntypedFloat
         ? _defaultConcrete(unified, pos)
         : unified;
     if (concrete is! PrimType || !concrete.kind.isInteger) {
@@ -3581,6 +3689,11 @@ final class Checker {
   KlinType _inferShift(Expr left, String op, Expr right, SourcePos pos) {
     final lt = _inferExpr(left);
     final rt = _inferExpr(right);
+    // `let x: i64 = (-1) << 2` folds in `i64`. A variable on either side
+    // keeps today's rule: the untyped side defaults to `i32`.
+    if (lt is UntypedInt && rt is UntypedInt) {
+      return const UntypedInt();
+    }
     final leftConcrete = _defaultConcrete(lt, left.pos);
     final rightConcrete = _defaultConcrete(rt, right.pos);
     if (leftConcrete is! PrimType || !leftConcrete.kind.isInteger) {
@@ -3684,6 +3797,128 @@ final class Checker {
     }
   }
 
+  /// True when [expr] is an integer constant expression: literals, integer
+  /// `const` names, unary `-` / `~`, and `+ - * / % << >> & | ^`.
+  /// A local variable is not one, even when it shadows a constant.
+  bool _isIntegerConstExpr(Expr expr) {
+    final node = _peelGroups(expr);
+    if (node is IntLit) return true;
+    if (node is NameExpr) {
+      return _lookupIntegerConst(null, node.name) != null;
+    }
+    if (node is FieldExpr && node.object is NameExpr) {
+      return _lookupIntegerConst(
+            (node.object as NameExpr).name,
+            node.name,
+          ) !=
+          null;
+    }
+    if (node is UnaryExpr && (node.op == '-' || node.op == '~')) {
+      return _isIntegerConstExpr(node.operand);
+    }
+    if (node is BinaryExpr) {
+      const ops = {'+', '-', '*', '/', '%', '<<', '>>', '&', '|', '^'};
+      if (!ops.contains(node.op)) return false;
+      return _isIntegerConstExpr(node.left) && _isIntegerConstExpr(node.right);
+    }
+    return false;
+  }
+
+  /// Integer `const` named by a value. Null when the name is a local, is
+  /// missing, or is not an integer constant. Does not report errors —
+  /// [_evalConstInt] does, once this has returned non-null.
+  ConstDecl? _lookupIntegerConst(String? qualifier, String name) {
+    if (qualifier == null) {
+      if (_scope.lookup(name) != null) return null;
+      return _integerConstOrNull(_consts[_key(_currentModule, name)]);
+    }
+    if (_scope.lookup(qualifier) != null) return null;
+    final module = qualifier == _currentModule
+        ? qualifier
+        : _importAliases[_currentModule]?[qualifier];
+    if (module == null) return null;
+    return _integerConstOrNull(_consts[_key(module, name)]);
+  }
+
+  ConstDecl? _integerConstOrNull(ConstDecl? decl) {
+    final type = decl?.resolvedType;
+    if (decl == null || type is! PrimType || !type.kind.isInteger) {
+      return null;
+    }
+    return decl;
+  }
+
+  /// Gives every node of a folded constant expression the type it was
+  /// checked in, so a kept spelling (`~0`, `PAGE`) still emits.
+  void _stampConstExprType(Expr expr, PrimType type) {
+    expr.resolvedType = type;
+    var current = expr;
+    while (current is GroupExpr) {
+      current.resolvedType = type;
+      current = current.inner;
+      current.resolvedType = type;
+    }
+    final node = current;
+    if (node is UnaryExpr && (node.op == '-' || node.op == '~')) {
+      node.resolvedType = type;
+      _stampConstExprType(node.operand, type);
+    } else if (node is BinaryExpr) {
+      node.resolvedType = type;
+      _stampConstExprType(node.left, type);
+      _stampConstExprType(node.right, type);
+    }
+  }
+
+  /// A call, a by-value binding, `pick`, or `match` whose type is `[N]T`.
+  /// Emission is the wrapper struct. A C array variable is not one.
+  bool _isArrayValueExpr(Expr expr) {
+    final node = _unwrapGroups(expr);
+    if (node is NameExpr) return node.arrayByValue;
+    if (node is CallExpr ||
+        node is MethodCallExpr ||
+        node is PickExpr ||
+        node is MatchExpr) {
+      return node.resolvedType is ArrayType;
+    }
+    return false;
+  }
+
+  /// A `[N]T` that can be copied into the return wrapper without evaluating
+  /// a side-effecting index twice: a literal, an array value, a variable,
+  /// or a field chain rooted at a variable.
+  bool _isStableArraySource(Expr expr) {
+    final node = _unwrapGroups(expr);
+    if (node is ArrayLitExpr) return true;
+    if (_isArrayValueExpr(expr)) return true;
+    return _isStableArrayPlace(expr);
+  }
+
+  bool _isStableArrayPlace(Expr expr) {
+    final node = _unwrapGroups(expr);
+    if (node is NameExpr) return true;
+    if (node is FieldExpr) return _isStableArrayPlace(node.object);
+    return false;
+  }
+
+  void _requireStableArraySource(Expr expr) {
+    if (_isStableArraySource(expr)) return;
+    throw CheckError(
+      'cannot use this array expression here (bind it to a variable first)',
+      expr.pos,
+    );
+  }
+
+  /// `[0]T` and `[N][0]T` are not ISO C as a return wrapper (`v[0]`).
+  bool _arrayHasZeroLength(ArrayType type) {
+    var current = type;
+    while (true) {
+      if (current.len == 0) return true;
+      final elem = current.elem;
+      if (elem is! ArrayType) return false;
+      current = elem;
+    }
+  }
+
   /// Assigns a concrete type to an expression and recursively to subtrees
   /// containing untyped literals.
   void _materialize(Expr expr, KlinType type, {bool checkRange = true}) {
@@ -3691,6 +3926,22 @@ final class Checker {
     if (expr is CastExpr) return;
     if (type is SliceType && expr.resolvedType is ArrayType) {
       expr.arrayToSliceFrom = expr.resolvedType as ArrayType;
+    }
+    // `let x: u8 = 1 + 2` folds in `u8`. `cast` passes checkRange: false
+    // and keeps the truncation. A variable is not a constant expression.
+    if (checkRange &&
+        type is PrimType &&
+        type.kind.isInteger &&
+        _isIntegerConstExpr(expr)) {
+      try {
+        final value = _evalConstInt(expr, type);
+        expr.foldedInt = value;
+        expr.resolvedType = type;
+        _stampConstExprType(expr, type);
+        return;
+      } on _NotConstExpr {
+        // The predicate and the evaluator disagreed. Type it normally.
+      }
     }
     expr.resolvedType = type;
     // Explicit `cast` passes checkRange: false — truncation stays a C cast.
@@ -3740,11 +3991,19 @@ final class Checker {
         break;
       case ArrayLitExpr(:final elements):
         if (type is! ArrayType) break;
+        // `[]` has no elements. The expected `[0]T` is already on this
+        // node. A non-zero target was rejected before materialize.
+        if (elements.isEmpty) break;
         for (final element in elements) {
           _expectAssignable(type.elem, _inferExpr(element), element.pos);
           _materialize(element, type.elem, checkRange: checkRange);
         }
       case MatchExpr(:final arms):
+        if (type is ArrayType && !_containsUntyped(type)) {
+          for (final arm in arms) {
+            _requireStableArraySource(arm.body);
+          }
+        }
         if (type is ResultType) {
           for (final arm in arms) {
             final body = _unwrapGroups(arm.body);
@@ -3760,6 +4019,10 @@ final class Checker {
           }
         }
       case PickExpr(:final thenExpr, :final elseExpr):
+        if (type is ArrayType && !_containsUntyped(type)) {
+          _requireStableArraySource(thenExpr);
+          _requireStableArraySource(elseExpr);
+        }
         _materialize(thenExpr, type, checkRange: checkRange);
         _materialize(elseExpr, type, checkRange: checkRange);
     }
@@ -3778,7 +4041,11 @@ final class Checker {
     final thenType = _inferExpr(thenExpr);
     final elseType = _inferExpr(elseExpr);
     final unified = _unifyNumeric(thenType, elseType, pos);
-    final concrete = _defaultConcrete(unified, pos);
+    // Untyped arms adopt the outer type (`let x: u8 = pick(c, 1 + 2, 4)`).
+    if (unified is UntypedInt || unified is UntypedFloat) {
+      return unified;
+    }
+    final concrete = unified;
     _materialize(thenExpr, concrete);
     _materialize(elseExpr, concrete);
     return concrete;
@@ -4121,6 +4388,18 @@ final class Checker {
   }
 
   void _expectAssignable(KlinType target, KlinType source, SourcePos pos) {
+    if (source is UntypedEmptyArray && !_isAssignable(target, source)) {
+      if (target is ArrayType) {
+        throw CheckError(
+          'empty array literal has length 0, expected `${target.displayName}`',
+          pos,
+        );
+      }
+      throw CheckError(
+        'empty array literal needs an array type, for example `[0]u8`',
+        pos,
+      );
+    }
     if (!_isAssignable(target, source)) {
       throw CheckError(
         'type mismatch: expected `${_typeForMismatch(target)}`, '
@@ -4135,6 +4414,7 @@ final class Checker {
   String _typeForMismatch(KlinType type) => switch (type) {
         UntypedInt() => 'i32',
         UntypedFloat() => 'f64',
+        UntypedEmptyArray() => '[0]',
         ArrayType(:final elem, :final len) =>
           '[$len]${_typeForMismatch(elem)}',
         _ => type.displayName,
@@ -4152,6 +4432,12 @@ final class Checker {
       return true;
     }
     if (source is UntypedInt && target is PrimType && target.kind.isFloat) {
+      return true;
+    }
+    // `[]` is `[0]T` for any element, including `[0][0]u8`.
+    if (source is UntypedEmptyArray &&
+        target is ArrayType &&
+        target.len == 0) {
       return true;
     }
     if (target is SliceType &&
@@ -4179,7 +4465,7 @@ final class Checker {
   }
 
   bool _containsUntyped(KlinType type) => switch (type) {
-        UntypedInt() || UntypedFloat() => true,
+        UntypedInt() || UntypedFloat() || UntypedEmptyArray() => true,
         ArrayType(:final elem) => _containsUntyped(elem),
         _ => false,
       };
@@ -4188,6 +4474,10 @@ final class Checker {
     return switch (type) {
       UntypedInt() => const PrimType(PrimKind.i32),
       UntypedFloat() => const PrimType(PrimKind.f64),
+      UntypedEmptyArray() => throw CheckError(
+          'empty array literal needs a type, for example `[0]u8`',
+          pos,
+        ),
       PrimType() => type,
       StructType() => type,
       EnumType() => type,

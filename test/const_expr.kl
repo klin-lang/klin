@@ -1,0 +1,39 @@
+const N: u8 = 10
+
+struct Pair {
+    n: u8
+}
+
+fn take(n: u8): i32 {
+    return cast(i32, n)
+}
+
+fn three(): u8 {
+    return 1 + 2
+}
+
+fn shifted(): i64 {
+    return (-1) << 2
+}
+
+fn main() {
+    let a: u8 = 1 + 2
+    let b: u8 = N + 5
+    let c: i32 = 200 + 100
+    let d: i64 = (-1) << 2
+    let e: u8 = ~0
+    let f: i8 = -128
+    let g: i64 = -9223372036854775807 - 1
+    let h: u64 = ~0 + 0
+    let xs: [1]u8 = [1 + 2]
+    let nested: [1][1]u8 = [[4 + 5]]
+    let row = Pair{ n: 20 + 3 }
+    let y: u8 = 4
+    let z: u8 = y + 1
+    printf("%d %d %d %d %d %d\n", cast(i32, a), cast(i32, b), c, cast(i32, d), cast(i32, e), cast(i32, f))
+    printf("%lld\n", g)
+    printf("%llu\n", h)
+    printf("%d %d %d %d %d\n", cast(i32, xs[0]), cast(i32, nested[0][0]), take(40 + 2), cast(i32, row.n), cast(i32, three()))
+    printf("%lld\n", shifted())
+    printf("%d\n", cast(i32, z))
+}

@@ -61,6 +61,8 @@ void main() {
         'typedef struct { int32_t *ptr; size_t len; } klin_slice_i32;'));
     expect(c, contains('klin_slice_i32 s = (klin_slice_i32){ xs, 3 };'));
     expect(c, contains('s.ptr[0] = 7;'));
+    expect(c, contains('s.ptr[1] += 1;'));
+    expect(c, contains('(klin_slice_i32){ xs, 3 }.ptr[2] = 8;'));
   });
 
   test('byte-string literal is []u8 with .len', () async {
@@ -315,6 +317,109 @@ void main() {
     expect(c, contains('klin_slice_i32'));
     expect(c, contains('.ptr[1]'));
     expect(c, contains('.ptr[2]'));
+  });
+
+  test('integer constant expressions fold outside const', () async {
+    final result = await compileAndRun('test/const_expr.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/const_expr.out').readAsString());
+
+    final program = loadProject('test/const_expr.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/const_expr.kl');
+    expect(c, contains('uint8_t a = 3;'));
+    expect(c, contains('uint8_t e = ~(0);'));
+    expect(c, contains('(-9223372036854775807LL - 1)'));
+    expect(c, contains('18446744073709551615ULL'));
+    expect(c, contains('(y + 1)'));
+    expect(c, isNot(contains('constexpr')));
+
+    final cPath = '${tmp.path}/const_expr_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/const_expr_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
+  test('function returning [N]T compiles and runs', () async {
+    final result = await compileAndRun('test/array_return.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/array_return.out').readAsString());
+
+    final program = loadProject('test/array_return.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/array_return.kl');
+    expect(c, contains('typedef struct { uint8_t v[2]; } klin_arr2_u8;'));
+    expect(c, contains('.v[0]'));
+    expect(c, isNot(contains('constexpr')));
+
+    final cPath = '${tmp.path}/array_return_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/array_return_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
+  test('empty array literal takes [0]T and runs', () async {
+    final result = await compileAndRun('test/empty_array.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/empty_array.out').readAsString());
+
+    final program = loadProject('test/empty_array.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/empty_array.kl');
+    expect(c, contains('uint8_t a[0] = { };'));
+    expect(c, contains('take((uint8_t[0]){ })'));
+    expect(c, contains('.xs = { }'));
+
+    // A zero-size array is a GCC extension. Pedantic ISO C must reject it.
+    final cPath = '${tmp.path}/empty_array_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/empty_array_pedantic',
+    ]);
+    expect(pedantic.exitCode, isNot(0));
+    expect(pedantic.stderr.toString(), contains('zero-size array'));
+  });
+
+  test('struct field copies a returned array once', () async {
+    final result =
+        await compileAndRun('test/array_field_once.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+      result.stdout,
+      await File('test/array_field_once.out').readAsString(),
+    );
+
+    final program = loadProject('test/array_field_once.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/array_field_once.kl');
+    expect(c, isNot(contains('(pair()).v[0]')));
+    final cPath = '${tmp.path}/array_field_once_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/array_field_once_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
 
   test('enum variant on the base maximum compiles and runs', () async {

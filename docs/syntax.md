@@ -169,9 +169,11 @@ fn main() {
 ```
 
 The slice points at static bytes (no allocation). Those bytes are
-read-only: `b"fn"[0] = 1` is an error. The check is only on the literal
-(or a `[]u8` constant) itself — writing through a copy or a `[]u8`
-parameter compiles and crashes at run time. Copy into a `[N]u8` to modify.
+read-only: `b"fn"[0] = 1` is an error, and so is a write through an
+immutable slice (`let s = b"fn"` then `s[0] = 1`, or a `[]u8`
+parameter). `let mut s = b"fn"` then `s[0] = 1` still compiles and
+can crash — a mutable slice has no read-only flavor. Copy into a
+`[N]u8` to modify.
 
 ## Constants
 
@@ -213,8 +215,10 @@ fn main() {
 - `-literal` and `~literal` take the constant's type (`const M: u32 = ~0`,
   `const MIN: i8 = -128`). A folded expression is emitted as a decimal;
   a lone literal and `~` / `-` on a literal keep their spelling when
-  that spelling is valid C. `~x` on a variable is still a runtime
-  expression, and `let x: u8 = 1 + 2` is still a type mismatch (`i32`)
+  that spelling is valid C. The same expression folds outside `const`
+  when a type is expected (`let x: u8 = 1 + 2`, `return 1 + 2`,
+  `[1 + 2]` as a `[1]u8` element). `let x: u8 = 200 + 100` is out of
+  range. `~x` on a variable is still a runtime expression
 
 ```klin
 module app
@@ -235,3 +239,5 @@ Runnable: [`examples/module_const.kl`](../examples/module_const.kl).
 | `match` / `pick` | [15-match.md](15-match.md), [18-pick.md](18-pick.md) |
 | `:=` | [14-short-decl.md](14-short-decl.md) |
 | Bitwise / `&&` `\|\|` | [01-decisions.md](01-decisions.md) D8 / D9 |
+| Returning `[N]T` | [01-decisions.md](01-decisions.md) D13 |
+| Empty array literal `[]` | [01-decisions.md](01-decisions.md) D12 |

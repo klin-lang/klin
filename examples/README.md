@@ -63,7 +63,10 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `byte_string.kl` | `b"..."` byte string (`[]u8`, [docs/syntax.md](../docs/syntax.md)) |
 | `module_const.kl` | Module-level `const` (integer, `bool`, `b"..."`, `[N]T` length, [docs/syntax.md](../docs/syntax.md)) |
 | `const_fold.kl` | Integer constant expressions (`N * 2`, `~0x0F`, `[1 + 2]T`, [docs/01-decisions.md](../docs/01-decisions.md) D11) |
+| `const_expr.kl` | The same fold outside `const` (`let x: u8 = 1 + 2`, array element, `return`) |
 | `array_lit.kl` | Array literal takes the element type from context (`[3]u8 = [1, 2, 3]`) |
+| `array_return.kl` | A function returns `[N]T` (C struct with field `v`, [D13](../docs/01-decisions.md)) |
+| `empty_array.kl` | Empty array literal `[]` is `[0]T` from context ([D12](../docs/01-decisions.md)) |
 | `numeric_cast.kl` | Explicit numeric `cast` ([154](../issues/154-numeric-cast.md), [docs/syntax.md](../docs/syntax.md)) |
 | `sorted_lookup.kl` | Closed KV: enum index ([126](../issues/126-enum-index.md)) + owned bsearch ([060](../issues/060-map-kv.md) ❌) |
 | `sketch_async_eventloop.kl` | `async`/`await` + remote eventloop ([029](../issues/029-async-event-loop.md); also [`remote_eventloop/`](remote_eventloop/)) |

@@ -212,7 +212,7 @@ fn main() {
     final program = Parser(Lexer(source).tokenize()).parse();
     Checker().check(program);
     final c = emitC(program, 'test/vars.kl');
-    expect(c, contains('int32_t x = (2 + 3);'));
+    expect(c, contains('int32_t x = 5;'));
     expect(c, contains('int32_t y = (x * 2);'));
     expect(c, contains('y = (y + 1);'));
   });
@@ -302,7 +302,7 @@ fn main() {
     final program = Parser(Lexer(source).tokenize()).parse();
     Checker().check(program);
     final c = emitC(program, 'test/short_decl.kl');
-    expect(c, contains('int32_t x = (2 + 3);'));
+    expect(c, contains('int32_t x = 5;'));
     expect(c, contains('int32_t i = 0;'));
     expect(c, isNot(contains('mut')));
 

@@ -195,6 +195,36 @@ final class ArrayType extends KlinType {
   int get hashCode => Object.hash(elem, len);
 }
 
+/// True when [type] mentions a function return whose innermost element is a
+/// struct. The C wrapper for that return needs the struct to be complete,
+/// so the type cannot be a field of a struct.
+bool typeNeedsStructArrayReturn(KlinType type) {
+  switch (type) {
+    case FnType(:final params, :final ret):
+      if (_arrayReturnOfStruct(ret) || typeNeedsStructArrayReturn(ret)) {
+        return true;
+      }
+      return params.any(typeNeedsStructArrayReturn);
+    case ArrayType(:final elem):
+      return typeNeedsStructArrayReturn(elem);
+    case PtrType(:final pointee):
+      return typeNeedsStructArrayReturn(pointee);
+    case ResultType(:final ok):
+      return typeNeedsStructArrayReturn(ok);
+    default:
+      return false;
+  }
+}
+
+bool _arrayReturnOfStruct(KlinType type) {
+  if (type is! ArrayType) return false;
+  var elem = type.elem;
+  while (elem is ArrayType) {
+    elem = elem.elem;
+  }
+  return elem is StructType;
+}
+
 final class SliceType extends KlinType {
   final PrimType elem;
 
@@ -283,6 +313,21 @@ final class UntypedFloat extends KlinType {
 
   @override
   int get hashCode => 2;
+}
+
+/// `[]` before an expected `[0]T` is known.
+/// Never survives a finished check / `_defaultConcrete`.
+final class UntypedEmptyArray extends KlinType {
+  const UntypedEmptyArray();
+
+  @override
+  String get displayName => '[0]';
+
+  @override
+  bool operator ==(Object other) => other is UntypedEmptyArray;
+
+  @override
+  int get hashCode => 18;
 }
 
 /// `error(n)` before its `!T` ok-type is known (match-arm unify, issue 132).
