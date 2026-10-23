@@ -31,7 +31,13 @@ String emitC(Program program, String sourcePath) {
     for (final param in func.params) {
       _collectSliceTypes(param.resolvedType, sliceTypes);
     }
+    if (func.receiver case final receiver?) {
+      _collectSliceTypes(receiver.resolvedType, sliceTypes);
+    }
   }
+  // `let s = xs[:]` is not on a signature. Without the typedef, `s.ptr` is
+  // not a struct member in C.
+  _collectSliceTypesInBodies(program, sliceTypes);
   for (final type in sliceTypes) {
     final name = _sliceCName(type);
     buf.writeln(

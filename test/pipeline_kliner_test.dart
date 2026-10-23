@@ -47,4 +47,19 @@ void main() {
     final c = emitC(program, 'test/enum_field.kl');
     expect(c, contains('enum_field_Tok k;'));
   });
+
+  test('full-slice view write mutates the array', () async {
+    final result = await compileAndRun('test/slice_view_write.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+        result.stdout, await File('test/slice_view_write.out').readAsString());
+
+    final program = loadProject('test/slice_view_write.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/slice_view_write.kl');
+    expect(c, contains(
+        'typedef struct { int32_t *ptr; size_t len; } klin_slice_i32;'));
+    expect(c, contains('klin_slice_i32 s = (klin_slice_i32){ xs, 3 };'));
+    expect(c, contains('s.ptr[0] = 7;'));
+  });
 }

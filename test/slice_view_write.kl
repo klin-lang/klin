@@ -1,0 +1,6 @@
+fn main() {
+    let mut xs: [3]i32 = [1, 2, 3]
+    let s = xs[:]
+    s[0] = 7
+    printf("%d %d %d\n", xs[0], s[0], s.len)
+}
