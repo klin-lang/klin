@@ -2337,4 +2337,29 @@ fn main(klin_argc: []str) {
       ),
     );
   });
+
+  test('main local named klin_argc does not reuse that C parameter', () {
+    const source = '''
+fn main(args: []str) {
+  let klin_argc = 1
+  let klin_argv = 2
+  printf("%d\\n", klin_argc + klin_argv + cast(i32, args.len))
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'main_local_argc_unit.kl');
+    expect(
+      c,
+      contains('int main(int klin_main_argc, char **klin_main_argv)'),
+    );
+    expect(c, contains('int32_t klin_argc = 1;'));
+    expect(c, contains('int32_t klin_argv = 2;'));
+    expect(
+      c,
+      contains(
+        'klin_slice_str args = { (const char **)klin_main_argv, (size_t)klin_main_argc };',
+      ),
+    );
+  });
 }

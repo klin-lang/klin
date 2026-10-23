@@ -613,9 +613,12 @@ the language path is this parameter.
 
 `args.len` is `argc`, including `argv[0]`. The slice is immutable
 (a parameter, D5). A negative `argc` is not checked; the host does
-not pass one. C parameters are `klin_argc` and `klin_argv` so a
-parameter named `argc` does not collide. `main()` with no parameters
-stays `int main(void)`. `async fn main` stays rejected.
+not pass one. C parameters are `klin_argc` and `klin_argv`. When
+either name is already bound in `main` (the parameter, or a local,
+including one inside `or`), the next free pair is
+`klin_main_argc` / `klin_main_argv`, then `klin_argc_2` /
+`klin_argv_2`. `main()` with no parameters stays `int main(void)`.
+`async fn main` stays rejected.
 
 ```klin
 fn main(args: []str) {

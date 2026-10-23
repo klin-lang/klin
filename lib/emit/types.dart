@@ -1,18 +1,192 @@
 part of '../emit_c.dart';
 
-/// C names for `argc` / `argv`. They stay off the user's `[]str` parameter
-/// unless that parameter is already one of these names.
-({String argc, String argv}) _mainHostNames(String param) {
-  if (param == 'klin_argc' || param == 'klin_argv') {
-    return (argc: 'klin_main_argc', argv: 'klin_main_argv');
+/// C names for `argc` / `argv`. They stay off every name bound in `main`
+/// (the parameter and any local), so the host parameters are not a second
+/// declaration of the same identifier. `gcc` rejects that in one block.
+({String argc, String argv}) _mainHostNames(FuncDecl func) {
+  final used = <String>{
+    for (final param in func.params) param.name,
+  };
+  final body = func.body;
+  if (body != null) _collectBoundNames(body, used);
+  const pairs = <(String, String)>[
+    ('klin_argc', 'klin_argv'),
+    ('klin_main_argc', 'klin_main_argv'),
+  ];
+  for (final (argc, argv) in pairs) {
+    if (!used.contains(argc) && !used.contains(argv)) {
+      return (argc: argc, argv: argv);
+    }
   }
-  return (argc: 'klin_argc', argv: 'klin_argv');
+  var n = 2;
+  while (used.contains('klin_argc_$n') || used.contains('klin_argv_$n')) {
+    n++;
+  }
+  return (argc: 'klin_argc_$n', argv: 'klin_argv_$n');
+}
+
+void _collectBoundNames(Block block, Set<String> used) {
+  for (final stmt in block.stmts) {
+    _collectBoundNamesStmt(stmt, used);
+  }
+}
+
+void _collectBoundNamesStmt(Stmt stmt, Set<String> used) {
+  switch (stmt) {
+    case LetStmt(:final name, :final init):
+      used.add(name);
+      if (init != null) _collectBoundNamesExpr(init, used);
+    case LetDestructureStmt(:final binds, :final source):
+      used.addAll(binds);
+      _collectBoundNamesExpr(source, used);
+    case LetArrayDestructureStmt(:final names, :final source):
+      for (final name in names) {
+        if (name != null) used.add(name);
+      }
+      _collectBoundNamesExpr(source, used);
+    case AssignStmt(:final target, :final value):
+      _collectBoundNamesExpr(target, used);
+      _collectBoundNamesExpr(value, used);
+    case MultiAssignStmt(:final targets, :final values):
+      for (final target in targets) {
+        _collectBoundNamesExpr(target, used);
+      }
+      for (final value in values) {
+        _collectBoundNamesExpr(value, used);
+      }
+    case StructAssignStmt(:final source):
+      _collectBoundNamesExpr(source, used);
+    case ReturnStmt(:final value):
+      if (value != null) _collectBoundNamesExpr(value, used);
+    case IfStmt(:final cond, :final thenBlock, :final elseBranch):
+      _collectBoundNamesExpr(cond, used);
+      _collectBoundNames(thenBlock, used);
+      if (elseBranch != null) _collectBoundNamesStmt(elseBranch, used);
+    case WhileStmt(:final cond, :final body):
+      _collectBoundNamesExpr(cond, used);
+      _collectBoundNames(body, used);
+    case ForRangeStmt(:final name, :final start, :final endExclusive, :final body):
+      used.add(name);
+      _collectBoundNamesExpr(start, used);
+      _collectBoundNamesExpr(endExclusive, used);
+      _collectBoundNames(body, used);
+    case ForCStmt(
+        :final initName,
+        :final initDecl,
+        :final initExpr,
+        :final cond,
+        :final postExpr,
+        :final body,
+      ):
+      if (initDecl && initName != null) used.add(initName);
+      if (initExpr != null) _collectBoundNamesExpr(initExpr, used);
+      if (cond != null) _collectBoundNamesExpr(cond, used);
+      if (postExpr != null) _collectBoundNamesExpr(postExpr, used);
+      _collectBoundNames(body, used);
+    case MatchStmt(:final subject, :final arms):
+      _collectBoundNamesExpr(subject, used);
+      for (final arm in arms) {
+        if (arm.when != null) _collectBoundNamesExpr(arm.when!, used);
+        _collectBoundNames(arm.body, used);
+      }
+    case BlockStmt(:final block):
+      _collectBoundNames(block, used);
+    case DeferStmt(:final body):
+      _collectBoundNamesStmt(body, used);
+    case CallStmt(:final args):
+      for (final arg in args) {
+        _collectBoundNamesExpr(arg, used);
+      }
+    case MethodCallStmt(:final call):
+      _collectBoundNamesExpr(call, used);
+    case AwaitStmt(:final expr):
+      _collectBoundNamesExpr(expr, used);
+    default:
+      break;
+  }
+}
+
+/// Locals inside `or { … }` are emitted in the same function. A name there
+/// still collides with a C parameter of `main`.
+void _collectBoundNamesExpr(Expr expr, Set<String> used) {
+  switch (expr) {
+    case OrExpr(:final result, :final fallback):
+      _collectBoundNamesExpr(result, used);
+      for (final stmt in fallback.stmts) {
+        _collectBoundNamesStmt(stmt, used);
+      }
+      _collectBoundNamesExpr(fallback.value, used);
+    case BinaryExpr(:final left, :final right):
+      _collectBoundNamesExpr(left, used);
+      _collectBoundNamesExpr(right, used);
+    case UnaryExpr(:final operand):
+      _collectBoundNamesExpr(operand, used);
+    case GroupExpr(:final inner):
+      _collectBoundNamesExpr(inner, used);
+    case CallExpr(:final args):
+      for (final arg in args) {
+        _collectBoundNamesExpr(arg, used);
+      }
+    case MethodCallExpr(:final receiver, :final args):
+      _collectBoundNamesExpr(receiver, used);
+      for (final arg in args) {
+        _collectBoundNamesExpr(arg, used);
+      }
+    case FieldExpr(:final object):
+      _collectBoundNamesExpr(object, used);
+    case IndexExpr(:final object, :final index):
+      _collectBoundNamesExpr(object, used);
+      _collectBoundNamesExpr(index, used);
+    case SliceFromExpr(:final array, :final start, :final end):
+      _collectBoundNamesExpr(array, used);
+      if (start != null) _collectBoundNamesExpr(start, used);
+      if (end != null) _collectBoundNamesExpr(end, used);
+    case CastExpr(:final expr):
+      _collectBoundNamesExpr(expr, used);
+    case PickExpr(:final cond, :final thenExpr, :final elseExpr):
+      _collectBoundNamesExpr(cond, used);
+      _collectBoundNamesExpr(thenExpr, used);
+      _collectBoundNamesExpr(elseExpr, used);
+    case MatchExpr(:final subject, :final arms):
+      _collectBoundNamesExpr(subject, used);
+      for (final arm in arms) {
+        if (arm.when != null) _collectBoundNamesExpr(arm.when!, used);
+        _collectBoundNamesExpr(arm.body, used);
+      }
+    case ArrayLitExpr(:final elements):
+      for (final element in elements) {
+        _collectBoundNamesExpr(element, used);
+      }
+    case StructLitExpr(:final namedFields, :final positionalFields):
+      if (namedFields != null) {
+        for (final value in namedFields.values) {
+          _collectBoundNamesExpr(value, used);
+        }
+      }
+      if (positionalFields != null) {
+        for (final value in positionalFields) {
+          _collectBoundNamesExpr(value, used);
+        }
+      }
+    case PropagateExpr(:final result):
+      _collectBoundNamesExpr(result, used);
+    case ErrorExpr(:final code):
+      _collectBoundNamesExpr(code, used);
+    case AwaitExpr(:final operand):
+      _collectBoundNamesExpr(operand, used);
+    case InterpolatedStringExpr(:final parts):
+      for (final part in parts) {
+        if (part is InterpSlot) _collectBoundNamesExpr(part.expr, used);
+      }
+    default:
+      break;
+  }
 }
 
 String _functionHeader(FuncDecl func) {
   if (func.name == 'main') {
     if (func.params.isEmpty) return 'int main(void)';
-    final host = _mainHostNames(func.params.single.name);
+    final host = _mainHostNames(func);
     return 'int main(int ${host.argc}, char **${host.argv})';
   }
   final returnType = func.resolvedReturnType;

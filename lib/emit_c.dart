@@ -192,7 +192,7 @@ String emitC(Program program, String sourcePath) {
     buf.writeln('${_functionHeader(func)} {');
     if (func.name == 'main' && func.params.isNotEmpty) {
       final param = func.params.single;
-      final host = _mainHostNames(param.name);
+      final host = _mainHostNames(func);
       // `char **` is not `const char **`. One cast; no copy of the strings.
       buf.writeln(
         '    ${_sliceCName(const StrType())} ${param.name} = '
