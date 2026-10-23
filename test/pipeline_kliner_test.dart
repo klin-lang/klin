@@ -112,4 +112,11 @@ void main() {
     expect(c, contains('const int64_t os_AT_FDCWD = -100;'));
     expect(c, contains('static const int32_t os_HIDDEN = 1;'));
   });
+
+  test('imported const in an if / while / for head is not a struct literal',
+      () async {
+    final result = await compileAndRun('test/const_mod/cond.kl', tmp);
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/const_mod/cond.out').readAsString());
+  });
 }

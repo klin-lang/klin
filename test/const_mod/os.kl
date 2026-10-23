@@ -2,3 +2,7 @@ module os
 
 pub const AT_FDCWD: i64 = -100
 const HIDDEN: i32 = 1
+pub const VERBOSE: bool = true
+pub const LIMIT: i32 = 3
+pub const KW: []u8 = b"fn"
+pub const CH: u8 = 'A'

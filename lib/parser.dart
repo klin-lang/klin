@@ -1447,7 +1447,9 @@ final class Parser {
               args: _argList(),
               pos: t.pos,
             );
-          } else if (_check(TokenKind.lBrace)) {
+          } else if (_check(TokenKind.lBrace) && !_noStructLit) {
+            // In `if` / `while` / `match` heads, `{` opens the body:
+            // `if n < os.MAX {` is a constant, not `os.MAX{ … }`.
             expr = _structLit(member, moduleName: t.lexeme);
           } else if (_check(TokenKind.dot)) {
             // `mod.Type.Variant` / `mod.Type.func(...)` — continue in the
