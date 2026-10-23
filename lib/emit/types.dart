@@ -61,7 +61,8 @@ String _cType(KlinType type) => switch (type) {
       EnumType(:final moduleName, :final name) =>
         _enumCName(moduleName, name),
       PtrType(:final pointee, :final isVolatile) =>
-        '${isVolatile ? 'volatile ' : ''}${_cType(pointee)} *',
+        '${isVolatile ? 'volatile ' : ''}'
+        '${pointee is StructType ? 'struct ${_structCName(pointee.moduleName, pointee.name)}' : _cType(pointee)} *',
       ArrayType(:final elem) => _cType(elem),
       SliceType(:final elem) => _sliceCName(elem),
       ResultType(:final ok) => _resultCName(ok),

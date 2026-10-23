@@ -1,0 +1,21 @@
+struct Holder {
+    item: *mut Item
+}
+
+struct Item {
+    n: i32
+}
+
+struct Node {
+    next: *mut Node
+    prev: *Node
+    value: i32
+}
+
+fn main() {
+    let mut item = Item{ n: 9 }
+    let mut box = Holder{ item: &item }
+    let mut b = Node{ next: cast(*mut Node, 0), prev: cast(*Node, 0), value: 2 }
+    let mut a = Node{ next: &b, prev: cast(*Node, 0), value: 1 }
+    printf("%d %d\n", (*a.next).value, (*box.item).n)
+}

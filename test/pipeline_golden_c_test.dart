@@ -108,7 +108,7 @@ fn main() {
     final program = loadProject('test/modules/app.kl');
     Checker().check(program);
     final c = emitC(program, 'test/modules/app.kl');
-    expect(c, contains('typedef struct {'));
+    expect(c, contains('typedef struct geom_Vec2 {'));
     expect(c, contains('} geom_Vec2;'));
     expect(c, contains('static void geom_helper(void);'));
     expect(c, contains('geom_Vec2_len_sq(geom_Vec2 v)'));

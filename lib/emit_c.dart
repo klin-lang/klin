@@ -171,6 +171,22 @@ void _emitEnums(StringBuffer buf, Program program, String sourcePath) {
   }
 }
 
+/// Named tag so a field `next: *Node` is `struct Node *` inside the typedef.
+/// An anonymous `typedef struct { Node *next; } Node` is not valid C.
+void _writeStructTypedef(StringBuffer buf, StructDecl struct) {
+  final cName = _structCName(struct.moduleName, struct.name);
+  buf.writeln('typedef struct $cName {');
+  for (final field in struct.fields) {
+    final type = field.resolvedType;
+    if (type == null) {
+      throw StateError('emit: missing type for field `${field.name}`');
+    }
+    buf.writeln('    ${_cDecl(type, field.name)};');
+  }
+  buf.writeln('} $cName;');
+  buf.writeln();
+}
+
 /// Emit `typedef struct` blocks so field dependencies appear before dependents.
 /// Shared by [emitC] and [emitH] — declaration order alone breaks nested /
 /// cross-module struct fields (C needs the field type typedef first).
@@ -192,23 +208,15 @@ void _emitStructTypedefs(
       if (struct == null) continue;
       final fieldDeps = <String>{};
       for (final field in struct.fields) {
-        _collectStructKeys(field.resolvedType, fieldDeps);
+        // Pointer fields do not need the pointee complete (self-reference).
+        _collectStructKeys(field.resolvedType, fieldDeps, throughPointer: false);
       }
       if (!fieldDeps.every(
           (dep) => !structKeys.contains(dep) || emitted.contains(dep))) {
         continue;
       }
       _line(buf, struct.pos.line, struct.sourcePath ?? sourcePath);
-      buf.writeln('typedef struct {');
-      for (final field in struct.fields) {
-        final type = field.resolvedType;
-        if (type == null) {
-          throw StateError('emit: missing type for field `${field.name}`');
-        }
-        buf.writeln('    ${_cDecl(type, field.name)};');
-      }
-      buf.writeln('} ${_structCName(struct.moduleName, struct.name)};');
-      buf.writeln();
+      _writeStructTypedef(buf, struct);
       emitted.add(key);
       progress = true;
     }
@@ -218,16 +226,7 @@ void _emitStructTypedefs(
         final key = '${struct.moduleName}.${struct.name}';
         if (!structKeys.contains(key) || emitted.contains(key)) continue;
         _line(buf, struct.pos.line, struct.sourcePath ?? sourcePath);
-        buf.writeln('typedef struct {');
-        for (final field in struct.fields) {
-          final type = field.resolvedType;
-          if (type == null) {
-            throw StateError('emit: missing type for field `${field.name}`');
-          }
-          buf.writeln('    ${_cDecl(type, field.name)};');
-        }
-        buf.writeln('} ${_structCName(struct.moduleName, struct.name)};');
-        buf.writeln();
+        _writeStructTypedef(buf, struct);
         emitted.add(key);
       }
       break;
