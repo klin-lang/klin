@@ -1,4 +1,5 @@
 import 'ast.dart';
+import 'parser.dart';
 import 'token.dart';
 import 'type.dart';
 
@@ -64,8 +65,30 @@ int? _parseIntLiteralValue(String lexeme) {
   );
 }
 
-int? _intLitValue(IntLit lit) =>
-    _parseIntLiteralValue(lit.lexeme.replaceAll('_', ''));
+/// Integer literal as [BigInt]. Host `int` cannot hold `u64` above
+/// `2^63 - 1` (`int.tryParse` returns null; `BigInt.toInt` truncates).
+BigInt? _bigLitValue(IntLit lit) {
+  final lexeme = lit.lexeme.replaceAll('_', '');
+  if (lexeme.startsWith("'")) {
+    final value = _parseIntLiteralValue(lexeme);
+    return value == null ? null : BigInt.from(value);
+  }
+  final isHex = lexeme.startsWith('0x') || lexeme.startsWith('0X');
+  final isBin = lexeme.startsWith('0b') || lexeme.startsWith('0B');
+  final isOct = lexeme.startsWith('0o') || lexeme.startsWith('0O');
+  final body = isHex || isBin || isOct ? lexeme.substring(2) : lexeme;
+  if (body.isEmpty) return null;
+  return BigInt.tryParse(
+    body,
+    radix: isHex
+        ? 16
+        : isBin
+            ? 2
+            : isOct
+                ? 8
+                : 10,
+  );
+}
 
 Expr _peelGroups(Expr expr) {
   var current = expr;
@@ -103,18 +126,46 @@ bool _integerKindIsUnsigned(PrimKind kind) => switch (kind) {
       _ => false,
     };
 
-bool _intLiteralFits(int value, PrimKind kind) {
+bool _bigIntFits(BigInt value, PrimKind kind) {
   final bits = _integerBitWidth(kind);
   if (bits == 0) return false;
-  final v = BigInt.from(value);
   if (_integerKindIsUnsigned(kind)) {
-    if (value < 0) return false;
+    if (value.isNegative) return false;
     final max = (BigInt.one << bits) - BigInt.one;
-    return v <= max;
+    return value <= max;
   }
   final min = -(BigInt.one << (bits - 1));
   final max = (BigInt.one << (bits - 1)) - BigInt.one;
-  return v >= min && v <= max;
+  return value >= min && value <= max;
+}
+
+/// Same diagnostic as an out-of-range integer literal (D12). [spelling] is
+/// the source lexeme or the folded decimal.
+void _rejectConstRange(
+  BigInt value,
+  PrimKind kind,
+  SourcePos pos,
+  String spelling,
+) {
+  if (_bigIntFits(value, kind)) return;
+  final typeName = PrimType(kind).displayName;
+  throw CheckError(
+    'integer literal `$spelling` is out of range for `$typeName` '
+    '(${_intRangeText(kind)})',
+    pos,
+  );
+}
+
+BigInt _bigBitwiseNot(BigInt value, PrimKind kind) {
+  final bits = _integerBitWidth(kind);
+  final mask = (BigInt.one << bits) - BigInt.one;
+  final flipped = (~value) & mask;
+  if (_integerKindIsUnsigned(kind)) return flipped;
+  final sign = BigInt.one << (bits - 1);
+  if ((flipped & sign) != BigInt.zero) {
+    return flipped - (mask + BigInt.one);
+  }
+  return flipped;
 }
 
 String _intRangeText(PrimKind kind) {
@@ -126,34 +177,6 @@ String _intRangeText(PrimKind kind) {
   final min = -(BigInt.one << (bits - 1));
   final max = (BigInt.one << (bits - 1)) - BigInt.one;
   return '$min..=$max';
-}
-
-void _requireIntLiteralInRange(
-  int value,
-  PrimKind kind,
-  SourcePos pos,
-  String spelling,
-) {
-  if (_intLiteralFits(value, kind)) return;
-  final typeName = PrimType(kind).displayName;
-  throw CheckError(
-    'integer literal `$spelling` is out of range for `$typeName` '
-    '(${_intRangeText(kind)})',
-    pos,
-  );
-}
-
-/// Bitwise complement of [value] in the width of [kind]. [value] must fit.
-int _bitwiseNotInWidth(int value, PrimKind kind) {
-  final bits = _integerBitWidth(kind);
-  final mask = (BigInt.one << bits) - BigInt.one;
-  final flipped = (~BigInt.from(value)) & mask;
-  if (_integerKindIsUnsigned(kind)) return flipped.toInt();
-  final sign = BigInt.one << (bits - 1);
-  if ((flipped & sign) != BigInt.zero) {
-    return (flipped - (mask + BigInt.one)).toInt();
-  }
-  return flipped.toInt();
 }
 
 /// A literal coerced to a declared integer type must fit. `cast` does not
@@ -173,54 +196,67 @@ void _checkCoercedIntLiteral(Expr expr, KlinType type) {
   if (type is! PrimType || !type.kind.isInteger) return;
   final kind = type.kind;
   if (node is IntLit) {
-    final value = _intLitValue(node);
+    final value = _bigLitValue(node);
     if (value == null) return;
-    _requireIntLiteralInRange(value, kind, node.pos, node.lexeme);
+    _rejectConstRange(value, kind, node.pos, node.lexeme);
     return;
   }
   if (node is! UnaryExpr || (node.op != '-' && node.op != '~')) return;
   final lit = _groupedIntLit(node.operand);
   if (lit == null) return;
-  final mag = _intLitValue(lit);
+  final mag = _bigLitValue(lit);
   if (mag == null) return;
   if (node.op == '-') {
-    _requireIntLiteralInRange(-mag, kind, node.pos, '-${lit.lexeme}');
+    _rejectConstRange(-mag, kind, node.pos, '-${lit.lexeme}');
     return;
   }
-  if (!_intLiteralFits(mag, kind)) {
-    _requireIntLiteralInRange(mag, kind, lit.pos, lit.lexeme);
+  if (!_bigIntFits(mag, kind)) {
+    _rejectConstRange(mag, kind, lit.pos, lit.lexeme);
     return;
   }
-  _requireIntLiteralInRange(
-    _bitwiseNotInWidth(mag, kind),
+  _rejectConstRange(
+    _bigBitwiseNot(mag, kind),
     kind,
     node.pos,
     '~${lit.lexeme}',
   );
 }
 
-/// Index of the `]` that closes `[LEN]` in a type name. Character lengths
-/// (`']'`, `'\''`) must not use a naive `indexOf(']')`.
+/// Index of the `]` that closes `[LEN]` in a type name.
+///
+/// The length may be an expression (`1 + 2`, `N * 2`, `'A' + 1`), so a
+/// character literal inside it (`']'`, `'\\'`) must not end the scan, and
+/// parentheses may contain a `]`.
 int? _arrayTypeCloseBracket(String name) {
   if (!name.startsWith('[') || name.length < 3) return null;
   var i = 1;
-  if (name[i] == "'") {
-    i++; // opening '
-    if (i >= name.length) return null;
-    if (name[i] == '\\') {
-      i += 2; // \ + escape letter
-    } else {
-      i++; // one char
-    }
-    if (i >= name.length || name[i] != "'") return null;
-    i++; // closing '
-  } else {
-    while (i < name.length && name[i] != ']') {
+  var paren = 0;
+  while (i < name.length) {
+    final c = name[i];
+    if (c == "'") {
       i++;
+      if (i >= name.length) return null;
+      if (name[i] == '\\') {
+        i += 2;
+      } else {
+        i++;
+      }
+      if (i >= name.length || name[i] != "'") return null;
+      i++;
+      continue;
     }
+    if (c == '(') paren++;
+    if (c == ')' && paren > 0) paren--;
+    if (c == ']' && paren == 0) return i;
+    i++;
   }
-  if (i >= name.length || name[i] != ']') return null;
-  return i;
+  return null;
+}
+
+/// Thrown by integer constant evaluation when the expression is not a
+/// constant (a call, a variable, a float). Real diagnostics throw [CheckError].
+final class _NotConstExpr implements Exception {
+  const _NotConstExpr();
 }
 
 final class _Symbol {
@@ -300,6 +336,9 @@ final class Checker {
   final Map<String, StructDecl> _structs = {};
   final Map<String, EnumDecl> _enums = {};
   final Map<String, ConstDecl> _consts = {};
+
+  /// Constants currently being folded, to reject cycles.
+  final Set<String> _constEvalStack = {};
   final Map<String, _FuncSignature> _methods = {};
   final Map<String, _FuncSignature> _assocFuncs = {};
   final List<FuncDecl> _allFunctions = [];
@@ -336,6 +375,7 @@ final class Checker {
     _structs.clear();
     _enums.clear();
     _consts.clear();
+    _constEvalStack.clear();
     _methods.clear();
     _assocFuncs.clear();
     _allFunctions
@@ -755,14 +795,22 @@ final class Checker {
         );
       }
       final type = _resolveType(decl.typeName, decl.pos);
-      _checkConstInit(decl, type);
       decl.resolvedType = type;
+      _checkConstShape(decl, type);
       _consts[key] = decl;
+    }
+    for (final decl in program.consts) {
+      final type = decl.resolvedType;
+      if (type is PrimType && type.kind.isInteger) {
+        _currentModule = decl.moduleName;
+        _bindIntegerConst(decl, type);
+      }
     }
   }
 
-  /// Integer, bool, and `b"..."` literals only. Not an arbitrary expression.
-  void _checkConstInit(ConstDecl decl, KlinType type) {
+  /// `bool` and `[]u8` stay literals. Integer constants are folded after
+  /// every constant is registered, so a later `const` can be named.
+  void _checkConstShape(ConstDecl decl, KlinType type) {
     final init = decl.init;
     if (type is PrimType && type.kind == PrimKind.bool_) {
       if (init is! BoolLit) {
@@ -778,23 +826,7 @@ final class Checker {
       init.resolvedType = type;
       return;
     }
-    if (type is PrimType && type.kind.isInteger) {
-      if (init is IntLit) {
-        _checkCoercedIntLiteral(init, type);
-        init.resolvedType = type;
-        return;
-      }
-      if (init is UnaryExpr &&
-          (init.op == '-' || init.op == '~') &&
-          init.operand is IntLit) {
-        _checkCoercedIntLiteral(init, type);
-        init.resolvedType = type;
-        init.operand.resolvedType = type;
-        return;
-      }
-      throw CheckError(
-          'integer constant must be an integer literal', init.pos);
-    }
+    if (type is PrimType && type.kind.isInteger) return;
     throw CheckError(
       'constant type must be an integer, bool, or []u8',
       decl.pos,
@@ -835,6 +867,9 @@ final class Checker {
         }
         if (value is IntLit) _checkCoercedIntLiteral(value, base);
       }
+      // Implicit `A = 255, B` must not wrap. The value after the last
+      // variant is not a variant, so it is not an error.
+      _enumDiscriminants(decl);
     }
   }
 
@@ -924,39 +959,150 @@ final class Checker {
     return _resolvePrimType(name, pos);
   }
 
-  /// `[N]T` length: an integer literal, or an integer module constant.
+  /// `[N]T` length: an integer literal, a module constant, or an integer
+  /// constant expression (`1 + 2`, `N * 2`, `mod.NAME + 1`).
   ///
   /// The bound stored on [ArrayType] is the integer value. Emission writes
   /// that decimal, not the C name of the constant — a `const` variable is
   /// not an integer constant expression, so a struct field could not use it.
   int _resolveArrayLength(String lenText, SourcePos pos) {
-    if (_arrayLengthIsLiteral(lenText)) {
-      final len = _parseIntLiteralValue(lenText.replaceAll('_', ''));
-      if (len == null || len < 0) {
+    final Expr expr;
+    try {
+      expr = parseExpression(lenText);
+    } on ParseError {
+      throw CheckError('invalid array type `[$lenText]`', pos);
+    }
+    final node = _peelGroups(expr);
+    if (node is IntLit) {
+      final len = _bigLitValue(node);
+      if (len == null) {
         throw CheckError('invalid array type `[$lenText]`', pos);
       }
-      return len;
+      return _arrayLengthFromBig(len, lenText, pos);
     }
-    final decl = _lookupArrayLengthConst(lenText, pos);
-    final value = _integerConstValue(decl);
-    final type = decl.resolvedType;
-    if (value == null || type is! PrimType || !type.kind.isInteger) {
-      final shown = type?.displayName ?? 'unknown';
-      throw CheckError(
-        'array length `$lenText` must be an integer constant, got `$shown`',
+    if (node is NameExpr) {
+      return _arrayLengthOfConst(
+        _lookupArrayLengthConst(node.name, pos),
+        node.name,
         pos,
       );
     }
-    if (value < 0) {
-      throw CheckError('array length `$lenText` must be non-negative', pos);
+    if (node is FieldExpr && node.object is NameExpr) {
+      final alias = (node.object as NameExpr).name;
+      final shown = '$alias.${node.name}';
+      return _arrayLengthOfConst(
+        _lookupArrayLengthConst(shown, pos),
+        shown,
+        pos,
+      );
     }
-    return value;
+    final BigInt value;
+    try {
+      final type = _arrayLengthExprType(expr, lenText, pos);
+      value = _evalConstInt(expr, type);
+    } on _NotConstExpr {
+      throw CheckError(
+        'array length `$lenText` must be an integer constant expression',
+        pos,
+      );
+    } on CheckError catch (e) {
+      // The expression was re-parsed from the type text, so its positions
+      // are not the source line. Report the type's position instead.
+      throw CheckError(e.message, pos, path: e.path);
+    }
+    return _arrayLengthFromBig(value, lenText, pos);
   }
 
-  static bool _arrayLengthIsLiteral(String lenText) {
-    if (lenText.isEmpty) return false;
-    final c = lenText.codeUnitAt(0);
-    return c == 0x27 || (c >= 0x30 && c <= 0x39);
+  /// Host [ArrayType.len] is a signed 64-bit integer. A non-negative value
+  /// whose bit length is at most 63 round-trips through [BigInt.toInt].
+  int _arrayLengthFromBig(BigInt value, String shown, SourcePos pos) {
+    if (value.isNegative) {
+      throw CheckError('array length `$shown` must be non-negative', pos);
+    }
+    if (value.bitLength > 63) {
+      throw CheckError('array length `$shown` is too large', pos);
+    }
+    return value.toInt();
+  }
+
+  int _arrayLengthOfConst(ConstDecl decl, String shown, SourcePos pos) {
+    final type = decl.resolvedType;
+    if (type is PrimType && type.kind.isInteger && decl.intValue == null) {
+      _bindIntegerConst(decl, type);
+    }
+    final value = decl.intValue;
+    if (value == null || type is! PrimType || !type.kind.isInteger) {
+      final got = type?.displayName ?? 'unknown';
+      throw CheckError(
+        'array length `$shown` must be an integer constant, got `$got`',
+        pos,
+      );
+    }
+    return _arrayLengthFromBig(value, shown, pos);
+  }
+
+  /// Named constants in a length expression share one integer type.
+  /// Literals alone are folded as `i32`.
+  PrimType _arrayLengthExprType(Expr expr, String lenText, SourcePos pos) {
+    PrimType? found;
+    void walk(Expr e) {
+      final node = _peelGroups(e);
+      if (node is IntLit) return;
+      if (node is NameExpr) {
+        found = _mergeLengthType(
+          found,
+          _lookupArrayLengthConst(node.name, pos),
+          lenText,
+          pos,
+        );
+        return;
+      }
+      if (node is FieldExpr && node.object is NameExpr) {
+        final alias = (node.object as NameExpr).name;
+        found = _mergeLengthType(
+          found,
+          _lookupArrayLengthConst('$alias.${node.name}', pos),
+          lenText,
+          pos,
+        );
+        return;
+      }
+      if (node is UnaryExpr) {
+        walk(node.operand);
+        return;
+      }
+      if (node is BinaryExpr) {
+        walk(node.left);
+        walk(node.right);
+        return;
+      }
+    }
+
+    walk(expr);
+    return found ?? const PrimType(PrimKind.i32);
+  }
+
+  PrimType _mergeLengthType(
+    PrimType? found,
+    ConstDecl decl,
+    String lenText,
+    SourcePos pos,
+  ) {
+    final type = decl.resolvedType;
+    if (type is! PrimType || !type.kind.isInteger) {
+      final got = type?.displayName ?? 'unknown';
+      throw CheckError(
+        'array length `$lenText` must be an integer constant, got `$got`',
+        pos,
+      );
+    }
+    if (found != null && found != type) {
+      throw CheckError(
+        'type mismatch: `${found.displayName}` and `${type.displayName}`',
+        pos,
+      );
+    }
+    return type;
   }
 
   ConstDecl _lookupArrayLengthConst(String lenText, SourcePos pos) {
@@ -984,20 +1130,203 @@ final class Checker {
     return decl;
   }
 
-  /// Integer value of a constant's literal initializer, including a leading `-`.
-  int? _integerConstValue(ConstDecl decl) {
-    final init = decl.init;
-    if (init is IntLit) {
-      return _parseIntLiteralValue(init.lexeme.replaceAll('_', ''));
-    }
-    if (init is UnaryExpr && init.op == '-' && init.operand is IntLit) {
-      final mag = _parseIntLiteralValue(
-        (init.operand as IntLit).lexeme.replaceAll('_', ''),
+  /// Folds [decl] in its own module. A cycle is an error.
+  void _bindIntegerConst(ConstDecl decl, PrimType type) {
+    if (decl.intValue != null) return;
+    final key = _key(decl.moduleName, decl.name);
+    if (_constEvalStack.contains(key)) {
+      throw CheckError(
+        'constant `${decl.name}` depends on itself',
+        decl.pos,
       );
-      if (mag == null) return null;
-      return -mag;
     }
-    return null;
+    _constEvalStack.add(key);
+    final savedModule = _currentModule;
+    _currentModule = decl.moduleName;
+    try {
+      final BigInt value;
+      try {
+        value = _evalConstInt(decl.init, type);
+      } on _NotConstExpr {
+        throw CheckError(
+          'integer constant must be an integer constant expression',
+          decl.init.pos,
+        );
+      }
+      decl.intValue = value;
+      decl.init.resolvedType = type;
+    } finally {
+      _currentModule = savedModule;
+      _constEvalStack.remove(key);
+    }
+  }
+
+  /// Integer constant expression in [type]'s width. Literals and named
+  /// integer constants of that same type. Not a variable: `~x` stays runtime.
+  BigInt _evalConstInt(Expr expr, PrimType type) {
+    final node = _peelGroups(expr);
+    if (node is IntLit) {
+      final value = _bigLitValue(node);
+      if (value == null) throw const _NotConstExpr();
+      _rejectConstRange(value, type.kind, node.pos, node.lexeme);
+      return value;
+    }
+    if (node is NameExpr) {
+      return _evalNamedConst(null, node.name, type, node.pos);
+    }
+    if (node is FieldExpr && node.object is NameExpr) {
+      return _evalNamedConst(
+        (node.object as NameExpr).name,
+        node.name,
+        type,
+        node.pos,
+      );
+    }
+    if (node is UnaryExpr) {
+      return _evalConstUnary(node, type);
+    }
+    if (node is BinaryExpr) {
+      return _evalConstBinary(node, type);
+    }
+    throw const _NotConstExpr();
+  }
+
+  BigInt _evalNamedConst(
+    String? qualifier,
+    String name,
+    PrimType expected,
+    SourcePos pos,
+  ) {
+    final ConstDecl decl;
+    if (qualifier == null) {
+      final found = _consts[_key(_currentModule, name)];
+      if (found == null) {
+        throw CheckError('unknown constant `$name`', pos);
+      }
+      decl = found;
+    } else {
+      final module = _resolveModuleQualifier(qualifier, pos);
+      final found = _consts[_key(module, name)];
+      if (found == null) {
+        throw CheckError('unknown constant `$qualifier.$name`', pos);
+      }
+      if (module != _currentModule && !found.isPub) {
+        throw CheckError('constant `$qualifier.$name` is private', pos);
+      }
+      decl = found;
+    }
+    final actual = decl.resolvedType;
+    if (actual is! PrimType || !actual.kind.isInteger) {
+      final got = actual?.displayName ?? 'unknown';
+      throw CheckError(
+        'constant `$name` has type `$got`, expected `${expected.displayName}`',
+        pos,
+      );
+    }
+    if (actual != expected) {
+      throw CheckError(
+        'type mismatch: expected `${expected.displayName}`, '
+        'got `${actual.displayName}`',
+        pos,
+      );
+    }
+    _bindIntegerConst(decl, actual);
+    return decl.intValue!;
+  }
+
+  BigInt _evalConstUnary(UnaryExpr node, PrimType type) {
+    final op = node.op;
+    if (op == '-') {
+      final lit = _groupedIntLit(node.operand);
+      if (lit != null) {
+        final mag = _bigLitValue(lit);
+        if (mag == null) throw const _NotConstExpr();
+        final value = -mag;
+        _rejectConstRange(value, type.kind, node.pos, '-${lit.lexeme}');
+        node.operand.resolvedType = type;
+        return value;
+      }
+      final value = -_evalConstInt(node.operand, type);
+      _rejectConstRange(value, type.kind, node.pos, value.toString());
+      return value;
+    }
+    if (op == '~') {
+      final lit = _groupedIntLit(node.operand);
+      if (lit != null) {
+        final magBig = _bigLitValue(lit);
+        if (magBig == null) throw const _NotConstExpr();
+        _rejectConstRange(magBig, type.kind, lit.pos, lit.lexeme);
+        final flipped = _bigBitwiseNot(magBig, type.kind);
+        _rejectConstRange(flipped, type.kind, node.pos, '~${lit.lexeme}');
+        node.operand.resolvedType = type;
+        return flipped;
+      }
+      final value = _evalConstInt(node.operand, type);
+      return _bigBitwiseNot(value, type.kind);
+    }
+    throw const _NotConstExpr();
+  }
+
+  BigInt _evalConstBinary(BinaryExpr node, PrimType type) {
+    const arith = {'+', '-', '*', '/', '%'};
+    const bits = {'&', '|', '^'};
+    final op = node.op;
+    final kind = type.kind;
+    if (op == '<<' || op == '>>') {
+      final left = _evalConstInt(node.left, type);
+      final right = _evalConstInt(node.right, type);
+      if (right.isNegative) {
+        throw CheckError('shift by a negative count', node.pos);
+      }
+      final width = _integerBitWidth(kind);
+      if (right >= BigInt.from(width)) {
+        throw CheckError(
+          'shift by `$right` is wider than `${type.displayName}` (width $width)',
+          node.pos,
+        );
+      }
+      final n = right.toInt();
+      final BigInt result;
+      if (op == '<<') {
+        result = left << n;
+      } else if (_integerKindIsUnsigned(kind)) {
+        final mask = (BigInt.one << width) - BigInt.one;
+        result = (left & mask) >> n;
+      } else {
+        result = left >> n;
+      }
+      _rejectConstRange(result, kind, node.pos, result.toString());
+      return result;
+    }
+    if (op == '/' || op == '%') {
+      final left = _evalConstInt(node.left, type);
+      final right = _evalConstInt(node.right, type);
+      if (right == BigInt.zero) {
+        throw CheckError(
+          op == '/' ? 'division by zero' : 'remainder by zero',
+          node.pos,
+        );
+      }
+      final result = op == '/' ? left ~/ right : left - (left ~/ right) * right;
+      _rejectConstRange(result, kind, node.pos, result.toString());
+      return result;
+    }
+    if (!arith.contains(op) && !bits.contains(op)) {
+      throw const _NotConstExpr();
+    }
+    final left = _evalConstInt(node.left, type);
+    final right = _evalConstInt(node.right, type);
+    final result = switch (op) {
+      '+' => left + right,
+      '-' => left - right,
+      '*' => left * right,
+      '&' => left & right,
+      '|' => left | right,
+      '^' => left ^ right,
+      _ => throw const _NotConstExpr(),
+    };
+    _rejectConstRange(result, kind, node.pos, result.toString());
+    return result;
   }
 
   /// Parses encoded `fn(T1,T2):Ret` from [_typeName].
@@ -1083,8 +1412,9 @@ final class Checker {
       return ('[]$inner', after);
     }
     if (s.startsWith('[', start)) {
-      final close = s.indexOf(']', start);
-      if (close < 0) throw CheckError('invalid array type', pos);
+      final closeRel = _arrayTypeCloseBracket(s.substring(start));
+      if (closeRel == null) throw CheckError('invalid array type', pos);
+      final close = start + closeRel;
       final (inner, after) = _splitTypePrefix(s, close + 1, pos);
       return (s.substring(start, after), after);
     }
@@ -1101,24 +1431,35 @@ final class Checker {
   String _key(String module, String name) => '$module.$name';
 
   /// C rules: 0,1,2,… unless `= N` restarts the sequence.
-  List<(String name, int value, SourcePos pos)> _enumDiscriminants(
+  ///
+  /// An implicit next value that does not fit [EnumDecl.baseType] is an
+  /// error. Explicit values are range-checked by [_checkCoercedIntLiteral]
+  /// before this runs. The counter is [BigInt] so `i64` max + 1 does not
+  /// wrap through a host `int`.
+  List<(String name, BigInt value, SourcePos pos)> _enumDiscriminants(
     EnumDecl decl,
   ) {
-    var next = 0;
-    final out = <(String, int, SourcePos)>[];
+    var next = BigInt.zero;
+    final out = <(String, BigInt, SourcePos)>[];
+    final base = decl.baseType;
     for (final variant in decl.variants) {
       final valueExpr = variant.value;
       if (valueExpr is IntLit) {
-        final parsed =
-            _parseIntLiteralValue(valueExpr.lexeme.replaceAll('_', ''));
+        final parsed = _bigLitValue(valueExpr);
         if (parsed == null) {
           throw CheckError(
               'enum value must be an integer literal', valueExpr.pos);
         }
         next = parsed;
+      } else if (base != null && !_bigIntFits(next, base.kind)) {
+        throw CheckError(
+          'enum variant `${variant.name}` value $next is out of range for '
+          '`${base.displayName}` (${_intRangeText(base.kind)})',
+          variant.pos,
+        );
       }
       out.add((variant.name, next, variant.pos));
-      next += 1;
+      next += BigInt.one;
     }
     return out;
   }
@@ -1135,9 +1476,9 @@ final class Checker {
         pos,
       );
     }
-    final n = objectType.len;
+    final n = BigInt.from(objectType.len);
     for (final (name, value, _) in _enumDiscriminants(decl)) {
-      if (value < 0 || value >= n) {
+      if (value.isNegative || value >= n) {
         throw CheckError(
           'enum `${decl.name}` does not fit `[${n}]` '
           '(variant `$name` = $value)',
@@ -2756,7 +3097,15 @@ final class Checker {
           return field.resolvedType!;
         }(),
       IndexExpr(:final object, :final index, :final pos) => () {
-          final objectType = _inferExpr(object);
+          var objectType = _inferExpr(object);
+          // A literal with no expected array type defaults to `i32` / `f64`
+          // elements, same as `let a = [1, 2]`. A surrounding `[N]u8` is
+          // applied later, when the literal itself is the value.
+          if (objectType is ArrayType && _containsUntyped(objectType)) {
+            final concrete = _defaultConcrete(objectType, object.pos);
+            _materialize(object, concrete);
+            objectType = concrete;
+          }
           final indexType = _defaultConcrete(_inferExpr(index), index.pos);
           if (indexType is EnumType) {
             _checkEnumIndex(indexType, objectType, index.pos);
@@ -2808,6 +3157,12 @@ final class Checker {
                         'array element type mismatch: `${elemType.displayName}` and `${nextType.displayName}`',
                         element.pos,
                       ));
+          }
+          // Keep untyped elements (and nested untyped arrays) so a later
+          // expected type can adopt them: `let a: [2]u8 = [1, 2]`.
+          // Concretizing here would freeze `[2]i32` before that context.
+          if (_containsUntyped(elemType)) {
+            return ArrayType(elemType, elements.length);
           }
           elemType = _defaultConcrete(elemType, pos);
           for (final element in elements) {
@@ -3113,6 +3468,10 @@ final class Checker {
     if (place is NameExpr) return _scope.lookup(place.name)?.isMut ?? false;
     if (place is FieldExpr) return _isMutablePlace(place.object);
     if (place is IndexExpr) return _isMutablePlace(place.object);
+    // `xs[:][i]` — the slice is a view of the array place. `&` follows
+    // that place: `let mut xs` yields `*mut`, an immutable `xs` yields `*`.
+    // The view itself (`&xs[:]`) is not a place.
+    if (place is SliceFromExpr) return _isMutablePlace(place.array);
     if (place is UnaryExpr && place.op == '*') {
       final pointer = place.operand.resolvedType ?? _inferExpr(place.operand);
       return pointer is PtrType && pointer.isMut;
@@ -3764,12 +4123,22 @@ final class Checker {
   void _expectAssignable(KlinType target, KlinType source, SourcePos pos) {
     if (!_isAssignable(target, source)) {
       throw CheckError(
-        'type mismatch: expected `${target.displayName}`, '
-        'got `${source.displayName}`',
+        'type mismatch: expected `${_typeForMismatch(target)}`, '
+        'got `${_typeForMismatch(source)}`',
         pos,
       );
     }
   }
+
+  /// Untyped literals default to `i32` / `f64` in a mismatch. An array of
+  /// them is reported as `[N]i32`, not `[N]untyped int`.
+  String _typeForMismatch(KlinType type) => switch (type) {
+        UntypedInt() => 'i32',
+        UntypedFloat() => 'f64',
+        ArrayType(:final elem, :final len) =>
+          '[$len]${_typeForMismatch(elem)}',
+        _ => type.displayName,
+      };
 
   bool _isAssignable(KlinType target, KlinType source) {
     if (target == source) return true;
@@ -3800,8 +4169,20 @@ final class Checker {
     if (target is FnType && source is FnType && target == source) {
       return true;
     }
+    if (target is ArrayType &&
+        source is ArrayType &&
+        target.len == source.len &&
+        _isAssignable(target.elem, source.elem)) {
+      return true;
+    }
     return false;
   }
+
+  bool _containsUntyped(KlinType type) => switch (type) {
+        UntypedInt() || UntypedFloat() => true,
+        ArrayType(:final elem) => _containsUntyped(elem),
+        _ => false,
+      };
 
   KlinType _defaultConcrete(KlinType type, SourcePos pos) {
     return switch (type) {
@@ -3811,7 +4192,8 @@ final class Checker {
       StructType() => type,
       EnumType() => type,
       PtrType() => type,
-      ArrayType() => type,
+      ArrayType(:final elem, :final len) =>
+        ArrayType(_defaultConcrete(elem, pos), len),
       SliceType() => type,
       FnType() => type,
       ResultType(:final ok) => ResultType(_defaultConcrete(ok, pos)),

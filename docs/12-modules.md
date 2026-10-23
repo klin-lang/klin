@@ -32,10 +32,11 @@ fn main() {
 - `module name` — module declaration for the file (or all files in a directory package)
 - `import name` — qualifier in use: `name.Symbol`
 - without `pub` = private in **module**; `pub` = visible after `import`
-- `pub const NAME: Type = literal` — immutable module value (integer,
-  `bool`, or `b"..."`). An integer const is a valid `[N]T` length
-  (`[NAME]T`, or `[mod.NAME]T` after `import`). Private `const` is
-  `static` in C. No mutable globals
+- `pub const NAME: Type = …` — immutable module value (integer, `bool`,
+  or `b"..."`). An integer initializer may use other constants and
+  `+ - * / % << >> & | ^` (and unary `-` / `~`). That value is a valid
+  `[N]T` length (`[NAME]T`, `[mod.NAME]T`, `[NAME * 2]T`). Private
+  `const` is `static` in C. No mutable globals
 
 ## C emission
 

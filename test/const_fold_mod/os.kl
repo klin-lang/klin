@@ -1,0 +1,4 @@
+module os
+
+pub const PAGE: i32 = 4096
+const HIDDEN: i32 = 1

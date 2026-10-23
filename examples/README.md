@@ -62,6 +62,8 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `number_literals.kl` | Binary / exponent literals ([081](../issues/081-number-literals.md)) |
 | `byte_string.kl` | `b"..."` byte string (`[]u8`, [docs/syntax.md](../docs/syntax.md)) |
 | `module_const.kl` | Module-level `const` (integer, `bool`, `b"..."`, `[N]T` length, [docs/syntax.md](../docs/syntax.md)) |
+| `const_fold.kl` | Integer constant expressions (`N * 2`, `~0x0F`, `[1 + 2]T`, [docs/01-decisions.md](../docs/01-decisions.md) D11) |
+| `array_lit.kl` | Array literal takes the element type from context (`[3]u8 = [1, 2, 3]`) |
 | `numeric_cast.kl` | Explicit numeric `cast` ([154](../issues/154-numeric-cast.md), [docs/syntax.md](../docs/syntax.md)) |
 | `sorted_lookup.kl` | Closed KV: enum index ([126](../issues/126-enum-index.md)) + owned bsearch ([060](../issues/060-map-kv.md) ❌) |
 | `sketch_async_eventloop.kl` | `async`/`await` + remote eventloop ([029](../issues/029-async-event-loop.md); also [`remote_eventloop/`](remote_eventloop/)) |

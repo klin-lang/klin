@@ -36,7 +36,7 @@ String _emitExpr(Expr expr, _ExprCtx ctx) {
 
 String _emitExprRaw(Expr expr, _ExprCtx ctx) {
   return switch (expr) {
-    IntLit(:final lexeme) => _cIntLiteral(lexeme),
+    IntLit lit => _emitIntLit(lit),
     FloatLit(:final lexeme) => lexeme.replaceAll('_', ''),
     BoolLit(:final value) => value ? 'true' : 'false',
     StringLit(:final value) => '"${_escapeC(value)}"',
@@ -83,8 +83,8 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
       :final positionalFields
     ) =>
       namedFields != null
-          ? '(${_cType(resolvedType ?? (throw StateError('emit: literal without type `$typeName`')))}){ ${namedFields.entries.map((entry) => '.${entry.key} = ${_emitExpr(entry.value, ctx)}').join(', ')} }'
-          : '(${_cType(resolvedType ?? (throw StateError('emit: literal without type `$typeName`')))}){ ${positionalFields!.map((field) => _emitExpr(field, ctx)).join(', ')} }',
+          ? '(${_cType(resolvedType ?? (throw StateError('emit: literal without type `$typeName`')))}){ ${namedFields.entries.map((entry) => '.${entry.key} = ${_emitArrayInit(entry.value, ctx)}').join(', ')} }'
+          : '(${_cType(resolvedType ?? (throw StateError('emit: literal without type `$typeName`')))}){ ${positionalFields!.map((field) => _emitArrayInit(field, ctx)).join(', ')} }',
     CallExpr(
       :final callee,
       :final args,
@@ -109,7 +109,8 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
     InterpolatedStringExpr() => throw StateError(
         'emit: interpolated string must be lowered via printf / fmt.write',
       ),
-    UnaryExpr(:final op, :final operand) => '$op(${_emitExpr(operand, ctx)})',
+    UnaryExpr(:final op, :final operand, :final resolvedType) =>
+      _emitUnary(op, operand, resolvedType, (inner) => _emitExpr(inner, ctx)),
     IndexExpr(:final object, :final index) => object.resolvedType is SliceType
         ? '${_emitExpr(object, ctx)}.ptr[${_emitExpr(index, ctx)}]'
         : '${_emitExpr(object, ctx)}[${_emitExpr(index, ctx)}]',
@@ -124,8 +125,7 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         }
         return '(${_sliceCName(elem)}){ ${_emitExpr(array, ctx)}, ${type.len} }';
       }(),
-    ArrayLitExpr(:final elements) =>
-      '{ ${elements.map((element) => _emitExpr(element, ctx)).join(', ')} }',
+    ArrayLitExpr lit => _emitArrayLit(lit, ctx),
     CastExpr(:final resolvedType, :final expr) => () {
         final target = resolvedType;
         if (target == null) throw StateError('emit: cast without type');
@@ -199,6 +199,46 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
   };
 }
 
+/// An array literal in expression position is a compound literal
+/// (`take([1, 2])` → `take((uint8_t[2]){ 1, 2 })`). A brace list is not
+/// an expression. Nested arrays and struct fields stay brace lists,
+/// because they initialize an array.
+String _emitArrayLit(ArrayLitExpr expr, _ExprCtx ctx, {bool asInitializer = false}) {
+  final inner = expr.elements.map((element) {
+    if (element is ArrayLitExpr) {
+      return _emitArrayLit(element, ctx, asInitializer: true);
+    }
+    return _emitExpr(element, ctx);
+  }).join(', ');
+  if (!asInitializer &&
+      expr.resolvedType is ArrayType &&
+      _arrayElemIsConcrete(expr.resolvedType! as ArrayType)) {
+    return '(${_cArraySuffixType(expr.resolvedType! as ArrayType)}){ $inner }';
+  }
+  return '{ $inner }';
+}
+
+/// Struct field: an array literal initializes the member, so it is a brace
+/// list. Any other value is an ordinary expression.
+String _emitArrayInit(Expr expr, _ExprCtx ctx) {
+  if (expr is ArrayLitExpr) return _emitArrayLit(expr, ctx, asInitializer: true);
+  return _emitExpr(expr, ctx);
+}
+
+/// `uint8_t[2]` or `uint8_t[1][2]` for a compound literal.
+String _cArraySuffixType(ArrayType type) {
+  final shape = _arrayShape(type);
+  return '${_cType(shape.elem)}[${shape.lens.join('][')}]';
+}
+
+bool _arrayElemIsConcrete(ArrayType type) {
+  KlinType elem = type.elem;
+  while (elem is ArrayType) {
+    elem = elem.elem;
+  }
+  return elem is! UntypedInt && elem is! UntypedFloat;
+}
+
 String _structCName(String module, String name) =>
     module.isEmpty ? name : '${module}_$name';
 
@@ -222,6 +262,81 @@ String _cIntLiteral(String lexeme) {
   return s;
 }
 
+/// A coerced integer literal in an expression.
+///
+/// A decimal above `2^63-1` is not a C integer constant (`0x…` already
+/// is). An unsigned destination gets the same `ULL` suffix as a folded
+/// `const`. Enum constants keep calling [_cIntLiteral] directly: a C
+/// `enum` value has to stay an `int` constant.
+String _emitIntLit(IntLit lit) {
+  final spelling = _cIntLiteral(lit.lexeme);
+  if (!_decimalAboveI64Max(spelling)) return spelling;
+  final type = lit.resolvedType;
+  if (type is PrimType && !_primIsUnsigned(type.kind)) return spelling;
+  return '${spelling}ULL';
+}
+
+bool _decimalAboveI64Max(String spelling) {
+  if (spelling.isEmpty ||
+      spelling.startsWith('0x') ||
+      spelling.startsWith('0X') ||
+      spelling.startsWith("'")) {
+    return false;
+  }
+  final value = BigInt.tryParse(spelling);
+  return value != null && value > _i64Max;
+}
+
+bool _primIsUnsigned(PrimKind kind) => switch (kind) {
+      PrimKind.u8 ||
+      PrimKind.u16 ||
+      PrimKind.u32 ||
+      PrimKind.u64 ||
+      PrimKind.usize =>
+        true,
+      _ => false,
+    };
+
+/// `-(9223372036854775808)` is not a portable C constant. `i64` / `isize`
+/// minimum uses the same split form as a folded `const`.
+String _emitUnary(
+  String op,
+  Expr operand,
+  KlinType? type,
+  String Function(Expr) emitOperand,
+) {
+  if (op == '-' &&
+      type is PrimType &&
+      (type.kind == PrimKind.i64 || type.kind == PrimKind.isize)) {
+    var node = operand;
+    while (node is GroupExpr) {
+      node = node.inner;
+    }
+    if (node is IntLit) {
+      final mag = _intLitMagnitude(node.lexeme);
+      if (mag != null && mag == -_i64Min) {
+        return '(-9223372036854775807LL - 1)';
+      }
+    }
+  }
+  return '$op(${emitOperand(operand)})';
+}
+
+BigInt? _intLitMagnitude(String lexeme) {
+  if (lexeme.startsWith("'")) return null;
+  final s = lexeme.replaceAll('_', '');
+  if (s.startsWith('0b') || s.startsWith('0B')) {
+    return BigInt.tryParse(s.substring(2), radix: 2);
+  }
+  if (s.startsWith('0o') || s.startsWith('0O')) {
+    return BigInt.tryParse(s.substring(2), radix: 8);
+  }
+  if (s.startsWith('0x') || s.startsWith('0X')) {
+    return BigInt.tryParse(s.substring(2), radix: 16);
+  }
+  return BigInt.tryParse(s);
+}
+
 String _enumConstCName(String module, String name, String variant) =>
     module.isEmpty ? '${name}_$variant' : '${module}_${name}_$variant';
 
@@ -236,7 +351,21 @@ void _line(StringBuffer buf, int line, String path) {
 }
 
 /// Brace-initialized so a `[]u8` constant is a real object, not a cast.
-String _emitConstInitializer(Expr init) {
+///
+/// A folded integer expression is the decimal value. A lone literal, or
+/// unary `-` / `~` on a literal, keeps its source spelling (`0x4`, `'A'`,
+/// `~0`, `-128`) when that spelling is a valid C constant. `i64` minimum
+/// and an unsigned value above `2^63-1` use a form gcc accepts. The value
+/// is never a C `enum` or `constexpr`.
+String _emitConstInitializer(ConstDecl decl) {
+  final init = decl.init;
+  if (!_constKeepsSourceSpelling(decl)) {
+    final value = decl.intValue;
+    final type = decl.resolvedType;
+    if (value != null && type is PrimType && type.kind.isInteger) {
+      return _cConstInt(value, type.kind);
+    }
+  }
   return switch (init) {
     IntLit(:final lexeme) => _cIntLiteral(lexeme),
     UnaryExpr(:final op, :final operand)
@@ -250,6 +379,49 @@ String _emitConstInitializer(Expr init) {
       }(),
     _ => throw StateError('emit: constant initializer is not a literal'),
   };
+}
+
+/// `true` when the initializer's source spelling is a legal C constant.
+///
+/// `18446744073709551615` does not fit in a signed C integer. `-9223372036854775808`
+/// is not a single C literal either. `~0` and `-128` stay as written.
+bool _constKeepsSourceSpelling(ConstDecl decl) {
+  final init = decl.init;
+  final value = decl.intValue;
+  final type = decl.resolvedType;
+  if (init is UnaryExpr &&
+      init.op == '~' &&
+      init.operand is IntLit) {
+    return true;
+  }
+  if (init is UnaryExpr && init.op == '-' && init.operand is IntLit) {
+    if (value != null &&
+        type is PrimType &&
+        (type.kind == PrimKind.i64 || type.kind == PrimKind.isize) &&
+        value == _i64Min) {
+      return false;
+    }
+    return true;
+  }
+  if (init is IntLit) {
+    if (value != null && value > _i64Max) return false;
+    return true;
+  }
+  return init is BoolLit || init is ByteStringLit;
+}
+
+final BigInt _i64Max = BigInt.parse('9223372036854775807');
+final BigInt _i64Min = -BigInt.parse('9223372036854775808');
+
+/// Decimal C constant for a folded integer. Values that do not fit in a
+/// signed 64-bit literal get a suffix or a split form gcc accepts.
+String _cConstInt(BigInt value, PrimKind kind) {
+  if ((kind == PrimKind.i64 || kind == PrimKind.isize) && value == _i64Min) {
+    return '(-9223372036854775807LL - 1)';
+  }
+  if (value.isNegative) return value.toString();
+  if (value > _i64Max) return '${value}ULL';
+  return value.toString();
 }
 
 /// `b"..."` → `[]u8` over a static C string. `.len` is the byte count and

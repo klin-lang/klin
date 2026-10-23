@@ -168,10 +168,11 @@ final class EnumVariant {
   });
 }
 
-/// `pub? const Name: Type = literal` at module scope.
+/// `pub? const Name: Type = expr` at module scope.
 ///
 /// Immutable. No mutable globals. The initializer is a literal
-/// (integer, `true`/`false`, or `b"..."`).
+/// (`true`/`false`, `b"..."`) or, for an integer type, an integer
+/// constant expression.
 final class ConstDecl {
   final String name;
   final String typeName;
@@ -187,6 +188,12 @@ final class ConstDecl {
 
   /// Filled by the checker.
   KlinType? resolvedType;
+
+  /// Folded value of an integer constant. Null for `bool` and `[]u8`.
+  ///
+  /// `BigInt`, not a host `int`: a `u64` all-ones value does not fit in a
+  /// signed 64-bit integer, and `BigInt.toInt` would truncate it.
+  BigInt? intValue;
 
   ConstDecl({
     required this.name,

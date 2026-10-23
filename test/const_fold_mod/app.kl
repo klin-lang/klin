@@ -1,0 +1,41 @@
+module fold
+import os
+
+struct Pair {
+    data: [N * 2]i32
+}
+
+const N: i32 = 3
+const TWICE: i32 = N * 2
+const LATER: i32 = EARLY + 1
+const EARLY: i32 = 4
+const MASK: u8 = ~0x0F
+const SUM: i32 = 1 + 2 * 3
+const SH: i32 = 1 << 2 + 2
+const NEG: i32 = -5 / 2
+const REM: i32 = -5 % 2
+const MIN: i8 = -128
+const BIG: u32 = ~0
+const WIDE: u64 = ~0 + 0
+const IMIN: i64 = -9223372036854775807 - 1
+const KB: i32 = os.PAGE / 1024
+const CH: i32 = 'A' + 1
+const BITS: i32 = (6 & 3) | (1 ^ 2)
+
+fn take(xs: [1 + 2]u8): i32 {
+    return xs.len
+}
+
+fn main() {
+    let buf: [N * 2]i32
+    let mut pair: Pair
+    pair.data[0] = 1
+    let raw: [1 + 2]u8
+    let kb: [os.PAGE / 1024]u8
+    let x: i32 = 7
+    let y = ~x
+    printf("%d %d %d %d %d %d %d %d\n", TWICE, LATER, cast(i32, MASK), SUM, SH, NEG, REM, cast(i32, MIN))
+    printf("%u %d %d %d %d %d %d %d %d\n", BIG, buf.len, take(raw), pair.data.len, KB, kb.len, CH, BITS, y)
+    printf("%llu\n", WIDE)
+    printf("%lld\n", IMIN)
+}

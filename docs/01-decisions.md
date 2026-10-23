@@ -152,8 +152,14 @@ when it is reached through a `*mut` pointer — field and index chains
 included (`(*c).err.lit(...)` where `c: *mut Ctx`). `&place` has type
 `*mut T` when that place is mutable and `*T` when it is not. A place
 reached only through a non-mut `*T` stays immutable, the same rule as
-assignment (`(*p).x = …` already rejected a write through `*T`). The
-call still passes a pointer; `mut` is not in the C.
+assignment (`(*p).x = …` already rejected a write through `*T`). A
+slice element follows the place: `&s[i]` is `*mut T` when `s` is
+mutable and `*T` when it is not. `xs[:]` is a view of the array, so
+`&xs[:][i]` is `*mut` when `xs` is `let mut` or reached through `*mut`,
+and `*T` when `xs` is immutable. An immutable binding (`let s = xs[:]`)
+and a slice parameter stay `*T` even if the underlying array was
+mutable. `&xs[:]` is not a place. The call still passes a pointer;
+`mut` is not in the C.
 
 ---
 
@@ -250,7 +256,7 @@ printf("%d\n", b"/proc/self/cmdline\0".len)  // 19
 
 ## D11. Module-level `const` — DECIDED
 
-**Choice: `pub? const Name: Type = literal`.** Immutable. No mutable
+**Choice: `pub? const Name: Type = expression`.** Immutable. No mutable
 globals, and no `let` at module scope.
 
 A keyword table, a page size, or a syscall number should be a named
@@ -261,22 +267,51 @@ is a C constant.
   constant of the same name in a value). A type still sees the constant.
 - The type is required. Allowed: an integer prim (`i8`…`i64`, `u8`…`u64`,
   `usize` / `isize`, `int`), `bool`, or `[]u8`.
-- The initializer is a literal: an integer (including `-N`, hex, `'A'`),
-  `true` / `false`, or `b"..."`. Not `1 + 2`, not another constant, not
-  a float or a `str`.
+- `bool` is `true` / `false`. `[]u8` is `b"..."`. Not a float or a `str`.
+- An integer initializer is an integer constant expression: literals
+  (hex, binary, octal, underscores, `'A'`), unary `-` and `~`, the
+  operators `+ - * / % << >> & | ^`, and names of other integer
+  constants, including `mod.NAME` after `import`. A constant may name
+  one declared later in the program. A cycle is an error (constant
+  `A` depends on itself). A named constant must have that same integer
+  type; a different type is a type mismatch. `~x` on a value
+  that is not a constant is not folded — it stays a runtime expression.
+- Each literal and each operator result is checked against the
+  constant's declared type with the D12 diagnostic. Overflow is that
+  error, not a wrap. Division by zero and remainder by zero are errors.
+  A shift by a negative count, or by a count greater than or equal to
+  the type's width, is an error. The shift count is the same integer
+  type as the constant, so `const X: u8 = 1 << -1` fails the range check
+  on `-1` before the negative-shift check. Precedence is the language
+  precedence (`*` `/` `%` tighter than `+ -`, tighter than `<<` `>>`):
+  `1 << 2 + 1` is `1 << 3`. Subexpressions are not wrapped, so
+  `const X: i8 = -128` fits and `const X: i8 = 0 - 128` does not (`128`
+  is out of range for `i8`).
+- Emission keeps the source spelling of a lone literal and of unary
+  `-` / `~` on a literal (`0x4`, `'A'`, `~0`, `-128`) when that spelling
+  is a valid C constant. A folded expression is a decimal. A value above
+  `2^63-1` is emitted with a `ULL` suffix; `i64` / `isize` minimum is
+  `(-9223372036854775807LL - 1)`. The same two forms are used when that
+  literal is coerced in an expression
+  (`let x: u64 = 18446744073709551615`,
+  `let x: i64 = -9223372036854775808`), so the generated C does not
+  contain a decimal that does not fit in a signed 64-bit constant.
+  Not a C `enum` and not `constexpr`.
 - The C name is `module_NAME`. `pub` emits `const`, private emits
   `static const`. All modules share one `.c`, so visibility is enforced
   by the checker (`mod.NAME` on a private constant is an error), not by
   C linkage.
-- An integer constant is a valid `[N]T` length: `[N]T` and `[mod.NAME]T`,
-  in a local, a struct field, or a parameter — the same positions as a
-  literal length. The bound is the constant's integer value, written in
-  C as a decimal integer constant expression (the same form as a literal
-  length, so `0x1000` and `'A'` become their numeric values). A C
-  `const` variable is not an integer constant expression; naming it in
-  the bound would make a VLA and would be illegal as a struct field.
-  A `bool`, a `[]u8`, or a negative constant is an error. A local of
-  the same name does not change the length — a type resolves the module
+- An integer constant expression is a valid `[N]T` length: `[N]T`,
+  `[mod.NAME]T`, `[N * 2]T`, `[1 + 2]T`, in a local, a struct field, or
+  a parameter. The bound stored on the type is the folded integer,
+  written in C as a decimal (a C `const` variable is not an integer
+  constant expression; naming it in the bound would make a VLA and
+  would be illegal as a struct field). `0x1000` and `'A'` used as a
+  length become that decimal. Named constants in one length share one
+  integer type; a length made only of literals folds as `i32`. A
+  `bool`, a `[]u8`, a negative value, or a value above `2^63-1` is an
+  error (array length is too large, for the last). A local of the
+  same name does not change the length — a type resolves the module
   constant. A local alone is not a length.
 - `NAME = …` and `NAME[i] = …` on a `[]u8` constant are checker errors.
   `let s = NAME` copies the `{ptr, len}` header; `s` points at the same
@@ -284,11 +319,13 @@ is a C constant.
 
 ```klin
 pub const PAGE: i64 = 4096
+const TWICE: i64 = PAGE / 2
 const KW: []u8 = b"fn"
 
 fn main() {
     let buf: [PAGE]u8
-    printf("%d %d %d\n", cast(i32, PAGE), KW.len, buf.len)
+    let half: [TWICE]u8
+    printf("%d %d %d\n", cast(i32, PAGE), KW.len, half.len)
 }
 ```
 
@@ -303,8 +340,19 @@ The same check covers hex (`0x12C`), binary, octal, underscores,
 character literals (`'A'` is 65; character literals are ASCII), and a
 negative literal (`const X: u8 = -1`). It applies wherever that literal
 is coerced to a declared integer type: `const`, `let`, a parameter, a
-return, a struct field, an array whose element type is already that
-integer, an enum variant (`enum E: u8 { A = 300 }`).
+return, a struct field, an array element, an enum variant
+(`enum E: u8 { A = 300 }`). An array literal takes the element type of
+the array it is coerced to: `let a: [2]u8 = [1, 2]`, a struct field,
+and a parameter. Each element is range-checked, so
+`let a: [2]u8 = [1, 300]` is the `u8` error. With no expected array
+type, `let a = [1, 2]` is still `[2]i32`. A length mismatch names that
+default (`got [2]i32`). An operator in an element is still `i32`
+(`let a: [1]u8 = [1 + 2]` does not fold). A function still cannot
+return `[N]T`. The implicit next
+value is checked too: `enum E: u8 { A = 255, B }` is an error because
+`B` would be 256. The message names the variant, the value, the base
+type, and the inclusive range. The counter after the last variant is
+not an error.
 
 `cast(u8, 300)` is still a C truncation. The check is the coercion,
 not the cast.
@@ -321,9 +369,11 @@ stay untyped until a declared type is known: `let x: i64 = -1`,
 declared type they are still `i32` (`let x = -1`). The range check
 applies to the result, so `-128` fits `i8` and `-129` does not, and
 `-1` does not fit `u8`. `~` is the complement in that type's width:
-the operand must fit, and `~0` as `u32` is `4294967295`. This is not
-general constant folding — `1 + 2`, `~x`, and shifts stay ordinary
-expressions.
+the operand must fit, and `~0` as `u32` is `4294967295`. A `const`
+initializer and an `[N]T` length fold integer constant expressions
+(D11). Outside those two places an operator on untyped literals stays
+`i32`: `let x: u8 = 200 + 100` and `let x: i64 = (-1) << 2` are type
+mismatches, and `~x` on a variable is a runtime expression.
 
 ## D7. To decide later
 

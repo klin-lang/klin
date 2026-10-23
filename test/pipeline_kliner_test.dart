@@ -229,4 +229,97 @@ void main() {
     expect(c, contains('int64_t a = -(1);'));
     expect(c, contains('int_literal_op_take(-(1))'));
   });
+
+  test('folded integer constants compile and run', () async {
+    final result =
+        await compileAndRun('test/const_fold_mod/app.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+        result.stdout, await File('test/const_fold_mod/app.out').readAsString());
+
+    final program = loadProject('test/const_fold_mod/app.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/const_fold_mod/app.kl');
+    expect(c, contains('static const int32_t fold_TWICE = 6;'));
+    expect(c, contains('static const uint8_t fold_MASK = ~0x0F;'));
+    expect(c, contains('static const int32_t fold_SH = 16;'));
+    expect(
+      c,
+      contains('static const uint64_t fold_WIDE = 18446744073709551615ULL;'),
+    );
+    expect(
+      c,
+      contains(
+          'static const int64_t fold_IMIN = (-9223372036854775807LL - 1);'),
+    );
+    expect(c, contains('const int32_t os_PAGE = 4096;'));
+    expect(c, contains('int32_t data[6];'));
+    expect(c, contains('uint8_t raw[3]'));
+    expect(c, contains('uint8_t kb[4]'));
+    expect(c, contains('~(x)'));
+    expect(c, isNot(contains('constexpr')));
+    expect(c, isNot(contains('[fold_TWICE]')));
+    expect(c, isNot(contains('[os_PAGE]')));
+  });
+
+  test('array literal uses the expected element type', () async {
+    final result = await compileAndRun('test/array_lit.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/array_lit.out').readAsString());
+
+    final program = loadProject('test/array_lit.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/array_lit.kl');
+    expect(c, contains('uint8_t a[3] = { 1, 2, 3 };'));
+    expect(c, contains('int32_t plain[2] = { 10, 20 };'));
+    expect(c, contains('int8_t small[1] = { -(128) };'));
+    expect(c, contains('take((uint8_t[3]){ 7, 8, 9 })'));
+  });
+
+  test('nested array keeps every bound in C', () async {
+    final result = await compileAndRun('test/nested_array.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/nested_array.out').readAsString());
+
+    final program = loadProject('test/nested_array.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/nested_array.kl');
+    expect(c, contains('uint8_t xs[1][2];'));
+    expect(c, contains('uint8_t xs[1][2])'));
+    expect(c, contains('uint8_t nested[1][2] = { { 4, 5 } };'));
+    expect(c, contains('uint8_t blank[2][2] = {0};'));
+    expect(c, contains('cell((uint8_t[1][2]){ { 8, 9 } })'));
+  });
+
+  test('i64 minimum and u64 maximum literals compile and run', () async {
+    final result = await compileAndRun('test/wide_literal.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/wide_literal.out').readAsString());
+
+    final program = loadProject('test/wide_literal.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/wide_literal.kl');
+    expect(c, contains('(-9223372036854775807LL - 1)'));
+    expect(c, contains('18446744073709551615ULL'));
+    expect(c, isNot(contains('9223372036854775808')));
+  });
+
+  test('address of a slice element follows place mutability', () async {
+    final result = await compileAndRun('test/slice_addr.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/slice_addr.out').readAsString());
+
+    final program = loadProject('test/slice_addr.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/slice_addr.kl');
+    expect(c, contains('klin_slice_i32'));
+    expect(c, contains('.ptr[1]'));
+    expect(c, contains('.ptr[2]'));
+  });
+
+  test('enum variant on the base maximum compiles and runs', () async {
+    final result = await compileAndRun('test/enum_auto.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/enum_auto.out').readAsString());
+  });
 }

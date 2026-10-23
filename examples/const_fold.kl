@@ -1,0 +1,16 @@
+const N: i32 = 3
+const TWICE: i32 = N * 2
+const MASK: u8 = ~0x0F
+const SUM: i32 = 1 + 2 * 3
+
+struct Buf {
+    data: [N * 2]i32
+}
+
+fn main() {
+    let buf: [TWICE]i32
+    let raw: [1 + 2]u8
+    let mut row: Buf
+    row.data[0] = 1
+    printf("%d %d %d %d %d\n", TWICE, cast(i32, MASK), SUM, buf.len, raw.len)
+}

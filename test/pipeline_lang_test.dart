@@ -1774,4 +1774,154 @@ fn main() {
     expect(c, contains('int32_t f = -(1);'));
     expect(c, contains('klin_ret_0 = -(1);'));
   });
+
+  test('checker: integer consts fold and array lengths use the value', () {
+    const source = '''
+const N: i32 = 3
+const TWICE: i32 = N * 2
+const LATER: i32 = EARLY + 1
+const EARLY: i32 = 4
+const MASK: u8 = ~0x0F
+const SUM: i32 = 1 + 2 * 3
+const SH: i32 = 1 << 2 + 1
+const SHR: u8 = 0x80 >> 1
+const SAR: i32 = -8 >> 1
+const NEG: i32 = -5 / 2
+const REM: i32 = -5 % 2
+const WIDE: u64 = ~0 + 0
+const UMAX: u64 = 18446744073709551615
+const IMIN: i64 = -9223372036854775807 - 1
+const MIN: i8 = -128
+struct Buf {
+    data: [N * 2]i32
+}
+fn main() {
+  let buf: [1 + 2]u8
+  let letters: ['A' + 1]u8
+  let x: i32 = 7
+  let y: i32 = ~x
+  let z: i32 = y
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'fold.kl');
+    expect(c, contains('static const int32_t TWICE = 6;'));
+    expect(c, contains('static const int32_t LATER = 5;'));
+    expect(c, contains('static const int32_t EARLY = 4;'));
+    expect(c, contains('static const uint8_t MASK = ~0x0F;'));
+    expect(c, contains('static const int32_t SUM = 7;'));
+    expect(c, contains('static const int32_t SH = 8;'));
+    expect(c, contains('static const uint8_t SHR = 64;'));
+    expect(c, contains('static const int32_t SAR = -4;'));
+    expect(c, contains('static const int32_t NEG = -2;'));
+    expect(c, contains('static const int32_t REM = -1;'));
+    expect(c, contains('static const uint64_t WIDE = 18446744073709551615ULL;'));
+    expect(c, contains('static const uint64_t UMAX = 18446744073709551615ULL;'));
+    expect(
+      c,
+      contains('static const int64_t IMIN = (-9223372036854775807LL - 1);'),
+    );
+    expect(c, contains('static const int8_t MIN = -128;'));
+    expect(c, contains('int32_t data[6];'));
+    expect(c, contains('uint8_t buf[3] = {0};'));
+    expect(c, contains('uint8_t letters[66] = {0};'));
+    expect(c, contains('~(x)'));
+    expect(c, isNot(contains('enum ')));
+    expect(c, isNot(contains('constexpr')));
+  });
+
+  test('checker: enum variant may sit on the base type maximum', () {
+    const source = '''
+enum Hi: u8 { A = 255 }
+enum Next: u8 { A = 254, B }
+enum Signed: i8 { A = 126, B }
+enum Restart: u8 { A = 255, B = 0 }
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'enum_max.kl');
+    expect(c, contains('enum { Hi_A = 255 };'));
+    expect(c, contains('enum { Next_A = 254, Next_B };'));
+    expect(c, contains('enum { Signed_A = 126, Signed_B };'));
+    expect(c, contains('enum { Restart_A = 255, Restart_B = 0 };'));
+  });
+
+  test('checker: array literal takes the element type from context', () {
+    const source = '''
+struct Row {
+    xs: [2]u8
+}
+fn take(xs: [2]u8): i32 {
+    return cast(i32, xs[0])
+}
+fn main() {
+    let a: [2]u8 = [1, 2]
+    let plain = [1, 2]
+    let row = Row{ xs: [3, 4] }
+    let nested: [1][2]u8 = [[1, 2]]
+    take([5, 6])
+    let f: [2]f64 = [1, 2.5]
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'arr.kl');
+    expect(c, contains('uint8_t a[2] = { 1, 2 };'));
+    expect(c, contains('int32_t plain[2] = { 1, 2 };'));
+    expect(c, contains('.xs = { 3, 4 }'));
+    expect(c, contains('uint8_t nested[1][2] = { { 1, 2 } };'));
+  });
+
+  test('emit: i64 minimum and wide unsigned literals are portable C', () {
+    const source = r'''
+fn main() {
+  let lo: i64 = -9223372036854775808
+  let grouped: i64 = -(9223372036854775808)
+  let iz: isize = -9223372036854775808
+  let hi: u64 = 18_446_744_073_709_551_615
+  let hex: u64 = 0xFFFFFFFFFFFFFFFF
+  let xs: [1]i64 = [-9223372036854775808]
+  let flipped: u64 = ~18446744073709551615
+  let small: i8 = -128
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'wide.kl');
+    expect(c, contains('int64_t lo = (-9223372036854775807LL - 1);'));
+    expect(c, contains('int64_t grouped = (-9223372036854775807LL - 1);'));
+    expect(c, contains('ptrdiff_t iz = (-9223372036854775807LL - 1);'));
+    expect(c, contains('uint64_t hi = 18446744073709551615ULL;'));
+    expect(c, contains('uint64_t hex = 0xFFFFFFFFFFFFFFFF;'));
+    expect(c, isNot(contains('0xFFFFFFFFFFFFFFFFULL')));
+    expect(
+      c,
+      contains('int64_t xs[1] = { (-9223372036854775807LL - 1) };'),
+    );
+    expect(c, contains('~(18446744073709551615ULL)'));
+    expect(c, contains('int8_t small = -(128);'));
+    expect(c, isNot(contains('9223372036854775808')));
+  });
+
+  test('checker: & of a slice element follows place mutability', () {
+    const source = '''
+fn set(p: *mut i32) { *p = 1 }
+fn read(p: *i32): i32 { return *p }
+fn at(p: *mut []i32): *mut i32 { return &(*p)[0] }
+fn main() {
+  let mut xs: [2]i32 = [1, 2]
+  set(&xs[:][0])
+  let mut s = xs[:]
+  set(&s[1])
+  let view = xs[:]
+  read(&view[0])
+  let p: *mut []i32 = &s
+  at(p)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+  });
 }

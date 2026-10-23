@@ -49,8 +49,11 @@ fn main() {
   names the type and its inclusive range. `cast(u8, 300)` still truncates
 - `-1` and `~0` on an integer literal take the expected type:
   `let x: i64 = -1`, `take(-1)` for an `i64` parameter, `const M: u32 = ~0`.
-  The range check applies to the result (`-128` fits `i8`). A sum or a
-  shift is not folded that way
+  The range check applies to the result (`-128` fits `i8`). A `const`
+  and an `[N]T` length also fold `+ - * / % << >> & | ^` and other
+  integer constants (`const T: i32 = N * 2`, `[1 + 2]u8`). A sum in a
+  `let` is not folded that way (`let x: u8 = 200 + 100` is a type
+  mismatch)
 
 `:=` is sugar for `let mut` ([14-short-decl.md](14-short-decl.md)).
 
@@ -203,8 +206,15 @@ fn main() {
 - `*T` / `*mut T` — address `&x`, write `*p = …`, fields `(*p).x`.
   A place reached through `*mut` is mutable: `&(*p).x` is `*mut`, and
   a mutating method may be called on it. Through `*T` it stays immutable.
-- `[N]T` — fixed array. `N` is an integer literal or an integer module
-  `const` (the C bound is that value)
+  `&s[i]` on a slice is `*mut` when that slice place is mutable
+  (`let mut s`, or `&xs[:][i]` when `xs` is `let mut`) and `*T` when
+  it is not (an immutable binding, a slice parameter, an immutable array).
+- `[N]T` — fixed array. `N` is an integer constant expression: a
+  literal, an integer module `const`, or arithmetic on those
+  (`[N * 2]T`, `[1 + 2]T`). The C bound is the folded value.
+  A literal `[1, 2]` takes the element type from that array
+  (`let a: [2]u8 = [1, 2]`); each element must fit. Without a type,
+  it is `[2]i32`
 - `[]T` — slice `{ ptr, len }` (and `cap` where allocated)
 - No hidden allocation. Heap is `import mem` and an explicit
   `Allocator` ([14-allocator.md](14-allocator.md))
@@ -226,9 +236,10 @@ Use imported names with a qualifier: `geom.Vec2{ x: 3, y: 4 }`,
 - `import path alias` — same module, shorter qualifier
 - `pub` — visible after import; without `pub` the symbol is private
   (`static` in the generated C)
-- `const NAME: Type = literal` — module-level immutable integer, `bool`,
-  or `b"..."`. An integer const is a valid `[N]T` length
-  ([syntax.md](syntax.md)). No mutable globals
+- `const NAME: Type = …` — module-level immutable integer, `bool`, or
+  `b"..."`. An integer initializer may name other constants and use
+  `+ - * / % << >> & | ^` and unary `-` / `~`. That value is a valid
+  `[N]T` length ([syntax.md](syntax.md)). No mutable globals
 - The whole program is still **one** `.c`
 
 Search paths (`lib/`, `-I`, `KLIN_PATH`, remote `klin get`):

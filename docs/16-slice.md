@@ -63,7 +63,10 @@ Instances: `slice_ops` for `i32`/`u8`/`i64`/`f64`; `slice_num_ops` for the same
 numeric types.
 
 Writing `dst[i]` on a slice is allowed (header is by value; buffer shared
-with caller — like Go).
+with caller — like Go). `&dst[i]` is `*mut T` when that slice place is
+mutable and `*T` when it is not. `&xs[:][i]` follows the array: `*mut`
+for `let mut xs`, `*T` for an immutable array. An immutable
+`let s = xs[:]` and a slice parameter stay `*T`.
 
 Example: [`examples/slice_ops.kl`](../examples/slice_ops.kl).  
 Golden: `test/slice_ops.kl`.

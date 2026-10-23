@@ -195,7 +195,7 @@ void _emitConsts(StringBuffer buf, Program program, String sourcePath) {
     final linkage = decl.isPub ? 'const' : 'static const';
     final name = _freeCName(decl.moduleName, decl.name);
     buf.writeln(
-      '$linkage ${_cType(type)} $name = ${_emitConstInitializer(decl.init)};',
+      '$linkage ${_cType(type)} $name = ${_emitConstInitializer(decl)};',
     );
   }
   buf.writeln();
