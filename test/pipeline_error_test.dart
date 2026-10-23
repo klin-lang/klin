@@ -1757,4 +1757,403 @@ fn main() {
       )),
     );
   });
+  test('error: mutating method through a non-mut pointer', () {
+    const source = '''
+struct Out {
+  n: i32
+}
+struct Ctx {
+  err: Out
+}
+fn (mut o: Out) add() {
+  o.n = 1
+}
+fn main() {
+  let mut ctx = Ctx{ err: Out{ n: 0 } }
+  let c: *Ctx = &ctx
+  (*c).err.add()
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('cannot write through an immutable pointer'),
+      )),
+    );
+  });
+
+  test('error: mutating method on a let mut pointer that is not *mut', () {
+    const source = '''
+struct Out {
+  n: i32
+}
+fn (mut o: Out) add() {
+  o.n = 1
+}
+fn main() {
+  let mut o = Out{ n: 0 }
+  let mut p: *Out = &o
+  (*p).add()
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('cannot write through an immutable pointer'),
+      )),
+    );
+  });
+
+  test('error: & through a non-mut pointer is not *mut', () {
+    const source = '''
+struct Out {
+  n: i32
+}
+struct Ctx {
+  err: Out
+}
+fn main() {
+  let mut ctx = Ctx{ err: Out{ n: 0 } }
+  let c: *Ctx = &ctx
+  let p: *mut Out = &(*c).err
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('type mismatch') &&
+            e.toString().contains('*mut Out'),
+      )),
+    );
+  });
+
+  test('error: & of a reborrow through *T is not *mut', () {
+    const source = '''
+struct Ctx {
+  n: i32
+}
+fn main() {
+  let mut ctx = Ctx{ n: 0 }
+  let c: *Ctx = &ctx
+  let p: *mut Ctx = &(*c)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('type mismatch') &&
+            e.toString().contains('*mut Ctx'),
+      )),
+    );
+  });
+
+  test('error: negative const array length', () {
+    const source = '''
+const NEG: i32 = -100
+struct S {
+  data: [NEG]i32
+}
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('array length `NEG` must be non-negative'),
+      )),
+    );
+  });
+
+  test('error: bool const array length', () {
+    const source = '''
+const FLAG: bool = true
+fn main() {
+  let buf: [FLAG]u8
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains(
+                'array length `FLAG` must be an integer constant, got `bool`'),
+      )),
+    );
+  });
+
+  test('error: []u8 const array length', () {
+    const source = '''
+const KW: []u8 = b"fn"
+fn take(xs: [KW]u8) {}
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains(
+                'array length `KW` must be an integer constant, got `[]u8`'),
+      )),
+    );
+  });
+
+  test('error: unknown const array length', () {
+    const source = '''
+fn main() {
+  let buf: [NOPE]u8
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError && e.toString().contains('unknown constant `NOPE`'),
+      )),
+    );
+  });
+
+  test('error: local is not an array length', () {
+    const source = '''
+fn main() {
+  let N: i32 = 4
+  let buf: [N]u8
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) => e is CheckError && e.toString().contains('unknown constant `N`'),
+      )),
+    );
+  });
+
+  test('error: array length expression is not a const name', () {
+    const source = '''
+fn main() {
+  let buf: [1 + 2]u8
+}
+''';
+    expect(
+      () => Parser(Lexer(source).tokenize()).parse(),
+      throwsA(predicate(
+        (e) =>
+            e is ParseError &&
+            e.toString().contains('expected `]` after array length'),
+      )),
+    );
+  });
+
+  test('error: private imported const array length', () {
+    final program = loadProject('test/const_len_mod/bad_private.kl');
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('constant `os.HIDDEN` is private'),
+      )),
+    );
+  });
+
+  test('error: imported bool const array length', () {
+    final program = loadProject('test/const_len_mod/bad_bool.kl');
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('array length `os.FLAG` must be an integer'),
+      )),
+    );
+  });
+
+  test('error: imported negative const array length', () {
+    final program = loadProject('test/const_len_mod/bad_neg.kl');
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('array length `os.NEG` must be non-negative'),
+      )),
+    );
+  });
+
+  test('error: imported []u8 const array length', () {
+    final program = loadProject('test/const_len_mod/bad_bytes.kl');
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) =>
+            e is CheckError &&
+            e.toString().contains('array length `os.KW` must be an integer'),
+      )),
+    );
+  });
+
+  void expectRange(String source, String fragment) {
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate(
+        (e) => e is CheckError && e.toString().contains(fragment),
+      )),
+    );
+  }
+
+  test('error: const u8 literal is out of range', () {
+    expectRange('''
+const X: u8 = 300
+fn main() {}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: let u8 literal is out of range', () {
+    expectRange('''
+fn main() {
+  let x: u8 = 300
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: negative const does not fit unsigned', () {
+    expectRange('''
+const X: u8 = -1
+fn main() {}
+''', 'integer literal `-1` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: hex literal does not fit u8', () {
+    expectRange('''
+const X: u8 = 0x12C
+fn main() {}
+''', 'integer literal `0x12C` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: i8 literal above 127', () {
+    expectRange('''
+fn main() {
+  let x: i8 = 128
+}
+''', 'integer literal `128` is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: const i8 negative literal below the minimum', () {
+    expectRange('''
+const X: i8 = -129
+fn main() {}
+''', 'integer literal `-129` is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: default i32 literal is out of range', () {
+    expectRange('''
+fn main() {
+  let x = 3000000000
+}
+''', 'integer literal `3000000000` is out of range for `i32`');
+  });
+
+  test('error: enum variant literal does not fit the base type', () {
+    expectRange('''
+enum E: u8 { A = 300 }
+fn main() {}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: return literal does not fit', () {
+    expectRange('''
+fn f(): u8 { return 300 }
+fn main() {}
+''', 'integer literal `300` is out of range for `u8`');
+  });
+
+  test('error: argument literal does not fit the parameter', () {
+    expectRange('''
+fn f(x: u8) {}
+fn main() { f(0b1_0000_0000) }
+''', 'integer literal `0b1_0000_0000` is out of range for `u8`');
+  });
+
+  test('error: field literal does not fit', () {
+    expectRange('''
+struct S { n: i8 }
+fn main() {
+  let s = S{ n: 200 }
+}
+''', 'integer literal `200` is out of range for `i8`');
+  });
+
+  test('error: i32 array element literal does not fit', () {
+    expectRange('''
+fn main() {
+  let xs: [1]i32 = [3000000000]
+}
+''', 'integer literal `3000000000` is out of range for `i32`');
+  });
+
+  test('error: let negative literal does not fit unsigned', () {
+    expectRange('''
+fn main() {
+  let x: u8 = -1
+}
+''', 'integer literal `-1` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: negated literal below i8 minimum', () {
+    expectRange('''
+fn main() {
+  let x: i8 = -129
+}
+''', 'integer literal `-129` is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: complement operand does not fit the target type', () {
+    expectRange('''
+const M: i8 = ~128
+fn main() {}
+''', 'integer literal `128` is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: complement of a literal is not a float', () {
+    expectRange('''
+fn main() {
+  let x: f64 = ~0
+}
+''', 'operator `~` requires an integer type, got `f64`');
+  });
+
+  test('error: const does not fold a sum of literals', () {
+    expectRange('''
+const X: i64 = -1 + 0
+fn main() {}
+''', 'integer constant must be an integer literal');
+  });
+
+  test('error: shift of a negative literal stays i32', () {
+    expectRange('''
+fn main() {
+  let x: i64 = (-1) << 2
+}
+''', 'type mismatch: expected `i64`, got `i32`');
+  });
 }

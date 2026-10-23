@@ -1,0 +1,18 @@
+module app
+import os
+
+struct Page {
+    data: [os.PAGE]u8
+}
+
+fn fill(xs: [os.PAGE]u8): i32 {
+    return xs.len
+}
+
+fn main() {
+    let mut buf: [os.PAGE]u8
+    buf[0] = 7
+    let mut page: Page
+    page.data[1] = 9
+    printf("%d %d %d %d\n", buf.len, buf[0], page.data[1], fill(buf))
+}

@@ -64,6 +64,141 @@ int? _parseIntLiteralValue(String lexeme) {
   );
 }
 
+int? _intLitValue(IntLit lit) =>
+    _parseIntLiteralValue(lit.lexeme.replaceAll('_', ''));
+
+Expr _peelGroups(Expr expr) {
+  var current = expr;
+  while (current is GroupExpr) {
+    current = current.inner;
+  }
+  return current;
+}
+
+IntLit? _groupedIntLit(Expr expr) {
+  final node = _peelGroups(expr);
+  return node is IntLit ? node : null;
+}
+
+/// Fixed widths. `usize` / `isize` follow LP64 `size_t` / `ptrdiff_t`.
+int _integerBitWidth(PrimKind kind) => switch (kind) {
+      PrimKind.i8 || PrimKind.u8 => 8,
+      PrimKind.i16 || PrimKind.u16 => 16,
+      PrimKind.i32 || PrimKind.u32 => 32,
+      PrimKind.i64 ||
+      PrimKind.u64 ||
+      PrimKind.isize ||
+      PrimKind.usize =>
+        64,
+      _ => 0,
+    };
+
+bool _integerKindIsUnsigned(PrimKind kind) => switch (kind) {
+      PrimKind.u8 ||
+      PrimKind.u16 ||
+      PrimKind.u32 ||
+      PrimKind.u64 ||
+      PrimKind.usize =>
+        true,
+      _ => false,
+    };
+
+bool _intLiteralFits(int value, PrimKind kind) {
+  final bits = _integerBitWidth(kind);
+  if (bits == 0) return false;
+  final v = BigInt.from(value);
+  if (_integerKindIsUnsigned(kind)) {
+    if (value < 0) return false;
+    final max = (BigInt.one << bits) - BigInt.one;
+    return v <= max;
+  }
+  final min = -(BigInt.one << (bits - 1));
+  final max = (BigInt.one << (bits - 1)) - BigInt.one;
+  return v >= min && v <= max;
+}
+
+String _intRangeText(PrimKind kind) {
+  final bits = _integerBitWidth(kind);
+  if (_integerKindIsUnsigned(kind)) {
+    final max = (BigInt.one << bits) - BigInt.one;
+    return '0..=$max';
+  }
+  final min = -(BigInt.one << (bits - 1));
+  final max = (BigInt.one << (bits - 1)) - BigInt.one;
+  return '$min..=$max';
+}
+
+void _requireIntLiteralInRange(
+  int value,
+  PrimKind kind,
+  SourcePos pos,
+  String spelling,
+) {
+  if (_intLiteralFits(value, kind)) return;
+  final typeName = PrimType(kind).displayName;
+  throw CheckError(
+    'integer literal `$spelling` is out of range for `$typeName` '
+    '(${_intRangeText(kind)})',
+    pos,
+  );
+}
+
+/// Bitwise complement of [value] in the width of [kind]. [value] must fit.
+int _bitwiseNotInWidth(int value, PrimKind kind) {
+  final bits = _integerBitWidth(kind);
+  final mask = (BigInt.one << bits) - BigInt.one;
+  final flipped = (~BigInt.from(value)) & mask;
+  if (_integerKindIsUnsigned(kind)) return flipped.toInt();
+  final sign = BigInt.one << (bits - 1);
+  if ((flipped & sign) != BigInt.zero) {
+    return (flipped - (mask + BigInt.one)).toInt();
+  }
+  return flipped.toInt();
+}
+
+/// A literal coerced to a declared integer type must fit. `cast` does not
+/// call this. Unary `-` checks the negated value (`-128` fits `i8`).
+/// Unary `~` is the complement in that width, so the operand must fit too.
+void _checkCoercedIntLiteral(Expr expr, KlinType type) {
+  final node = _peelGroups(expr);
+  if (node is UnaryExpr &&
+      node.op == '~' &&
+      _groupedIntLit(node.operand) != null &&
+      (type is! PrimType || !type.kind.isInteger)) {
+    throw CheckError(
+      'operator `~` requires an integer type, got `${type.displayName}`',
+      node.pos,
+    );
+  }
+  if (type is! PrimType || !type.kind.isInteger) return;
+  final kind = type.kind;
+  if (node is IntLit) {
+    final value = _intLitValue(node);
+    if (value == null) return;
+    _requireIntLiteralInRange(value, kind, node.pos, node.lexeme);
+    return;
+  }
+  if (node is! UnaryExpr || (node.op != '-' && node.op != '~')) return;
+  final lit = _groupedIntLit(node.operand);
+  if (lit == null) return;
+  final mag = _intLitValue(lit);
+  if (mag == null) return;
+  if (node.op == '-') {
+    _requireIntLiteralInRange(-mag, kind, node.pos, '-${lit.lexeme}');
+    return;
+  }
+  if (!_intLiteralFits(mag, kind)) {
+    _requireIntLiteralInRange(mag, kind, lit.pos, lit.lexeme);
+    return;
+  }
+  _requireIntLiteralInRange(
+    _bitwiseNotInWidth(mag, kind),
+    kind,
+    node.pos,
+    '~${lit.lexeme}',
+  );
+}
+
 /// Index of the `]` that closes `[LEN]` in a type name. Character lengths
 /// (`']'`, `'\''`) must not use a naive `indexOf(']')`.
 int? _arrayTypeCloseBracket(String name) {
@@ -210,9 +345,10 @@ final class Checker {
     _checkAttrs(program);
     _registerStructs(program);
     _registerEnums(program);
+    // Constants before fields and signatures so `[NAME]T` can name one.
+    _registerConsts(program);
     // Field types after enums so `struct T { k: Tok }` resolves `Tok`.
     _resolveStructFields(program);
-    _registerConsts(program);
     _registerFunctions(program);
     final main = program.funcs
         .where((func) =>
@@ -644,16 +780,14 @@ final class Checker {
     }
     if (type is PrimType && type.kind.isInteger) {
       if (init is IntLit) {
+        _checkCoercedIntLiteral(init, type);
         init.resolvedType = type;
         return;
       }
-      if (init is UnaryExpr && init.op == '-' && init.operand is IntLit) {
-        if (_isUnsigned(type.kind)) {
-          throw CheckError(
-            'operator `-` is not allowed for unsigned type `${type.displayName}`',
-            init.pos,
-          );
-        }
+      if (init is UnaryExpr &&
+          (init.op == '-' || init.op == '~') &&
+          init.operand is IntLit) {
+        _checkCoercedIntLiteral(init, type);
         init.resolvedType = type;
         init.operand.resolvedType = type;
         return;
@@ -699,6 +833,7 @@ final class Checker {
           throw CheckError(
               'enum value must be an integer literal', value.pos);
         }
+        if (value is IntLit) _checkCoercedIntLiteral(value, base);
       }
     }
   }
@@ -745,11 +880,10 @@ final class Checker {
       if (close == null || close < 2) {
         throw CheckError('invalid array type `$name`', pos);
       }
-      final lenText = name.substring(1, close).replaceAll('_', '');
-      final len = _parseIntLiteralValue(lenText);
-      if (len == null || len < 0 || close == name.length - 1) {
+      if (close == name.length - 1) {
         throw CheckError('invalid array type `$name`', pos);
       }
+      final len = _resolveArrayLength(name.substring(1, close), pos);
       return ArrayType(_resolveType(name.substring(close + 1), pos), len);
     }
     if (name == 'void') return const VoidType();
@@ -788,6 +922,82 @@ final class Checker {
       throw CheckError('unknown type `$qualifier.$typeName`', pos);
     }
     return _resolvePrimType(name, pos);
+  }
+
+  /// `[N]T` length: an integer literal, or an integer module constant.
+  ///
+  /// The bound stored on [ArrayType] is the integer value. Emission writes
+  /// that decimal, not the C name of the constant — a `const` variable is
+  /// not an integer constant expression, so a struct field could not use it.
+  int _resolveArrayLength(String lenText, SourcePos pos) {
+    if (_arrayLengthIsLiteral(lenText)) {
+      final len = _parseIntLiteralValue(lenText.replaceAll('_', ''));
+      if (len == null || len < 0) {
+        throw CheckError('invalid array type `[$lenText]`', pos);
+      }
+      return len;
+    }
+    final decl = _lookupArrayLengthConst(lenText, pos);
+    final value = _integerConstValue(decl);
+    final type = decl.resolvedType;
+    if (value == null || type is! PrimType || !type.kind.isInteger) {
+      final shown = type?.displayName ?? 'unknown';
+      throw CheckError(
+        'array length `$lenText` must be an integer constant, got `$shown`',
+        pos,
+      );
+    }
+    if (value < 0) {
+      throw CheckError('array length `$lenText` must be non-negative', pos);
+    }
+    return value;
+  }
+
+  static bool _arrayLengthIsLiteral(String lenText) {
+    if (lenText.isEmpty) return false;
+    final c = lenText.codeUnitAt(0);
+    return c == 0x27 || (c >= 0x30 && c <= 0x39);
+  }
+
+  ConstDecl _lookupArrayLengthConst(String lenText, SourcePos pos) {
+    final dot = lenText.indexOf('.');
+    if (dot == -1) {
+      final decl = _consts[_key(_currentModule, lenText)];
+      if (decl == null) {
+        throw CheckError('unknown constant `$lenText`', pos);
+      }
+      return decl;
+    }
+    final qualifier = lenText.substring(0, dot);
+    final name = lenText.substring(dot + 1);
+    if (name.isEmpty || name.contains('.')) {
+      throw CheckError('invalid array type `[$lenText]`', pos);
+    }
+    final module = _resolveModuleQualifier(qualifier, pos);
+    final decl = _consts[_key(module, name)];
+    if (decl == null) {
+      throw CheckError('unknown constant `$qualifier.$name`', pos);
+    }
+    if (module != _currentModule && !decl.isPub) {
+      throw CheckError('constant `$qualifier.$name` is private', pos);
+    }
+    return decl;
+  }
+
+  /// Integer value of a constant's literal initializer, including a leading `-`.
+  int? _integerConstValue(ConstDecl decl) {
+    final init = decl.init;
+    if (init is IntLit) {
+      return _parseIntLiteralValue(init.lexeme.replaceAll('_', ''));
+    }
+    if (init is UnaryExpr && init.op == '-' && init.operand is IntLit) {
+      final mag = _parseIntLiteralValue(
+        (init.operand as IntLit).lexeme.replaceAll('_', ''),
+      );
+      if (mag == null) return null;
+      return -mag;
+    }
+    return null;
   }
 
   /// Parses encoded `fn(T1,T2):Ret` from [_typeName].
@@ -2242,17 +2452,16 @@ final class Checker {
       );
     }
     if (signature.isMutReceiver) {
-      if (call.receiver is! NameExpr) {
-        throw CheckError(
-            'mutating method requires a mutable variable', call.receiver.pos);
-      }
-      final receiver = call.receiver as NameExpr;
-      final symbol = _scope.lookup(receiver.name);
-      if (symbol == null || !symbol.isMut) {
-        throw CheckError(
+      // Same place rule as assignment: a `let mut`, a `mut` receiver, or any
+      // field / index chain reached through `*mut`. A non-mut `*T` stays
+      // immutable.
+      _requireMutablePlace(
+        call.receiver,
+        call.receiver.pos,
+        immutableVarMessage:
             'cannot call a mutating method on an immutable variable',
-            call.receiver.pos);
-      }
+        immutableExprMessage: 'mutating method requires a mutable variable',
+      );
     }
     if (call.args.length != signature.paramTypes.length) {
       throw CheckError(
@@ -2383,10 +2592,10 @@ final class Checker {
   ///
   /// Accepts nested places — struct fields, fixed-array elements reached through
   /// a `mut` receiver or variable, and writes through a `*mut` dereference —
-  /// mirroring the recursive check used for `&` ([_isMutablePlace]). Slice
-  /// element storage is shared with the caller (Go-like), so it stays writable.
-  /// The two message parameters preserve the caller's context (field vs array)
-  /// for the terminal error.
+  /// the same chain `&` uses ([_isMutablePlace]). A mutating method uses this
+  /// too. Slice element storage is shared with the caller (Go-like), so it
+  /// stays writable. The two message parameters preserve the caller's context
+  /// (field vs array vs method) for the terminal error.
   void _requireMutablePlace(
     Expr object,
     SourcePos pos, {
@@ -2644,7 +2853,8 @@ final class Checker {
               );
             }
             if (source is UntypedInt || source is UntypedFloat) {
-              _materialize(expr, target);
+              // `cast(u8, 300)` truncates. The range check is for coercion.
+              _materialize(expr, target, checkRange: false);
               return target;
             }
             if (source is PrimType &&
@@ -2836,6 +3046,10 @@ final class Checker {
           }
           if (op == '~') {
             final t = _inferExpr(operand);
+            // `~0` stays untyped so `const M: u32 = ~0` uses `u32`.
+            if (t is UntypedInt && _groupedIntLit(operand) != null) {
+              return const UntypedInt();
+            }
             final concrete = _defaultConcrete(t, operand.pos);
             if (concrete is! PrimType || !concrete.kind.isInteger) {
               throw CheckError(
@@ -2850,6 +3064,10 @@ final class Checker {
             throw CheckError('unknown unary operator `$op`', pos);
           }
           final t = _inferExpr(operand);
+          // `-1` stays untyped so `let x: i64 = -1` does not need a cast.
+          if (t is UntypedInt && _groupedIntLit(operand) != null) {
+            return const UntypedInt();
+          }
           final concrete = _defaultConcrete(t, operand.pos);
           if (concrete is! PrimType ||
               !(concrete.kind.isInteger || concrete.kind.isFloat)) {
@@ -2895,12 +3113,20 @@ final class Checker {
     if (place is NameExpr) return _scope.lookup(place.name)?.isMut ?? false;
     if (place is FieldExpr) return _isMutablePlace(place.object);
     if (place is IndexExpr) return _isMutablePlace(place.object);
+    if (place is UnaryExpr && place.op == '*') {
+      final pointer = place.operand.resolvedType ?? _inferExpr(place.operand);
+      return pointer is PtrType && pointer.isMut;
+    }
     return false;
   }
 
   bool _isAddressablePlace(Expr expr) {
     final place = _unwrapGroups(expr);
-    return place is NameExpr || place is FieldExpr || place is IndexExpr;
+    if (place is NameExpr || place is FieldExpr || place is IndexExpr) {
+      return true;
+    }
+    // `*p` is a place. `&(*p)` reborrows it; `*mut` stays `*mut`.
+    return place is UnaryExpr && place.op == '*';
   }
 
   static const _cmpOps = {'==', '!=', '<', '<=', '>', '>='};
@@ -3101,26 +3327,38 @@ final class Checker {
 
   /// Assigns a concrete type to an expression and recursively to subtrees
   /// containing untyped literals.
-  void _materialize(Expr expr, KlinType type) {
+  void _materialize(Expr expr, KlinType type, {bool checkRange = true}) {
     // `cast(T, x)` preserves its explicit type T; do not overwrite it from an outer context.
     if (expr is CastExpr) return;
     if (type is SliceType && expr.resolvedType is ArrayType) {
       expr.arrayToSliceFrom = expr.resolvedType as ArrayType;
     }
     expr.resolvedType = type;
+    // Explicit `cast` passes checkRange: false — truncation stays a C cast.
+    if (checkRange) _checkCoercedIntLiteral(expr, type);
     switch (expr) {
       case UnaryExpr(:final operand, :final op):
-        if (op != '&' && op != '*') _materialize(operand, type);
+        if (op != '&' && op != '*') {
+          // `-128` as `i8`: the result fits, the operand 128 does not.
+          // `~` checks its operand inside [_checkCoercedIntLiteral].
+          final literalOp = (op == '-' || op == '~') &&
+              _groupedIntLit(operand) != null;
+          _materialize(
+            operand,
+            type,
+            checkRange: checkRange && !literalOp,
+          );
+        }
       case BinaryExpr(:final left, :final right, :final op):
         if (_cmpOps.contains(op) || _logicalOps.contains(op)) {
           // Comparison / logical nodes are bool; operands already typed.
           // Do not push the outer bool into numeric comparison operands.
           break;
         }
-        _materialize(left, type);
-        _materialize(right, type);
+        _materialize(left, type, checkRange: checkRange);
+        _materialize(right, type, checkRange: checkRange);
       case GroupExpr(:final inner):
-        _materialize(inner, type);
+        _materialize(inner, type, checkRange: checkRange);
       case PropagateExpr() || OrExpr() || AwaitExpr():
         break;
       case ErrorExpr():
@@ -3145,26 +3383,26 @@ final class Checker {
         if (type is! ArrayType) break;
         for (final element in elements) {
           _expectAssignable(type.elem, _inferExpr(element), element.pos);
-          _materialize(element, type.elem);
+          _materialize(element, type.elem, checkRange: checkRange);
         }
       case MatchExpr(:final arms):
         if (type is ResultType) {
           for (final arm in arms) {
             final body = _unwrapGroups(arm.body);
             if (body is ErrorExpr || arm.body.resolvedType is ResultType) {
-              _materialize(arm.body, type);
+              _materialize(arm.body, type, checkRange: checkRange);
             } else {
-              _materialize(arm.body, type.ok);
+              _materialize(arm.body, type.ok, checkRange: checkRange);
             }
           }
         } else {
           for (final arm in arms) {
-            _materialize(arm.body, type);
+            _materialize(arm.body, type, checkRange: checkRange);
           }
         }
       case PickExpr(:final thenExpr, :final elseExpr):
-        _materialize(thenExpr, type);
-        _materialize(elseExpr, type);
+        _materialize(thenExpr, type, checkRange: checkRange);
+        _materialize(elseExpr, type, checkRange: checkRange);
     }
   }
 

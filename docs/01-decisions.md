@@ -146,6 +146,15 @@ you cannot tell whether the object will be modified.
 phenomenon, zero runtime cost. **That is a good test for every feature:
 if it does not disappear in emission, it probably breaks the overarching principle.**
 
+A mutating method accepts any mutable place, not only a `let mut` name.
+A place is mutable when it is a `let mut` local or a `mut` receiver, or
+when it is reached through a `*mut` pointer — field and index chains
+included (`(*c).err.lit(...)` where `c: *mut Ctx`). `&place` has type
+`*mut T` when that place is mutable and `*T` when it is not. A place
+reached only through a non-mut `*T` stays immutable, the same rule as
+assignment (`(*p).x = …` already rejected a write through `*T`). The
+call still passes a pointer; `mut` is not in the C.
+
 ---
 
 ## D6. Initialization — ZII
@@ -249,7 +258,7 @@ value with no storage surprise. The initializer is the value; emission
 is a C constant.
 
 - Top level only. A local binding stays `let` (and a local shadows a
-  constant of the same name).
+  constant of the same name in a value). A type still sees the constant.
 - The type is required. Allowed: an integer prim (`i8`…`i64`, `u8`…`u64`,
   `usize` / `isize`, `int`), `bool`, or `[]u8`.
 - The initializer is a literal: an integer (including `-N`, hex, `'A'`),
@@ -259,8 +268,16 @@ is a C constant.
   `static const`. All modules share one `.c`, so visibility is enforced
   by the checker (`mod.NAME` on a private constant is an error), not by
   C linkage.
-- A constant is not a C constant expression. `[N]T` still wants the
-  length written as an integer literal.
+- An integer constant is a valid `[N]T` length: `[N]T` and `[mod.NAME]T`,
+  in a local, a struct field, or a parameter — the same positions as a
+  literal length. The bound is the constant's integer value, written in
+  C as a decimal integer constant expression (the same form as a literal
+  length, so `0x1000` and `'A'` become their numeric values). A C
+  `const` variable is not an integer constant expression; naming it in
+  the bound would make a VLA and would be illegal as a struct field.
+  A `bool`, a `[]u8`, or a negative constant is an error. A local of
+  the same name does not change the length — a type resolves the module
+  constant. A local alone is not a length.
 - `NAME = …` and `NAME[i] = …` on a `[]u8` constant are checker errors.
   `let s = NAME` copies the `{ptr, len}` header; `s` points at the same
   read-only bytes (see D10).
@@ -270,9 +287,43 @@ pub const PAGE: i64 = 4096
 const KW: []u8 = b"fn"
 
 fn main() {
-    printf("%d %d\n", cast(i32, PAGE), KW.len)
+    let buf: [PAGE]u8
+    printf("%d %d %d\n", cast(i32, PAGE), KW.len, buf.len)
 }
 ```
+
+## D12. Integer literal range — DECIDED
+
+An untyped integer literal that is coerced to a declared integer type
+must fit that type. `const X: u8 = 300` and `let x: u8 = 300` are
+checker errors, not a silent wrap to `44`. The diagnostic names the
+type and the inclusive range (`u8` is `0..=255`, `i8` is `-128..=127`).
+
+The same check covers hex (`0x12C`), binary, octal, underscores,
+character literals (`'A'` is 65; character literals are ASCII), and a
+negative literal (`const X: u8 = -1`). It applies wherever that literal
+is coerced to a declared integer type: `const`, `let`, a parameter, a
+return, a struct field, an array whose element type is already that
+integer, an enum variant (`enum E: u8 { A = 300 }`).
+
+`cast(u8, 300)` is still a C truncation. The check is the coercion,
+not the cast.
+
+Widths are the fixed integer widths. `int` is `i32`. `usize` / `isize`
+use a 64-bit range, matching LP64 `size_t` / `ptrdiff_t` in host
+emission. An operator on two untyped literals is still the `i32`
+default, not a fold into the outer type: `let x: u8 = 200 + 100` is a
+type mismatch (`i32` vs `u8`).
+
+Unary `-` and `~` applied to an integer literal (parentheses allowed)
+stay untyped until a declared type is known: `let x: i64 = -1`,
+`take(-1)` when the parameter is `i64`, `const M: u32 = ~0`. With no
+declared type they are still `i32` (`let x = -1`). The range check
+applies to the result, so `-128` fits `i8` and `-129` does not, and
+`-1` does not fit `u8`. `~` is the complement in that type's width:
+the operand must fit, and `~0` as `u32` is `4294967295`. This is not
+general constant folding — `1 + 2`, `~x`, and shifts stay ordinary
+expressions.
 
 ## D7. To decide later
 

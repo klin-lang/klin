@@ -2,5 +2,6 @@ pub const PAGE: i64 = 4096
 const KW: []u8 = b"fn"
 
 fn main() {
-    printf("page=%d kw=%d\n", cast(i32, PAGE), KW.len)
+    let buf: [PAGE]u8
+    printf("page=%d kw=%d buf=%d\n", cast(i32, PAGE), KW.len, buf.len)
 }

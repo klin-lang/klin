@@ -44,6 +44,13 @@ fn main() {
 - No implicit widen/narrow between concrete numeric types — use
   `cast(i64, n)` / `cast(f64, n)` ([syntax.md](syntax.md),
   [154](../issues/154-numeric-cast.md))
+- An integer literal must fit the type it is coerced to. `let x: u8 = 300`,
+  `const X: u8 = 0x12C`, and `const X: u8 = -1` are errors. The message
+  names the type and its inclusive range. `cast(u8, 300)` still truncates
+- `-1` and `~0` on an integer literal take the expected type:
+  `let x: i64 = -1`, `take(-1)` for an `i64` parameter, `const M: u32 = ~0`.
+  The range check applies to the result (`-128` fits `i8`). A sum or a
+  shift is not folded that way
 
 `:=` is sugar for `let mut` ([14-short-decl.md](14-short-decl.md)).
 
@@ -73,7 +80,11 @@ fn main() {
 ```
 
 `fn (v: Vec2)` copies. `fn (mut v: Vec2)` takes a pointer. Mutation is
-visible at the call site. In C, `mut` is gone — only `*` remains.
+visible at the call site. The receiver may be any mutable place: a
+`let mut`, a field or index of one, or a place reached through `*mut`
+(`(*p).translate(...)`). `&` of that place has type `*mut`. A place
+reached only through `*T` stays immutable. In C, `mut` is gone — only
+`*` remains.
 
 Parameters and fields may share a type: `fn add(a, b: i32)`,
 `struct Point { x, y: f64 }`.
@@ -189,8 +200,11 @@ fn main() {
 }
 ```
 
-- `*T` / `*mut T` — address `&x`, write `*p = …`, fields `(*p).x`
-- `[N]T` — fixed array (length in the type)
+- `*T` / `*mut T` — address `&x`, write `*p = …`, fields `(*p).x`.
+  A place reached through `*mut` is mutable: `&(*p).x` is `*mut`, and
+  a mutating method may be called on it. Through `*T` it stays immutable.
+- `[N]T` — fixed array. `N` is an integer literal or an integer module
+  `const` (the C bound is that value)
 - `[]T` — slice `{ ptr, len }` (and `cap` where allocated)
 - No hidden allocation. Heap is `import mem` and an explicit
   `Allocator` ([14-allocator.md](14-allocator.md))
@@ -213,7 +227,8 @@ Use imported names with a qualifier: `geom.Vec2{ x: 3, y: 4 }`,
 - `pub` — visible after import; without `pub` the symbol is private
   (`static` in the generated C)
 - `const NAME: Type = literal` — module-level immutable integer, `bool`,
-  or `b"..."` ([syntax.md](syntax.md)). No mutable globals
+  or `b"..."`. An integer const is a valid `[N]T` length
+  ([syntax.md](syntax.md)). No mutable globals
 - The whole program is still **one** `.c`
 
 Search paths (`lib/`, `-I`, `KLIN_PATH`, remote `klin get`):

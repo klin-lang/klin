@@ -1,0 +1,8 @@
+module bad_private
+import os
+
+struct S {
+    buf: [os.HIDDEN]u8
+}
+
+fn main() {}

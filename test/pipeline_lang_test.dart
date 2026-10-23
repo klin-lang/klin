@@ -1695,4 +1695,83 @@ fn main() {
     expect(formatSource(source), source);
   });
 
+  test('fmt keeps a const array length', () {
+    const source = '''
+const N: i64 = 4
+
+fn main() {
+    let buf: [N]u8
+    let page: [os.PAGE]u8
+}
+''';
+    expect(formatSource(source), source);
+  });
+
+  test('checker: zero const is a valid array length', () {
+    const source = '''
+const Z: i32 = 0
+fn main() {
+  let buf: [Z]u8
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'z.kl');
+    expect(c, contains('uint8_t buf[0]'));
+  });
+
+  test('checker: in-range integer literals and truncating cast', () {
+    const source = '''
+const HI: u8 = 255
+const LO: i8 = -128
+const HEX: u8 = 0xFF
+const CH: u8 = 'A'
+const WIDE: u64 = 18446744073709551615
+enum E: u8 { A = 255, B = 'A' }
+fn main() {
+  let a: u8 = 0
+  let b: i8 = 127
+  let c: i32 = 200 + 100
+  let d: f64 = 300
+  let e: u8 = cast(u8, 300)
+  let f: i8 = '\\n'
+  let xs: [2]i32 = [9, 300]
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'range.kl');
+    expect(c, contains('static const uint8_t HI = 255;'));
+    expect(c, contains('static const int8_t LO = -128;'));
+    expect(c, contains('static const uint8_t HEX = 0xFF;'));
+    expect(c, contains("static const uint8_t CH = 'A';"));
+    expect(c, contains('(uint8_t)(300)'));
+  });
+
+  test('checker: unary - and ~ on a literal take the expected type', () {
+    const source = '''
+const M: u32 = ~0
+const MIN: i8 = -128
+fn take(n: i64): i64 { return -1 }
+fn main() {
+  let a: i64 = -1
+  let b: i8 = -128
+  let c: u8 = ~0
+  let d: i32 = -(1)
+  let e: f64 = -1
+  let f = -1
+  take(-1)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'ops.kl');
+    expect(c, contains('static const uint32_t M = ~0;'));
+    expect(c, contains('static const int8_t MIN = -128;'));
+    expect(c, contains('int64_t a = -(1);'));
+    expect(c, contains('int8_t b = -(128);'));
+    expect(c, contains('uint8_t c = ~(0);'));
+    expect(c, contains('int32_t f = -(1);'));
+    expect(c, contains('klin_ret_0 = -(1);'));
+  });
 }

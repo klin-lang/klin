@@ -1,0 +1,25 @@
+const HI: u8 = 255
+const LO: i8 = -128
+const HEX: u8 = 0x7F
+const CH: u8 = 'A'
+const WIDE: u16 = 300
+
+struct Pair {
+    a: u8
+    b: i8
+}
+
+fn take(x: u8): i32 {
+    return cast(i32, x)
+}
+
+fn main() {
+    let a: u8 = 255
+    let b: i8 = 127
+    let c: u8 = 0x10
+    let d: u8 = 'A'
+    let e: u16 = 0x12C
+    let p = Pair{ a: 1, b: 2 }
+    let xs: [2]i32 = [9, 8]
+    printf("%d %d %d %d %d %d %d %d %d %d\n", cast(i32, HI), cast(i32, LO), cast(i32, HEX), cast(i32, CH), cast(i32, a), take(200), cast(i32, e), cast(i32, p.a), cast(i32, d), xs[1])
+}

@@ -1,0 +1,67 @@
+struct Out {
+    n: i32
+}
+
+fn (o: Out) get(): i32 {
+    return o.n
+}
+
+fn (mut o: Out) add(x: i32) {
+    o.n = o.n + x
+}
+
+fn (mut o: Out) lit(b: []u8) {
+    o.add(b.len)
+    if o.get() < 0 {
+        o.n = 0
+    }
+}
+
+struct Slot {
+    v: i32
+}
+
+fn (mut s: Slot) set(x: i32) {
+    s.v = x
+}
+
+struct Ctx {
+    err: Out
+    slots: [2]Slot
+    k: i32
+}
+
+fn (mut c: Ctx) bump() {
+    c.k = c.k + 1
+    c.err.add(1)
+}
+
+fn take(p: *mut Out): i32 {
+    (*p).add(5)
+    return (*p).get()
+}
+
+fn read_err(c: *Ctx): i32 {
+    return (*c).err.get()
+}
+
+fn main() {
+    let mut ctx = Ctx{
+        err: Out{ n: 0 },
+        slots: [Slot{ v: 0 }, Slot{ v: 0 }],
+        k: 0
+    }
+    let c: *mut Ctx = &ctx
+
+    (*c).err.lit(b"hi")
+    (*c).bump()
+    (*c).slots[1].set(9)
+
+    let p: *mut Out = &(*c).err
+    let n = take(p)
+    let again: *mut Ctx = &(*c)
+
+    ctx.err.add(1)
+
+    printf("%d %d %d %d %d %d\n", n, ctx.err.get(), ctx.slots[1].v, ctx.k, (*again).k, read_err(c))
+}
