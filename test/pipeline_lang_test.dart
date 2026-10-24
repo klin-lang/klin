@@ -1770,8 +1770,8 @@ fn main() {
     expect(c, contains('static const uint32_t M = ~0;'));
     expect(c, contains('static const int8_t MIN = -128;'));
     expect(c, contains('int64_t a = -(1);'));
-    expect(c, contains('int8_t b = -(128);'));
-    expect(c, contains('uint8_t c = ~(0);'));
+    expect(c, contains('int8_t b = (int8_t)(-(128));'));
+    expect(c, contains('uint8_t c = (uint8_t)(~(0));'));
     expect(c, contains('int32_t f = -(1);'));
     expect(c, contains('klin_ret_0 = -(1);'));
   });
@@ -1902,7 +1902,7 @@ fn main() {
       contains('int64_t xs[1] = { (-9223372036854775807LL - 1) };'),
     );
     expect(c, contains('~(18446744073709551615ULL)'));
-    expect(c, contains('int8_t small = -(128);'));
+    expect(c, contains('int8_t small = (int8_t)(-(128));'));
     expect(c, isNot(contains('9223372036854775808')));
   });
 
@@ -1939,14 +1939,14 @@ fn main() {
     expect(c, contains('uint8_t b = 15;'));
     expect(c, contains('int32_t c = 300;'));
     expect(c, contains('int64_t d = -4;'));
-    expect(c, contains('uint8_t e = ~(0);'));
-    expect(c, contains('int8_t f = -(128);'));
+    expect(c, contains('uint8_t e = (uint8_t)(~(0));'));
+    expect(c, contains('int8_t f = (int8_t)(-(128));'));
     expect(c, contains('int64_t g = (-9223372036854775807LL - 1);'));
     expect(c, contains('uint64_t h = 18446744073709551615ULL;'));
     expect(c, contains('uint8_t xs[1] = { 3 };'));
     expect(c, contains('uint8_t nested[1][1] = { { 9 } };'));
     expect(c, contains('.n = 23'));
-    expect(c, contains('uint8_t z = (y + 1);'));
+    expect(c, contains('uint8_t z = (uint8_t)(y + 1);'));
     expect(c, contains('double w = (1 + 2);'));
     expect(c, contains('uint8_t p = (true ? 3 : 4);'));
     expect(c, contains('take(42)'));
@@ -1974,7 +1974,7 @@ fn main() {
     expect(c, contains('printf("%d\\n", 3);'));
     expect(c, contains('printf("%d\\n", 15);'));
     expect(c, contains('printf("%d\\n", ~((0)));'));
-    expect(c, contains('printf("%d\\n", (y + 1));'));
+    expect(c, contains('printf("%d\\n", (uint8_t)(y + 1));'));
     expect(c, contains('printf("%f\\n", (1.0 + 2.0));'));
     expect(c, contains('puts("hi");'));
   });
@@ -2358,7 +2358,7 @@ fn main() {
     );
     expect(c, contains('uint64_t wide;'));
     expect(c, contains('wide = ~(0);'));
-    expect(c, contains('runtime = (y + 1);'));
+    expect(c, contains('runtime = (uint8_t)(y + 1);'));
     expect(c, contains('int32_t plain;'));
     expect(c, contains('plain = 3;'));
     expect(c, contains('.u.ok = 3'));

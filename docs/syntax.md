@@ -281,8 +281,9 @@ fn main(args: []str) {
 ```
 
 Writes are errors: `s[i] = 1`, `s.len = 1`, `let mut w = cstr_u8(s)`.
-There is no `s[a:b]` and no `cast` of a `str` to an integer. A NULL
-`str` is undefined, the same as `strlen`. `import str` / `str.len`
+There is no `s[a:b]` and no `cast` of a `str` to an integer. A `str`
+with no initializer is `""`, not a null pointer (D27): a local, a
+zero-initialized field, and a global. `import str` / `str.len`
 still returns `usize`. See [D22](01-decisions.md). Runnable:
 [`examples/str_bytes.kl`](../examples/str_bytes.kl).
 
@@ -412,7 +413,7 @@ fn bump() {
   including compound assignment and a `for name = …` header. `&` of it
   is `*mut T`. A `mut` method accepts a `let mut` global
 - The type is required. Omitted initializer means zero-init (C static
-  storage). A present initializer must be a constant expression:
+  storage). A `str` zero is `""` (D27). A present initializer must be a constant expression:
   literals, `const`, integer constant expressions, array and struct
   literals of those, `b"..."`, an enum variant, `&` of a global or
   function, `xs[:]` / `xs[a:b]` of a global array (constant bounds), or

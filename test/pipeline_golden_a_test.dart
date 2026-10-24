@@ -251,12 +251,12 @@ fn main() {
     expect(c, contains('printf("%d %d\\n", 8, 2);'));
     // Rust-like: `&` binds tighter than `==`.
     expect(c, contains('((flags & 0x4) == 0x4)'));
-    // Compound assigns emit 1:1 as C `op=`.
+    // Compound assigns emit 1:1 as C `op=`. A shift is the defined helper.
     expect(c, contains('f |= 0x1;'));
     expect(c, contains('f &= 0x5;'));
     expect(c, contains('f ^= 0x1;'));
-    expect(c, contains('f <<= 1;'));
-    expect(c, contains('f >>= 1;'));
+    expect(c, contains('f = klin_shl_u32(f, (uint64_t)(1));'));
+    expect(c, contains('f = klin_shr_u32(f, (uint64_t)(1));'));
   });
 
   test('golden: arithmetic compound assigns += -= *= /= %=', () async {

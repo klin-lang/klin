@@ -1,0 +1,201 @@
+// Runtime narrow arithmetic wraps to the operand width (D26).
+// Constant expressions stay range-checked; these operands are variables.
+
+fn u8_shl(): i32 {
+    let a: u8 = 129
+    let n: i32 = 1
+    return cast(i32, a << n)
+}
+
+fn u8_shl_wide(): i32 {
+    let a: u8 = 129
+    let n: i32 = 8
+    return cast(i32, a << n)
+}
+
+fn u8_not(): i32 {
+    let a: u8 = 0xf0
+    return cast(i32, ~a)
+}
+
+fn u8_cmp(): i32 {
+    let a: u8 = 200
+    let b: u8 = 100
+    if a + b > 255 { return 1 }
+    return 0
+}
+
+fn u8_add(): i32 {
+    let a: u8 = 200
+    let b: u8 = 100
+    return cast(i32, a + b)
+}
+
+fn u8_mid(): i32 {
+    let a: u8 = 200
+    let b: u8 = 100
+    return cast(i32, (a + b) / 2)
+}
+
+fn i8_add(): i32 {
+    let a: i8 = -100
+    let b: i8 = -100
+    if a + b < -128 { return 1 }
+    return cast(i32, a + b)
+}
+
+fn i8_shl(): i32 {
+    let a: i8 = -1
+    let n: i32 = 1
+    return cast(i32, a << n)
+}
+
+fn i8_shl_wide(): i32 {
+    let a: i8 = -1
+    let n: i32 = 8
+    return cast(i32, a << n)
+}
+
+fn i8_shr_wide(): i32 {
+    let a: i8 = -1
+    let n: i32 = 8
+    return cast(i32, a >> n)
+}
+
+fn i8_shr(): i32 {
+    let a: i8 = -128
+    let n: i32 = 1
+    return cast(i32, a >> n)
+}
+
+fn i8_div(): i32 {
+    let a: i8 = -128
+    let b: i8 = -1
+    return cast(i32, a / b)
+}
+
+fn u16_add(): i32 {
+    let a: u16 = 40000
+    let b: u16 = 40000
+    if a + b > 65535 { return 1 }
+    return cast(i32, a + b)
+}
+
+fn u16_not(): i32 {
+    let a: u16 = 0xffff
+    return cast(i32, ~a)
+}
+
+fn u16_shl(): i32 {
+    let a: u16 = 1
+    let n: i32 = 16
+    return cast(i32, a << n)
+}
+
+fn i16_add(): i32 {
+    let a: i16 = -20000
+    let b: i16 = -20000
+    if a + b < -32768 { return 1 }
+    return cast(i32, a + b)
+}
+
+fn i16_shl(): i32 {
+    let a: i16 = -1
+    let n: i32 = 16
+    return cast(i32, a << n)
+}
+
+fn i16_shr(): i32 {
+    let a: i16 = -1
+    let n: i32 = 16
+    return cast(i32, a >> n)
+}
+
+fn i32_shl(): i32 {
+    let a: i32 = 1
+    let n: i32 = 32
+    return a << n
+}
+
+fn i32_shr(): i32 {
+    let a: i32 = -1
+    let n: i32 = 40
+    return a >> n
+}
+
+fn i32_neg_shl(): i32 {
+    let a: i32 = -1
+    let n: i32 = 1
+    return a << n
+}
+
+fn i32_signbit(): i32 {
+    let a: i32 = 1
+    let n: i32 = 31
+    return a << n
+}
+
+fn i32_neg_count(): i32 {
+    let a: i32 = 1
+    let n: i32 = -1
+    return a << n
+}
+
+fn u32_compound(): i32 {
+    let mut f: u32 = 1
+    let n: i32 = 32
+    f <<= n
+    return cast(i32, f)
+}
+
+fn u32_shr(): i32 {
+    let a: u32 = 1
+    let n: i32 = 32
+    return cast(i32, a >> n)
+}
+
+fn i64_shl(): i32 {
+    let a: i64 = 1
+    let n: i32 = 64
+    if a << n == 0 { return 0 }
+    return 1
+}
+
+fn i64_shr(): i32 {
+    let a: i64 = -1
+    let n: i32 = 64
+    if a >> n == -1 { return -1 }
+    return 0
+}
+
+fn u64_shr(): i32 {
+    let a: u64 = 1
+    let n: i32 = 64
+    if a >> n == 0 { return 0 }
+    return 1
+}
+
+let mut hits: i32
+
+fn idx(): i32 {
+    hits = hits + 1
+    return 0
+}
+
+fn place(): i32 {
+    let mut xs: [1]u8 = [1]
+    xs[idx()] <<= 1
+    if hits == 1 && xs[0] == 2 { return 1 }
+    return 0
+}
+
+fn main() {
+    printf("u8 %d %d %d %d %d %d\n", u8_shl(), u8_shl_wide(), u8_not(), u8_cmp(), u8_add(), u8_mid())
+    printf("i8 %d %d %d %d %d %d\n", i8_add(), i8_shl(), i8_shl_wide(), i8_shr_wide(), i8_shr(), i8_div())
+    printf("u16 %d %d %d\n", u16_add(), u16_not(), u16_shl())
+    printf("i16 %d %d %d\n", i16_add(), i16_shl(), i16_shr())
+    printf("i32 %d %d %d %d %d\n", i32_shl(), i32_shr(), i32_neg_shl(), i32_signbit(), i32_neg_count())
+    printf("u32 %d %d\n", u32_compound(), u32_shr())
+    printf("wide %d %d %d\n", i64_shl(), i64_shr(), u64_shr())
+    printf("place %d\n", place())
+}

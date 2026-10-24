@@ -1,0 +1,80 @@
+// The zero value of str is "" (D27): locals, struct fields, globals.
+
+struct Row {
+    name: str
+    n: i32
+}
+
+struct Wrap {
+    row: Row
+}
+
+struct Bag {
+    ss: [2]str
+}
+
+let frozen: str
+let mut g: str
+let mut grow: Row
+
+fn local_len(): i32 {
+    let s: str
+    return s.len
+}
+
+fn local_at0(): i32 {
+    let s: str
+    return cast(i32, s[0])
+}
+
+fn local_bytes(): i32 {
+    let s: str
+    let b = cstr_u8(s)
+    return b.len
+}
+
+fn field_len(): i32 {
+    let row: Row
+    return row.name.len
+}
+
+fn field_after(): i32 {
+    let mut row: Row
+    row.n = 4
+    if row.name.len != 0 { return -1 }
+    return row.n
+}
+
+fn nested_len(): i32 {
+    let w: Wrap
+    return w.row.name.len
+}
+
+fn bag_len(): i32 {
+    let b: Bag
+    return b.ss[0].len + b.ss[1].len
+}
+
+fn res_len(): i32 {
+    let r: !str
+    let s = r or { return err + 1 }
+    return s.len
+}
+
+struct Hook {
+    name: str
+    cb: fn(i32): i32
+}
+
+fn hook_len(): i32 {
+    let h: Hook
+    return h.name.len
+}
+
+fn main() {
+    printf("%d %d %d %d %d %d %d %d %d %d\n",
+        local_len(), local_at0(), local_bytes(),
+        field_len(), field_after(), nested_len(), bag_len(),
+        res_len(), hook_len(),
+        frozen.len + g.len + grow.name.len + grow.n)
+}

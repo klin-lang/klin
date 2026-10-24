@@ -46,7 +46,8 @@ fn main() {
 - Floats: `f32` / `f64`, alias `float` → `f64`
 - `bool`, `str` (C string pointer — no `==` on content; use `import str`).
   `s.len` is `strlen` (`i32`, every time), `s[i]` is a read-only `u8`,
-  and `cstr_u8(s)` is a read-only `[]u8` (D22). `b"..."` stays the
+  and `cstr_u8(s)` is a read-only `[]u8` (D22). A `str` with no
+  initializer is `""`, so `s.len` is 0 (D27). `b"..."` stays the
   counted buffer
 - Literals: `0xFF`, `0b1010`, `0o755`, `1_000`, `1.5e-3`, `'A'`, `b"fn"` (`[]u8`, [syntax.md](syntax.md))
 - No implicit numeric truthiness: `if` wants `bool`
@@ -62,7 +63,10 @@ fn main() {
   operators fold in any expected integer type, not only in a `const`
   or an `[N]T` length: `let x: u8 = 1 + 2` is `3`, and
   `let x: u8 = 200 + 100` is out of range for `u8`. A variable stays
-  runtime (`y + 1`)
+  runtime (`y + 1`). On `u8` / `i8` / `u16` / `i16` that runtime result
+  wraps to the type (two `u8` variables `200 + 100` is 44, and `> 255`
+  is false). A shift whose count is negative or at least the width is
+  `0`, or `-1` for arithmetic `>>` of a negative value (D26)
 
 `:=` is sugar for `let mut` ([14-short-decl.md](14-short-decl.md)).
 
@@ -315,6 +319,8 @@ Tightest at the top. Assignment is a statement, not an operator here.
 So `flags & mask == bit` means `(flags & mask) == bit`. In C the same
 tokens mean `flags & (mask == bit)`. Emission still parenthesizes so
 the `.c` keeps Klin’s order ([01-decisions.md](01-decisions.md) D8 / D9).
+A `u8` / `i8` / `u16` / `i16` result is cast back to that width, and a
+shift is a defined helper (D26).
 
 `&&` / `||` do not accept integers. `or` without `{ }` is a parse
 error.

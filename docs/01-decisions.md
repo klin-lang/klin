@@ -174,6 +174,7 @@ The call still passes a pointer; `mut` is not in the C.
 Variables declared without a value are zeroed (after Nelua).
 No constructors or destructors (no RAII).
 Optionally an annotation to disable zeroing for micro-optimization.
+The zero of `str` is `""`, not a null pointer (D27).
 
 ---
 
@@ -187,8 +188,9 @@ Optionally an annotation to disable zeroing for micro-optimization.
 
 In C bitwise operators sit *below* comparisons, so `a & b == c` means `a & (b == c)` —
 a classic trap. In Klin (like Rust) bitwise binds tighter:
-`a & b == c` ⇒ `(a & b) == c`. Emission to C is still 1:1; parenthesization in
-`BinaryExpr` preserves the intended order.
+`a & b == c` ⇒ `(a & b) == c`. Parenthesization in
+`BinaryExpr` preserves the intended order. A shift is a defined helper,
+and a `u8` / `i8` / `u16` / `i16` result is cast back to that width (D26).
 
 Binary `&` vs unary `&` (address) — distinguished by position, like `*`
 (multiplication vs dereference).
@@ -376,7 +378,9 @@ and `&limit` is `*i32`. `let mut` is assignable and `&n` is `*mut i32`.
   `!T` is not a global (`a global cannot have type …`).
 - The initializer is optional. Omitting it zero-initializes, the same
   values as a local without an initializer (integer `0`, `false`,
-  `NULL`, `{0}`, a slice `{ NULL, 0 }`, an enum `0`). A function
+  `NULL`, `{0}`, a slice `{ NULL, 0 }`, an enum `0`, a `str` `""`).
+  A struct or array that contains a `str` lists `""` for those fields
+  instead of a single `{0}` (D27). A function
   pointer's zero is the integer `0`, not `NULL`: ISO C does not convert
   `void *` to a function pointer.
 - When present, the initializer must be a constant expression. Allowed:
@@ -937,8 +941,8 @@ writes it.
   `mod.cstr_u8` is that module's function, not the builtin.
 - `#include <string.h>` is emitted only when the program uses `s.len`
   or `cstr_u8`. Indexing a `str` does not need it.
-- A NULL `str` is undefined behavior, the same as `strlen` in C. There
-  is no runtime check.
+- The zero value of a `str` is `""`, not a null pointer (D27). Klin
+  does not emit `NULL` for a `str`. There is no runtime null check.
 - `cast` of a `str` to an integer stays rejected (D17).
 - `puts` takes exactly one `str`. `printf`'s format argument must be
   a `str`. `b"..."` is `[]u8` and does not convert: `puts(b"hi")` and
@@ -1014,6 +1018,111 @@ stay legal.
 enum E { A = 1, B = 1 }   // error: duplicate enum value 1
 enum F { A = 1, B = 0, C } // error: C is 1, same as A
 enum G { Ok, Warn = 5, Err } // 0, 5, 6
+```
+
+## D26. Narrow integer wrap and defined shifts — DECIDED
+
+**Choice: a runtime arithmetic or bitwise result on `u8`, `i8`, `u16`, or `i16` wraps to that width. A runtime shift on every integer width is defined for every count.**
+
+C promotes `u8` / `i8` / `u16` / `i16` to `int` before the operation.
+The promoted value was leaking into comparisons and further
+operations: `u8` `129 << 1` was 258, `~` of `u8` `0xf0` was -241, and
+`u8` `200 + 100 > 255` was true. Emission casts the result back
+(`(uint8_t)(a + b)`, `(uint8_t)(~(a))`) so the next operation sees the
+wrapped value. `+ - * / % & | ^` and unary `-` / `~` all do this.
+`i32` / `u32` / `i64` / `u64` / `usize` / `isize` arithmetic is
+unchanged.
+
+A shift is a small `static inline` helper, for every integer width,
+including `usize` / `isize`:
+
+- The count is converted to `uint64_t`. A negative count becomes a
+  value larger than any width, so it takes the out-of-range result
+  below. That conversion is defined; it is not a C shift of a negative
+  count.
+- If the count is greater than or equal to the width, the result is
+  `0`. Arithmetic `>>` of a negative value is `-1` (the sign fills).
+- Otherwise the shift runs. A left shift uses the unsigned bit
+  pattern, so a negative signed value is not undefined behavior. A
+  right shift of a signed value is arithmetic, which gcc, clang, and
+  tcc do.
+- `usize` / `isize` use `sizeof(size_t) * 8` and
+  `sizeof(ptrdiff_t) * 8`, so one helper matches a 32-bit target and a
+  64-bit target.
+- A compound `<<=` / `>>=` calls the same helper. A place that is not a
+  simple name, field, or index of a simple place is read once through a
+  pointer, so a call in the index runs once, before the right-hand side.
+  `+=` and the other compound assigns stay C `op=`: the store already
+  wraps a narrow integer.
+
+A constant expression does not change (D11, D12). `let x: u8 = 200 + 100`
+and `const X: u8 = 1 << 8` are still out of range. Those expressions
+never become a C operator. A variable is runtime and wraps.
+
+```klin
+fn main() {
+    let a: u8 = 129
+    let n: i32 = 1
+    printf("%d\n", a << n)       // 2
+    let bits: u8 = 0xf0
+    printf("%d\n", ~bits)        // 15
+    let x: u8 = 200
+    let y: u8 = 100
+    if x + y > 255 { }           // false; the sum is 44
+    let w: i32 = 1
+    let wide: i32 = 32
+    printf("%d\n", w << wide)    // 0
+    let neg: i32 = -1
+    printf("%d\n", neg >> wide)  // -1
+}
+```
+
+## D27. Zero value of `str` — DECIDED
+
+**Choice: a `str` with no initializer is the empty string `""`. It is never a null pointer.**
+
+`s.len`, `s[i]`, and `cstr_u8(s)` on a zero `str` used to call
+`strlen` on `NULL` and fault. The zero value is one empty string
+literal:
+
+- a local `let s: str`
+- a module `let` / `let mut` of type `str`
+- a struct field, including a nested struct and an array of `str`,
+  when that struct or array is zero-initialized (`let row: Row`)
+- the ok side of a zero `!str`
+
+A pointer to `str` and a `[]str` stay as they were. Their zero is a
+null pointer and an empty slice header. There is no `str` value behind
+them yet.
+
+A struct literal still names every field. An omitted field is
+`literal Row requires all fields`, not a null `str`. Zero-initializing
+the struct and then assigning one field leaves the other `str` fields
+as `""`. That is the partial init: unspecified `str` storage is `""`,
+and a literal that skips a field is rejected instead of emitting
+`NULL`.
+
+An `async fn` local is a field of the state struct. When the `let` of
+a `str` (or of a struct or array that contains one) has no initializer,
+emission stores `""`. Other uninitialized async locals are unchanged.
+
+`""` is read-only, like any other string literal. `str` is
+`const char *`, so the program cannot write through it.
+
+```klin
+struct Row {
+    name: str
+    n: i32
+}
+
+let mut g: str
+
+fn main() {
+    let s: str
+    let row: Row
+    printf("%d %d %d\n", s.len, row.name.len, g.len)  // 0 0 0
+    printf("%d\n", s[0])                               // 0, the NUL
+}
 ```
 
 ## D7. To decide later

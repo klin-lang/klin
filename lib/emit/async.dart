@@ -120,6 +120,7 @@ final class _AsyncEmitCtx {
   final List<AwaitExpr> awaits;
   int indent;
   int awaitIndex = 0;
+  int valueTemp = 0;
 
   _AsyncEmitCtx({
     required this.buf,
@@ -131,6 +132,8 @@ final class _AsyncEmitCtx {
   });
 
   String get pad => '    ' * indent;
+
+  String nextTemp() => 'klin_val_${valueTemp++}';
 }
 
 void _collectAwaitsInBlock(Block block, List<AwaitExpr> out) {
@@ -283,15 +286,42 @@ void _emitAsyncStmt(Stmt stmt, _AsyncEmitCtx ctx) {
         } else {
           buf.writeln('${pad}st->$name = ${_emitAsyncExpr(init, ctx)};');
         }
+      } else if (resolvedType != null && _containsStr(resolvedType)) {
+        // The state field would otherwise be uninitialized. A `str` zero
+        // is `""` (D27), including a field or array element of `str`.
+        _emitStrZeroStore(
+          buf,
+          pad,
+          'st->$name',
+          resolvedType,
+          cArray: resolvedType is ArrayType && !arrayByValue,
+        );
       }
 
     case AssignStmt(:final target, :final value, :final pos, :final compoundOp):
       _line(buf, pos.line, ctx.sourcePath);
-      final lhs = _emitAsyncExpr(target, ctx);
-      final rhs = _emitAsyncExpr(value, ctx);
+      final ty = target.resolvedType;
       if (compoundOp != null) {
-        buf.writeln('$pad$lhs $compoundOp= $rhs;');
+        final shift = compoundOp == '<<' || compoundOp == '>>';
+        if (shift &&
+            ty is PrimType &&
+            ty.kind.isInteger &&
+            !_exprIsSimplePlace(target)) {
+          final place = _emitAsyncExpr(target, ctx);
+          final ptr = ctx.nextTemp();
+          buf.writeln(
+            '$pad${_cDecl(PtrType(ty, isMut: true), ptr)} = &$place;',
+          );
+          final rhs = _emitAsyncExpr(value, ctx);
+          buf.writeln('$pad${_compoundAssign('*$ptr', compoundOp, rhs, ty)};');
+        } else {
+          final lhs = _emitAsyncExpr(target, ctx);
+          final rhs = _emitAsyncExpr(value, ctx);
+          buf.writeln('$pad${_compoundAssign(lhs, compoundOp, rhs, ty)};');
+        }
       } else {
+        final lhs = _emitAsyncExpr(target, ctx);
+        final rhs = _emitAsyncExpr(value, ctx);
         buf.writeln('$pad$lhs = $rhs;');
       }
 
@@ -344,6 +374,9 @@ String _emitAsyncArg(Expr arg, _AsyncEmitCtx ctx) {
 }
 
 String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
+  if (_exprEmittedAsFoldedInt(expr)) {
+    return _cConstInt(expr.foldedInt!, (expr.resolvedType! as PrimType).kind);
+  }
   return switch (expr) {
     IntLit lit => _emitIntLit(lit),
     FloatLit(:final lexeme) => lexeme.replaceAll('_', ''),
@@ -369,8 +402,13 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
               resolvedType,
               (inner) => _emitAsyncExpr(inner, ctx),
             ),
-    BinaryExpr(:final left, :final op, :final right) =>
-      '(${_emitAsyncExpr(left, ctx)} $op ${_emitAsyncExpr(right, ctx)})',
+    BinaryExpr(:final left, :final op, :final right) => _emitIntBinary(
+        left,
+        op,
+        right,
+        expr.resolvedType,
+        (side) => _emitAsyncExpr(side, ctx),
+      ),
     PickExpr(:final cond, :final thenExpr, :final elseExpr) =>
       expr.resolvedType is ArrayType
           ? '(${_emitAsyncExpr(cond, ctx)} ? ${_emitAsyncArrayValue(thenExpr, ctx)} : ${_emitAsyncArrayValue(elseExpr, ctx)})'
