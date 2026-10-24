@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:klin/ast.dart';
 import 'package:klin/checker.dart';
+import 'package:klin/diagnose.dart';
 import 'package:klin/emit_c.dart';
 import 'package:klin/fmt.dart';
 import 'package:klin/init.dart';
@@ -114,13 +115,13 @@ Future<void> main(List<String> args) async {
     stderr.writeln('$e');
     exit(1);
   } on LexError catch (e) {
-    stderr.writeln('$sourcePath:$e');
+    stderr.writeln(formatFrontendError(sourcePath, e));
     exit(1);
   } on ParseError catch (e) {
-    stderr.writeln('$sourcePath:$e');
+    stderr.writeln(formatFrontendError(sourcePath, e));
     exit(1);
   } on CheckError catch (e) {
-    stderr.writeln('$sourcePath:$e');
+    stderr.writeln(formatFrontendError(sourcePath, e));
     exit(1);
   } on FileSystemException catch (e) {
     stderr.writeln('klin: ${e.message}: ${e.path}');
@@ -595,15 +596,15 @@ Future<void> _runTest(List<String> args) async {
     } on LexError catch (e) {
       failed++;
       stdout.writeln('FAIL\t$shown');
-      stderr.writeln('$path:$e');
+      stderr.writeln(formatFrontendError(path, e));
     } on ParseError catch (e) {
       failed++;
       stdout.writeln('FAIL\t$shown');
-      stderr.writeln('$path:$e');
+      stderr.writeln(formatFrontendError(path, e));
     } on CheckError catch (e) {
       failed++;
       stdout.writeln('FAIL\t$shown');
-      stderr.writeln('$path:$e');
+      stderr.writeln(formatFrontendError(path, e));
     } on FileSystemException catch (e) {
       failed++;
       stdout.writeln('FAIL\t$shown');

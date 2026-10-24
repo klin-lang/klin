@@ -164,7 +164,8 @@ void _collectLetsInBlock(Block block, List<LetStmt> out) {
 void _collectLetsInStmt(Stmt stmt, List<LetStmt> out) {
   switch (stmt) {
     case LetStmt():
-      out.add(stmt);
+      // `_` is a discard. It is not a field of the state struct.
+      if (stmt.name != '_') out.add(stmt);
     case IfStmt(:final thenBlock, :final elseBranch):
       _collectLetsInBlock(thenBlock, out);
       if (elseBranch != null) _collectLetsInStmt(elseBranch, out);
@@ -261,7 +262,19 @@ void _emitAsyncStmt(Stmt stmt, _AsyncEmitCtx ctx) {
         :final resolvedType
       ):
       _line(buf, pos.line, ctx.sourcePath);
-      if (init != null) {
+      if (name == '_') {
+        if (init != null) {
+          final peeled = _peelEmitGroups(init);
+          final ty = resolvedType;
+          if (ty is ArrayType && !arrayByValue && peeled is ArrayLitExpr) {
+            final tmp = 'klin_discard_${pos.line}_${pos.col}';
+            buf.writeln('$pad${_cDecl(ty, tmp)};');
+            _emitAsyncArrayLitStore(buf, peeled, tmp, ty, ctx);
+          } else {
+            buf.writeln('$pad(void)(${_emitAsyncExpr(init, ctx)});');
+          }
+        }
+      } else if (init != null) {
         final peeled = _peelEmitGroups(init);
         final ty = resolvedType;
         if (ty is ArrayType && !arrayByValue && peeled is ArrayLitExpr) {

@@ -89,7 +89,7 @@ fn also_broken( {
       );
     });
 
-    test('LSP overlay keeps project-level ParseError without path', () {
+    test('LSP overlay keeps a project-level ParseError in the open file', () {
       final dir = Directory.systemTemp.createTempSync('klin_092_alias_');
       addTearDown(() {
         if (dir.existsSync()) dir.deleteSync(recursive: true);
@@ -121,7 +121,7 @@ fn main(): void {
       expect(
         result.diagnostics.any((d) => d.message.contains('already bound')),
         isTrue,
-        reason: 'must not swallow pathless project ParseError via fall-through',
+        reason: 'must not swallow a project-level ParseError via fall-through',
       );
     });
 

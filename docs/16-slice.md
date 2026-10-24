@@ -65,7 +65,8 @@ numeric types.
 Writing `dst[i]` follows the slice place, the same rule as `&dst[i]`.
 An immutable binding and a slice parameter cannot write (`s[i] = …`,
 `s[i] += …`). `let mut s` can when the slice views a mutable buffer.
-A `b"..."` value cannot be bound or assigned that way (D10). An
+A `b"..."` value can be held by `let mut`; the header can be reseated,
+and a write through those bytes is still an error (D10). An
 immutable module `let` of those bytes follows the same rule. A module
 `let mut` slice does not: a write through it may crash (D11).
 `xs[:][i] = …` follows the array.
@@ -128,7 +129,7 @@ elements. There is no runtime bounds check — an out-of-range bound,
 `a > b`, or a negative bound is undefined behavior, the same policy
 as `xs[i]`. Mutability of the view follows the source place. A
 subslice of read-only bytes is those bytes: `let mut s = b"ab"[0:1]`
-is the D10 error.
+is a mutable header, and `s[0] = 1` is the D10 write error.
 
 ## Pointer to an array
 
@@ -147,7 +148,9 @@ a function addresses the array inside the return wrapper.
 A field `buf: *mut [N]Token` is allowed. A field `[]*mut [N]Token`,
 `fn(): *mut [N]Token`, or `!*mut [N]Token` is not: that typedef needs
 the struct to be complete. `kids: *mut [N]Node` is not either (the array needs `Node`
-complete). `next: *Node` and `kids: []Node` stay valid. `async fn`
+complete). A by-value cycle (`struct A { b: B }` and `struct B { a: A }`)
+is infinite size, not that array error: store one of them behind a
+pointer. `next: *Node` and `kids: []Node` stay valid. `async fn`
 rejects a slice range; `(*p)[i]` there is fine. `p[:]` and `p[i]` on
 the pointer itself are errors.
 

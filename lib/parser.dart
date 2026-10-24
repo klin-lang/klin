@@ -9,7 +9,17 @@ final class ParseError implements Exception {
   /// Source file when known (e.g. during multi-file project load).
   final String? path;
 
-  const ParseError(this.message, this.pos, {this.path});
+  /// Set for errors raised by project loading (alias clash, module name),
+  /// not by the parser. The language server must not treat these as a
+  /// syntax error in the open buffer.
+  final bool fromProject;
+
+  const ParseError(
+    this.message,
+    this.pos, {
+    this.path,
+    this.fromProject = false,
+  });
 
   @override
   String toString() {
@@ -646,6 +656,7 @@ final class Parser {
     }
     if (expr is MethodCallExpr) return MethodCallStmt(expr);
     if (expr is AwaitExpr) return AwaitStmt(expr);
+    if (expr is PropagateExpr) return PropagateStmt(expr);
     throw ParseError('expected assignment `=` or call', expr.pos);
   }
 
@@ -1156,12 +1167,15 @@ final class Parser {
           _advance();
           bind = _expect(TokenKind.ident, 'expected local name after `:`');
         }
-        _rejectCKeyword(bind, 'a variable name');
-        if (!seenBinds.add(bind.lexeme)) {
-          throw ParseError(
-            'duplicate name `${bind.lexeme}` in destructuring pattern',
-            bind.pos,
-          );
+        // `_` is a discard and may be repeated. Other names bind once.
+        if (bind.lexeme != '_') {
+          _rejectCKeyword(bind, 'a variable name');
+          if (!seenBinds.add(bind.lexeme)) {
+            throw ParseError(
+              'duplicate name `${bind.lexeme}` in destructuring pattern',
+              bind.pos,
+            );
+          }
         }
         fields.add(field.lexeme);
         binds.add(bind.lexeme);

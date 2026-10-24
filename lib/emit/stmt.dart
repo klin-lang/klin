@@ -183,18 +183,22 @@ void _emitStmt(
         :final arrayByValue
       ):
       _line(buf, pos.line, sourcePath);
+      // `let _` evaluates the initializer and binds nothing. A repeated `_`
+      // must not become a repeated C declaration named `_`.
+      if (name == '_' && init == null) break;
+      final cName = name == '_' ? state.nextValueTemp() : name;
       final ty = resolvedType;
       if (ty == null) {
         throw StateError('emit: missing type for `$name` — run the checker');
       }
       if (init != null) {
         final byValue = ty is ArrayType && arrayByValue;
-        final decl = byValue ? '${_cValueType(ty)} $name' : _cDecl(ty, name);
+        final decl = byValue ? '${_cValueType(ty)} $cName' : _cDecl(ty, cName);
         if (init is OrExpr || init is PropagateExpr) {
           buf.writeln('$pad$decl;');
           _emitValueAssignment(
             buf,
-            target: name,
+            target: cName,
             targetType: ty,
             value: init,
             sourcePath: sourcePath,
@@ -207,7 +211,7 @@ void _emitStmt(
           buf.writeln('$pad$decl;');
           _emitMatchAssign(
             buf,
-            target: name,
+            target: cName,
             targetType: ty,
             match: init,
             sourcePath: sourcePath,
@@ -226,7 +230,11 @@ void _emitStmt(
                   asInitializer: true,
                 )
               : _emitExpr(init, ctx);
-          buf.writeln('$pad${_cDecl(ty, name)} = $rhs;');
+          buf.writeln('$pad${_cDecl(ty, cName)} = $rhs;');
+        }
+        // A C array cannot be cast to void. A by-value `[N]T` is a struct.
+        if (name == '_' && !(ty is ArrayType && !arrayByValue)) {
+          buf.writeln('$pad(void)$cName;');
         }
       } else {
         final zero = switch (ty) {
@@ -241,7 +249,7 @@ void _emitStmt(
           ResultType() => '{0}',
           _ => throw StateError('emit: missing default value for `$name`'),
         };
-        buf.writeln('$pad${_cDecl(ty, name)} = $zero;');
+        buf.writeln('$pad${_cDecl(ty, cName)} = $zero;');
       }
 
     case LetDestructureStmt(
@@ -259,6 +267,12 @@ void _emitStmt(
       // binding shadows it (possible via rename, e.g. `let { x: p } = p`), in
       // which case — like any non-name source — copy it into a fresh temp so
       // later field reads do not use a newly declared scalar.
+      final kept = <int>[
+        for (var i = 0; i < binds.length; i++)
+          if (binds[i] != '_') i,
+      ];
+      // Every field discarded and the source is a name: nothing to emit.
+      if (kept.isEmpty && source is NameExpr) break;
       final String access;
       if (source is NameExpr && !binds.contains(source.name)) {
         access =
@@ -269,9 +283,13 @@ void _emitStmt(
             ? '*${_emitExpr(source, ctx)}'
             : _emitExpr(source, ctx);
         buf.writeln('$pad${_cDecl(st, tmp)} = $rhs;');
+        if (kept.isEmpty) {
+          buf.writeln('$pad(void)$tmp;');
+          break;
+        }
         access = '$tmp.';
       }
-      for (var i = 0; i < fields.length; i++) {
+      for (final i in kept) {
         buf.writeln('$pad${_cDecl(fts[i], binds[i])} = $access${fields[i]};');
       }
 
@@ -473,6 +491,11 @@ void _emitStmt(
       throw StateError(
         'emit: AwaitStmt must be lowered inside an async poll function',
       );
+
+    case PropagateStmt(:final expr):
+      _line(buf, expr.pos.line, sourcePath);
+      // The success value is discarded. The error path returns.
+      _emitPropagate(expr.result, ctx);
 
     case IfStmt(:final cond, :final thenBlock, :final elseBranch, :final pos):
       _line(buf, pos.line, sourcePath);

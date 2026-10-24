@@ -149,7 +149,10 @@ overarching principle satisfied.
 - no `|` as alternative — use `,`
 - no matching on strings and structs (`str` is not yet a value
   type)
-- no dead-arm warnings (a second `Color.Red` is still accepted)
+- no general dead-arm warning. An unguarded arm that matches the same
+  constant values as an earlier arm is an error (D24), including
+  `1, 2` and `2, 1`. A `when` guard is not part of that check. Overlaps
+  such as `1..=3` and `2` stay accepted; the first match wins
 - `match` as expression only in `let` / assignment; in call argument
   → checker error with hint
 - subject in header does not accept bare struct literal

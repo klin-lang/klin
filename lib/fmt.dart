@@ -445,6 +445,10 @@ void _writeStmt(_FmtOut out, Stmt stmt, int indent, {bool inline = false}) {
       if (!inline) out.buf.write(pad);
       out.buf.write(_expr(expr, indent));
       out.endLine(stmt.pos.line);
+    case PropagateStmt(:final expr):
+      if (!inline) out.buf.write(pad);
+      out.buf.write(_expr(expr, indent));
+      out.endLine(stmt.pos.line);
     case IfStmt():
       _writeIf(out, stmt, indent, chained: false);
     case WhileStmt(:final cond, :final body):

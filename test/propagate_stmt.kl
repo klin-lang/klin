@@ -1,0 +1,16 @@
+fn step(ok: bool): !i32 {
+    if !ok { return error(9) }
+    return 3
+}
+
+fn run(ok: bool): !i32 {
+    step(ok)!
+    return 4
+}
+
+fn main() {
+    let a = run(true) or { printf("err %d\n", err); return }
+    printf("ok %d\n", a)
+    let b = run(false) or { printf("err %d\n", err); return }
+    printf("no %d\n", b)
+}

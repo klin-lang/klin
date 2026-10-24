@@ -73,6 +73,8 @@ Program loadProject(
           throw ParseError(
             'file `$path` already loaded as module `${fileModule[path]}`',
             const SourcePos(1, 1),
+            path: path,
+            fromProject: true,
           );
         }
       }
@@ -83,6 +85,8 @@ Program loadProject(
       throw ParseError(
         'file `$conflict` already loaded as part of another package',
         const SourcePos(1, 1),
+        path: conflict,
+        fromProject: true,
       );
     }
 
@@ -90,7 +94,11 @@ Program loadProject(
     final existing = loaded[packageKey];
     if (existing != null) return existing;
     if (!loading.add(packageKey)) {
-      throw ParseError('cyclic import `$packageKey`', const SourcePos(1, 1));
+      throw ParseError(
+        'cyclic import `$packageKey`',
+        const SourcePos(1, 1),
+        fromProject: true,
+      );
     }
 
     final units = <({String path, ModuleUnit unit, String moduleName})>[];
@@ -110,6 +118,8 @@ Program loadProject(
           'module `$moduleName` in `$path` does not match package '
           '`$requiredModule`',
           unit.pos,
+          path: path,
+          fromProject: true,
         );
       }
       units.add((path: path, unit: unit, moduleName: moduleName));
@@ -121,6 +131,8 @@ Program loadProject(
         throw ParseError(
           'mixed module names in package (`$moduleName` vs `${u.moduleName}`)',
           u.unit.pos,
+          path: u.path,
+          fromProject: true,
         );
       }
     }
@@ -173,6 +185,8 @@ Program loadProject(
             'import alias `${imp.qualifier}` is already bound to '
             '`${existing.spec}`',
             imp.pos,
+            path: u.path,
+            fromProject: true,
           );
         }
         byQualifier[imp.qualifier] = imp;

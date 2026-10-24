@@ -30,6 +30,10 @@ fn (c: Color) name(): str {
   is an error (`B` would be 256). `enum E: u8 { A = 255 }` is fine — the
   unused next value is not a variant. An explicit `= 300` is still the
   integer-literal range error
+- Two variants cannot share a name, and they cannot share a numeric
+  value (D25). `A = 1, B = 1` is an error, and so is an implied
+  collision (`A = 1, B = 0, C` — `C` is 1). A gap (`Warn = 5`) is fine.
+  Aliases are not a feature
 - Receiver methods work like on structs
 - Emission is a `typedef` plus integer constants (portable; not C23
   `enum E : T`)
@@ -133,6 +137,8 @@ let mut y = 0
 let xs: [4]i32 = [10, 20, 30, 40]
 let [a, b, c, d] = xs         // `[N]T` only; count must equal N
 let [_, mid, _, last] = xs    // `_` skips a slot
+let _ = pair(&n)              // discard; `_` may be repeated
+let { x: _, y: _ } = p        // both fields discarded
 
 fn pair(n: *mut i32): [2]i32 {
     *n = *n + 1
@@ -153,6 +159,11 @@ of a `{}` / `[]` unpack is evaluated once. A call, `pick`, or `match`
 that produces `[N]T` is stored once (`klin_arrN_… tmp`, then `tmp.v[i]`).
 `match` assigns that temporary in each arm. A name and a literal stay
 element reads and do not build the wrapper.
+
+`let _ = expr` evaluates `expr` and does not bind a name, so `_` can
+appear any number of times in one scope. `let x = _` is an unknown
+variable. A struct rename may also be `_` (`let { a: _, b: _ }`).
+`for _ := …` is still the loop variable, not this discard.
 
 Not supported: slice `[]T` (length is runtime), bare `[a, b] = xs`
 (a leading `[` is an index), tuples, patterns in `if` / `match`.
@@ -210,7 +221,8 @@ fn main() {
 slice). A new binding of a mutable buffer can write (`let mut mid =
 xs[1:4]`). A subslice of read-only bytes cannot: `let mut s =
 b"ab"[0:1]`, `b"ab"[0:]`, `b"ab"[:1]`, a `[]u8` constant, or a binding
-that already points at those bytes (D10). A slice parameter is not
+that already points at those bytes (D10): the header can be reseated,
+and `s[i] = …` cannot. A slice parameter is not
 tracked. An array subslice needs an l-value. Runnable:
 [`examples/slice_range.kl`](../examples/slice_range.kl).
 
@@ -307,16 +319,18 @@ fn main() {
 
 The slice points at static bytes (no allocation). Those bytes are
 read-only: `b"fn"[0] = 1` is an error, and so is a write through an
-immutable slice (`let s = b"fn"` then `s[0] = 1`, or a `[]u8`
-parameter). `let mut s = b"fn"` is an error too, including a `[]u8`
-constant, another read-only binding, and an assignment onto a mutable
-slice (`s = b"fn"`). A subslice is the same error (`let mut s =
-b"ab"[0:1]`). `pick`, `match`, and `or` are read-only when any
-arm is. Copy into a `[N]u8` to modify. An immutable module
-`let kw: []u8 = b"fn"` is the same error (`let mut w = kw`). A module
-`let mut s: []u8 = b"fn"` is storage and a write may crash (D11). A
-`[]u8` parameter, a returned `[]u8`, and a struct field are not tracked
-(D10).
+immutable slice (`let s = b"fn"` then `s[0] = 1`). `let mut s = b"fn"`
+compiles: `s` is a mutable header, so `s = other` is allowed, and
+`s[0] = 1` is not while `s` points at those bytes. The same flag
+follows a `[]u8` constant, another read-only binding, a subslice
+(`let mut s = b"ab"[0:1]`), and `s = b"fn"` onto a header that used
+to view a mutable buffer. `pick`, `match`, and `or` are read-only
+when any arm is. Copy into a `[N]u8` to modify. An immutable module
+`let kw: []u8 = b"fn"` follows the same rule (`let mut w = kw` then
+`w[0] = 1` is the write error). A module `let mut s: []u8 = b"fn"`
+is storage and a write may crash (D11). A `[]u8` parameter, a
+returned `[]u8`, and a struct field are not tracked (D10).
+`puts` and the `printf` format want `str`, not this `[]u8`.
 
 ## Constants
 
@@ -411,8 +425,9 @@ fn bump() {
 - A global is not an `[N]T` length. A local of the same name shadows it
 - No locks and no atomics. Async and threads race the way C does
 - An immutable `let kw: []u8 = b"..."` is read-only (D10): `let mut w = kw`
-  is an error. `let mut s: []u8 = b"..."` is accepted storage; a write
-  through it may crash. Copy into a `[N]u8` to modify
+  is allowed, and `w[0] = 1` is the write error. `let mut s: []u8 = b"..."`
+  is accepted storage; a write through it may crash. Copy into a `[N]u8`
+  to modify
 
 Runnable: [`examples/global_let.kl`](../examples/global_let.kl).
 
