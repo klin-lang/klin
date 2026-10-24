@@ -112,9 +112,11 @@ not a name), lowered to `.field`. Example
 **Phase C (done):** `let [a, b] = xs` and `let mut [a, b] = xs` for fixed-length
 arrays `[N]T`, where `N` == pattern count (full coverage, no
 `[x] = tab` ambiguity). Named array indexed in place
-(`xs[i]`), array literal bound element by element. Rejected by
-frontend: slice `[]T` (runtime length), length mismatch, source other than
-variable/array literal, nested array element. Example
+(`xs[i]`), array literal bound element by element. A call, method
+call, `pick`, or `match` of `[N]T` is evaluated once into a temporary,
+then bound as `tmp.v[i]`. Rejected by the frontend: slice `[]T`
+(runtime length), length mismatch, a source that is not a variable, a
+literal, a call, `pick`, or `match`, nested array element. Example
 [`examples/destructure.kl`](../examples/destructure.kl), tests
 in [`test/destruct_array.kl`](../test/destruct_array.kl) +
 `test/pipeline_*_test.dart`.

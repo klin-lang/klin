@@ -173,7 +173,24 @@ fn main() {
       throwsA(
         predicate((e) =>
             e is CheckError &&
-            e.toString().contains('array variable or literal')),
+            e.toString().contains('requires a fixed-length array')),
+      ),
+    );
+  });
+
+  test('error: array destructuring rejects a non-array expression', () {
+    const source = '''
+fn main() {
+  let [a, b] = 1 + 2
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(
+        predicate((e) =>
+            e is CheckError &&
+            e.toString().contains('or a call, pick, or match')),
       ),
     );
   });
@@ -1617,6 +1634,242 @@ fn main() {
     );
   });
 
+  test('error: mutable slice cannot hold read-only bytes', () {
+    const cases = <(String, String)>[
+      (
+        '''
+fn main() {
+  let mut s = b"fn"
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let s = (b"fn")
+  let mut w = s
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+const KW: []u8 = b"fn"
+fn main() {
+  let mut s = KW
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let s = b"fn"
+  let mut w = s
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut xs: [2]u8 = [1, 2]
+  let mut s = xs[:]
+  s = b"fn"
+}
+''',
+        'cannot assign read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let k = b"fn"
+  let mut xs: [2]u8 = [1, 2]
+  let mut s = xs[:]
+  s = k
+}
+''',
+        'cannot assign read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut s = pick true { b"fn" } { b"if" }
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut xs: [1]u8 = [1]
+  let mut s = pick true { b"fn" } { xs[:] }
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut s = match 0 {
+    0 { b"fn" }
+    else { b"if" }
+  }
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn miss(): ![]u8 { return error(1) }
+fn main() {
+  let mut s = miss() or { b"fn" }
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  for s := b"fn"; false; s = s {}
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut n = 0
+  let mut xs: [2]u8 = [1, 2]
+  let mut s = xs[:]
+  s, n = b"fn", 1
+}
+''',
+        'cannot assign read-only bytes',
+      ),
+      (
+        '''
+let kw: []u8 = b"fn"
+fn main() {
+  let mut w = kw
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+const KW: []u8 = b"fn"
+let kw: []u8 = KW
+fn main() {
+  let s = kw
+  let mut w = s
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+let kw: []u8 = b"fn"
+fn main() {
+  let mut xs: [2]u8 = [1, 2]
+  let mut s = xs[:]
+  s = kw
+}
+''',
+        'cannot assign read-only bytes',
+      ),
+      (
+        '''
+let kw: []u8 = b"fn"
+fn main() {
+  let mut s = pick true { kw } { b"if" }
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+let kw: []u8 = b"fn"
+fn main() {
+  for s := kw; false; s = s {}
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut s = b"ab"[0:1]
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut s = b"ab"[0:]
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut s = b"ab"[:1]
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+const KW: []u8 = b"fn"
+fn main() {
+  let mut s = KW[0:1]
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let s = b"ab"[0:1]
+  let mut w = s
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut xs: [2]u8 = [1, 2]
+  let mut s = xs[:]
+  s = b"ab"[1:]
+}
+''',
+        'cannot assign read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut s = pick true { b"ab"[0:1] } { b"cd"[:1] }
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+    ];
+    for (final item in cases) {
+      final program = Parser(Lexer(item.$1).tokenize()).parse();
+      expect(
+        () => Checker().check(program),
+        throwsA(predicate(
+          (e) => e is CheckError && e.toString().contains(item.$2),
+        )),
+        reason: item.$1,
+      );
+    }
+  });
+
   test('error: const without a type', () {
     const source = '''
 const N = 1
@@ -2366,6 +2619,14 @@ fn main() {}
 ''', 'type mismatch: expected `*mut i32`, got `*i32`');
   });
 
+  test('error: printf argument does not fit i32', () {
+    expectRange('''
+fn main() {
+  printf("%d\\n", 2000000000 + 2000000000)
+}
+''', 'integer literal `4000000000` is out of range for `i32`');
+  });
+
   test('error: let of a sum is out of range', () {
     expectRange('''
 fn main() {
@@ -2550,6 +2811,60 @@ fn main() {
 ''', 'shift by a negative count');
   });
 
+  test('error: pick and match cannot produce a zero-length array', () {
+    const cases = <String>[
+      '''
+fn main() {
+  let a: [0]u8 = pick true { [] } { [] }
+}
+''',
+      '''
+fn main() {
+  let a: [0]u8 = match 0 {
+    0 { [] }
+    else { [] }
+  }
+}
+''',
+      '''
+fn main() {
+  let a: [0]u8 = []
+  let b = pick true { a } { a }
+}
+''',
+      '''
+fn main() {
+  let a: [1][0]u8 = pick true { [[]] } { [[]] }
+}
+''',
+      '''
+struct Box { xs: [0]u8 }
+fn main() {
+  let b = Box{ xs: pick true { [] } { [] } }
+}
+''',
+      '''
+fn take(xs: [0]u8) {}
+fn main() {
+  take(pick true { [] } { [] })
+}
+''',
+    ];
+    for (final source in cases) {
+      final program = Parser(Lexer(source).tokenize()).parse();
+      expect(
+        () => Checker().check(program),
+        throwsA(predicate(
+          (e) =>
+              e is CheckError &&
+              e.toString().contains('cannot produce a zero-length array') &&
+              e.toString().contains('not ISO C'),
+        )),
+        reason: source,
+      );
+    }
+  });
+
   test('error: empty array literal needs a type', () {
     expectRange('''
 fn main() {
@@ -2587,6 +2902,72 @@ fn main() {
   let a: [2][0]u8 = [[]]
 }
 ''', 'type mismatch: expected `[2][0]u8`, got `[1][0]`');
+  });
+
+  test('error: match arm literal does not fit the expected type', () {
+    expectRange('''
+fn main() {
+  let k = 0
+  let x: u8 = match k {
+    0 { 300 }
+    else { 1 }
+  }
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: match arm sum is out of range', () {
+    expectRange('''
+fn main() {
+  let k = 0
+  let x: u8 = match k {
+    else { 200 + 100 }
+  }
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: match arm subtraction does not wrap the operand', () {
+    expectRange('''
+fn main() {
+  let k = 0
+  let x: i8 = match k {
+    else { 0 - 128 }
+  }
+}
+''', 'integer literal `128` is out of range for `i8` (-128..=127)');
+  });
+
+  test('error: pick arm sum is out of range', () {
+    expectRange('''
+fn main() {
+  let x: u8 = pick true { 200 + 100 } { 1 }
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: match or fallback does not fit the expected type', () {
+    expectRange('''
+fn main() {
+  let k = 0
+  let x: u8 = match k {
+    0 { 1 }
+    else { error(1) }
+  } or { 300 }
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: match success arm next to error does not fit', () {
+    expectRange('''
+fn main() {
+  let k = 0
+  let x: u8 = match k {
+    0 { 300 }
+    else { error(1) }
+  } or { 1 }
+}
+''', 'integer literal `300` is out of range for `u8` (0..=255)');
   });
 
   test('error: slice element cannot be a result', () {

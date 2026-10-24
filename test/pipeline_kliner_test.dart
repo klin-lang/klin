@@ -428,6 +428,145 @@ void main() {
     expect(result.stdout, await File('test/enum_auto.out').readAsString());
   });
 
+  test('match and pick arms adopt the expected type and run', () async {
+    final result =
+        await compileAndRun('test/match_arm_type.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+      result.stdout,
+      await File('test/match_arm_type.out').readAsString(),
+    );
+
+    final program = loadProject('test/match_arm_type.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/match_arm_type.kl');
+    expect(c, contains('x = 3;'));
+    expect(c, contains('uint8_t y = ((k == 0) ? 11 : 6);'));
+    final cPath = '${tmp.path}/match_arm_type_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/match_arm_type_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
+  test('array destructure of a call, pick, or match runs under pedantic C', () async {
+    final result = await compileAndRun(
+      'test/array_destructure_call.kl',
+      tmp,
+      cc: 'gcc',
+    );
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+      result.stdout,
+      await File('test/array_destructure_call.out').readAsString(),
+    );
+
+    final program = loadProject('test/array_destructure_call.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/array_destructure_call.kl');
+    expect('pair(&(n))'.allMatches(c).length, 3);
+    expect(c, contains('.v[0]'));
+    expect(c, isNot(contains('(pair(&(n))).v')));
+    final cPath = '${tmp.path}/array_destructure_call_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/array_destructure_call_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
+  test('copying a byte string into an array runs under pedantic C', () async {
+    final result =
+        await compileAndRun('test/byte_string_copy.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+      result.stdout,
+      await File('test/byte_string_copy.out').readAsString(),
+    );
+
+    final program = loadProject('test/byte_string_copy.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/byte_string_copy.kl');
+    expect(c, contains('buf[0] ='));
+    final cPath = '${tmp.path}/byte_string_copy_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/byte_string_copy_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
+  test('printf folds a constant argument and runs under pedantic C', () async {
+    final result = await compileAndRun('test/printf_fold.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/printf_fold.out').readAsString());
+
+    final program = loadProject('test/printf_fold.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/printf_fold.kl');
+    expect(c, contains('printf("%d %d\\n", 3, 23);'));
+    final cPath = '${tmp.path}/printf_fold_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      '${tmp.path}/printf_fold_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
+  test('async fn indexes an array and runs under pedantic C', () async {
+    final program = loadProject('test/async_index.kl');
+    Checker().check(program);
+    var c = emitC(program, 'test/async_index.kl');
+    expect(c, contains('(st->local)[st->i]'));
+    expect(c, contains('(st->a).v[0]'));
+    const driver = '''
+int main(void) {
+    int32_t xs[2] = { 7, 8 };
+    int32_t buf[2] = { 5, 6 };
+    klin_slice_i32 s = { buf, 2 };
+    async_index_work_State st;
+    async_index_work_init(&st, xs, s);
+    return async_index_work_poll(&st) == 1 ? 0 : 1;
+}
+''';
+    expect(c, contains('int main(void) {'));
+    c = c.replaceFirst(
+      RegExp(r'int main\(void\) \{[^}]*\}'),
+      driver.trim(),
+    );
+    final cPath = '${tmp.path}/async_index.c';
+    await File(cPath).writeAsString(c);
+    final bin = '${tmp.path}/async_index';
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      cPath,
+      '-o',
+      bin,
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+    final run = await Process.run(bin, []);
+    expect(run.exitCode, 0, reason: run.stderr.toString());
+    expect(run.stdout, await File('test/async_index.out').readAsString());
+  });
+
   test('slice of a struct, str, and nested slice', () async {
     final result = await compileAndRun('test/slice_struct.kl', tmp, cc: 'gcc');
     expect(result.exitCode, 0, reason: result.stderr);
@@ -601,6 +740,34 @@ void main() {
       cPath,
       '-o',
       '${tmp.path}/main_args_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
+  test('match and pick of []Tok and []str run under pedantic C', () async {
+    final result =
+        await compileAndRun('test/match_slice_elem.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+      result.stdout,
+      await File('test/match_slice_elem.out').readAsString(),
+    );
+
+    final program = loadProject('test/match_slice_elem.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/match_slice_elem.kl');
+    expect(c, contains('(match_slice_elem_Tok){ .n = 3 }'));
+    expect(c, contains('klin_slice_match_slice_elem_Tok'));
+    expect(c, contains('klin_slice_str'));
+    final cPath = '${tmp.path}/match_slice_elem_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/match_slice_elem_pedantic',
     ]);
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });

@@ -24,6 +24,7 @@ fn main() {
 
 `puts` and `printf` are the only C functions allowed without a
 declaration. Everything else needs `@[cimport]` ([09-ffi-c.md](09-ffi-c.md)).
+An untyped integer argument folds as `i32` (`printf("%d\n", 1 + 2)` is `3`).
 
 `fn main()` takes no arguments. `fn main(args: []str)` is the process
 arguments: `args.len` is `argc` (including the program name) and
@@ -228,7 +229,8 @@ fn main() {
   struct with one field `v` (no allocation).
   `return [1, 2]` in `fn pair(): [2]u8` takes `u8` from the declaration.
   A local from a literal stays a C array; a local from the call is the
-  struct (`a[0]` in Klin). A zero-length array cannot be returned
+  struct (`a[0]` in Klin). A zero-length array cannot be returned, and
+  `pick` / `match` cannot produce one
   ([01-decisions.md](01-decisions.md) D13)
 - `[]T` — slice `{ ptr, len }` (and `cap` where allocated).
   `T` is a primitive, a struct, an enum, `str`, a pointer, a slice,

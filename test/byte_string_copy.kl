@@ -1,0 +1,8 @@
+fn main() {
+    let src = b"fn"
+    let mut buf: [2]u8 = [0, 0]
+    buf[0] = src[0]
+    buf[1] = src[1]
+    buf[0] = buf[0] + 1
+    printf("%d %d %d\n", src.len, cast(i32, buf[0]), cast(i32, buf[1]))
+}

@@ -1,0 +1,20 @@
+struct Tok { n: i32 }
+
+fn main() {
+    let k = 0
+    let xs: [2]Tok = [Tok{ n: 1 }, Tok{ n: 2 }]
+    let row: [2]Tok = match k {
+        0 { [Tok{ n: 1 + 2 }, Tok{ n: 4 }] }
+        else { [Tok{ n: 8 }, Tok{ n: 9 }] }
+    }
+    let words: [2]str = ["ab", "cd"]
+    let names: [2]str = pick k == 0 { ["ab", "cd"] } { ["e", "f"] }
+    let view: []Tok = match k {
+        0 { xs[:] }
+        else { error(1) }
+    } or {
+        xs[0:1]
+    }
+    let text: []str = pick true { words[:] } { names[0:1] }
+    printf("%d %d %d %s %d\n", row[0].n, row[1].n, view.len, text[0], text.len)
+}

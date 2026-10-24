@@ -80,6 +80,16 @@ pattern when <bool expr> { … }
 - Expression type: common type of arms (unification like array literals);
   `match` counts as returning on all paths when every arm returns and
   the arms cover the subject (`else`, or every enum variant).
+- A `match` cannot produce a zero-length array (`[0]T` or `[N][0]T`).
+  That result would be a zero-size C array, which is not ISO C.
+  `let a: [0]u8 = []` stays allowed (D13).
+- Untyped arms adopt the expected type and are range-checked
+  (`let x: u8 = match k { 0 { 1 + 2 } else { 4 } }`,
+  `let row: [2]u8 = match k { 0 { [1, 2] } else { [3, 4] } }`).
+  `300` in a `u8` arm is the same range error as the literal `300`.
+  With no expected type the arm is `i32`. A variable in an arm stays
+  runtime. `else { error(n) }` keeps an untyped success arm open, so
+  `let x: u8 = match … or { 4 }` folds in `u8` ([D12](01-decisions.md)).
 - **`error(n)` in an arm** makes the expression `!T` (ok type from the
   success arms). A root `or { … }` may unwrap it:
 

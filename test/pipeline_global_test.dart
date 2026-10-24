@@ -289,6 +289,49 @@ fn main() {
     expect(op, greaterThan(proto));
   });
 
+  test('immutable []u8 global is read-only; mutable global slice still binds',
+      () {
+    const mutable = '''
+let mut bytes: []u8 = b"ab"
+fn main() {
+  let mut w = bytes
+  w = bytes
+  printf("%d\\n", w.len)
+}
+''';
+    expect(
+      () => Checker().check(Parser(Lexer(mutable).tokenize()).parse()),
+      returnsNormally,
+    );
+
+    const source = '''
+let mut n: i32 = 1
+let kw: []u8 = b"fn"
+fn main() {
+  let s = kw
+  n = n + s.len
+  printf("%d %d\\n", n, kw[0])
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'global_kw.kl');
+    expect(c, contains('static klin_slice_u8 kw = { (uint8_t *)"fn", 2 };'));
+    expect(c, contains('n = (n + s.len);'));
+    expect(c, isNot(contains('st->n')));
+    expect(c, isNot(contains('st->kw')));
+  });
+
+  test('error: imported immutable []u8 global cannot bind let mut', () {
+    final program = loadProject('test/global_ro/app.kl');
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError &&
+          e.toString().contains('cannot bind read-only bytes'))),
+    );
+  });
+
   test('aggregate globals are emitted after their types, forwards first', () {
     final program = loadProject('test/global_agg/app.kl');
     Checker().check(program);

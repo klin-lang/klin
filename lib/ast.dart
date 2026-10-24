@@ -235,6 +235,11 @@ final class GlobalDecl {
   /// Filled by the checker.
   KlinType? resolvedType;
 
+  /// Immutable `[]u8` whose initializer is read-only bytes (`b"..."`, a
+  /// `[]u8` const). A `let mut` binding of this name is the D10 error.
+  /// A `let mut` global is never marked: that initializer stays storage.
+  bool readOnlyBytes = false;
+
   GlobalDecl({
     required this.isMut,
     required this.name,

@@ -62,7 +62,19 @@ void _emitAsyncFunction(
   buf.writeln('static void ${base}_init($initParams) {');
   buf.writeln('    st->__stage = 0;');
   for (final param in func.params) {
-    buf.writeln('    st->${param.name} = ${param.name};');
+    final ty = param.resolvedType!;
+    if (ty is ArrayType) {
+      // A C array parameter cannot be assigned. Copy each element.
+      _emitAsyncArrayElemCopy(
+        buf,
+        dest: 'st->${param.name}',
+        src: param.name,
+        type: ty,
+        indent: 1,
+      );
+    } else {
+      buf.writeln('    st->${param.name} = ${param.name};');
+    }
   }
   buf.writeln('}');
   buf.writeln();
@@ -241,10 +253,23 @@ void _emitAsyncStmt(Stmt stmt, _AsyncEmitCtx ctx) {
       _line(buf, pos.line, ctx.sourcePath);
       buf.writeln('$pad${_emitAsyncExpr(call, ctx)};');
 
-    case LetStmt(:final name, :final init, :final pos):
+    case LetStmt(
+        :final name,
+        :final init,
+        :final pos,
+        :final arrayByValue,
+        :final resolvedType
+      ):
       _line(buf, pos.line, ctx.sourcePath);
       if (init != null) {
-        buf.writeln('${pad}st->$name = ${_emitAsyncExpr(init, ctx)};');
+        final peeled = _peelEmitGroups(init);
+        final ty = resolvedType;
+        if (ty is ArrayType && !arrayByValue && peeled is ArrayLitExpr) {
+          // `uint8_t xs[N]` is not assignable. Store each element.
+          _emitAsyncArrayLitStore(buf, peeled, 'st->$name', ty, ctx);
+        } else {
+          buf.writeln('${pad}st->$name = ${_emitAsyncExpr(init, ctx)};');
+        }
       }
 
     case AssignStmt(:final target, :final value, :final pos, :final compoundOp):
@@ -331,7 +356,23 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
     BinaryExpr(:final left, :final op, :final right) =>
       '(${_emitAsyncExpr(left, ctx)} $op ${_emitAsyncExpr(right, ctx)})',
     PickExpr(:final cond, :final thenExpr, :final elseExpr) =>
-      '(${_emitAsyncExpr(cond, ctx)} ? ${_emitAsyncExpr(thenExpr, ctx)} : ${_emitAsyncExpr(elseExpr, ctx)})',
+      expr.resolvedType is ArrayType
+          ? '(${_emitAsyncExpr(cond, ctx)} ? ${_emitAsyncArrayValue(thenExpr, ctx)} : ${_emitAsyncArrayValue(elseExpr, ctx)})'
+          : '(${_emitAsyncExpr(cond, ctx)} ? ${_emitAsyncExpr(thenExpr, ctx)} : ${_emitAsyncExpr(elseExpr, ctx)})',
+    IndexExpr(:final object, :final index) => () {
+        final indexC = _emitAsyncExpr(index, ctx);
+        final obj = _emitAsyncExpr(object, ctx);
+        if (object.resolvedType is SliceType) {
+          return '($obj).ptr[$indexC]';
+        }
+        if (_exprIsArrayValue(object)) {
+          final simple = RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$').hasMatch(obj);
+          final base = simple ? '$obj.v' : '($obj).v';
+          return '$base[$indexC]';
+        }
+        return '($obj)[$indexC]';
+      }(),
+    ArrayLitExpr lit => _emitAsyncArrayLit(lit, ctx),
     GroupExpr(:final inner) => '(${_emitAsyncExpr(inner, ctx)})',
     CallExpr(:final callee, :final args, :final resolvedCallee) =>
       '${resolvedCallee ?? callee}(${args.map((a) => _emitAsyncArg(a, ctx)).join(', ')})',
@@ -380,4 +421,101 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
         'emit async MVP: unsupported expr `${expr.runtimeType}`',
       ),
   };
+}
+
+/// `[N]T` as a value in an async expression. A call or by-value binding is
+/// already the wrapper. A literal or a C array is copied into `.v`.
+String _emitAsyncArrayValue(Expr expr, _AsyncEmitCtx ctx) {
+  if (_exprIsArrayValue(expr)) return _emitAsyncExpr(expr, ctx);
+  final type = expr.resolvedType;
+  if (type is! ArrayType) {
+    throw StateError('emit async: array value without an array type');
+  }
+  return '(${_arrayValueCName(type)}){ .v = ${_emitAsyncArrayBrace(expr, type, ctx)} }';
+}
+
+String _emitAsyncArrayBrace(Expr expr, ArrayType type, _AsyncEmitCtx ctx) {
+  final node = _peelEmitGroups(expr);
+  if (node is ArrayLitExpr) {
+    return _emitAsyncArrayLit(node, ctx, asInitializer: true);
+  }
+  return _emitArrayElements(_emitAsyncArrayObject(expr, ctx), type);
+}
+
+String _emitAsyncArrayObject(Expr expr, _AsyncEmitCtx ctx) {
+  if (!_exprIsArrayValue(expr)) return _emitAsyncExpr(expr, ctx);
+  final raw = _emitAsyncExpr(expr, ctx);
+  final simple = RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$').hasMatch(raw);
+  return simple ? '$raw.v' : '($raw).v';
+}
+
+String _emitAsyncArrayLit(
+  ArrayLitExpr expr,
+  _AsyncEmitCtx ctx, {
+  bool asInitializer = false,
+}) {
+  final inner = expr.elements.map((element) {
+    final peeled = _peelEmitGroups(element);
+    if (peeled is ArrayLitExpr) {
+      return _emitAsyncArrayLit(peeled, ctx, asInitializer: true);
+    }
+    return _emitAsyncExpr(element, ctx);
+  }).join(', ');
+  final braces = inner.isEmpty ? '{ }' : '{ $inner }';
+  if (!asInitializer &&
+      expr.resolvedType is ArrayType &&
+      _arrayElemIsConcrete(expr.resolvedType! as ArrayType)) {
+    return '(${_cArraySuffixType(expr.resolvedType! as ArrayType)})$braces';
+  }
+  return braces;
+}
+
+/// Store a literal into a C array field (`st->xs[i] = …`), including a
+/// nested `[N][M]T`.
+void _emitAsyncArrayLitStore(
+  StringBuffer buf,
+  ArrayLitExpr lit,
+  String dest,
+  ArrayType type,
+  _AsyncEmitCtx ctx,
+) {
+  void walk(ArrayLitExpr node, ArrayType ty, String place) {
+    for (var i = 0; i < ty.len; i++) {
+      final element = node.elements[i];
+      final slot = '$place[$i]';
+      final elem = ty.elem;
+      if (elem is ArrayType) {
+        final inner = _peelEmitGroups(element);
+        if (inner is! ArrayLitExpr) {
+          throw StateError('emit async: nested array init must be a literal');
+        }
+        walk(inner, elem, slot);
+      } else {
+        buf.writeln('${ctx.pad}$slot = ${_emitAsyncExpr(element, ctx)};');
+      }
+    }
+  }
+
+  walk(lit, type, dest);
+}
+
+void _emitAsyncArrayElemCopy(
+  StringBuffer buf, {
+  required String dest,
+  required String src,
+  required ArrayType type,
+  required int indent,
+}) {
+  final pad = '    ' * indent;
+  void walk(String d, String s, KlinType ty) {
+    if (ty is ArrayType) {
+      for (var i = 0; i < ty.len; i++) {
+        walk('$d[$i]', '$s[$i]', ty.elem);
+      }
+      return;
+    }
+    buf.writeln('$pad$d = $s;');
+  }
+
+  walk(dest, src, type);
 }

@@ -270,6 +270,10 @@ final class _Symbol {
   /// A returned `[N]T` stored as the wrapper struct, not a C array.
   final bool arrayByValue;
 
+  /// `[]u8` that points at a `b"..."` literal or a `[]u8` constant.
+  /// An immutable binding copies the flag. A mutable binding is rejected.
+  final bool readOnlyBytes;
+
   const _Symbol({
     required this.name,
     required this.type,
@@ -277,6 +281,7 @@ final class _Symbol {
     required this.pos,
     this.isPtrReceiver = false,
     this.arrayByValue = false,
+    this.readOnlyBytes = false,
   });
 }
 
@@ -915,6 +920,11 @@ final class Checker {
       final initType = _inferExpr(init);
       _expectAssignable(type, initType, init.pos);
       _materialize(init, type);
+      // `let kw: []u8 = b"fn"` names the same read-only bytes as a const.
+      // `let mut s: []u8 = b"fn"` stays assignable storage (D11).
+      if (!decl.isMut && _isU8Slice(type) && _isReadOnlyBytes(init)) {
+        decl.readOnlyBytes = true;
+      }
       if (!_isGlobalConstInit(init)) {
         throw CheckError(
           'global initializer must be a constant expression',
@@ -1942,6 +1952,82 @@ final class Checker {
     return false;
   }
 
+  /// `b"..."`, a subslice of those bytes, a `[]u8` constant, an immutable
+  /// `[]u8` global initialized from them, or a local already marked as
+  /// them. `pick` / `match`
+  /// / `or` count when any arm is read-only: the checker does not know
+  /// which arm runs. A call, a parameter, a struct field, and a `let mut`
+  /// global are not tracked.
+  bool _isReadOnlyBytes(Expr expr) {
+    final node = _unwrapGroups(expr);
+    if (node is ByteStringLit) return true;
+    if (node is NameExpr) {
+      final sym = _scope.lookup(node.name);
+      if (sym != null) return sym.readOnlyBytes;
+      final constant = _consts[_key(_currentModule, node.name)];
+      if (_isU8Slice(constant?.resolvedType)) return true;
+      return _globals[_key(_currentModule, node.name)]?.readOnlyBytes ??
+          false;
+    }
+    if (node is FieldExpr && node.object is NameExpr) {
+      if (_placeIsConst(node)) {
+        final alias = (node.object as NameExpr).name;
+        final module = alias == _currentModule
+            ? alias
+            : _importAliases[_currentModule]?[alias];
+        if (module == null) return false;
+        final decl = _consts[_key(module, node.name)];
+        return _isU8Slice(decl?.resolvedType);
+      }
+      final global = _moduleGlobal(node);
+      return global?.readOnlyBytes ?? false;
+    }
+    if (node is PickExpr) {
+      return _isReadOnlyBytes(node.thenExpr) ||
+          _isReadOnlyBytes(node.elseExpr);
+    }
+    if (node is MatchExpr) {
+      for (final arm in node.arms) {
+        if (_isReadOnlyBytes(arm.body)) return true;
+      }
+      return false;
+    }
+    if (node is OrExpr) {
+      return _isReadOnlyBytes(node.result) ||
+          _isReadOnlyBytes(node.fallback.value);
+    }
+    // `b"ab"[0:1]`, `KW[0:]`, `s[:1]` when `s` already points at those
+    // bytes. A subslice of a mutable buffer is not read-only.
+    if (node is SliceFromExpr) return _isReadOnlyBytes(node.array);
+    return false;
+  }
+
+  bool _isU8Slice(KlinType? type) =>
+      type is SliceType && type.elem == const PrimType(PrimKind.u8);
+
+  void _rejectMutableReadOnlyBinding(Expr init, KlinType type) {
+    if (!_isU8Slice(type) || !_isReadOnlyBytes(init)) return;
+    throw CheckError(
+      'cannot bind read-only bytes to a mutable slice '
+      '(copy them into a `[N]u8` to modify)',
+      init.pos,
+    );
+  }
+
+  /// `let mut s = xs[:] ; s = b"fn"`. Fields are not tracked.
+  void _rejectReadOnlySliceAssign(Expr target, Expr value) {
+    final place = _unwrapGroups(target);
+    if (place is! NameExpr) return;
+    final sym = _scope.lookup(place.name);
+    if (sym == null || !sym.isMut || !_isU8Slice(sym.type)) return;
+    if (!_isReadOnlyBytes(value)) return;
+    throw CheckError(
+      'cannot assign read-only bytes to a mutable slice '
+      '(copy them into a `[N]u8` to modify)',
+      value.pos,
+    );
+  }
+
   /// Maps an `import X` alias to the file module name.
   String _resolveModuleQualifier(String qualifier, SourcePos pos) {
     if (qualifier == _currentModule) return qualifier;
@@ -2017,6 +2103,13 @@ final class Checker {
         }
 
         stmt.resolvedType = resolved;
+        if (init != null && isMut) {
+          _rejectMutableReadOnlyBinding(init, resolved);
+        }
+        final readOnlyBytes = init != null &&
+            !isMut &&
+            _isU8Slice(resolved) &&
+            _isReadOnlyBytes(init);
         if (_currentIsAsync) {
           if (_asyncFlatNames.contains(name)) {
             throw CheckError(
@@ -2034,6 +2127,7 @@ final class Checker {
             isMut: isMut,
             pos: pos,
             arrayByValue: stmt.arrayByValue,
+            readOnlyBytes: readOnlyBytes,
           ),
         );
 
@@ -2094,11 +2188,20 @@ final class Checker {
           :final source,
           :final pos
         ):
-        // The source must be indexable without side effects or an invalid C
-        // array copy, so restrict phase C to array variables and literals.
-        if (source is! NameExpr && source is! ArrayLitExpr) {
+        // A name or a literal is read in place. A call, method call, `pick`,
+        // or `match` is an array value: emission stores it once, then reads
+        // `tmp.v[i]`. Anything else (a slice, `1 + 2`, an index) is rejected
+        // before inference so the message stays about the source shape.
+        final peeled = _unwrapGroups(source);
+        if (peeled is! NameExpr &&
+            peeled is! ArrayLitExpr &&
+            peeled is! CallExpr &&
+            peeled is! MethodCallExpr &&
+            peeled is! PickExpr &&
+            peeled is! MatchExpr) {
           throw CheckError(
-            'array destructuring source must be an array variable or literal',
+            'array destructuring source must be an array variable, a literal, '
+            'or a call, pick, or match',
             source.pos,
           );
         }
@@ -2166,6 +2269,7 @@ final class Checker {
         final valueType = _inferLetOrAssignValue(value);
         _expectAssignable(targetType, valueType, value.pos);
         _materialize(value, targetType);
+        _rejectReadOnlySliceAssign(target, value);
 
       case MultiAssignStmt(:final targets, :final values):
         for (var i = 0; i < targets.length; i++) {
@@ -2191,6 +2295,7 @@ final class Checker {
           final valueType = _inferExpr(value);
           _expectAssignable(targetType, valueType, value.pos);
           _materialize(value, targetType);
+          _rejectReadOnlySliceAssign(target, value);
         }
 
       case StructAssignStmt(
@@ -2380,6 +2485,7 @@ final class Checker {
             final initTy = _inferExpr(initExpr);
             final concrete = _defaultConcrete(initTy, initExpr.pos);
             _materialize(initExpr, concrete);
+            _rejectMutableReadOnlyBinding(initExpr, concrete);
             stmt.resolvedInitType = concrete;
             _scope.define(
               _Symbol(name: initName, type: concrete, isMut: true, pos: pos),
@@ -2795,8 +2901,19 @@ final class Checker {
       // Host builtins with unknown/varargs signatures (issue 021).
       // Everything else requires an explicit `@[cimport]` declaration.
       if (callee == 'puts' || callee == 'printf') {
+        // No parameter types, so an untyped argument uses the same default
+        // as an unannotated `let` (`i32` / `f64`) and folds (D12).
         for (final arg in args) {
-          _inferExpr(arg);
+          final ty = _inferExpr(arg);
+          if (ty is UntypedInt || ty is UntypedFloat || _containsUntyped(ty)) {
+            final concrete = _defaultConcrete(ty, arg.pos);
+            _materialize(arg, concrete);
+          } else if (ty is PrimType &&
+              ty.kind.isInteger &&
+              _isIntegerConstExpr(arg)) {
+            // `N + 5` is already `i32` because `N` is. Fold it anyway.
+            _materialize(arg, ty);
+          }
         }
         return const _CheckedCall(PrimType(PrimKind.i32), null);
       }
@@ -3904,12 +4021,24 @@ final class Checker {
               _checkStmt(stmt);
             }
             final fallbackType = _inferExpr(fallback.value);
-            _expectAssignable(resultType.ok, fallbackType, fallback.value.pos);
-            _materialize(fallback.value, resultType.ok);
+            final ok = resultType.ok;
+            // An untyped success arm adopts the fallback, or stays open
+            // so `let x: u8 = match … or { 4 }` folds in `u8`.
+            final KlinType unified;
+            if (_typeIsOpen(ok) || _typeIsOpen(fallbackType)) {
+              unified = _unifyMatch(ok, fallbackType, fallback.value.pos);
+            } else {
+              _expectAssignable(ok, fallbackType, fallback.value.pos);
+              unified = ok;
+            }
+            if (!_typeIsOpen(unified)) {
+              _materialize(result, ResultType(unified));
+              _materialize(fallback.value, unified);
+            }
+            return unified;
           } finally {
             _scope = _scope.parent!;
           }
-          return resultType.ok;
         }(),
       UnaryExpr(:final op, :final operand, :final pos) => () {
           if (op == '&') {
@@ -4404,6 +4533,18 @@ final class Checker {
     );
   }
 
+  /// `pick` / `match` of `[0]T` would emit a zero-size array inside the
+  /// return wrapper (`v[0]`), which is not ISO C. A literal `let a: [0]u8 = []`
+  /// stays the documented GCC extension.
+  void _rejectZeroLengthChoice(String kind, KlinType type, SourcePos pos) {
+    if (type is! ArrayType || !_arrayHasZeroLength(type)) return;
+    throw CheckError(
+      '`$kind` cannot produce a zero-length array `${type.displayName}` '
+      '(a zero-size array is not ISO C)',
+      pos,
+    );
+  }
+
   /// `[0]T` and `[N][0]T` are not ISO C as a return wrapper (`v[0]`).
   bool _arrayHasZeroLength(ArrayType type) {
     var current = type;
@@ -4465,7 +4606,18 @@ final class Checker {
         _materialize(right, type, checkRange: checkRange);
       case GroupExpr(:final inner):
         _materialize(inner, type, checkRange: checkRange);
-      case PropagateExpr() || OrExpr() || AwaitExpr():
+      case OrExpr(:final result, :final fallback):
+        // `match { 1 + 2, else error(1) } or { 4 }` stays untyped until
+        // the outer type is known. A finished `!i32` is left alone.
+        final resultType = result.resolvedType;
+        if (resultType is ResultType && _typeIsOpen(resultType.ok)) {
+          _materialize(result, ResultType(type), checkRange: checkRange);
+        }
+        final fallbackType = fallback.value.resolvedType;
+        if (fallbackType == null || _typeIsOpen(fallbackType)) {
+          _materialize(fallback.value, type, checkRange: checkRange);
+        }
+      case PropagateExpr() || AwaitExpr():
         break;
       case ErrorExpr():
         // `error(n)` only materializes when the outer type is `!T`.
@@ -4495,6 +4647,7 @@ final class Checker {
           _materialize(element, type.elem, checkRange: checkRange);
         }
       case MatchExpr(:final arms):
+        _rejectZeroLengthChoice('match', type, expr.pos);
         if (type is ArrayType && !_containsUntyped(type)) {
           for (final arm in arms) {
             _requireStableArraySource(arm.body);
@@ -4515,6 +4668,7 @@ final class Checker {
           }
         }
       case PickExpr(:final thenExpr, :final elseExpr):
+        _rejectZeroLengthChoice('pick', type, expr.pos);
         if (type is ArrayType && !_containsUntyped(type)) {
           _requireStableArraySource(thenExpr);
           _requireStableArraySource(elseExpr);
@@ -4536,12 +4690,13 @@ final class Checker {
     _forbidStmtLoweringInPick(elseExpr, 'else-expression');
     final thenType = _inferExpr(thenExpr);
     final elseType = _inferExpr(elseExpr);
-    final unified = _unifyNumeric(thenType, elseType, pos);
-    // Untyped arms adopt the outer type (`let x: u8 = pick(c, 1 + 2, 4)`).
-    if (unified is UntypedInt || unified is UntypedFloat) {
+    final unified = _unifyMatch(thenType, elseType, pos);
+    // Untyped arms adopt the outer type (`let x: u8 = pick c { 1 + 2 } { 4 }`).
+    if (_typeIsOpen(unified)) {
       return unified;
     }
     final concrete = unified;
+    _rejectZeroLengthChoice('pick', concrete, pos);
     _materialize(thenExpr, concrete);
     _materialize(elseExpr, concrete);
     return concrete;
@@ -4849,7 +5004,9 @@ final class Checker {
         final t = bodyTypes[i];
         if (t is BareErrorType) continue;
         final piece = t is ResultType ? t.ok : t;
-        ok = ok == null ? piece : _unifyNumeric(ok, piece, arms[i].body.pos);
+        ok = ok == null
+            ? piece
+            : _unifyMatch(ok, piece, arms[i].body.pos);
       }
       if (ok == null) {
         throw CheckError(
@@ -4857,7 +5014,13 @@ final class Checker {
           pos,
         );
       }
+      // `let x: u8 = match { 1 + 2, else error(1) } or { 4 }` — do not
+      // freeze the success arm as `i32` before that outer type.
+      if (_typeIsOpen(ok)) {
+        return ResultType(ok);
+      }
       final concreteOk = _defaultConcrete(ok, pos);
+      _rejectZeroLengthChoice('match', concreteOk, pos);
       final result = ResultType(concreteOk);
       for (var i = 0; i < arms.length; i++) {
         final t = bodyTypes[i];
@@ -4874,13 +5037,34 @@ final class Checker {
     for (var i = 0; i < bodyTypes.length; i++) {
       resultType = resultType == null
           ? bodyTypes[i]
-          : _unifyNumeric(resultType, bodyTypes[i], arms[i].body.pos);
+          : _unifyMatch(resultType, bodyTypes[i], arms[i].body.pos);
     }
-    final concrete = _defaultConcrete(resultType!, pos);
+    // Untyped arms (`1`, `1 + 2`, `[1, 2]`) adopt the outer type.
+    // With no outer type, `let` still defaults them to `i32`.
+    if (_typeIsOpen(resultType!)) {
+      return resultType;
+    }
+    final concrete = _defaultConcrete(resultType, pos);
+    _rejectZeroLengthChoice('match', concrete, pos);
     for (final arm in arms) {
       _materialize(arm.body, concrete);
     }
     return concrete;
+  }
+
+  /// Common type of two `match` / `pick` arms. Arrays unify element-wise
+  /// so `[1, 2]` can meet a `[2]u8` sibling. Scalars use [_unifyNumeric].
+  KlinType _unifyMatch(KlinType lt, KlinType rt, SourcePos pos) {
+    if (lt is ArrayType && rt is ArrayType) {
+      if (lt.len != rt.len) {
+        throw CheckError(
+          'type mismatch: `${_typeForMismatch(lt)}` and `${_typeForMismatch(rt)}`',
+          pos,
+        );
+      }
+      return ArrayType(_unifyMatch(lt.elem, rt.elem, pos), lt.len);
+    }
+    return _unifyNumeric(lt, rt, pos);
   }
 
   void _expectAssignable(KlinType target, KlinType source, SourcePos pos) {
@@ -4948,6 +5132,11 @@ final class Checker {
     if (target is FnType && source is FnType && target == source) {
       return true;
     }
+    if (target is ResultType &&
+        source is ResultType &&
+        _isAssignable(target.ok, source.ok)) {
+      return true;
+    }
     if (target is ArrayType &&
         source is ArrayType &&
         target.len == source.len &&
@@ -4960,6 +5149,17 @@ final class Checker {
   bool _containsUntyped(KlinType type) => switch (type) {
         UntypedInt() || UntypedFloat() || UntypedEmptyArray() => true,
         ArrayType(:final elem) => _containsUntyped(elem),
+        _ => false,
+      };
+
+  /// An integer or float literal, an empty array, or an array of those,
+  /// that should adopt the expected type instead of becoming `i32` / `f64`
+  /// early. `[]` stays open so `match` / `pick` can see an outer `[0]T`
+  /// and reject it; a bare `[]` still fails in [_defaultConcrete].
+  bool _typeIsOpen(KlinType type) => switch (type) {
+        UntypedInt() || UntypedFloat() || UntypedEmptyArray() => true,
+        ArrayType(:final elem) => _typeIsOpen(elem),
+        ResultType(:final ok) => _typeIsOpen(ok),
         _ => false,
       };
 

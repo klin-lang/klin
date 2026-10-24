@@ -247,8 +247,8 @@ fn main() {
     expect(c, contains('(a | b)'));
     expect(c, contains('(a ^ b)'));
     expect(c, contains('~(a)'));
-    expect(c, contains('(1 << 3)'));
-    expect(c, contains('(0x8 >> 2)'));
+    // `printf` has no parameter type, so these shifts fold as `i32`.
+    expect(c, contains('printf("%d %d\\n", 8, 2);'));
     // Rust-like: `&` binds tighter than `==`.
     expect(c, contains('((flags & 0x4) == 0x4)'));
     // Compound assigns emit 1:1 as C `op=`.

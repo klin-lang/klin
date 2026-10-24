@@ -1,0 +1,7 @@
+module app
+import bytes
+
+fn main() {
+    let mut w = bytes.kw
+    printf("%d\n", w.len)
+}

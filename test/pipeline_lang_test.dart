@@ -1954,6 +1954,30 @@ fn main() {
     expect(c, isNot(contains('constexpr')));
   });
 
+  test('checker: printf and puts fold untyped constant arguments', () {
+    const source = '''
+const N: i32 = 10
+fn main() {
+  let y: u8 = 4
+  printf("%d\\n", 1 + 2)
+  printf("%d\\n", N + 5)
+  printf("%d\\n", ~(0))
+  printf("%d\\n", y + 1)
+  printf("%f\\n", 1.0 + 2.0)
+  puts("hi")
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'printf_fold.kl');
+    expect(c, contains('printf("%d\\n", 3);'));
+    expect(c, contains('printf("%d\\n", 15);'));
+    expect(c, contains('printf("%d\\n", ~((0)));'));
+    expect(c, contains('printf("%d\\n", (y + 1));'));
+    expect(c, contains('printf("%f\\n", (1.0 + 2.0));'));
+    expect(c, contains('puts("hi");'));
+  });
+
   test('checker: function may return [N]T as a wrapper struct', () {
     const source = '''
 struct Pair { n: u8 }
@@ -2055,6 +2079,100 @@ fn main() {}
     expect(c, contains('take((st->a).v);'));
   });
 
+  test('checker: async fn can index arrays and slices', () {
+    const source = '''
+fn pair(): [2]i32 { return [3, 4] }
+fn take(xs: [2]i32): i32 { return xs[0] + xs[1] }
+async fn work(xs: [2]i32, s: []i32) {
+  let local: [2]i32 = [10, 20]
+  let row: [1][2]i32 = [[4, 5]]
+  let i = 1
+  let a = pair()
+  let p = pick true { [7, 8] } { pair() }
+  take(local)
+  take([1, 2])
+  printf("%d\\n", local[i] + xs[0] + s[1] + a[0] + row[0][1] + p[1])
+}
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'async_index.kl');
+    expect(c, contains('st->local[0] = 10;'));
+    expect(c, contains('st->local[1] = 20;'));
+    expect(c, contains('st->row[0][0] = 4;'));
+    expect(c, contains('st->row[0][1] = 5;'));
+    expect(c, contains('st->xs[0] = xs[0];'));
+    expect(c, contains('st->xs[1] = xs[1];'));
+    expect(c, isNot(contains('st->xs = xs;')));
+    expect(c, isNot(contains('st->local = ')));
+    expect(c, contains('(st->local)[st->i]'));
+    expect(c, contains('(st->xs)[0]'));
+    expect(c, contains('(st->s).ptr[1]'));
+    expect(c, contains('(st->a).v[0]'));
+    expect(c, contains('((st->row)[0])[1]'));
+    expect(c, contains('take(st->local);'));
+    expect(c, contains('take((int32_t[2]){ 1, 2 });'));
+    expect(c, contains('st->a = pair();'));
+    expect(
+      c,
+      contains(
+        'st->p = (true ? (klin_arr2_i32){ .v = { 7, 8 } } : pair());',
+      ),
+    );
+  });
+
+  test('checker: array destructure of a call evaluates once', () {
+    const source = '''
+struct Box { n: i32 }
+fn pair(n: *mut i32): [2]i32 {
+  *n = *n + 1
+  return [10, 20]
+}
+fn (b: Box) pair(): [2]i32 {
+  return [b.n, 4]
+}
+fn main() {
+  let mut n: i32 = 0
+  let [x, y] = pair(&n)
+  let [_, z] = (pair(&n))
+  let b = Box{ n: 3 }
+  let [p, q] = b.pair()
+  let k: i32 = 1
+  let [a, c] = pick true { pair(&n) } { [7, 8] }
+  let [m, r] = match k {
+    0 { [1, 2] }
+    else { pair(&n) }
+  }
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'destruct_call.kl');
+    expect(c, contains('klin_arr2_i32 klin_val_0 = pair(&(n));'));
+    expect(c, contains('int32_t x = klin_val_0.v[0];'));
+    expect(c, contains('int32_t y = klin_val_0.v[1];'));
+    expect(c, contains('klin_arr2_i32 klin_val_1 = (pair(&(n)));'));
+    expect(c, contains('int32_t z = klin_val_1.v[1];'));
+    expect(c, contains('klin_arr2_i32 klin_val_2 = Box_pair(b);'));
+    expect(c, contains('int32_t p = klin_val_2.v[0];'));
+    expect(c, contains('int32_t q = klin_val_2.v[1];'));
+    expect(
+      c,
+      contains(
+        'klin_arr2_i32 klin_val_3 = (true ? pair(&(n)) : (klin_arr2_i32){ .v = { 7, 8 } });',
+      ),
+    );
+    expect(c, contains('klin_arr2_i32 klin_val_4;'));
+    expect(c, contains('klin_val_4 = (klin_arr2_i32){ .v = { 1, 2 } };'));
+    expect(c, contains('klin_val_4 = pair(&(n));'));
+    expect(c, contains('int32_t m = klin_val_4.v[0];'));
+    expect(c, contains('int32_t r = klin_val_4.v[1];'));
+    expect(c, isNot(contains('(pair(&(n))).v')));
+    expect('pair(&(n))'.allMatches(c).length, 4);
+    expect('Box_pair(b)'.allMatches(c).length, 1);
+  });
+
   test('checker: mutable slice place can assign an element', () {
     const source = '''
 fn main() {
@@ -2063,8 +2181,6 @@ fn main() {
   s[0] = 9
   s[1] += 1
   xs[:][0] = 3
-  let mut bytes = b"fn"
-  bytes[0] = 1
 }
 ''';
     final program = Parser(Lexer(source).tokenize()).parse();
@@ -2073,6 +2189,32 @@ fn main() {
     expect(c, contains('s.ptr[0] = 9;'));
     expect(c, contains('s.ptr[1] += 1;'));
     expect(c, contains('(klin_slice_u8){ xs, 2 }.ptr[0] = 3;'));
+  });
+
+  test('checker: read-only bytes stay immutable; holes stay untracked', () {
+    const source = '''
+struct Row { kw: []u8 }
+fn take(s: []u8) {
+  let mut w = s
+  w[0] = 1
+}
+fn main() {
+  let s = b"fn"
+  let t = s
+  let mut buf: [2]u8 = [0, 0]
+  buf[0] = t[0]
+  buf[0] = buf[0] + 1
+  take(s)
+  let mut row = Row{ kw: b"ab" }
+  row.kw = b"fn"
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'ro_bytes.kl');
+    expect(c, contains('buf[0] = t.ptr[0];'));
+    expect(c, contains('w.ptr[0] = 1;'));
+    expect(c, isNot(contains('cannot bind read-only bytes')));
   });
 
   test('checker: & of a slice element follows place mutability', () {
@@ -2158,6 +2300,117 @@ fn main() {
     );
     expect(c, isNot(contains('(pair()).v[0]')));
     expect(c, isNot(contains('memcpy')));
+  });
+
+  test('checker: match and pick arms adopt the expected integer type', () {
+    const source = '''
+fn main() {
+  let k = 1
+  let y: u8 = 4
+  let x: u8 = match k {
+    0 { 1 + 2 }
+    else { 4 }
+  }
+  let p: u8 = pick k == 0 { 10 + 1 } { 6 }
+  let row: [2]u8 = match k {
+    0 { [1 + 2, 4] }
+    else { [8, 9] }
+  }
+  let xs: [2]u8 = [9, 8]
+  let mixed: [2]u8 = pick true { xs } { [1 + 2, 4] }
+  let wide: u64 = match k {
+    else { ~0 }
+  }
+  let runtime: u8 = match k {
+    else { y + 1 }
+  }
+  let plain = match k {
+    0 { 1 + 2 }
+    else { 4 }
+  }
+  let z: u8 = match k {
+    0 { 1 + 2 }
+    else { error(1) }
+  } or { 7 }
+  let mut w: u8 = 0
+  w = match k {
+    0 { 2 + 2 }
+    else { 5 }
+  }
+  printf("%d\\n", cast(i32, x) + cast(i32, p) + cast(i32, row[0]) + cast(i32, mixed[0]) + cast(i32, runtime) + cast(i32, z) + cast(i32, w) + plain)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'match_arm.kl');
+    expect(c, contains('uint8_t x;'));
+    expect(c, contains('x = 3;'));
+    expect(c, contains('x = 4;'));
+    expect(c, contains('uint8_t p = ((k == 0) ? 11 : 6);'));
+    expect(c, contains('row = (klin_arr2_u8){ .v = { 3, 4 } };'));
+    expect(c, contains('row = (klin_arr2_u8){ .v = { 8, 9 } };'));
+    expect(
+      c,
+      contains(
+        'klin_arr2_u8 mixed = (true ? (klin_arr2_u8){ .v = { xs[0], xs[1] } } : (klin_arr2_u8){ .v = { 3, 4 } });',
+      ),
+    );
+    expect(c, contains('uint64_t wide;'));
+    expect(c, contains('wide = ~(0);'));
+    expect(c, contains('runtime = (y + 1);'));
+    expect(c, contains('int32_t plain;'));
+    expect(c, contains('plain = 3;'));
+    expect(c, contains('.u.ok = 3'));
+    expect(c, contains('z = 7;'));
+    expect(c, contains('w = 4;'));
+    expect(c, contains('w = 5;'));
+  });
+
+  test('checker: match array arms next to error() still unify', () {
+    const source = '''
+fn main() {
+  let k = 1
+  let known: [2]u8 = [9, 8]
+  let x = match k {
+    0 { known }
+    1 { [1 + 2, 4] }
+    else { error(1) }
+  }
+  printf("%d\\n", k)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+  });
+
+  test('checker: match and pick adopt []str and []struct elements', () {
+    const source = '''
+struct Tok { n: i32 }
+fn main() {
+  let k = 0
+  let xs: [2]Tok = [Tok{ n: 1 }, Tok{ n: 2 }]
+  let row: [2]Tok = match k {
+    0 { [Tok{ n: 1 + 2 }, Tok{ n: 4 }] }
+    else { [Tok{ n: 8 }, Tok{ n: 9 }] }
+  }
+  let words: [2]str = ["ab", "cd"]
+  let names: [2]str = pick k == 0 { ["ab", "cd"] } { ["e", "f"] }
+  let view: []Tok = match k {
+    0 { xs[:] }
+    else { error(1) }
+  } or { xs[0:1] }
+  let text: []str = pick true { words[:] } { names[0:1] }
+  printf("%d %d %d %s %d\\n", row[0].n, row[1].n, view.len, text[0], text.len)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'match_slice_elem.kl');
+    expect(c, contains('(Tok){ .n = 3 }'));
+    expect(c, contains('klin_arr2_str names'));
+    expect(c, contains('klin_slice_Tok view'));
+    expect(c, contains('klin_slice_str text'));
+    expect(c, isNot(contains('1 + 2')));
   });
 
   test('slice of a struct emits a tag pointer before the struct body', () {

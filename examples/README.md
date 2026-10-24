@@ -50,7 +50,7 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `slice_ops.kl` | `stdlib/slice` map/filter/reduce ([017](../issues/017-collection-methods.md), [docs/16](../docs/16-slice.md)) |
 | `slice_alloc_demo.kl` | `stdlib/slice_alloc` + explicit `Allocator` ([017](../issues/017-collection-methods.md), [docs/16](../docs/16-slice.md)) |
 | `short_decl.kl` | `:=` sugar for `let mut` ([055](../issues/055-short-decl.md), [docs/14](../docs/14-short-decl.md)) |
-| `destructure.kl` | Destructuring `let { x, y } = p` / `let [a, b] = xs` ([docs/syntax.md](../docs/syntax.md), [056](../issues/056-destructuring.md)) |
+| `destructure.kl` | Destructuring `let { x, y } = p` / `let [a, b] = xs` / `let [x, y] = pair()` ([docs/syntax.md](../docs/syntax.md), [056](../issues/056-destructuring.md)) |
 | `multi_assign.kl` | Multi-assignment / swap `a, b = b, a` ([docs/syntax.md](../docs/syntax.md), [056](../issues/056-destructuring.md)) |
 | `match.kl` | `match` stmt + expr, no fallthrough ([014](../issues/014-match.md), [docs/15](../docs/15-match.md)) |
 | `add_test.kl` | Sample `klin test` (`import testing`) |
@@ -65,7 +65,7 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `enums.kl` | Enums + enum-as-index + exhaustive `match` ([docs/syntax.md](../docs/syntax.md), [072](../issues/072-enums.md), [126](../issues/126-enum-index.md), [129](../issues/129-enum-match-exhaustive.md)) |
 | `associated_fn.kl` | Associated functions ([docs/syntax.md](../docs/syntax.md), [079](../issues/079-associated-functions.md)) |
 | `number_literals.kl` | Binary / exponent literals ([081](../issues/081-number-literals.md)) |
-| `byte_string.kl` | `b"..."` byte string (`[]u8`, [docs/syntax.md](../docs/syntax.md)) |
+| `byte_string.kl` | `b"..."` byte string (`[]u8`, read-only; copy into `[N]u8` to modify, [docs/syntax.md](../docs/syntax.md)) |
 | `module_const.kl` | Module-level `const` (integer, `bool`, `b"..."`, `[N]T` length, [docs/syntax.md](../docs/syntax.md)) |
 | `global_let.kl` | Module-level `let` / `let mut` (storage, constant initializer, [docs/syntax.md](../docs/syntax.md)) |
 | `const_fold.kl` | Integer constant expressions (`N * 2`, `~0x0F`, `[1 + 2]T`, [docs/01-decisions.md](../docs/01-decisions.md) D11) |

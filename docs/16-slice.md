@@ -64,7 +64,11 @@ numeric types.
 
 Writing `dst[i]` follows the slice place, the same rule as `&dst[i]`.
 An immutable binding and a slice parameter cannot write (`s[i] = …`,
-`s[i] += …`). `let mut s` can. `xs[:][i] = …` follows the array.
+`s[i] += …`). `let mut s` can when the slice views a mutable buffer.
+A `b"..."` value cannot be bound or assigned that way (D10). An
+immutable module `let` of those bytes follows the same rule. A module
+`let mut` slice does not: a write through it may crash (D11).
+`xs[:][i] = …` follows the array.
 `map_into` / `filter_into` / `copy_into` / `reverse_into` copy the
 header (`let mut w = dst`) and write through `w`; the pointer is the
 caller's buffer. `&dst[i]` is `*mut T` when that slice place is
@@ -122,7 +126,9 @@ other element types without a `$fn` instance.
 slice ([D15](01-decisions.md)). The result is `[]T` over the same
 elements. There is no runtime bounds check — an out-of-range bound,
 `a > b`, or a negative bound is undefined behavior, the same policy
-as `xs[i]`. Mutability of the view follows the source place.
+as `xs[i]`. Mutability of the view follows the source place. A
+subslice of read-only bytes is those bytes: `let mut s = b"ab"[0:1]`
+is the D10 error.
 
 ## Non-goals
 

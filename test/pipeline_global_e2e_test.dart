@@ -45,6 +45,13 @@ void main() {
     await _expectPedantic('test/global_mod/fn.kl', tmp);
   });
 
+  test('immutable byte-string global and a typed match run together', () async {
+    final result = await compileAndRun('test/global_match.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/global_match.out').readAsString());
+    await _expectPedantic('test/global_match.kl', tmp);
+  });
+
   test('imported pub let mut can be written', () async {
     final result =
         await compileAndRun('test/global_mod/app.kl', tmp, cc: 'gcc');

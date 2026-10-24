@@ -249,10 +249,23 @@ tables, messages, and paths want the bytes. A second literal keeps
 - The bytes are read-only (C string-literal storage). The checker
   rejects a direct write (`b"fn"[0] = 1`, `KW[0] = 1` on a `[]u8`
   constant) and a write through an immutable slice (`let s = b"fn"`
-  then `s[0] = 1`, or a `[]u8` parameter). `[]u8` has no read-only
-  flavor on a mutable place: `let mut s = b"fn"` then `s[0] = 1`
-  still compiles and can crash at run time. Copy into a `[N]u8` to
-  modify.
+  then `s[0] = 1`, or a `[]u8` parameter). A mutable slice cannot be
+  bound to those bytes: `let mut s = b"fn"`, `let mut s = KW`,
+  `let mut w = s` when `s` already points at them, and
+  `for s := b"fn"`. A subslice is those same bytes: `let mut s =
+  b"ab"[0:1]`, `b"ab"[0:]`, `b"ab"[:1]`, `KW[0:1]`, and `s[0:1]` when
+  `s` already points at them. A mutable `[]u8` local cannot be assigned
+  them either (`let mut s = xs[:]; s = b"fn"`). `pick`, `match`, and `or`
+  count as read-only when any arm is, because the checker does not
+  know which arm runs. Copy into a `[N]u8` to modify.
+  An immutable module `let kw: []u8 = b"fn"` (or `= KW`) is those same
+  bytes: `let mut w = kw` and `s = kw` are errors. A module
+  `let mut s: []u8 = b"fn"` is assignable storage (D11); that
+  initializer is accepted, and a write through `s` may crash.
+  Not tracked, so a write can still fault at run time: a `[]u8`
+  parameter (`fn f(s: []u8) { let mut w = s; w[0] = 1 }` then
+  `f(b"fn")`), a function that returns `[]u8`, and a struct field
+  (`row.kw = b"fn"`, then `row.kw[0] = 1` on a mutable struct).
 - `.len` is the UTF-8 byte count.
 
 ```klin
@@ -324,7 +337,7 @@ program assigns is a global: `let` (not assignable) or `let mut`.
   constant. A local alone is not a length.
 - `NAME = …` and `NAME[i] = …` on a `[]u8` constant are checker errors.
   `let s = NAME` copies the `{ptr, len}` header; `s` points at the same
-  read-only bytes (see D10).
+  read-only bytes, and `let mut s = NAME` is the D10 error.
 
 ```klin
 pub const PAGE: i64 = 4096
@@ -402,9 +415,11 @@ and `&limit` is `*i32`. `let mut` is assignable and `&n` is `*mut i32`.
   function returns are emitted before both.
 - No attributes on a global. A global must not reuse the name of a
   `const`, a type, or a free function in the same module.
-- A mutable slice still has no read-only flavor (D10). `let mut s: []u8
-  = b"..."` or `xs[:]` of an immutable array can write and may crash.
-  Copy into a `[N]u8` to modify.
+- An immutable `[]u8` global initialized from `b"..."` or a `[]u8`
+  const is read-only storage (D10). `let mut w = kw` and `s = kw` are
+  errors. A mutable global slice is not: `let mut s: []u8 = b"..."` and
+  `let mut s: []u8 = xs[:]` of an immutable array are accepted, and a
+  write may crash. Copy into a `[N]u8` to modify.
 - Async functions and threads share the global the way C does. There is
   no atomics, no lock, and no implicit synchronization. A data race is
   the program's.
@@ -472,14 +487,27 @@ type wherever a literal does: `let`, a parameter, a `return`, a struct
 field, an array element. `let x: u8 = 1 + 2` is `u8` (the value `3`).
 `let x: u8 = 200 + 100` is the same range error as `300` (`0..=255`).
 `let a: [1]u8 = [1 + 2]`, `take(1 + 2)`, `return 1 + 2`, and
-`Pair{ n: 1 + 2 }` fold the same way. `pick` arms that are still
-untyped adopt that type too. Rules match a `const` initializer (D11):
+`Pair{ n: 1 + 2 }` fold the same way. `pick` and `match` arms that are
+still untyped adopt that type too (`let x: u8 = pick c { 1 + 2 } { 4 }`,
+`let x: u8 = match k { 0 { 1 + 2 } else { 4 } }`, and
+`let row: [2]u8 = match k { 0 { [1, 2] } else { [3, 4] } }`).
+`let x: u8 = match k { 0 { 300 } else { 1 } }` is the `u8` range error.
+A `match` success arm next to `error(n)` stays open, so
+`let x: u8 = match k { 0 { 1 + 2 } else { error(1) } } or { 4 }` folds
+in `u8`. A concrete fallback (`or { n }` where `n` is already `i32`)
+fixes that arm as `i32`. With no expected type the arm is still `i32`
+(`let x = match k { 0 { 1 + 2 } else { 4 } }`). Rules match a `const`
+initializer (D11):
 subexpressions are not wrapped (`let x: i8 = 0 - 128` is an error
 because `128` does not fit `i8`), a named constant must already have
 that integer type, division or remainder by zero is an error, and a
 shift by a negative count or by a count at least as wide as the type
 is an error. With no expected type the expression is still `i32`
-(`let x = 1 + 2`). A float expected type adopts it the way a lone
+(`let x = 1 + 2`). `puts` and `printf` have no parameter types, so an
+untyped argument uses that default: `printf("%d\n", 1 + 2)` folds to
+the `i32` value `3`, and a literal that does not fit `i32` is the range
+error. An untyped float becomes `f64` and is not an integer fold.
+A float expected type adopts it the way a lone
 literal does (`let x: f64 = 1 + 2`); that is not an integer fold.
 
 Unary `-` and `~` on an integer literal, or on an integer constant
@@ -527,15 +555,21 @@ index is not evaluated twice. A struct field copied from a call,
 copies `tmp.v[i]` — the call is not repeated per element. A field
 copied from a variable stays `a.v[0], a.v[1]`.
 
+`let [x, y] = pair()` uses that same temporary: the call runs once,
+then the bindings are `tmp.v[0]` and `tmp.v[1]`. `pick` and `match`
+do too (`match` assigns the temporary inside each arm). A name and a
+literal stay element reads and do not build the wrapper.
+
 An array literal in `return` takes the element type from the
 declaration (`fn pair(): [2]u8 { return [1, 2] }`). `return [300]` is
 the `u8` range error. `return [1 + 2]` folds (D12).
 
 A zero-length array is not returned: `uint8_t v[0]` is not ISO C
-(`fn f(): [0]u8` and `fn(): [0]u8` are errors). A `pick` or `match`
-whose result is `[0]T` is still stored in that wrapper
-(`let a: [0]u8 = pick true { [] } { [] }`). It is the same GCC
-extension as `let a: [0]u8 = []` (D12), not a function return.
+(`fn f(): [0]u8` and `fn(): [0]u8` are errors). `pick` and `match`
+cannot produce one either (`let a: [0]u8 = pick true { [] } { [] }`,
+the same for `match`, and a nested `[1][0]u8`). The wrapper would be
+`uint8_t v[0]`, which is not ISO C. A literal local stays the GCC
+extension (`let a: [0]u8 = []`, D12).
 `![N]T` stays invalid.
 `async fn` still returns void. A struct field cannot be a function
 type that returns an array of structs — the wrapper needs that struct
@@ -606,7 +640,11 @@ The result is `[]T` over the same elements. Mutability follows the
 source place (D5), including through another subslice: `let mut xs`
 makes `xs[a:b][i] = …` a write; an immutable binding, a slice
 parameter, a byte-string literal, and a `const` do not. `&xs[a:b][i]`
-is `*mut T` or `*T` by that same place.
+is `*mut T` or `*T` by that same place. A subslice of read-only bytes
+is those bytes (D10): `let mut s = b"ab"[0:1]` (also `[0:]`, `[:1]`,
+a `[]u8` const, and a binding that already points at them) is an
+error, not a mutable header. `let s = b"ab"[0:1]` stays legal and is
+itself read-only. A `[]u8` parameter's subslice is not tracked.
 
 An array subslice needs an l-value, the same rule as `xs[:]`. A slice
 `s[:]` is that header. `s[a:]` reads the pointer and the length. When
