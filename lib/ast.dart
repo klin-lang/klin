@@ -922,6 +922,10 @@ final class MethodCallExpr extends Expr {
   /// (static) function call `Type.func(…)` — emitted with no receiver argument.
   bool isAssociated = false;
 
+  /// True when `h.cb(…)` calls a function-typed field, not a method (D16).
+  /// Emitted as `h.cb(…)`. [mangledName] stays null.
+  bool isFieldCall = false;
+
   /// Method / associated-function definition (LSP).
   ResolvedDef? resolvedDef;
 
@@ -1004,9 +1008,20 @@ final class IndexExpr extends Expr {
 
 final class SliceFromExpr extends Expr {
   final Expr array;
+
+  /// Omitted start is 0 (`xs[:b]`, `xs[:]`).
+  final Expr? start;
+
+  /// Omitted end is the length (`xs[a:]`, `xs[:]`).
+  final Expr? end;
   final SourcePos pos;
 
-  SliceFromExpr({required this.array, required this.pos});
+  SliceFromExpr({
+    required this.array,
+    this.start,
+    this.end,
+    required this.pos,
+  });
 }
 
 final class ArrayLitExpr extends Expr {

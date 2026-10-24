@@ -77,7 +77,11 @@ let e: i32 = cast(i32, cast(f64, 3.9))  // toward zero → 3
   literal may target float only (`cast(i32, 1.5)` is an error — cast
   to a float first).
 - Not allowed: `bool`, struct/array/slice/`str`, float ↔ enum.
-- Pointer casts stay separate (`cast(*mut u32, addr)` via `uintptr_t`).
+- Pointer casts stay separate. Integer or pointer → pointer is
+  `(T *)(uintptr_t)…`, except a signed integer, which uses `intptr_t`.
+  Pointer → integer is `(target)(uintptr_t)ptr` for an unsigned target
+  and `(target)(intptr_t)ptr` for a signed one. Not float, not `bool`,
+  not a function pointer ([D17](01-decisions.md)).
 
 Runnable: [`examples/numeric_cast.kl`](../examples/numeric_cast.kl).
 
@@ -146,6 +150,76 @@ Not supported: slice `[]T` (length is runtime), bare `[a, b] = xs`
 Runnable: [`examples/destructure.kl`](../examples/destructure.kl),
 [`examples/multi_assign.kl`](../examples/multi_assign.kl).
 Issue: [056](../issues/056-destructuring.md).
+
+## Slices of any value
+
+`[]T` is `{ ptr, len }`. `T` may be a primitive, a struct, an enum,
+`str`, a pointer, a slice, a function pointer, or an array that is
+not an array of structs. `[]!T` and `[]void` are errors.
+
+```klin
+struct Token {
+    kind: i32
+    n: i32
+}
+
+fn main() {
+    let mut xs: [2]Token = [Token{ kind: 1, n: 2 }, Token{ kind: 3, n: 4 }]
+    let mut s = xs[:]
+    s[0].n = 9
+    printf("%d\n", s[0].n)
+}
+```
+
+`xs[:]` needs the array as an l-value. Indexing is a C index (no
+runtime check). A write and `&s[i]` follow the slice place: `let mut`
+can write, an immutable binding cannot. `struct Node { kids: []Node }`
+is a slice of the same struct.
+
+Runnable: [`examples/slice_struct.kl`](../examples/slice_struct.kl).
+
+## Subslice
+
+`xs[a:b]`, `xs[a:]`, and `xs[:b]` on an array or a slice build a
+`[]T` over that range. `a` and `b` are integers (or an enum, the same
+way an array index is). No runtime check: a bound past the length,
+`a > b`, or a negative bound is undefined behavior. A call in
+`take(xs)[a:]` runs once each time that subslice is evaluated,
+including the condition of a loop.
+
+```klin
+fn main() {
+    let mut xs: [5]i32 = [10, 20, 30, 40, 50]
+    let mut mid = xs[1:4]
+    mid[0] = 7
+    printf("%d %d\n", mid.len, xs[1])
+}
+```
+
+`xs[a:b][i] = …` follows the source place (`let mut xs`, a `let mut`
+slice). A new binding follows that binding: `let mid = xs[a:b]` cannot
+write, `let mut mid` can. A slice parameter, `b"…"`, and a `const`
+cannot. An array subslice needs an l-value. Runnable:
+[`examples/slice_range.kl`](../examples/slice_range.kl).
+
+## `main` arguments
+
+`fn main()` or `fn main(args: []str)`. The parameter is the process
+arguments as an immutable slice: `.len` is `argc` (it counts `argv[0]`),
+and `args[i]` is `argv[i]`. C is `int main(int klin_argc, char **klin_argv)`
+plus one header. No copy and no check that `argc` is negative.
+`[][]u8` is not this parameter — that would walk each string.
+See [D18](01-decisions.md). Runnable:
+[`examples/main_args.kl`](../examples/main_args.kl).
+
+## Function field call
+
+`h.cb(1)` calls a field of type `fn(…)`. `(*p).cb(1)` does too.
+`p.cb(1)` on a pointer does not (no auto-deref). If `Holder` has both
+a method `cb` and a function field `cb`, the call is an error. A
+non-function field does not hide a method. See
+[D16](01-decisions.md). Runnable:
+[`examples/fn_field.kl`](../examples/fn_field.kl).
 
 ## Byte strings
 
@@ -258,8 +332,8 @@ fn bump() {
   storage). A present initializer must be a constant expression:
   literals, `const`, integer constant expressions, array and struct
   literals of those, `b"..."`, an enum variant, `&` of a global or
-  function, `xs[:]`, or a function name. Another global's value is not
-  a constant
+  function, `xs[:]` / `xs[a:b]` of a global array (constant bounds), or
+  a function name. Another global's value is not a constant
 - Types: prims, `str`, enums, structs, pointers, slices, function
   pointers, `[N]T`. Not `!T`
 - `pub` is `mod.name` after `import`. Another module may write it only

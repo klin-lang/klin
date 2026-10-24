@@ -22,6 +22,13 @@ void _collectStructKeys(
       }
     case ArrayType(:final elem):
       _collectStructKeys(elem, output, throughPointer: throughPointer);
+    case SliceType(:final elem):
+      _collectStructKeys(elem, output, throughPointer: throughPointer);
+    case FnType(:final params, :final ret):
+      for (final param in params) {
+        _collectStructKeys(param, output, throughPointer: throughPointer);
+      }
+      _collectStructKeys(ret, output, throughPointer: throughPointer);
     case ResultType(:final ok):
       _collectStructKeys(ok, output, throughPointer: throughPointer);
     default:
@@ -122,7 +129,10 @@ bool _exprCallsStdio(Expr expr) => switch (expr) {
       FieldExpr(:final object) => _exprCallsStdio(object),
       IndexExpr(:final object, :final index) =>
         _exprCallsStdio(object) || _exprCallsStdio(index),
-      SliceFromExpr(:final array) => _exprCallsStdio(array),
+      SliceFromExpr(:final array, :final start, :final end) =>
+        _exprCallsStdio(array) ||
+            (start != null && _exprCallsStdio(start)) ||
+            (end != null && _exprCallsStdio(end)),
       ArrayLitExpr(:final elements) => elements.any(_exprCallsStdio),
       CastExpr(:final expr) => _exprCallsStdio(expr),
       BinaryExpr(:final left, :final right) =>

@@ -1,0 +1,6 @@
+fn main(args: []str) {
+    printf("%d\n", cast(i32, args.len))
+    if args.len > 1 {
+        printf("%s\n", args[1])
+    }
+}

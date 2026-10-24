@@ -94,12 +94,7 @@ String _emitExpr(Expr expr, _ExprCtx ctx) {
   final raw = _emitExprRaw(expr, ctx);
   final from = expr.arrayToSliceFrom;
   if (from != null) {
-    final elem = from.elem;
-    if (elem is! PrimType) {
-      throw StateError(
-          'emit: array-to-slice conversion requires a primitive type');
-    }
-    return '(${_sliceCName(elem)}){ $raw, ${from.len} }';
+    return '(${_sliceCName(from.elem)}){ $raw, ${from.len} }';
   }
   return raw;
 }
@@ -168,15 +163,21 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
       }(),
     MethodCallExpr(
       :final receiver,
+      :final name,
       :final args,
       :final mangledName,
       :final receiverByRef,
       :final isAssociated,
+      :final isFieldCall,
     ) =>
       () {
+        final argList = args.map((arg) => _emitCallArg(arg, ctx)).join(', ');
+        // `h.cb(1)` — the field is a function pointer. Not a method.
+        if (isFieldCall) {
+          return '${_emitExpr(receiver, ctx)}.$name($argList)';
+        }
         final callee =
             mangledName ?? (throw StateError('emit: method without mangling'));
-        final argList = args.map((arg) => _emitCallArg(arg, ctx)).join(', ');
         // Associated (static) call `Type.func(...)` — no receiver argument.
         if (isAssociated) return '$callee($argList)';
         final recv = _emitMethodReceiver(receiver, receiverByRef, ctx);
@@ -224,27 +225,13 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         }
         return '${_emitArrayObject(object, ctx)}[$indexC]';
       }(),
-    SliceFromExpr(:final array) => () {
-        final type = array.resolvedType;
-        if (type is! ArrayType) {
-          throw StateError('emit: `[:]` without an array type');
-        }
-        final elem = type.elem;
-        if (elem is! PrimType) {
-          throw StateError('emit: slice has a non-primitive element type');
-        }
-        return '(${_sliceCName(elem)}){ ${_emitArrayObject(array, ctx)}, ${type.len} }';
-      }(),
+    SliceFromExpr(:final array, :final start, :final end) =>
+      _emitSliceFrom(array, start, end, ctx),
     ArrayLitExpr lit => _emitArrayLit(lit, ctx),
     CastExpr(:final resolvedType, :final expr) => () {
         final target = resolvedType;
         if (target == null) throw StateError('emit: cast without type');
-        // Pointer casts round-trip through uintptr_t; enum/integer and
-        // numeric casts are a plain C cast (issues 072, 154).
-        if (target is PtrType) {
-          return '(${_cType(target)})(uintptr_t)(${_emitExpr(expr, ctx)})';
-        }
-        return '(${_cType(target)})(${_emitExpr(expr, ctx)})';
+        return _emitCast(target, expr, (inner) => _emitExpr(inner, ctx));
       }(),
     BinaryExpr(:final left, :final op, :final right) =>
       '(${_emitExpr(left, ctx)} $op ${_emitExpr(right, ctx)})',
@@ -421,6 +408,30 @@ bool _decimalAboveI64Max(String spelling) {
   return value != null && value > _i64Max;
 }
 
+/// Pointer ↔ integer goes through `uintptr_t` / `intptr_t` (D17).
+/// Pointer → pointer and unsigned / untyped integer → pointer stay
+/// `uintptr_t` (existing goldens). A signed integer uses `intptr_t`.
+/// Pointer → unsigned uses `uintptr_t`; pointer → signed uses `intptr_t`.
+String _emitCast(KlinType target, Expr expr, String Function(Expr) emitInner) {
+  final inner = emitInner(expr);
+  if (target is PtrType) {
+    final src = expr.resolvedType;
+    final via = src is PrimType &&
+            src.kind.isInteger &&
+            !_primIsUnsigned(src.kind)
+        ? 'intptr_t'
+        : 'uintptr_t';
+    return '(${_cType(target)})($via)($inner)';
+  }
+  if (target is PrimType &&
+      target.kind.isInteger &&
+      expr.resolvedType is PtrType) {
+    final via = _primIsUnsigned(target.kind) ? 'uintptr_t' : 'intptr_t';
+    return '(${_cType(target)})($via)($inner)';
+  }
+  return '(${_cType(target)})($inner)';
+}
+
 bool _primIsUnsigned(PrimKind kind) => switch (kind) {
       PrimKind.u8 ||
       PrimKind.u16 ||
@@ -556,6 +567,100 @@ String _cConstInt(BigInt value, PrimKind kind) {
   return value.toString();
 }
 
+/// `xs[a:b]` / `xs[a:]` / `xs[:b]` / `xs[:]`. No bounds check (D15).
+/// An array is used once as the pointer base; its length is the constant
+/// `N`. `s[:]` on a slice is that header. `s[a:]` that would read a call
+/// twice, or a start bound twice, is `klin_slice_tail_*` — an expression,
+/// so a loop condition evaluates it on every check.
+String _emitSliceFrom(Expr array, Expr? start, Expr? end, _ExprCtx ctx) {
+  final type = array.resolvedType;
+  if (type is ArrayType) {
+    if (_sliceOpenTailNeedsHelper(array, start, end)) {
+      final base = _emitArrayObject(array, ctx);
+      final header = '(${_sliceCName(type.elem)}){ $base, ${type.len} }';
+      return _emitSliceTailCall(type.elem, header, start!, ctx);
+    }
+    final base = _emitArrayObject(array, ctx);
+    final ptr = start == null
+        ? base
+        : '($base) + (size_t)(${_emitExpr(start, ctx)})';
+    final len = _sliceRangeLen('${type.len}', start, end, ctx);
+    return '(${_sliceCName(type.elem)}){ $ptr, $len }';
+  }
+  if (type is! SliceType) {
+    throw StateError('emit: slice range without an array or slice');
+  }
+  if (start == null && end == null) {
+    final raw = _emitExpr(array, ctx);
+    return _exprIsSimplePlace(array) ? raw : '($raw)';
+  }
+  if (_sliceOpenTailNeedsHelper(array, start, end)) {
+    // A function argument needs no extra parentheses. The call runs once.
+    return _emitSliceTailCall(type.elem, _emitExpr(array, ctx), start!, ctx);
+  }
+  final raw = _emitExpr(array, ctx);
+  final src = _exprIsSimplePlace(array) ? raw : '($raw)';
+  final ptr = start == null
+      ? '$src.ptr'
+      : '($src.ptr) + (size_t)(${_emitExpr(start, ctx)})';
+  final len = _sliceRangeLen('$src.len', start, end, ctx);
+  return '(${_sliceCName(type.elem)}){ $ptr, $len }';
+}
+
+String _emitSliceTailCall(
+  KlinType elem,
+  String header,
+  Expr start,
+  _ExprCtx ctx,
+) {
+  return '${_sliceTailHelperName(elem)}($header, (size_t)(${_emitExpr(start, ctx)}))';
+}
+
+/// True when `s[a:]` must not inline `.ptr` and `.len`. A statement
+/// temporary is wrong in `while` / `for` (it runs once, before the loop).
+/// A plain place and an integer literal may be repeated: repeating them
+/// does not call a function.
+bool _sliceOpenTailNeedsHelper(Expr array, Expr? start, Expr? end) {
+  if (start == null || end != null) return false;
+  final type = array.resolvedType;
+  if (type is! ArrayType && type is! SliceType) return false;
+  if (type is SliceType && !_exprIsSimplePlace(array)) return true;
+  return !_boundRepeatsOk(start);
+}
+
+bool _boundRepeatsOk(Expr expr) {
+  final node = _peelEmitGroups(expr);
+  if (node is IntLit) return true;
+  return _exprIsSimplePlace(node);
+}
+
+/// Length of a subslice. Each bound is converted to `size_t` before the
+/// subtraction so the header field stays `size_t`. A negative bound or
+/// `a > b` is undefined behavior, not a check.
+String _sliceRangeLen(String full, Expr? start, Expr? end, _ExprCtx ctx) {
+  if (start == null && end == null) return full;
+  if (start == null) return '(size_t)(${_emitExpr(end!, ctx)})';
+  if (end == null) {
+    return '(($full) - (size_t)(${_emitExpr(start, ctx)}))';
+  }
+  return '((size_t)(${_emitExpr(end, ctx)}) - (size_t)(${_emitExpr(start, ctx)}))';
+}
+
+/// A name, or a field / index / dereference of one. Reading it twice does
+/// not call a function.
+bool _exprIsSimplePlace(Expr expr) {
+  final node = _peelEmitGroups(expr);
+  return switch (node) {
+    NameExpr() => true,
+    FieldExpr(:final object) => _exprIsSimplePlace(object),
+    IndexExpr(:final object, :final index) =>
+      _exprIsSimplePlace(object) && _exprIsSimplePlace(index),
+    UnaryExpr(:final op, :final operand) when op == '*' =>
+      _exprIsSimplePlace(operand),
+    _ => false,
+  };
+}
+
 /// File-scope initializer. Aggregate literals are brace lists, not compound
 /// literals: a compound literal is not a constant expression in C. An integer
 /// `const` used by name is that constant's own initializer (a C constant),
@@ -592,7 +697,17 @@ String _emitGlobalExpr(Program program, Expr expr) {
     if (arrayType is! ArrayType) {
       throw StateError('emit: global slice initializer without an array');
     }
-    return '{ ${_emitGlobalExpr(program, node.array)}, ${arrayType.len} }';
+    final base = _emitGlobalExpr(program, node.array);
+    // `xs[:]` stays `{ arr, N }`. A constant subslice is the same brace
+    // with pointer arithmetic. Both are address constants in C.
+    if (node.start == null && node.end == null) {
+      return '{ $base, ${arrayType.len} }';
+    }
+    final ptr = node.start == null
+        ? base
+        : '($base) + (size_t)(${_emitGlobalExpr(program, node.start!)})';
+    final len = _globalSliceLen('${arrayType.len}', node, program);
+    return '{ $ptr, $len }';
   }
   final constant = _constDeclForGlobalInit(program, node);
   if (constant != null) return _emitConstInitializer(constant);
@@ -630,6 +745,18 @@ ConstDecl? _constDeclForGlobalInit(Program program, Expr expr) {
     if (_freeCName(decl.moduleName, decl.name) == cName) return decl;
   }
   return null;
+}
+
+/// Length of a file-scope subslice. Bounds are constant expressions.
+String _globalSliceLen(String full, SliceFromExpr node, Program program) {
+  final start = node.start;
+  final end = node.end;
+  if (start == null && end == null) return full;
+  if (start == null) return '(size_t)(${_emitGlobalExpr(program, end!)})';
+  if (end == null) {
+    return '(($full) - (size_t)(${_emitGlobalExpr(program, start)}))';
+  }
+  return '((size_t)(${_emitGlobalExpr(program, end)}) - (size_t)(${_emitGlobalExpr(program, start)}))';
 }
 
 /// `b"..."` → `[]u8` over a static C string. `.len` is the byte count and

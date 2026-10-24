@@ -415,16 +415,12 @@ final class Checker {
         throw CheckError(
             'a project can contain only one `main` function', main[1].pos);
       }
-      if (main.single.params.isNotEmpty) {
-        throw CheckError(
-            '`main` function cannot have parameters', main.single.pos);
-      }
+      _checkMainSignature(main.single);
     } else if (main.length > 1) {
       throw CheckError(
           'a project can contain only one `main` function', main[1].pos);
-    } else if (main.length == 1 && main.single.params.isNotEmpty) {
-      throw CheckError(
-          '`main` function cannot have parameters', main.single.pos);
+    } else if (main.length == 1) {
+      _checkMainSignature(main.single);
     }
 
     final collected = <CheckError>[];
@@ -444,6 +440,21 @@ final class Checker {
     if (collected.isNotEmpty) {
       throw CheckErrors(collected);
     }
+  }
+
+  /// `fn main()` or `fn main(args: []str)`. Anything else is an error.
+  /// `[]str` is the argv header: no hidden strlen, and `char **` converts
+  /// with one cast (D18). `[][]u8` would walk each argument.
+  void _checkMainSignature(FuncDecl main) {
+    if (main.params.isEmpty) return;
+    final type = main.params.singleOrNull?.resolvedType;
+    if (main.params.length == 1 && type is SliceType && type.elem is StrType) {
+      return;
+    }
+    throw CheckError(
+      '`main` takes no parameters, or one parameter of type `[]str`',
+      main.pos,
+    );
   }
 
   void _checkFuncBody(FuncDecl func) {
@@ -850,7 +861,7 @@ final class Checker {
       init.resolvedType = type;
       return;
     }
-    if (type is SliceType && type.elem.kind == PrimKind.u8) {
+    if (type case SliceType(elem: PrimType(kind: PrimKind.u8))) {
       if (init is! ByteStringLit) {
         throw CheckError('[]u8 constant must be a b"..." literal', init.pos);
       }
@@ -983,7 +994,14 @@ final class Checker {
       return fields.every(_isGlobalConstInit);
     }
     if (node is SliceFromExpr) {
-      return _isAddressConstant(node.array);
+      // `xs[:]` and `xs[a:b]` of a global array. The bounds are constant
+      // expressions. A slice global is not an array: copying its header
+      // is not a C constant initializer.
+      if (node.array.resolvedType is! ArrayType) return false;
+      if (!_isAddressConstant(node.array)) return false;
+      if (node.start != null && !_isGlobalConstInit(node.start!)) return false;
+      if (node.end != null && !_isGlobalConstInit(node.end!)) return false;
+      return true;
     }
     if (node is CastExpr) {
       final target = node.resolvedType;
@@ -1098,9 +1116,7 @@ final class Checker {
     }
     if (name.startsWith('[]')) {
       final elem = _resolveType(name.substring(2), pos);
-      if (elem is! PrimType) {
-        throw CheckError('slice requires a primitive element type', pos);
-      }
+      _requireSliceElem(elem, pos);
       return SliceType(elem);
     }
     if (name.startsWith('[')) {
@@ -1150,6 +1166,46 @@ final class Checker {
       throw CheckError('unknown type `$qualifier.$typeName`', pos);
     }
     return _resolvePrimType(name, pos);
+  }
+
+  /// Element of `[]T` (D14). A value that C can point at: primitive, struct,
+  /// enum, `str`, pointer, nested slice, function, or array. An array of
+  /// structs would need the struct to be complete inside the slice typedef
+  /// and the slice typedef to be complete inside the struct — rejected.
+  /// `!T` and `void` are not slice elements.
+  void _requireSliceElem(KlinType elem, SourcePos pos) {
+    switch (elem) {
+      case PrimType() ||
+            StructType() ||
+            EnumType() ||
+            StrType() ||
+            PtrType() ||
+            FnType():
+        return;
+      case SliceType(:final elem):
+        _requireSliceElem(elem, pos);
+      case ArrayType(:final elem):
+        _requireSliceElem(elem, pos);
+        var inner = elem;
+        while (inner is ArrayType) {
+          inner = inner.elem;
+        }
+        if (inner is StructType) {
+          throw CheckError(
+            'slice element cannot be an array of structs',
+            pos,
+          );
+        }
+      case ResultType():
+        throw CheckError('slice element cannot be a result type', pos);
+      case VoidType():
+        throw CheckError('slice element cannot be `void`', pos);
+      default:
+        throw CheckError(
+          'slice element type `${elem.displayName}` is not supported',
+          pos,
+        );
+    }
   }
 
   /// `[N]T` length: an integer literal, a module constant, or an integer
@@ -2448,7 +2504,7 @@ final class Checker {
       );
     }
     final elem = bufTy.elem;
-    if (elem.kind != PrimKind.u8) {
+    if (elem is! PrimType || elem.kind != PrimKind.u8) {
       throw CheckError(
         'fmt.write expects `[]u8` as the first argument',
         args[0].pos,
@@ -3064,7 +3120,48 @@ final class Checker {
         throw StateError('unreachable: receiver is struct or enum');
     }
     final signature = _methods['${receiverType.displayName}.${call.name}'];
+    // A function-typed field is a call (`h.cb(1)`). A method of the same
+    // name wins only when the field is not a function. Both at once is
+    // ambiguous, including a private method (D16).
+    FieldDecl? field;
+    if (receiverType is StructType) {
+      final struct =
+          _structs[_key(receiverType.moduleName, receiverType.name)];
+      if (struct != null) {
+        for (final candidate in struct.fields) {
+          if (candidate.name == call.name) {
+            field = candidate;
+            break;
+          }
+        }
+      }
+    }
+    final fieldType = field?.resolvedType;
+    if (signature != null && fieldType is FnType) {
+      throw CheckError(
+        'ambiguous call `${call.name}`: `${receiverType.displayName}` has '
+        'both a method and a function field of that name',
+        call.pos,
+      );
+    }
     if (signature == null) {
+      if (field != null) {
+        if (fieldType is! FnType) {
+          throw CheckError(
+            'field `${call.name}` has type '
+            '`${fieldType?.displayName ?? field.typeName}`, not a function',
+            call.pos,
+          );
+        }
+        call.isFieldCall = true;
+        final struct =
+            _structs[_key(receiverModule, receiverName)];
+        if (struct != null) {
+          call.resolvedDef = ResolvedDef(field.pos, struct.sourcePath);
+        }
+        return _checkFnTypeCall(fieldType, call.name, call.args, call.pos)
+            .type;
+      }
       throw CheckError(
           'type `$receiverName` has no method `${call.name}`', call.pos);
     }
@@ -3196,10 +3293,12 @@ final class Checker {
       if (objectType is SliceType) {
         // `b"..."` points at static read-only bytes. A slice view of an
         // array is a different buffer; writability follows the place.
-        if (_unwrapGroups(place.object) is ByteStringLit) {
+        // `b"…"[a:b][i]` and `CONST[a:b][i]` walk through the subslice
+        // back to the literal or the constant. A copied binding does not.
+        if (_sliceRoot(place.object) is ByteStringLit) {
           throw CheckError('cannot assign through a byte-string literal', pos);
         }
-        if (_placeIsConst(place.object)) {
+        if (_placeIsConst(_sliceRoot(place.object))) {
           throw CheckError('cannot assign through a constant', pos);
         }
         _requireMutableSlicePlace(place.object, pos);
@@ -3236,6 +3335,11 @@ final class Checker {
   void _requireMutableSlicePlace(Expr object, SourcePos pos) {
     final base = _unwrapGroups(object);
     if (base is SliceFromExpr) {
+      final src = base.array.resolvedType ?? _inferExpr(base.array);
+      if (src is SliceType) {
+        _requireMutableSlicePlace(base.array, pos);
+        return;
+      }
       _requireMutableArrayPlace(base.array, pos);
       return;
     }
@@ -3328,7 +3432,7 @@ final class Checker {
     if (base is IndexExpr) {
       final indexed = _unwrapGroups(base.object);
       if (indexed is SliceFromExpr) {
-        _requireMutableArrayPlace(indexed.array, pos);
+        _requireMutableSlicePlace(indexed, pos);
         return;
       }
       if (_inferExpr(base.object) is SliceType) {
@@ -3354,6 +3458,31 @@ final class Checker {
       return;
     }
     throw CheckError(immutableExprMessage, pos);
+  }
+
+  /// `xs[a:b][i]` stores through the same place as `xs[i]`. Walk past
+  /// every subslice to that place.
+  Expr _sliceRoot(Expr expr) {
+    var current = _unwrapGroups(expr);
+    while (current is SliceFromExpr) {
+      current = _unwrapGroups(current.array);
+    }
+    return current;
+  }
+
+  /// A subslice bound uses the same types as an index: an integer, or an
+  /// enum that fits a fixed array. No range check is emitted (D15).
+  void _checkSliceBound(Expr bound, KlinType indexed) {
+    final indexType = _defaultConcrete(_inferExpr(bound), bound.pos);
+    if (indexType is EnumType) {
+      _checkEnumIndex(indexType, indexed, bound.pos);
+    } else if (indexType is! PrimType || !indexType.kind.isInteger) {
+      throw CheckError(
+        'slice bound requires an integer or enum type',
+        bound.pos,
+      );
+    }
+    _materialize(bound, indexType);
   }
 
   Expr _unwrapGroups(Expr expr) {
@@ -3493,19 +3622,33 @@ final class Checker {
               ),
           };
         }(),
-      SliceFromExpr(:final array, :final pos) => () {
-          if (!_isAddressablePlace(array)) {
+      SliceFromExpr(:final array, :final start, :final end, :final pos) => () {
+          final src = _inferExpr(array);
+          final KlinType elem;
+          if (src is ArrayType) {
+            // The pointer is the array itself. A temporary has nowhere
+            // stable to point (same rule as `xs[:]`).
+            if (!_isAddressablePlace(array)) {
+              throw CheckError(
+                start == null && end == null
+                    ? '`[:]` requires an array l-value, not a literal or temporary expression'
+                    : 'a subslice requires an array l-value, not a literal or temporary expression',
+                pos,
+              );
+            }
+            _requireSliceElem(src.elem, pos);
+            elem = src.elem;
+          } else if (src is SliceType) {
+            elem = src.elem;
+          } else {
             throw CheckError(
-              '`[:]` requires an array l-value, not a literal or temporary expression',
+              'a slice range requires an array or slice, got `${src.displayName}`',
               pos,
             );
           }
-          final arrayType = _inferExpr(array);
-          if (arrayType is! ArrayType || arrayType.elem is! PrimType) {
-            throw CheckError(
-                '`[:]` requires an array with a primitive element type', pos);
-          }
-          return SliceType(arrayType.elem as PrimType);
+          if (start != null) _checkSliceBound(start, src);
+          if (end != null) _checkSliceBound(end, src);
+          return SliceType(elem);
         }(),
       ArrayLitExpr(:final elements, :final pos) => () {
           // `[]` stays untyped until an expected `[0]T` adopts it
@@ -3569,6 +3712,17 @@ final class Checker {
               target.kind.isInteger &&
               source is EnumType) {
             return target;
+          }
+          // Pointer → integer (D17). Not float, not bool. The reverse
+          // (integer → pointer) is the pointer-target branch above.
+          if (source is PtrType && target is PrimType && target.kind.isInteger) {
+            return target;
+          }
+          if (source is PtrType) {
+            throw CheckError(
+              'cast from a pointer requires an integer type',
+              pos,
+            );
           }
           // Explicit numeric prim ↔ prim (issue 154). No implicit widen.
           if (target is PrimType &&
@@ -4434,8 +4588,10 @@ final class Checker {
         case IndexExpr(:final object, :final index):
           walk(object);
           walk(index);
-        case SliceFromExpr(:final array):
+        case SliceFromExpr(:final array, :final start, :final end):
           walk(array);
+          if (start != null) walk(start);
+          if (end != null) walk(end);
         case ArrayLitExpr(:final elements):
           for (final element in elements) {
             walk(element);

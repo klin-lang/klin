@@ -337,15 +337,22 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
       '${resolvedCallee ?? callee}(${args.map((a) => _emitAsyncArg(a, ctx)).join(', ')})',
     MethodCallExpr(
       :final receiver,
+      :final name,
       :final args,
       :final mangledName,
       :final receiverByRef,
       :final isAssociated,
+      :final isFieldCall,
     ) =>
       () {
+        final argList = args.map((a) => _emitAsyncArg(a, ctx)).join(', ');
+        // A function field is not an async receiver. `st->h.cb(1)` is
+        // `(st->h).cb(1)`.
+        if (isFieldCall) {
+          return '${_emitAsyncExpr(receiver, ctx)}.$name($argList)';
+        }
         final callee = mangledName ??
             (throw StateError('emit async: method without mangling'));
-        final argList = args.map((a) => _emitAsyncArg(a, ctx)).join(', ');
         if (isAssociated) return '$callee($argList)';
         final recv =
             '${receiverByRef ? '&' : ''}${_emitAsyncExpr(receiver, ctx)}';
@@ -367,10 +374,7 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
     CastExpr(:final resolvedType, :final expr) => () {
         final target = resolvedType;
         if (target == null) throw StateError('emit async: cast without type');
-        if (target is PtrType) {
-          return '(${_cType(target)})(uintptr_t)(${_emitAsyncExpr(expr, ctx)})';
-        }
-        return '(${_cType(target)})(${_emitAsyncExpr(expr, ctx)})';
+        return _emitCast(target, expr, (inner) => _emitAsyncExpr(inner, ctx));
       }(),
     _ => throw StateError(
         'emit async MVP: unsupported expr `${expr.runtimeType}`',

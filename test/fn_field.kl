@@ -1,0 +1,24 @@
+struct Holder {
+    cb: fn(i32): i32
+    n: i32
+}
+
+struct Box {
+    n: i32
+}
+
+fn inc(x: i32): i32 { return x + 1 }
+
+fn (b: Box) n(): i32 { return b.n + 1 }
+
+fn main() {
+    let h = Holder{ cb: inc, n: 3 }
+    printf("%d\n", h.cb(1))
+    let f = h.cb
+    printf("%d\n", f(2))
+    let p: *Holder = &h
+    printf("%d\n", (*p).cb(4))
+
+    let b = Box{ n: 4 }
+    printf("%d %d\n", b.n(), b.n)
+}

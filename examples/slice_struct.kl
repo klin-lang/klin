@@ -1,0 +1,23 @@
+struct Token {
+    kind: i32
+    n: i32
+}
+
+fn sum_kind(xs: []Token): i32 {
+    let mut i = 0
+    let mut acc = 0
+    while i < xs.len {
+        acc = acc + xs[i].kind
+        i = i + 1
+    }
+    return acc
+}
+
+fn main() {
+    let mut xs: [2]Token = [Token{ kind: 3, n: 1 }, Token{ kind: 4, n: 2 }]
+    let mut s = xs[:]
+    s[0].n = 9
+    let p = &s[0]
+    (*p).kind = 8
+    printf("%d %d %d\n", sum_kind(xs[:]), xs[0].kind, xs[0].n)
+}

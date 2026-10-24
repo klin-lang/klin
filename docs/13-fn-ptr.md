@@ -19,6 +19,11 @@ fn main() {
 }
 ```
 
+A struct field of this type is called the same way (`h.cb(1)`, and
+`(*p).cb(1)`). If the struct also has a method of that name, the call
+is an error ([D16](01-decisions.md)). A field that is not a function
+does not hide a method.
+
 Part of [issue 017](../issues/017-collection-methods.md) (phase 2). Example:
 [`examples/fn_ptr.kl`](../examples/fn_ptr.kl).
 

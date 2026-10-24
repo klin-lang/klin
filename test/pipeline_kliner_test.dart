@@ -427,4 +427,181 @@ void main() {
     expect(result.exitCode, 0, reason: result.stderr);
     expect(result.stdout, await File('test/enum_auto.out').readAsString());
   });
+
+  test('slice of a struct, str, and nested slice', () async {
+    final result = await compileAndRun('test/slice_struct.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/slice_struct.out').readAsString());
+
+    final program = loadProject('test/slice_struct.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/slice_struct.kl');
+    expect(
+      c,
+      contains(
+        'typedef struct { struct slice_struct_Token *ptr; size_t len; } klin_slice_slice_struct_Token;',
+      ),
+    );
+    expect(
+      c,
+      contains(
+        'typedef struct { struct slice_struct_Node *ptr; size_t len; } klin_slice_slice_struct_Node;',
+      ),
+    );
+    expect(
+      c,
+      contains('typedef struct { const char **ptr; size_t len; } klin_slice_str;'),
+    );
+    expect(
+      c,
+      contains(
+        'typedef struct { klin_slice_u8 *ptr; size_t len; } klin_slice_slice_u8;',
+      ),
+    );
+    expect(
+      c,
+      contains(
+        'typedef struct { uint8_t (*ptr)[2]; size_t len; } klin_slice_arr2_u8;',
+      ),
+    );
+    expect(
+      c,
+      contains(
+        'typedef struct { klin_slice_u8 (*ptr)[2]; size_t len; } klin_slice_arr2_slice_u8;',
+      ),
+    );
+    expect(
+      c.indexOf('klin_slice_u8;'),
+      lessThan(c.indexOf('klin_slice_arr2_slice_u8;')),
+    );
+    final sliceTok = c.indexOf('klin_slice_slice_struct_Token;');
+    final tokenBody = c.indexOf('typedef struct slice_struct_Token {');
+    expect(sliceTok, greaterThanOrEqualTo(0));
+    expect(tokenBody, greaterThan(sliceTok));
+    final nodeSlice = c.indexOf('klin_slice_slice_struct_Node;');
+    final nodeBody = c.indexOf('typedef struct slice_struct_Node {');
+    expect(nodeBody, greaterThan(nodeSlice));
+    expect(c, contains('s.ptr[0].n = 9;'));
+    expect(c, contains('s.ptr[1] ='));
+    expect(c, contains('(*(p)).kind = 8;'));
+
+    final cPath = '${tmp.path}/slice_struct_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/slice_struct_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
+  test('subslice of an array and a slice', () async {
+    final result = await compileAndRun('test/slice_range.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/slice_range.out').readAsString());
+
+    final program = loadProject('test/slice_range.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/slice_range.kl');
+    expect(c, contains('(xs) + (size_t)(1)'));
+    expect(c, contains('((size_t)(4) - (size_t)(1))'));
+    expect(c, isNot(contains('if (')));
+    final cPath = '${tmp.path}/slice_range_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/slice_range_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
+  test('call a function field', () async {
+    final result = await compileAndRun('test/fn_field.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/fn_field.out').readAsString());
+
+    final program = loadProject('test/fn_field.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/fn_field.kl');
+    expect(c, contains('h.cb(1)'));
+    expect(c, contains('(*(p)).cb(4)'));
+    expect(c, contains('fn_field_Box_n(b)'));
+    expect(c, isNot(contains('Holder_cb')));
+    final cPath = '${tmp.path}/fn_field_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/fn_field_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
+  test('pointer to integer cast round-trips', () async {
+    final result = await compileAndRun('test/ptr_int_cast.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/ptr_int_cast.out').readAsString());
+
+    final program = loadProject('test/ptr_int_cast.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/ptr_int_cast.kl');
+    expect(c, contains('(size_t)(uintptr_t)'));
+    expect(c, contains('(int64_t)(intptr_t)'));
+    expect(c, contains('(int32_t *)(intptr_t)'));
+    expect(c, contains('(int32_t *)(uintptr_t)'));
+    final cPath = '${tmp.path}/ptr_int_cast_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/ptr_int_cast_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
+  test('main(args: []str) receives argc and argv', () async {
+    final result = await compileAndRun('test/main_args.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/main_args.out').readAsString());
+
+    final again = await Process.run('${tmp.path}/main_args', ['hello']);
+    expect(again.exitCode, 0, reason: again.stderr.toString());
+    expect(again.stdout, '2\nhello\n');
+
+    final program = loadProject('test/main_args.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/main_args.kl');
+    expect(c, contains('int main(int klin_argc, char **klin_argv)'));
+    expect(
+      c,
+      contains(
+        'klin_slice_str args = { (const char **)klin_argv, (size_t)klin_argc };',
+      ),
+    );
+    expect(c, isNot(contains('strlen')));
+    final cPath = '${tmp.path}/main_args_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/main_args_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
 }
