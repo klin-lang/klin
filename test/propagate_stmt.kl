@@ -9,8 +9,14 @@ fn run(ok: bool): !i32 {
 }
 
 fn main() {
-    let a = run(true) or { printf("err %d\n", err); return }
+    let a = run(true) or {
+        printf("err %d\n", err)
+        return
+    }
     printf("ok %d\n", a)
-    let b = run(false) or { printf("err %d\n", err); return }
+    let b = run(false) or {
+        printf("err %d\n", err)
+        return
+    }
     printf("no %d\n", b)
 }
