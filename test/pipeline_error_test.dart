@@ -3122,7 +3122,7 @@ fn main() {}
     expectRange('''
 let mut xs: [2]i32 = [1, 2]
 let p: *mut [2]i32 = &xs
-let s = (*p)[:]
+let s: []i32 = (*p)[:]
 fn main() {}
 ''', 'global initializer must be a constant expression');
   });
