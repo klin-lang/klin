@@ -109,6 +109,9 @@ String emitC(Program program, String sourcePath) {
       return elem is FnType && !_arrayReturnAfterLateFn(type);
     }),
   );
+  if (_programNeedsStrlen(program)) {
+    buf.writeln('#include <string.h>');
+  }
   if (_programNeedsTrimFrac(program)) {
     buf.writeln('#include <stdio.h>');
     buf.writeln('#include <string.h>');

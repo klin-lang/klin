@@ -374,7 +374,8 @@ $note(i32)
 ''', path: 't.kl');
     expect(expanded, contains(r'// keep $hint'));
     expect(expanded, contains(r'puts("$USD")'));
-    expect(expanded, contains('fn f(): i32'));
+    // A plain free function is local to the expansion (D20).
+    expect(expanded, contains('fn f__note_t_1(): i32'));
   });
 
   test(r'$peripherals_from_svd rewrites fluent MMIO (issue 027)', () {

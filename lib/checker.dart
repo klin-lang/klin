@@ -2104,8 +2104,12 @@ final class Checker {
       return false;
     }
     if (node is OrExpr) {
+      final fallback = node.fallback.value;
       return _isReadOnlyBytes(node.result) ||
-          _isReadOnlyBytes(node.fallback.value);
+          (fallback != null && _isReadOnlyBytes(fallback));
+    }
+    if (node is CallExpr && node.resolvedCallee == '__klin_cstr_u8') {
+      return true;
     }
     // `b"ab"[0:1]`, `KW[0:]`, `s[:1]` when `s` already points at those
     // bytes. A subslice of a mutable buffer is not read-only.
@@ -3011,6 +3015,25 @@ final class Checker {
       }
       // Host builtins with unknown/varargs signatures (issue 021).
       // Everything else requires an explicit `@[cimport]` declaration.
+      if (moduleName == null && callee == 'cstr_u8') {
+        if (args.length != 1) {
+          throw CheckError(
+            '`cstr_u8` expects 1 argument, got ${args.length}',
+            pos,
+          );
+        }
+        final argType = _inferExpr(args[0]);
+        if (argType is! StrType) {
+          throw CheckError(
+            '`cstr_u8` expects `str`, got `${argType.displayName}`',
+            args[0].pos,
+          );
+        }
+        return const _CheckedCall(
+          SliceType(PrimType(PrimKind.u8)),
+          '__klin_cstr_u8',
+        );
+      }
       if (callee == 'puts' || callee == 'printf') {
         // No parameter types, so an untyped argument uses the same default
         // as an unannotated `let` (`i32` / `f64`) and folds (D12).
@@ -3499,8 +3522,13 @@ final class Checker {
         throw CheckError('cannot assign to constant `${place.name}`', pos);
       }
       final objectType = _inferExpr(place.object);
-      if (objectType is ArrayType || objectType is SliceType) {
+      if (objectType is ArrayType ||
+          objectType is SliceType ||
+          (objectType is StrType && place.name == 'len')) {
         throw CheckError('`len` is read-only', pos);
+      }
+      if (objectType is StrType) {
+        throw CheckError('`str` has no field `${place.name}`', pos);
       }
       _requireMutableStructPlace(place.object, pos);
       return _inferExpr(place);
@@ -3517,6 +3545,12 @@ final class Checker {
     }
     if (place is IndexExpr) {
       final objectType = _inferExpr(place.object);
+      if (objectType is StrType) {
+        throw CheckError(
+          'cannot assign through a string (`str` is read-only)',
+          pos,
+        );
+      }
       // Slice header is a value; element storage is shared with the caller (Go-like).
       if (objectType is SliceType) {
         // `b"..."` points at static read-only bytes. A slice view of an
@@ -3743,6 +3777,60 @@ final class Checker {
         _ => false,
       };
 
+  /// True when [stmts] cannot fall through. Used by a valueless `or`
+  /// block. [loopNest] is how many loops are inside the `or`: `break`
+  /// and `continue` leave the `or` only at nest 0.
+  bool _orBlockDiverges(List<Stmt> stmts) =>
+      _stmtsDiverge(stmts, loopNest: 0);
+
+  bool _stmtsDiverge(List<Stmt> stmts, {required int loopNest}) {
+    for (final stmt in stmts) {
+      if (_stmtDiverges(stmt, loopNest: loopNest)) return true;
+    }
+    return false;
+  }
+
+  bool _stmtDiverges(Stmt stmt, {required int loopNest}) {
+    switch (stmt) {
+      case ReturnStmt():
+        return true;
+      case BreakStmt() || ContinueStmt():
+        return loopNest == 0;
+      case BlockStmt(:final block):
+        return _stmtsDiverge(block.stmts, loopNest: loopNest);
+      case IfStmt(:final thenBlock, :final elseBranch):
+        if (elseBranch == null) return false;
+        return _stmtsDiverge(thenBlock.stmts, loopNest: loopNest) &&
+            _stmtDiverges(elseBranch, loopNest: loopNest);
+      case MatchStmt(:final subject, :final arms):
+        if (!_matchCoversAll(
+          subject.resolvedType,
+          arms.map((a) => a.pattern).toList(),
+          arms.map((a) => a.when).toList(),
+        )) {
+          return false;
+        }
+        return arms.every(
+          (arm) => _stmtsDiverge(arm.body.stmts, loopNest: loopNest),
+        );
+      case WhileStmt(:final cond, :final body):
+        // `while true { return }` does not fall through. `while true {
+        // break }` does: `break` leaves the inner loop.
+        if (!_condIsAlwaysTrue(cond)) return false;
+        return _stmtsDiverge(body.stmts, loopNest: loopNest + 1);
+      case ForCStmt(:final cond, :final body):
+        if (cond != null) return false;
+        return _stmtsDiverge(body.stmts, loopNest: loopNest + 1);
+      default:
+        return false;
+    }
+  }
+
+  bool _condIsAlwaysTrue(Expr cond) {
+    final node = _unwrapGroups(cond);
+    return node is BoolLit && node.value;
+  }
+
   /// Infers without context; may return an untyped type.
   KlinType _inferExpr(Expr expr) {
     final type = switch (expr) {
@@ -3802,6 +3890,17 @@ final class Checker {
           if (name == 'len' && objectType is SliceType) {
             return const PrimType(PrimKind.i32);
           }
+          // `s.len` is `strlen`, every time, as `i32` (D22). Not a field.
+          if (name == 'len' && objectType is StrType) {
+            return const PrimType(PrimKind.i32);
+          }
+          if (objectType is StrType) {
+            throw CheckError(
+              '`str` has no field `$name` (`.len` is the byte length; '
+              '`cstr_u8` builds a read-only `[]u8`)',
+              pos,
+            );
+          }
           if (objectType is! StructType) {
             throw CheckError(
                 'field access requires a struct, got `${objectType.displayName}`',
@@ -3844,8 +3943,11 @@ final class Checker {
           return switch (objectType) {
             ArrayType(:final elem) => elem,
             SliceType(:final elem) => elem,
+            // `s[i]` is one byte. No bounds check. The byte is read-only.
+            StrType() => const PrimType(PrimKind.u8),
             _ => throw CheckError(
-                'indexing requires an array or slice, got `${objectType.displayName}`',
+                'indexing requires an array, slice, or `str`, '
+                'got `${objectType.displayName}`',
                 pos,
               ),
           };
@@ -3876,6 +3978,11 @@ final class Checker {
             elem = src.elem;
           } else if (src is SliceType) {
             elem = src.elem;
+          } else if (src is StrType) {
+            throw CheckError(
+              '`str` has no subslice; `cstr_u8(s)` is a read-only `[]u8`',
+              pos,
+            );
           } else {
             throw CheckError(
               'a slice range requires an array or slice, got `${src.displayName}`',
@@ -4139,20 +4246,37 @@ final class Checker {
             for (final stmt in fallback.stmts) {
               _checkStmt(stmt);
             }
-            final fallbackType = _inferExpr(fallback.value);
             final ok = resultType.ok;
+            final fallbackValue = fallback.value;
+            // `or { return }` / `or { break }` produces no value. The
+            // expression type is the ok type; `return` was checked
+            // against the enclosing function.
+            if (fallbackValue == null) {
+              if (!_orBlockDiverges(fallback.stmts)) {
+                throw CheckError(
+                  '`or` block must end with a value, or diverge with '
+                  '`return`, `break`, or `continue`',
+                  fallback.pos,
+                );
+              }
+              if (!_typeIsOpen(ok)) {
+                _materialize(result, ResultType(ok));
+              }
+              return ok;
+            }
+            final fallbackType = _inferExpr(fallbackValue);
             // An untyped success arm adopts the fallback, or stays open
             // so `let x: u8 = match … or { 4 }` folds in `u8`.
             final KlinType unified;
             if (_typeIsOpen(ok) || _typeIsOpen(fallbackType)) {
-              unified = _unifyMatch(ok, fallbackType, fallback.value.pos);
+              unified = _unifyMatch(ok, fallbackType, fallbackValue.pos);
             } else {
-              _expectAssignable(ok, fallbackType, fallback.value.pos);
+              _expectAssignable(ok, fallbackType, fallbackValue.pos);
               unified = ok;
             }
             if (!_typeIsOpen(unified)) {
               _materialize(result, ResultType(unified));
-              _materialize(fallback.value, unified);
+              _materialize(fallbackValue, unified);
             }
             return unified;
           } finally {
@@ -4268,7 +4392,12 @@ final class Checker {
       }
       return _isMutablePlace(place.object);
     }
-    if (place is IndexExpr) return _isMutablePlace(place.object);
+    if (place is IndexExpr) {
+      // `s[i]` on a `str` reads a byte. The variable may be `mut`
+      // (the pointer can be reseated); the byte cannot.
+      if (place.object.resolvedType is StrType) return false;
+      return _isMutablePlace(place.object);
+    }
     // `xs[:][i]` — the slice is a view of the array place. `&` follows
     // that place: `let mut xs` yields `*mut`, an immutable `xs` yields `*`.
     // The view itself (`&xs[:]`) is not a place.
@@ -4732,9 +4861,12 @@ final class Checker {
         if (resultType is ResultType && _typeIsOpen(resultType.ok)) {
           _materialize(result, ResultType(type), checkRange: checkRange);
         }
-        final fallbackType = fallback.value.resolvedType;
-        if (fallbackType == null || _typeIsOpen(fallbackType)) {
-          _materialize(fallback.value, type, checkRange: checkRange);
+        final fallbackValue = fallback.value;
+        if (fallbackValue != null) {
+          final fallbackType = fallbackValue.resolvedType;
+          if (fallbackType == null || _typeIsOpen(fallbackType)) {
+            _materialize(fallbackValue, type, checkRange: checkRange);
+          }
         }
       case PropagateExpr() || AwaitExpr():
         break;

@@ -331,7 +331,7 @@ final class _CollectNav {
         for (final s in fallback.stmts) {
           walkStmt(s);
         }
-        walkExpr(fallback.value);
+        if (fallback.value != null) walkExpr(fallback.value!);
       case MatchExpr(:final subject, :final arms):
         walkExpr(subject);
         for (final arm in arms) {
@@ -519,7 +519,7 @@ final class _NavWalker {
         for (final s in fallback.stmts) {
           walkStmt(s);
         }
-        walkExpr(fallback.value);
+        if (fallback.value != null) walkExpr(fallback.value!);
       case MatchExpr(:final subject, :final arms):
         walkExpr(subject);
         for (final arm in arms) {

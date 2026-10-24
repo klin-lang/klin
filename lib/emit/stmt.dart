@@ -47,17 +47,20 @@ void _emitValueAssignment(
         state: state,
       );
     }
-    _emitValueAssignment(
-      buf,
-      target: target,
-      targetType: targetType,
-      value: fallback.value,
-      sourcePath: sourcePath,
-      indent: indent + 1,
-      bareReturnAsZero: bareReturnAsZero,
-      returnCType: returnCType,
-      state: state,
-    );
+    final fallbackValue = fallback.value;
+    if (fallbackValue != null) {
+      _emitValueAssignment(
+        buf,
+        target: target,
+        targetType: targetType,
+        value: fallbackValue,
+        sourcePath: sourcePath,
+        indent: indent + 1,
+        bareReturnAsZero: bareReturnAsZero,
+        returnCType: returnCType,
+        state: state,
+      );
+    }
     buf.writeln('$pad} else {');
     buf.writeln('${innerPad}$target = $temp.u.ok;');
     buf.writeln('$pad}');
@@ -437,6 +440,9 @@ void _emitStmt(
           '$pad(void)${resolvedCallee ?? 'eventloop_spawn'}($ex, '
           '${asyncSpawnFn}_poll_erased, ${asyncSpawnFn}_init_erased);',
         );
+      } else if (resolvedCallee == '__klin_cstr_u8') {
+        final expr = _emitCstrU8(args[0], ctx);
+        buf.writeln('$pad(void)$expr;');
       } else if (resolvedCallee == '__klin_fmt_write' &&
           args.length == 2 &&
           args[1] is InterpolatedStringExpr) {

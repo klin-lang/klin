@@ -115,7 +115,9 @@ void _collectBoundNamesExpr(Expr expr, Set<String> used) {
       for (final stmt in fallback.stmts) {
         _collectBoundNamesStmt(stmt, used);
       }
-      _collectBoundNamesExpr(fallback.value, used);
+      if (fallback.value != null) {
+        _collectBoundNamesExpr(fallback.value!, used);
+      }
     case BinaryExpr(:final left, :final right):
       _collectBoundNamesExpr(left, used);
       _collectBoundNamesExpr(right, used);
@@ -836,7 +838,9 @@ void _collectResultTypesFromExpr(Expr expr, Set<ResultType> output) {
       for (final s in fallback.stmts) {
         _collectResultTypesFromStmt(s, output);
       }
-      _collectResultTypesFromExpr(fallback.value, output);
+      if (fallback.value != null) {
+        _collectResultTypesFromExpr(fallback.value!, output);
+      }
     case PropagateExpr(:final result):
       _collectResultTypesFromExpr(result, output);
     case ErrorExpr(:final code):

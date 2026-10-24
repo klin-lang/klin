@@ -1,0 +1,33 @@
+// Two expansions of one $fn, each with its own helper (D20).
+// Not valid Klin until expand — do not klin fmt this file.
+// Run: dart run bin/klin.dart run examples/macro_helper.kl
+
+$fn vec(name: name, T: type) {
+    struct $name {
+        x: $T
+    }
+
+    fn helper(v: $T): $T {
+        return v
+    }
+
+    fn id_$T(v: $T): $T {
+        return helper(v)
+    }
+
+    fn (p: $name) get(): $T {
+        return helper(p.x)
+    }
+}
+
+$vec(Ai, i32)
+$vec(Bu, u8)
+
+fn main() {
+    let a = Ai{ x: 4 }
+    let b = Bu{ x: 9 }
+    printf("%d\n", a.get())
+    printf("%d\n", b.get())
+    printf("%d\n", id_i32(6))
+    printf("%d\n", id_u8(8))
+}

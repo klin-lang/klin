@@ -3065,7 +3065,7 @@ fn main() {
   let p: *mut [2]i32 = &xs
   let n = p[0]
 }
-''', 'indexing requires an array or slice');
+''', 'indexing requires an array, slice, or `str`');
   });
 
   test('error: pointer to an array of the same struct', () {

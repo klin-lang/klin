@@ -1,0 +1,21 @@
+fn main(args: []str) {
+    let s = "Az"
+    printf("%d\n", s.len)
+    printf("%d\n", s[0])
+    printf("%d\n", s[1])
+    let cut = "ab\0c"
+    printf("%d\n", cut.len)
+    let view = cstr_u8(s)
+    printf("%d\n", cast(i32, view.len))
+    printf("%d\n", view[0])
+    let part = view[1:2]
+    printf("%d\n", part[0])
+    if args.len > 1 {
+        let a = args[1]
+        printf("%d\n", a.len)
+        printf("%d\n", a[0])
+        let bytes = cstr_u8(a)
+        printf("%d\n", cast(i32, bytes.len))
+        printf("%d\n", bytes[1])
+    }
+}

@@ -157,6 +157,10 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         if (name == 'len' && objectType is ArrayType) {
           return objectType.len.toString();
         }
+        // Each `.len` on `str` is a fresh `strlen`, cast to `i32`.
+        if (name == 'len' && objectType is StrType) {
+          return '(int32_t)strlen(${_emitExpr(object, ctx)})';
+        }
         return _exprIsPtrReceiver(object)
             ? '${_emitExpr(object, ctx)}->$name'
             : '${_emitExpr(object, ctx)}.$name';
@@ -198,7 +202,9 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
       :final resolvedCallee,
       :final asyncSpawnFn,
     ) =>
-      asyncSpawnFn != null
+      resolvedCallee == '__klin_cstr_u8'
+          ? _emitCstrU8(args[0], ctx)
+          : asyncSpawnFn != null
           ? '${resolvedCallee ?? 'eventloop_spawn'}(${_emitExpr(args[0], ctx)}, '
               '${asyncSpawnFn}_poll_erased, ${asyncSpawnFn}_init_erased)'
           : resolvedCallee == '__klin_fmt_write' &&
@@ -223,6 +229,10 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
               op, operand, resolvedType, (inner) => _emitExpr(inner, ctx)),
     IndexExpr(:final object, :final index) => () {
         final indexC = _emitExpr(index, ctx);
+        if (object.resolvedType is StrType) {
+          // `char` may be signed. The Klin type is `u8`.
+          return '((uint8_t *)(${_emitExpr(object, ctx)}))[$indexC]';
+        }
         if (object.resolvedType is SliceType) {
           return '${_emitExpr(object, ctx)}.ptr[$indexC]';
         }
@@ -299,6 +309,20 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         return out;
       }(),
   };
+}
+
+/// `cstr_u8(s)` → a `[]u8` header. The argument is evaluated once.
+/// `strlen` is the only walk; the pointer is the same `const char *`.
+String _emitCstrU8(Expr arg, _ExprCtx ctx) {
+  final pad = '    ' * ctx.indent;
+  final src = ctx.state.nextValueTemp();
+  ctx.buf.writeln('$pad const char *$src = ${_emitExpr(arg, ctx)};');
+  final out = ctx.state.nextValueTemp();
+  ctx.buf.writeln(
+    '$pad${_sliceCName(const PrimType(PrimKind.u8))} $out = '
+    '(${_sliceCName(const PrimType(PrimKind.u8))}){ (uint8_t *)$src, strlen($src) };',
+  );
+  return out;
 }
 
 /// An array literal in expression position is a compound literal

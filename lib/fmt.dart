@@ -683,8 +683,14 @@ String _formatMatchExpr(Expr subject, List<MatchExprArm> arms, int indent) {
 String _formatOrBlock(OrBlock block, int indent) {
   final pad = indentUnit * indent;
   final inner = indentUnit * (indent + 1);
+  final value = block.value;
   if (block.stmts.isEmpty) {
-    return '{ ${_expr(block.value, indent)} }';
+    if (value == null) return '{}';
+    return '{ ${_expr(value, indent)} }';
+  }
+  if (value == null && block.stmts.length == 1) {
+    final jump = _formatOrJump(block.stmts.single, indent);
+    if (jump != null) return '{ $jump }';
   }
   final buf = StringBuffer('{\n');
   final innerFmt = _FmtOut(const [], const []);
@@ -692,10 +698,20 @@ String _formatOrBlock(OrBlock block, int indent) {
     _writeStmt(innerFmt, stmt, indent + 1);
   }
   buf.write(innerFmt.buf.toString());
-  buf.writeln('$inner${_expr(block.value, indent + 1)}');
+  if (value != null) {
+    buf.writeln('$inner${_expr(value, indent + 1)}');
+  }
   buf.write('$pad}');
   return buf.toString();
 }
+
+String? _formatOrJump(Stmt stmt, int indent) => switch (stmt) {
+      ReturnStmt(:final value) =>
+        value == null ? 'return' : 'return ${_expr(value, indent)}',
+      BreakStmt() => 'break',
+      ContinueStmt() => 'continue',
+      _ => null,
+    };
 
 String _argList(List<Expr> args, [int indent = 0]) =>
     args.map((e) => _expr(e, indent)).join(', ');

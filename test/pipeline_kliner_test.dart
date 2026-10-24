@@ -804,4 +804,92 @@ int main(void) {
     ]);
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
+
+  test('two macro expansions each get a private helper', () async {
+    final result = await compileAndRun('test/macro_helper.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/macro_helper.out').readAsString());
+
+    final program = loadProject('test/macro_helper.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/macro_helper.kl');
+    expect(c, contains('helper__vec_macro_helper_1'));
+    expect(c, contains('helper__vec_macro_helper_2'));
+    expect(c, contains('id_i32'));
+    expect(c, contains('id_u8'));
+    expect(c, isNot(contains('helper__vec_macro_helper_1__')));
+    final cPath = '${tmp.path}/macro_helper_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/macro_helper_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
+  test('diverging or blocks run under pedantic C', () async {
+    final result = await compileAndRun('test/or_diverge.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/or_diverge.out').readAsString());
+
+    final program = loadProject('test/or_diverge.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/or_diverge.kl');
+    expect(c, contains('= err;'));
+    expect(c, contains('continue;'));
+    expect(c, contains('break;'));
+    expect(c, contains('while (true)'));
+    expect(c, contains('for (; ; )'));
+    final cPath = '${tmp.path}/or_diverge_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/or_diverge_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
+  test('str bytes are readable and stay read-only in C', () async {
+    final result = await compileAndRun('test/str_bytes.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/str_bytes.out').readAsString());
+
+    final again = await Process.run('${tmp.path}/str_bytes', ['hi']);
+    expect(again.exitCode, 0, reason: again.stderr.toString());
+    expect(again.stdout, '${await File('test/str_bytes.out').readAsString()}2\n104\n2\n105\n');
+
+    final program = loadProject('test/str_bytes.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/str_bytes.kl');
+    expect(c, contains('#include <string.h>'));
+    expect(c, contains('(int32_t)strlen('));
+    expect(c, contains('(uint8_t *)'));
+    expect(c, contains('strlen(klin_val_'));
+    // Entering main still does not measure every argument.
+    expect(
+      c,
+      contains(
+        'klin_slice_str args = { (const char **)klin_argv, (size_t)klin_argc };',
+      ),
+    );
+    final cPath = '${tmp.path}/str_bytes_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/str_bytes_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
 }

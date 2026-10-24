@@ -147,7 +147,7 @@ bool _exprCallsStdio(Expr expr) => switch (expr) {
       AwaitExpr(:final operand) => _exprCallsStdio(operand),
       OrExpr(:final result, :final fallback) => _exprCallsStdio(result) ||
           fallback.stmts.any(_stmtCallsStdio) ||
-          _exprCallsStdio(fallback.value),
+          (fallback.value != null && _exprCallsStdio(fallback.value!)),
       StructLitExpr(:final namedFields, :final positionalFields) =>
         namedFields?.values.any(_exprCallsStdio) ??
             positionalFields!.any(_exprCallsStdio),
@@ -168,6 +168,99 @@ bool _programNeedsTrimFrac(Program program) {
   }
   return false;
 }
+
+/// `s.len` and `cstr_u8` call `strlen`. Indexing a `str` does not.
+bool _programNeedsStrlen(Program program) {
+  for (final func in program.funcs) {
+    final body = func.body;
+    if (body != null && body.stmts.any(_stmtNeedsStrlen)) return true;
+  }
+  for (final decl in program.globals) {
+    final init = decl.init;
+    if (init != null && _exprNeedsStrlen(init)) return true;
+  }
+  return false;
+}
+
+bool _stmtNeedsStrlen(Stmt stmt) => switch (stmt) {
+      CallStmt(:final args, :final resolvedCallee) =>
+        resolvedCallee == '__klin_cstr_u8' || args.any(_exprNeedsStrlen),
+      MethodCallStmt(:final call) => _exprNeedsStrlen(call),
+      AwaitStmt(:final expr) => _exprNeedsStrlen(expr),
+      LetStmt(:final init) => init != null && _exprNeedsStrlen(init),
+      LetDestructureStmt(:final source) => _exprNeedsStrlen(source),
+      LetArrayDestructureStmt(:final source) => _exprNeedsStrlen(source),
+      AssignStmt(:final target, :final value) =>
+        _exprNeedsStrlen(target) || _exprNeedsStrlen(value),
+      MultiAssignStmt(:final targets, :final values) =>
+        targets.any(_exprNeedsStrlen) || values.any(_exprNeedsStrlen),
+      StructAssignStmt(:final targets, :final source) =>
+        _exprNeedsStrlen(source) || targets.any(_exprNeedsStrlen),
+      IfStmt(:final cond, :final thenBlock, :final elseBranch) =>
+        _exprNeedsStrlen(cond) ||
+            thenBlock.stmts.any(_stmtNeedsStrlen) ||
+            (elseBranch != null && _stmtNeedsStrlen(elseBranch)),
+      WhileStmt(:final cond, :final body) =>
+        _exprNeedsStrlen(cond) || body.stmts.any(_stmtNeedsStrlen),
+      ForRangeStmt(:final start, :final endExclusive, :final body) =>
+        _exprNeedsStrlen(start) ||
+            _exprNeedsStrlen(endExclusive) ||
+            body.stmts.any(_stmtNeedsStrlen),
+      ForCStmt(:final initExpr, :final cond, :final postExpr, :final body) =>
+        (initExpr != null && _exprNeedsStrlen(initExpr)) ||
+            (cond != null && _exprNeedsStrlen(cond)) ||
+            (postExpr != null && _exprNeedsStrlen(postExpr)) ||
+            body.stmts.any(_stmtNeedsStrlen),
+      ReturnStmt(:final value) => value != null && _exprNeedsStrlen(value),
+      DeferStmt(:final body) => _stmtNeedsStrlen(body),
+      BlockStmt(:final block) => block.stmts.any(_stmtNeedsStrlen),
+      MatchStmt(:final subject, :final arms) => _exprNeedsStrlen(subject) ||
+          arms.any((arm) =>
+              (arm.when != null && _exprNeedsStrlen(arm.when!)) ||
+              arm.body.stmts.any(_stmtNeedsStrlen)),
+      _ => false,
+    };
+
+bool _exprNeedsStrlen(Expr expr) => switch (expr) {
+      CallExpr(:final args, :final resolvedCallee) =>
+        resolvedCallee == '__klin_cstr_u8' || args.any(_exprNeedsStrlen),
+      MethodCallExpr(:final receiver, :final args) =>
+        _exprNeedsStrlen(receiver) || args.any(_exprNeedsStrlen),
+      FieldExpr(:final object, :final name) =>
+        (name == 'len' && object.resolvedType is StrType) ||
+            _exprNeedsStrlen(object),
+      IndexExpr(:final object, :final index) =>
+        _exprNeedsStrlen(object) || _exprNeedsStrlen(index),
+      SliceFromExpr(:final array, :final start, :final end) =>
+        _exprNeedsStrlen(array) ||
+            (start != null && _exprNeedsStrlen(start)) ||
+            (end != null && _exprNeedsStrlen(end)),
+      ArrayLitExpr(:final elements) => elements.any(_exprNeedsStrlen),
+      CastExpr(:final expr) => _exprNeedsStrlen(expr),
+      BinaryExpr(:final left, :final right) =>
+        _exprNeedsStrlen(left) || _exprNeedsStrlen(right),
+      UnaryExpr(:final operand) => _exprNeedsStrlen(operand),
+      GroupExpr(:final inner) => _exprNeedsStrlen(inner),
+      ErrorExpr(:final code) => _exprNeedsStrlen(code),
+      PropagateExpr(:final result) => _exprNeedsStrlen(result),
+      AwaitExpr(:final operand) => _exprNeedsStrlen(operand),
+      OrExpr(:final result, :final fallback) =>
+        _exprNeedsStrlen(result) ||
+            fallback.stmts.any(_stmtNeedsStrlen) ||
+            (fallback.value != null && _exprNeedsStrlen(fallback.value!)),
+      StructLitExpr(:final namedFields, :final positionalFields) =>
+        namedFields?.values.any(_exprNeedsStrlen) ??
+            positionalFields!.any(_exprNeedsStrlen),
+      MatchExpr(:final subject, :final arms) => _exprNeedsStrlen(subject) ||
+          arms.any((arm) =>
+              (arm.when != null && _exprNeedsStrlen(arm.when!)) ||
+              _exprNeedsStrlen(arm.body)),
+      PickExpr(:final cond, :final thenExpr, :final elseExpr) =>
+        _exprNeedsStrlen(cond) ||
+            _exprNeedsStrlen(thenExpr) ||
+            _exprNeedsStrlen(elseExpr),
+      _ => false,
+    };
 
 bool _programNeedsMemHost(Program program) {
   for (final func in program.funcs) {

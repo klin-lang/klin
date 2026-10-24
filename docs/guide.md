@@ -44,7 +44,10 @@ fn main() {
 
 - Integers: `i8`…`i64`, `u8`…`u64`, alias `int` → `i32`
 - Floats: `f32` / `f64`, alias `float` → `f64`
-- `bool`, `str` (C string pointer — no `==` on content; use `import str`)
+- `bool`, `str` (C string pointer — no `==` on content; use `import str`).
+  `s.len` is `strlen` (`i32`, every time), `s[i]` is a read-only `u8`,
+  and `cstr_u8(s)` is a read-only `[]u8` (D22). `b"..."` stays the
+  counted buffer
 - Literals: `0xFF`, `0b1010`, `0o755`, `1_000`, `1.5e-3`, `'A'`, `b"fn"` (`[]u8`, [syntax.md](syntax.md))
 - No implicit numeric truthiness: `if` wants `bool`
 - No implicit widen/narrow between concrete numeric types — use
@@ -162,7 +165,9 @@ fn main() {
 
 - `!T` is a tagged struct in C (flag + value)
 - `expr!` propagates: `if (r.is_err) return r;`
-- `or { … }` handles locally; `err` is in scope
+- `or { … }` handles locally; `err` is in scope. The block may end
+  with a value, or leave with `return` / `break` / `continue` instead
+  of a value (`let n = level(x) or { return err }`, D21)
 - Keyword `or` is **error-handling**, not logical OR (`||`)
 - `error(n)` builds a `!T` value (function return **or** `match` arm)
 - Ignoring a `!T` is a compile error
