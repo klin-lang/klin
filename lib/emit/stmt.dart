@@ -625,7 +625,12 @@ void _emitStmt(
                 : returnCType.startsWith('klin_res_')
                     ? '($returnCType){ .is_err = false, .u.ok = ${_emitExpr(value, ctx)} }'
                     : _emitExpr(value, ctx);
-        final tempDecl = valueType != null
+        // A `!T` return stores the result struct, even when the value is
+        // the ok payload (`return x` inside `fn(): !i32`). Only a
+        // pointer-to-array return needs a declarator instead of a prefix.
+        final tempDecl = valueType != null &&
+                _typeNeedsPtrArrayDecl(valueType) &&
+                !returnCType.startsWith('klin_res_')
             ? _cValueDecl(valueType, temp)
             : '$returnCType $temp';
         buf.writeln('$pad$tempDecl = $returnValue;');
