@@ -118,14 +118,19 @@ bool _foldKeepsSourceSpelling(Expr expr) {
   return false;
 }
 
-String _emitExprRaw(Expr expr, _ExprCtx ctx) {
+/// True when emission prints the folded decimal instead of the operator.
+bool _exprEmittedAsFoldedInt(Expr expr) {
   final folded = expr.foldedInt;
-  final foldedType = expr.resolvedType;
-  if (folded != null &&
-      foldedType is PrimType &&
-      foldedType.kind.isInteger &&
-      !_foldKeepsSourceSpelling(expr)) {
-    return _cConstInt(folded, foldedType.kind);
+  final type = expr.resolvedType;
+  return folded != null &&
+      type is PrimType &&
+      type.kind.isInteger &&
+      !_foldKeepsSourceSpelling(expr);
+}
+
+String _emitExprRaw(Expr expr, _ExprCtx ctx) {
+  if (_exprEmittedAsFoldedInt(expr)) {
+    return _cConstInt(expr.foldedInt!, (expr.resolvedType! as PrimType).kind);
   }
   return switch (expr) {
     IntLit lit => _emitIntLit(lit),
@@ -246,8 +251,13 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         if (target == null) throw StateError('emit: cast without type');
         return _emitCast(target, expr, (inner) => _emitExpr(inner, ctx));
       }(),
-    BinaryExpr(:final left, :final op, :final right) =>
-      '(${_emitExpr(left, ctx)} $op ${_emitExpr(right, ctx)})',
+    BinaryExpr(:final left, :final op, :final right) => _emitIntBinary(
+        left,
+        op,
+        right,
+        expr.resolvedType,
+        (side) => _emitExpr(side, ctx),
+      ),
     PickExpr(:final cond, :final thenExpr, :final elseExpr) => expr.resolvedType
             is ArrayType
         ? '(${_emitExpr(cond, ctx)} ? ${_emitArrayValue(thenExpr, ctx)} : ${_emitArrayValue(elseExpr, ctx)})'
@@ -498,7 +508,13 @@ String _emitUnary(
       }
     }
   }
-  return '$op(${emitOperand(operand)})';
+  final inner = '$op(${emitOperand(operand)})';
+  // `~` / `-` on a narrow integer promote to `int`. Cast back so the
+  // result has the operand's width (D26).
+  if ((op == '~' || op == '-') && _isNarrowInt(type)) {
+    return '(${(type as PrimType).kind.cType})($inner)';
+  }
+  return inner;
 }
 
 BigInt? _intLitMagnitude(String lexeme) {
@@ -817,6 +833,330 @@ int _utf8ByteLength(String s) {
     }
   }
   return n;
+}
+
+const _narrowWrapOps = {'+', '-', '*', '/', '%', '&', '|', '^'};
+
+bool _isNarrowInt(KlinType? type) =>
+    type is PrimType &&
+    switch (type.kind) {
+      PrimKind.i8 || PrimKind.u8 || PrimKind.i16 || PrimKind.u16 => true,
+      _ => false,
+    };
+
+/// Arithmetic and bitwise ops. A narrow integer is cast back to its
+/// width so a later comparison does not see the promoted `int` (D26).
+/// A shift is a helper: the count is defined for every integer width.
+String _emitIntBinary(
+  Expr left,
+  String op,
+  Expr right,
+  KlinType? type,
+  String Function(Expr) emitSide,
+) {
+  final l = emitSide(left);
+  final r = emitSide(right);
+  if ((op == '<<' || op == '>>') &&
+      type is PrimType &&
+      type.kind.isInteger) {
+    return '${_shiftHelperName(type.kind, op)}($l, (uint64_t)($r))';
+  }
+  if (_isNarrowInt(type) && _narrowWrapOps.contains(op)) {
+    return '(${(type as PrimType).kind.cType})($l $op $r)';
+  }
+  return '($l $op $r)';
+}
+
+/// `lhs op= rhs`, or `lhs = klin_sh*_*(lhs, rhs)` for a shift.
+String _compoundAssign(String lhs, String op, String rhs, KlinType? type) {
+  if ((op == '<<' || op == '>>') &&
+      type is PrimType &&
+      type.kind.isInteger) {
+    return '$lhs = ${_shiftHelperName(type.kind, op)}($lhs, (uint64_t)($rhs))';
+  }
+  return '$lhs $op= $rhs';
+}
+
+final class _ShiftOp {
+  final PrimKind kind;
+  final String op;
+
+  const _ShiftOp(this.kind, this.op);
+
+  @override
+  bool operator ==(Object other) =>
+      other is _ShiftOp && other.kind == kind && other.op == op;
+
+  @override
+  int get hashCode => Object.hash(kind, op);
+}
+
+final Set<_ShiftOp> _shiftOps = {};
+
+String _shiftHelperName(PrimKind kind, String op) {
+  final which = op == '<<' ? 'shl' : 'shr';
+  return 'klin_${which}_${kind.klinName}';
+}
+
+void _collectShiftOps(Program program) {
+  for (final func in program.funcs) {
+    final body = func.body;
+    if (body != null) _collectShiftBlock(body);
+  }
+}
+
+void _collectShiftBlock(Block block) {
+  for (final stmt in block.stmts) {
+    _collectShiftStmt(stmt);
+  }
+}
+
+void _collectShiftStmt(Stmt stmt) {
+  switch (stmt) {
+    case AsmStmt() || BreakStmt() || ContinueStmt():
+      break;
+    case LetStmt(:final init):
+      if (init != null) _collectShiftExpr(init);
+    case LetDestructureStmt(:final source):
+      _collectShiftExpr(source);
+    case LetArrayDestructureStmt(:final source):
+      _collectShiftExpr(source);
+    case AssignStmt(:final target, :final value, :final compoundOp):
+      if ((compoundOp == '<<' || compoundOp == '>>') &&
+          target.resolvedType is PrimType &&
+          (target.resolvedType! as PrimType).kind.isInteger) {
+        _shiftOps.add(
+          _ShiftOp((target.resolvedType! as PrimType).kind, compoundOp!),
+        );
+      }
+      _collectShiftExpr(target);
+      _collectShiftExpr(value);
+    case MultiAssignStmt(:final targets, :final values):
+      for (final target in targets) {
+        _collectShiftExpr(target);
+      }
+      for (final value in values) {
+        _collectShiftExpr(value);
+      }
+    case StructAssignStmt(:final targets, :final source):
+      _collectShiftExpr(source);
+      for (final target in targets) {
+        _collectShiftExpr(target);
+      }
+    case CallStmt(:final args):
+      for (final arg in args) {
+        _collectShiftExpr(arg);
+      }
+    case MethodCallStmt(:final call):
+      _collectShiftExpr(call);
+    case AwaitStmt(:final expr):
+      _collectShiftExpr(expr);
+    case PropagateStmt(:final expr):
+      _collectShiftExpr(expr);
+    case IfStmt(:final cond, :final thenBlock, :final elseBranch):
+      _collectShiftExpr(cond);
+      _collectShiftBlock(thenBlock);
+      if (elseBranch != null) _collectShiftStmt(elseBranch);
+    case WhileStmt(:final cond, :final body):
+      _collectShiftExpr(cond);
+      _collectShiftBlock(body);
+    case ForRangeStmt(:final start, :final endExclusive, :final body):
+      _collectShiftExpr(start);
+      _collectShiftExpr(endExclusive);
+      _collectShiftBlock(body);
+    case ForCStmt(:final initExpr, :final cond, :final postExpr, :final body):
+      if (initExpr != null) _collectShiftExpr(initExpr);
+      if (cond != null) _collectShiftExpr(cond);
+      if (postExpr != null) _collectShiftExpr(postExpr);
+      _collectShiftBlock(body);
+    case ReturnStmt(:final value):
+      if (value != null) _collectShiftExpr(value);
+    case DeferStmt(:final body):
+      _collectShiftStmt(body);
+    case BlockStmt(:final block):
+      _collectShiftBlock(block);
+    case MatchStmt(:final subject, :final arms):
+      _collectShiftExpr(subject);
+      for (final arm in arms) {
+        _collectShiftPattern(arm.pattern);
+        if (arm.when != null) _collectShiftExpr(arm.when!);
+        _collectShiftBlock(arm.body);
+      }
+  }
+}
+
+void _collectShiftExpr(Expr expr) {
+  if (_exprEmittedAsFoldedInt(expr)) return;
+  switch (expr) {
+    case IntLit() ||
+        FloatLit() ||
+        BoolLit() ||
+        StringLit() ||
+        ByteStringLit() ||
+        NameExpr():
+      break;
+    case InterpolatedStringExpr(:final parts):
+      for (final part in parts) {
+        if (part is InterpSlot) _collectShiftExpr(part.expr);
+      }
+    case FieldExpr(:final object):
+      _collectShiftExpr(object);
+    case MethodCallExpr(:final receiver, :final args):
+      _collectShiftExpr(receiver);
+      for (final arg in args) {
+        _collectShiftExpr(arg);
+      }
+    case StructLitExpr(:final namedFields, :final positionalFields):
+      if (namedFields != null) {
+        for (final value in namedFields.values) {
+          _collectShiftExpr(value);
+        }
+      } else {
+        for (final value in positionalFields!) {
+          _collectShiftExpr(value);
+        }
+      }
+    case CallExpr(:final args):
+      for (final arg in args) {
+        _collectShiftExpr(arg);
+      }
+    case UnaryExpr(:final operand):
+      _collectShiftExpr(operand);
+    case IndexExpr(:final object, :final index):
+      _collectShiftExpr(object);
+      _collectShiftExpr(index);
+    case SliceFromExpr(:final array, :final start, :final end):
+      _collectShiftExpr(array);
+      if (start != null) _collectShiftExpr(start);
+      if (end != null) _collectShiftExpr(end);
+    case ArrayLitExpr(:final elements):
+      for (final element in elements) {
+        _collectShiftExpr(element);
+      }
+    case CastExpr(:final expr):
+      _collectShiftExpr(expr);
+    case BinaryExpr(:final left, :final op, :final right, :final resolvedType):
+      if ((op == '<<' || op == '>>') &&
+          resolvedType is PrimType &&
+          resolvedType.kind.isInteger) {
+        _shiftOps.add(_ShiftOp(resolvedType.kind, op));
+      }
+      _collectShiftExpr(left);
+      _collectShiftExpr(right);
+    case GroupExpr(:final inner):
+      _collectShiftExpr(inner);
+    case ErrorExpr(:final code):
+      _collectShiftExpr(code);
+    case PropagateExpr(:final result):
+      _collectShiftExpr(result);
+    case AwaitExpr(:final operand):
+      _collectShiftExpr(operand);
+    case OrExpr(:final result, :final fallback):
+      _collectShiftExpr(result);
+      for (final stmt in fallback.stmts) {
+        _collectShiftStmt(stmt);
+      }
+      if (fallback.value != null) _collectShiftExpr(fallback.value!);
+    case MatchExpr(:final subject, :final arms):
+      _collectShiftExpr(subject);
+      for (final arm in arms) {
+        _collectShiftPattern(arm.pattern);
+        if (arm.when != null) _collectShiftExpr(arm.when!);
+        _collectShiftExpr(arm.body);
+      }
+    case PickExpr(:final cond, :final thenExpr, :final elseExpr):
+      _collectShiftExpr(cond);
+      _collectShiftExpr(thenExpr);
+      _collectShiftExpr(elseExpr);
+  }
+}
+
+void _collectShiftPattern(MatchPattern pattern) {
+  switch (pattern) {
+    case LitPattern(:final values):
+      for (final value in values) {
+        _collectShiftExpr(value);
+      }
+    case RangePattern(:final start, :final endInclusive):
+      _collectShiftExpr(start);
+      _collectShiftExpr(endInclusive);
+    case RelPattern(:final rhs):
+      _collectShiftExpr(rhs);
+    case WildPattern() || ElsePattern():
+      break;
+  }
+}
+
+void _emitShiftHelpers(StringBuffer buf) {
+  if (_shiftOps.isEmpty) return;
+  final ops = _shiftOps.toList()
+    ..sort(
+      (a, b) => _shiftHelperName(a.kind, a.op)
+          .compareTo(_shiftHelperName(b.kind, b.op)),
+    );
+  buf.writeln(
+    '/* Defined shifts (D26). A count outside 0 .. width-1 yields 0,',
+  );
+  buf.writeln(
+    '   except arithmetic >> of a negative value, which yields -1. */',
+  );
+  for (final op in ops) {
+    buf.writeln(_shiftHelperText(op));
+    buf.writeln();
+  }
+}
+
+String _shiftWidthC(PrimKind kind) => switch (kind) {
+      PrimKind.i8 || PrimKind.u8 => '8u',
+      PrimKind.i16 || PrimKind.u16 => '16u',
+      PrimKind.i32 || PrimKind.u32 => '32u',
+      PrimKind.i64 || PrimKind.u64 => '64u',
+      PrimKind.usize => '(uint64_t)(sizeof(size_t) * 8)',
+      PrimKind.isize => '(uint64_t)(sizeof(ptrdiff_t) * 8)',
+      _ => throw StateError('emit: no shift width for `${kind.klinName}`'),
+    };
+
+String _shiftUnsignedC(PrimKind kind) => switch (kind) {
+      PrimKind.i8 || PrimKind.u8 => 'uint8_t',
+      PrimKind.i16 || PrimKind.u16 => 'uint16_t',
+      PrimKind.i32 || PrimKind.u32 => 'uint32_t',
+      PrimKind.i64 || PrimKind.u64 => 'uint64_t',
+      PrimKind.isize || PrimKind.usize => 'uintptr_t',
+      _ => throw StateError('emit: no unsigned shift type for `${kind.klinName}`'),
+    };
+
+bool _shiftIsArithmetic(PrimKind kind) => switch (kind) {
+      PrimKind.i8 ||
+      PrimKind.i16 ||
+      PrimKind.i32 ||
+      PrimKind.i64 ||
+      PrimKind.isize =>
+        true,
+      _ => false,
+    };
+
+String _shiftHelperText(_ShiftOp op) {
+  final c = op.kind.cType;
+  final name = _shiftHelperName(op.kind, op.op);
+  final width = _shiftWidthC(op.kind);
+  if (op.op == '<<') {
+    final bits = _shiftUnsignedC(op.kind);
+    return '''
+static inline $c $name($c v, uint64_t n) {
+    return n >= $width ? ($c)0 : ($c)(($bits)v << n);
+}''';
+  }
+  if (_shiftIsArithmetic(op.kind)) {
+    return '''
+static inline $c $name($c v, uint64_t n) {
+    if (n >= $width) return v < 0 ? ($c)-1 : ($c)0;
+    return ($c)(v >> (int)n);
+}''';
+  }
+  return '''
+static inline $c $name($c v, uint64_t n) {
+    return n >= $width ? ($c)0 : ($c)(v >> n);
+}''';
 }
 
 String _escapeC(String s) {

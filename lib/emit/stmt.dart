@@ -237,19 +237,7 @@ void _emitStmt(
           buf.writeln('$pad(void)$cName;');
         }
       } else {
-        final zero = switch (ty) {
-          PrimType(:final kind) => kind.cZero,
-          PtrType() => 'NULL',
-          FnType() => 'NULL',
-          ArrayType() => '{0}',
-          SliceType() => '{ NULL, 0 }',
-          StructType() => '{0}',
-          EnumType() => '0',
-          StrType() => 'NULL',
-          ResultType() => '{0}',
-          _ => throw StateError('emit: missing default value for `$name`'),
-        };
-        buf.writeln('$pad${_cDecl(ty, cName)} = $zero;');
+        buf.writeln('$pad${_cDecl(ty, cName)} = ${_localZero(ty)};');
       }
 
     case LetDestructureStmt(
@@ -377,10 +365,27 @@ void _emitStmt(
     case AssignStmt(:final target, :final value, :final pos, :final compoundOp):
       _line(buf, pos.line, sourcePath);
       if (compoundOp != null) {
-        // 1:1 C compound assign — LHS evaluated once.
-        buf.writeln(
-          '$pad${_emitExpr(target, ctx)} $compoundOp= ${_emitExpr(value, ctx)};',
-        );
+        // `+=` and the rest stay C `op=` (the store wraps a narrow
+        // integer). A shift is a helper: `x <<= n` with `n >= width` is
+        // defined, and a place with a call is read once.
+        final ty = target.resolvedType;
+        final shift = compoundOp == '<<' || compoundOp == '>>';
+        if (shift &&
+            ty is PrimType &&
+            ty.kind.isInteger &&
+            !_exprIsSimplePlace(target)) {
+          final place = _emitExpr(target, ctx);
+          final ptr = state.nextValueTemp();
+          buf.writeln(
+            '$pad${_cDecl(PtrType(ty, isMut: true), ptr)} = &$place;',
+          );
+          final rhs = _emitExpr(value, ctx);
+          buf.writeln('$pad${_compoundAssign('*$ptr', compoundOp, rhs, ty)};');
+        } else {
+          final lhs = _emitExpr(target, ctx);
+          final rhs = _emitExpr(value, ctx);
+          buf.writeln('$pad${_compoundAssign(lhs, compoundOp, rhs, ty)};');
+        }
       } else if (value is OrExpr || value is PropagateExpr) {
         _emitValueAssignment(
           buf,

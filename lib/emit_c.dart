@@ -12,6 +12,9 @@ part 'emit/async.dart';
 /// Emits the AST as one readable .c file with `#line` directives.
 String emitC(Program program, String sourcePath) {
   _sliceTailElems.clear();
+  _shiftOps.clear();
+  _bindEmitStructs(program);
+  _collectShiftOps(program);
   final buf = StringBuffer();
   for (final include in _collectCIncludes(program)) {
     buf.writeln('#include $include');
@@ -20,6 +23,7 @@ String emitC(Program program, String sourcePath) {
   buf.writeln('#include <stddef.h>');
   buf.writeln('#include <stdbool.h>');
   buf.writeln();
+  _emitShiftHelpers(buf);
   _emitEnums(buf, program, sourcePath);
   _emitStructForwardDecls(buf, program.structs);
   final sliceTypes = <KlinType>{};
@@ -293,22 +297,149 @@ void _emitGlobals(StringBuffer buf, Program program, String sourcePath) {
 String _globalLinkage(GlobalDecl decl) => decl.isPub ? '' : 'static ';
 
 /// Zero-initialization. The same values a local without an initializer gets.
-String _globalZero(KlinType type) => switch (type) {
+///
+/// A `str` is `""`, never `NULL` (D27). A struct, array, or `!T` that
+/// contains a `str` lists that empty string. Anything else keeps the
+/// all-bits-zero form (`{0}`, `NULL`, `0`).
+String _globalZero(KlinType type) => _zeroInit(type, fnAsInt: true);
+
+/// A local without an initializer. A function pointer is `NULL` here;
+/// at file scope it is the integer `0` (see [_globalZero]).
+String _localZero(KlinType type) => _zeroInit(type, fnAsInt: false);
+
+final Map<String, StructDecl> _structsByKey = {};
+
+void _bindEmitStructs(Program program) {
+  _structsByKey
+    ..clear()
+    ..addEntries(
+      program.structs.map(
+        (struct) => MapEntry(_structKey(struct.moduleName, struct.name), struct),
+      ),
+    );
+}
+
+String _structKey(String module, String name) => '$module\x00$name';
+
+StructDecl _structDecl(StructType type) {
+  final decl = _structsByKey[_structKey(type.moduleName, type.name)];
+  if (decl == null) {
+    throw StateError('emit: unknown struct `${type.displayName}`');
+  }
+  return decl;
+}
+
+/// True when a value of [type] stores a `str` (a field, an element, or
+/// the ok side of `!T`). A pointer or a slice does not: its zero is a
+/// null pointer, and there is no `str` value behind it yet.
+bool _containsStr(KlinType type, [Set<StructType>? stack]) {
+  switch (type) {
+    case StrType():
+      return true;
+    case ArrayType(:final elem):
+      return _containsStr(elem, stack);
+    case ResultType(:final ok):
+      return _containsStr(ok, stack);
+    case StructType():
+      final seen = stack ?? <StructType>{};
+      if (!seen.add(type)) return false;
+      final decl = _structDecl(type);
+      for (final field in decl.fields) {
+        final fieldType = field.resolvedType;
+        if (fieldType == null) {
+          throw StateError('emit: missing type for field `${field.name}`');
+        }
+        if (_containsStr(fieldType, seen)) {
+          seen.remove(type);
+          return true;
+        }
+      }
+      seen.remove(type);
+      return false;
+    default:
+      return false;
+  }
+}
+
+String _zeroInit(KlinType type, {required bool fnAsInt}) {
+  if (type is! StrType && !_containsStr(type)) {
+    return _plainZero(type, fnAsInt: fnAsInt);
+  }
+  switch (type) {
+    case StrType():
+      return '""';
+    case ArrayType(:final elem, :final len):
+      if (len == 0) return '{ }';
+      final one = _zeroInit(elem, fnAsInt: true);
+      return '{ ${List.filled(len, one).join(', ')} }';
+    case StructType():
+      final decl = _structDecl(type);
+      final parts = [
+        for (final field in decl.fields)
+          '.${field.name} = ${_zeroInit(field.resolvedType!, fnAsInt: true)}',
+      ];
+      return '{ ${parts.join(', ')} }';
+    case ResultType(:final ok):
+      return '{ .is_err = false, .u.ok = ${_zeroInit(ok, fnAsInt: true)} }';
+    default:
+      return _plainZero(type, fnAsInt: fnAsInt);
+  }
+}
+
+String _plainZero(KlinType type, {required bool fnAsInt}) => switch (type) {
       PrimType(:final kind) => kind.cZero,
       PtrType() => 'NULL',
       // `NULL` is `void *`. ISO C does not convert that to a function
-      // pointer, and `gcc -std=c11 -pedantic-errors` rejects it. `0` is a
-      // null pointer constant of any pointer type.
-      FnType() => '0',
+      // pointer, and `gcc -std=c11 -pedantic-errors` rejects it at file
+      // scope. `0` is a null pointer constant of any pointer type.
+      // Inside an aggregate the same `0` is used so a struct that also
+      // holds a `str` stays pedantic-clean.
+      FnType() => fnAsInt ? '0' : 'NULL',
       ArrayType() => '{0}',
       SliceType() => '{ NULL, 0 }',
       StructType() => '{0}',
       EnumType() => '0',
-      StrType() => 'NULL',
+      StrType() => '""',
+      ResultType() => '{0}',
       _ => throw StateError(
-          'emit: no zero value for global `${type.displayName}`',
+          'emit: no zero value for `${type.displayName}`',
         ),
     };
+
+/// Assignment of a zero value. A C array is not assignable, so each
+/// element is stored. Used when an `async fn` local is a state field.
+void _emitStrZeroStore(
+  StringBuffer buf,
+  String pad,
+  String place,
+  KlinType type, {
+  required bool cArray,
+}) {
+  if (cArray && type is ArrayType) {
+    for (var i = 0; i < type.len; i++) {
+      _emitStrZeroStore(
+        buf,
+        pad,
+        '$place[$i]',
+        type.elem,
+        cArray: type.elem is ArrayType,
+      );
+    }
+    return;
+  }
+  buf.writeln('$pad$place = ${_zeroRhs(type)};');
+}
+
+String _zeroRhs(KlinType type) {
+  final init = _zeroInit(type, fnAsInt: true);
+  if (type is StructType || type is ResultType) {
+    return '(${_cType(type)})$init';
+  }
+  if (type is ArrayType) {
+    return '(${_cValueType(type)}){ .v = $init }';
+  }
+  return init;
+}
 
 /// Named tag so a field `next: *Node` is `struct Node *` inside the typedef.
 /// An anonymous `typedef struct { Node *next; } Node` is not valid C.

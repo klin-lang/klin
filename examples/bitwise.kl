@@ -5,8 +5,7 @@
 fn main() {
     let a: u8 = 0b1100
     let b: u8 = 0b1010
-    // `~` follows C integer promotions in a bare expression; storing into `u8`
-    // truncates to the Klin result type (0b0011 → 243 as unsigned 8-bit).
+    // `~` on `u8` wraps to 8 bits (D26): `~0b1100` is 0b11110011, 243.
     let na: u8 = ~a
     printf("and=%d or=%d xor=%d not=%d\n", a & b, a | b, a ^ b, na)
 
@@ -20,7 +19,7 @@ fn main() {
         printf("bit2 set\n")
     }
 
-    // Compound assigns emit 1:1 as C `op=` (LHS evaluated once).
+    // Compound assigns emit as C `op=`, except `<<=` / `>>=` (D26).
     let mut f: u32 = 0
     f |= 0b0001
     f |= 0b0100

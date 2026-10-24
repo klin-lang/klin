@@ -274,7 +274,7 @@ void main() {
     final c = emitC(program, 'test/array_lit.kl');
     expect(c, contains('uint8_t a[3] = { 1, 2, 3 };'));
     expect(c, contains('int32_t plain[2] = { 10, 20 };'));
-    expect(c, contains('int8_t small[1] = { -(128) };'));
+    expect(c, contains('int8_t small[1] = { (int8_t)(-(128)) };'));
     expect(c, contains('take((uint8_t[3]){ 7, 8, 9 })'));
   });
 
@@ -328,7 +328,7 @@ void main() {
     Checker().check(program);
     final c = emitC(program, 'test/const_expr.kl');
     expect(c, contains('uint8_t a = 3;'));
-    expect(c, contains('uint8_t e = ~(0);'));
+    expect(c, contains('uint8_t e = (uint8_t)(~(0));'));
     expect(c, contains('(-9223372036854775807LL - 1)'));
     expect(c, contains('18446744073709551615ULL'));
     expect(c, contains('(y + 1)'));
