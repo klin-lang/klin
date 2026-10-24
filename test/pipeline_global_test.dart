@@ -322,14 +322,9 @@ fn main() {
     expect(c, isNot(contains('st->kw')));
   });
 
-  test('error: imported immutable []u8 global cannot bind let mut', () {
+  test('imported immutable []u8 global binds let mut', () {
     final program = loadProject('test/global_ro/app.kl');
-    expect(
-      () => Checker().check(program),
-      throwsA(predicate((e) =>
-          e is CheckError &&
-          e.toString().contains('cannot bind read-only bytes'))),
-    );
+    expect(() => Checker().check(program), returnsNormally);
   });
 
   test('aggregate globals are emitted after their types, forwards first', () {

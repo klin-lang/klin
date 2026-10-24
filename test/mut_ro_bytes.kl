@@ -1,0 +1,10 @@
+fn main() {
+    let mut x = b"fn"
+    printf("%d %d\n", x.len, x[0])
+    x = b"ok!"
+    printf("%d %d\n", x.len, x[0])
+    let mut buf: [2]u8 = [1, 2]
+    x = buf[:]
+    x[0] = 9
+    printf("%d\n", buf[0])
+}

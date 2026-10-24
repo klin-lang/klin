@@ -462,30 +462,30 @@ fn main() {
   printf("%d\\n", *p)
 }
 ''');
-    expectCheck('''
+    check('''
 fn main() {
   let mut w = cstr_u8("ab")
   printf("%d\\n", w[0])
 }
-''', 'cannot bind read-only bytes');
-    expectCheck('''
+''');
+    check('''
 fn main() {
   let mut buf: [2]u8 = [1, 2]
   let mut s = buf[:]
   s = cstr_u8("ab")
 }
-''', 'cannot assign read-only bytes');
+''');
     expectCheck('''
 fn main() {
   cstr_u8("ab")[0] = 1
 }
 ''', 'cannot assign through an immutable slice');
-    expectCheck('''
+    check('''
 fn main() {
   let mut p = cstr_u8("ab")[0:1]
   printf("%d\\n", p[0])
 }
-''', 'cannot bind read-only bytes');
+''');
     expectCheck('''
 fn main() {
   let n = cstr_u8(1)

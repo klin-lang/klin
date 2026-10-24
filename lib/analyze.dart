@@ -172,15 +172,16 @@ AnalysisResult? _tryAnalyzeProject({
   } on ParseError catch (e) {
     // Open-buffer syntax errors: fall through to `_analyzeExpanded` so
     // `Parser(collectErrors: true)` can report multiple diagnostics and keep
-    // a partial AST. Project-level / foreign `ParseError`s (often no path)
-    // stay a single diagnostic — loadProject remains fail-fast.
+    // a partial AST. A project-level error (import alias, module name) is
+    // not a syntax error of that buffer, even when its path is the open
+    // file. Foreign files stay a single diagnostic — loadProject is fail-fast.
     final errPath = e.path;
     // Compare only to the absolute open path — a relative basename `path`
     // would falsely match another module's `…/same.kl` via sameDiagnosticPath.
     final inOpen = errPath != null &&
         errPath.isNotEmpty &&
         sameDiagnosticPath(errPath, abs);
-    if (inOpen) return null;
+    if (inOpen && !e.fromProject) return null;
     return AnalysisResult(
       diagnostics: [
         _mappedDiagnostic(

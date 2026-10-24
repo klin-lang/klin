@@ -1,6 +1,6 @@
 # Design decisions
 
-This is the decision log (D1–D22), not an introduction. Start with
+This is the decision log (D1–D25), not an introduction. Start with
 [00-idea.md](00-idea.md). To write Klin: [guide.md](guide.md).
 
 The first three must be made **before the first line of the parser** — they permeate
@@ -251,19 +251,25 @@ and does not allocate.
 - The bytes are read-only (C string-literal storage). The checker
   rejects a direct write (`b"fn"[0] = 1`, `KW[0] = 1` on a `[]u8`
   constant) and a write through an immutable slice (`let s = b"fn"`
-  then `s[0] = 1`, or a `[]u8` parameter). A mutable slice cannot be
-  bound to those bytes: `let mut s = b"fn"`, `let mut s = KW`,
-  `let mut w = s` when `s` already points at them, and
-  `for s := b"fn"`. A subslice is those same bytes: `let mut s =
-  b"ab"[0:1]`, `b"ab"[0:]`, `b"ab"[:1]`, `KW[0:1]`, and `s[0:1]` when
-  `s` already points at them. A mutable `[]u8` local cannot be assigned
-  them either (`let mut s = xs[:]; s = b"fn"`). `pick`, `match`, and `or`
-  count as read-only when any arm is, because the checker does not
-  know which arm runs. Copy into a `[N]u8` to modify.
+  then `s[0] = 1`). A mutable binding may hold those bytes. Header
+  mutability is not byte mutability: `let mut s = b"fn"`, `let mut s
+  = KW`, `let mut w = s` when `s` already points at them, `for s :=
+  b"fn"`, and a subslice (`let mut s = b"ab"[0:1]`, `b"ab"[0:]`,
+  `b"ab"[:1]`, `KW[0:1]`, and `s[0:1]` when `s` already points at
+  them) all compile. The header can be reseated (`s = xs[:]` of a
+  mutable buffer, then `s[0] = 1` writes that buffer). While it
+  points at read-only bytes, `s[i] = …` and `s[i] += …` are errors
+  (`` cannot assign through read-only bytes ``): the binding can be
+  reassigned; copy into a `[N]u8` to modify. `&s[i]` is `*u8`, not
+  `*mut u8`. Assignment updates the flag, so `s = b"fn"` after a
+  mutable buffer marks the bytes read-only again. `pick`, `match`,
+  and `or` count as read-only when any arm is, because the checker
+  does not know which arm runs.
   An immutable module `let kw: []u8 = b"fn"` (or `= KW`) is those same
-  bytes: `let mut w = kw` and `s = kw` are errors. A module
-  `let mut s: []u8 = b"fn"` is assignable storage (D11); that
-  initializer is accepted, and a write through `s` may crash.
+  bytes: `let mut w = kw` is allowed and `w[0] = 1` is the write
+  error. A module `let mut s: []u8 = b"fn"` is assignable storage
+  (D11); that initializer is accepted, and a write through `s` may
+  crash.
   Not tracked, so a write can still fault at run time: a `[]u8`
   parameter (`fn f(s: []u8) { let mut w = s; w[0] = 1 }` then
   `f(b"fn")`), a function that returns `[]u8`, and a struct field
@@ -339,7 +345,8 @@ program assigns is a global: `let` (not assignable) or `let mut`.
   constant. A local alone is not a length.
 - `NAME = …` and `NAME[i] = …` on a `[]u8` constant are checker errors.
   `let s = NAME` copies the `{ptr, len}` header; `s` points at the same
-  read-only bytes, and `let mut s = NAME` is the D10 error.
+  read-only bytes. `let mut s = NAME` holds that header; `s[0] = 1`
+  is the D10 write error.
 
 ```klin
 pub const PAGE: i64 = 4096
@@ -418,10 +425,12 @@ and `&limit` is `*i32`. `let mut` is assignable and `&n` is `*mut i32`.
 - No attributes on a global. A global must not reuse the name of a
   `const`, a type, or a free function in the same module.
 - An immutable `[]u8` global initialized from `b"..."` or a `[]u8`
-  const is read-only storage (D10). `let mut w = kw` and `s = kw` are
-  errors. A mutable global slice is not: `let mut s: []u8 = b"..."` and
-  `let mut s: []u8 = xs[:]` of an immutable array are accepted, and a
-  write may crash. Copy into a `[N]u8` to modify.
+  const is read-only storage (D10). `let mut w = kw` is allowed;
+  `w[0] = 1` is the write error. `s = kw` reseats a mutable local and
+  marks those bytes read-only. A mutable global slice is not tracked:
+  `let mut s: []u8 = b"..."` and `let mut s: []u8 = xs[:]` of an
+  immutable array are accepted, and a write may crash. Copy into a
+  `[N]u8` to modify.
 - Async functions and threads share the global the way C does. There is
   no atomics, no lock, and no implicit synchronization. A data race is
   the program's.
@@ -644,9 +653,11 @@ makes `xs[a:b][i] = …` a write; an immutable binding, a slice
 parameter, a byte-string literal, and a `const` do not. `&xs[a:b][i]`
 is `*mut T` or `*T` by that same place. A subslice of read-only bytes
 is those bytes (D10): `let mut s = b"ab"[0:1]` (also `[0:]`, `[:1]`,
-a `[]u8` const, and a binding that already points at them) is an
-error, not a mutable header. `let s = b"ab"[0:1]` stays legal and is
-itself read-only. A `[]u8` parameter's subslice is not tracked.
+a `[]u8` const, and a binding that already points at them) is a
+mutable header over read-only bytes. The header can be reseated;
+`s[i] = …` cannot. `let s = b"ab"[0:1]` stays an immutable slice.
+A `[]u8` parameter's subslice is not tracked. A constant index of a
+fixed array is a separate check (D23). A subslice bound is not.
 
 An array subslice needs an l-value, the same rule as `xs[:]`. A slice
 `s[:]` is that header. `s[a:]` reads the pointer and the length. When
@@ -870,7 +881,11 @@ from inside that loop. `while true { break }` does not: the `break`
 leaves the `while`, then the `or` falls through. `while 1 == 1` is not
 treated as always true.
 
-`expr!` is unchanged. It still needs a function that returns `!T`.
+`expr!` still needs a function that returns `!T`. As a statement
+(`f()!`) it propagates and discards the success value. As an
+expression it still yields that value (`let n = f()!`). `main` is
+emitted as C `int`, so `!` is rejected there even if the Klin
+signature says `!T`.
 `err: i32` is still in scope in the block. `pick` still cannot contain
 `or` (it is a C `?:`). An empty block, or a block that can fall
 through, is:
@@ -915,15 +930,20 @@ writes it.
   (`` `str` has no subslice; `cstr_u8(s)` is a read-only `[]u8` ``).
 - `cstr_u8(s)` is a builtin of type `[]u8`. The argument is evaluated
   once: one pointer temporary, one `strlen`, one slice header. The
-  bytes are read-only (D10), so `let mut w = cstr_u8(s)`, assigning
+  bytes are read-only (D10). `let mut w = cstr_u8(s)`, assigning
   `cstr_u8(p)` into a mutable `[]u8`, and `let mut p = cstr_u8(s)[0:1]`
-  are errors. A user `fn cstr_u8` in scope hides the builtin.
+  are allowed; a write through that header is the D10 error. A user
+  `fn cstr_u8` in scope hides the builtin.
   `mod.cstr_u8` is that module's function, not the builtin.
 - `#include <string.h>` is emitted only when the program uses `s.len`
   or `cstr_u8`. Indexing a `str` does not need it.
 - A NULL `str` is undefined behavior, the same as `strlen` in C. There
   is no runtime check.
 - `cast` of a `str` to an integer stays rejected (D17).
+- `puts` takes exactly one `str`. `printf`'s format argument must be
+  a `str`. `b"..."` is `[]u8` and does not convert: `puts(b"hi")` and
+  `printf(b"%d", 1)` are checker errors. There is no hidden copy into
+  a C string. Later `printf` arguments still fold as in D12.
 - `stdlib` `str.len` still returns `usize` and still needs
   `import str`. Language `s.len` is `i32` and needs no import. Both
   are a `strlen` call. `==` on `str` stays unsupported
@@ -939,6 +959,61 @@ fn main(args: []str) {
         printf("%d\n", cast(i32, b.len))
     }
 }
+```
+
+## D23. Constant index of a fixed array — DECIDED
+
+**Choice: a constant integer index of `[N]T` that is negative or `>= N` is a compile-time error.**
+
+The index is an integer constant expression: a literal, an integer
+`const`, `+ - * / % << >> & | ^`, and unary `-` / `~`. `a[5]` on
+`[3]i32`, `a[-1]`, and `a[I]` when `const I` folds out of range are
+errors. A runtime index (`let i = 5; a[i]`), a subslice bound (D15),
+and `str[i]` (D22) stay unchecked: a check there would be a hidden
+branch. An enum index is already required to fit `[0, N)` (every
+variant, not one constant).
+
+```klin
+fn main() {
+    let a: [3]i32 = [1, 2, 3]
+    let n = a[2]          // ok
+    let m = a[5]          // error: index 5 is out of range
+}
+```
+
+## D24. Duplicate `match` arms — DECIDED
+
+**Choice: two unguarded arms whose patterns denote the same constant values are an error.**
+
+Compared after folding: integer constant expressions, enum variants,
+inclusive ranges, and relational patterns. `1, 2` and `2, 1` are the
+same set. A `when` guard is not part of the pattern, so two guarded
+copies stay accepted (each guard can fail). Overlapping but different
+patterns (`1..=3` and `2`) stay accepted; the first match wins. There
+is still no general dead-arm warning.
+
+```klin
+fn main() {
+    match 1 {
+        1 { }
+        1 { }             // error: duplicate pattern
+        else { }
+    }
+}
+```
+
+## D25. Duplicate enum values — DECIDED
+
+**Choice: two variants with the same numeric value are an error. Duplicate names were already an error. Aliases are not a feature.**
+
+The collision may be written (`A = 1, B = 1`) or implied (`A = 1, B = 0, C`,
+where `C` restarts at 1). Distinct values, including a gap (`Warn = 5`),
+stay legal.
+
+```klin
+enum E { A = 1, B = 1 }   // error: duplicate enum value 1
+enum F { A = 1, B = 0, C } // error: C is 1, same as A
+enum G { Ok, Warn = 5, Err } // 0, 5, 6
 ```
 
 ## D7. To decide later

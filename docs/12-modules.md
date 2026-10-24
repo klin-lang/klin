@@ -51,6 +51,8 @@ fn main() {
 - private symbols → `static` in generated `.c` (`static const` for a
   private `const`)
 - whole program still **one** `.c`
+- a parse or check error in an imported file names that file once
+  (`lib.kl:2:10: …`), not the entry path prefixed onto it
 
 ## File vs directory
 

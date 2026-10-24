@@ -101,6 +101,8 @@ void _collectBoundNamesStmt(Stmt stmt, Set<String> used) {
       _collectBoundNamesExpr(call, used);
     case AwaitStmt(:final expr):
       _collectBoundNamesExpr(expr, used);
+    case PropagateStmt(:final expr):
+      _collectBoundNamesExpr(expr, used);
     default:
       break;
   }
@@ -800,6 +802,8 @@ void _collectResultTypesFromStmt(Stmt stmt, Set<ResultType> output) {
     case MethodCallStmt(:final call):
       _collectResultTypesFromExpr(call, output);
     case AwaitStmt(:final expr):
+      _collectResultTypesFromExpr(expr, output);
+    case PropagateStmt(:final expr):
       _collectResultTypesFromExpr(expr, output);
     default:
       break;

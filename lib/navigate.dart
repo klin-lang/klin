@@ -380,6 +380,8 @@ final class _CollectNav {
         walkExpr(call);
       case AwaitStmt(:final expr):
         walkExpr(expr);
+      case PropagateStmt(:final expr):
+        walkExpr(expr);
       case IfStmt(:final cond, :final thenBlock, :final elseBranch):
         walkExpr(cond);
         walkBlock(thenBlock);
@@ -567,6 +569,8 @@ final class _NavWalker {
       case MethodCallStmt(:final call):
         walkExpr(call);
       case AwaitStmt(:final expr):
+        walkExpr(expr);
+      case PropagateStmt(:final expr):
         walkExpr(expr);
       case IfStmt(:final cond, :final thenBlock, :final elseBranch):
         walkExpr(cond);

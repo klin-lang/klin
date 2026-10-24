@@ -558,6 +558,17 @@ final class AwaitStmt extends Stmt {
   SourcePos get pos => expr.pos;
 }
 
+/// Statement form of `expr!`. On error the enclosing `!T` function returns.
+/// The success value is discarded.
+final class PropagateStmt extends Stmt {
+  final PropagateExpr expr;
+
+  PropagateStmt(this.expr);
+
+  @override
+  SourcePos get pos => expr.pos;
+}
+
 /// if cond block [else (block | if)]
 final class IfStmt extends Stmt {
   final Expr cond;

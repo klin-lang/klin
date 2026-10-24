@@ -271,10 +271,11 @@ final class _Symbol {
   final bool arrayByValue;
 
   /// `[]u8` that points at a `b"..."` literal or a `[]u8` constant.
-  /// An immutable binding copies the flag. A mutable binding is rejected.
-  final bool readOnlyBytes;
+  /// The binding may be `mut` (it can be reseated). A write through the
+  /// bytes is still rejected. Updated when the name is reassigned.
+  bool readOnlyBytes;
 
-  const _Symbol({
+  _Symbol({
     required this.name,
     required this.type,
     required this.isMut,
@@ -393,6 +394,21 @@ final class Checker {
       ..clear()
       ..addAll(program.funcs);
     _importAliases = program.importAliases;
+    try {
+      _checkProgram(program, requireMain: requireMain, collectErrors: collectErrors);
+    } on CheckError catch (e) {
+      if (e.path != null && e.path!.isNotEmpty) rethrow;
+      final path = _currentSourcePath;
+      if (path == null || path.isEmpty) rethrow;
+      throw CheckError(e.message, e.pos, path: path);
+    }
+  }
+
+  void _checkProgram(
+    Program program, {
+    required bool requireMain,
+    required bool collectErrors,
+  }) {
     _checkAttrs(program);
     _registerStructs(program);
     _registerEnums(program);
@@ -451,6 +467,7 @@ final class Checker {
   /// `[]str` is the argv header: no hidden strlen, and `char **` converts
   /// with one cast (D18). `[][]u8` would walk each argument.
   void _checkMainSignature(FuncDecl main) {
+    _currentSourcePath = main.sourcePath;
     if (main.params.isEmpty) return;
     final type = main.params.singleOrNull?.resolvedType;
     if (main.params.length == 1 && type is SliceType && type.elem is StrType) {
@@ -520,12 +537,14 @@ final class Checker {
     // No attribute has a meaning on a module constant (it is always emitted
     // as a C `const` with a mangled name) — reject instead of ignoring.
     for (final constant in program.consts) {
+      _currentSourcePath = constant.sourcePath;
       if (constant.attrs.isNotEmpty) {
         throw CheckError(
             'attributes are not allowed on a constant', constant.attrs.first.pos);
       }
     }
     for (final global in program.globals) {
+      _currentSourcePath = global.sourcePath;
       if (global.attrs.isNotEmpty) {
         throw CheckError(
             'attributes are not allowed on a global', global.attrs.first.pos);
@@ -533,6 +552,11 @@ final class Checker {
     }
     final cNames = <String>{};
     for (final decl in [...program.structs, ...program.funcs]) {
+      _currentSourcePath = switch (decl) {
+        StructDecl(:final sourcePath) => sourcePath,
+        FuncDecl(:final sourcePath) => sourcePath,
+        _ => _currentSourcePath,
+      };
       final attrs = switch (decl) {
         StructDecl(:final attrs) => attrs,
         FuncDecl(:final attrs) => attrs,
@@ -691,6 +715,7 @@ final class Checker {
   void _registerFunctions(Program program) {
     for (final func in program.funcs) {
       _currentModule = func.moduleName;
+      _currentSourcePath = func.sourcePath;
       final String key;
       final Map<String, _FuncSignature> collection;
       if (func.receiver != null) {
@@ -798,6 +823,7 @@ final class Checker {
 
   void _registerStructs(Program program) {
     for (final struct in program.structs) {
+      _currentSourcePath = struct.sourcePath;
       final key = _key(struct.moduleName, struct.name);
       if (_structs.containsKey(key)) {
         throw CheckError(
@@ -810,6 +836,7 @@ final class Checker {
   void _resolveStructFields(Program program) {
     for (final struct in program.structs) {
       _currentModule = struct.moduleName;
+      _currentSourcePath = struct.sourcePath;
       final names = <String>{};
       for (final field in struct.fields) {
         if (!names.add(field.name)) {
@@ -862,35 +889,74 @@ final class Checker {
 
   /// `T (*)[N]` needs `T` complete. A cycle (`kids: *mut [N]Node`, or two
   /// structs that each hold an array of the other) cannot be ordered.
-  /// `next: *Node` and `kids: []Node` are pointers and are not edges.
+  /// A by-value cycle (`A` holds `B` holds `A`) is infinite size, not an
+  /// array. `next: *Node` and `kids: []Node` are pointers and are not edges.
   void _rejectCompleteStructCycles() {
-    final graph = <String, List<({String dep, String field, SourcePos pos})>>{};
+    final graph = <String,
+        List<
+            ({
+              String dep,
+              String field,
+              SourcePos pos,
+              String? path,
+              bool byValue
+            })>>{};
     for (final struct in _structs.values) {
       final key = _key(struct.moduleName, struct.name);
-      final edges = <({String dep, String field, SourcePos pos})>[];
+      final edges = <({
+        String dep,
+        String field,
+        SourcePos pos,
+        String? path,
+        bool byValue
+      })>[];
       for (final field in struct.fields) {
-        final deps = <String>{};
-        _completeStructDeps(field.resolvedType, deps);
-        for (final dep in deps) {
-          edges.add((dep: dep, field: field.name, pos: field.pos));
+        final deps = <String, bool>{};
+        _completeStructDeps(field.resolvedType, deps, viaArray: false);
+        for (final entry in deps.entries) {
+          edges.add((
+            dep: entry.key,
+            field: field.name,
+            pos: field.pos,
+            path: struct.sourcePath,
+            byValue: entry.value,
+          ));
         }
       }
       graph[key] = edges;
     }
     final color = <String, int>{};
+    final stack = <String>[];
     void visit(String key) {
       color[key] = 1;
+      stack.add(key);
       for (final edge in graph[key] ?? const []) {
         final state = color[edge.dep] ?? 0;
         if (edge.dep == key || state == 1) {
+          if (edge.byValue) {
+            final start = stack.lastIndexOf(edge.dep);
+            final cycle = <String>[
+              for (final node in stack.sublist(start < 0 ? 0 : start))
+                _structKeyDisplay(node),
+              _structKeyDisplay(edge.dep),
+            ];
+            throw CheckError(
+              'struct cycle ${cycle.join(' -> ')} has infinite size '
+              '(store one of them behind a pointer)',
+              edge.pos,
+              path: edge.path,
+            );
+          }
           throw CheckError(
             'field `${edge.field}` needs `${_structKeyDisplay(edge.dep)}` '
             'to be complete (it contains an array of that struct)',
             edge.pos,
+            path: edge.path,
           );
         }
         if (state == 0 && graph.containsKey(edge.dep)) visit(edge.dep);
       }
+      stack.removeLast();
       color[key] = 2;
     }
 
@@ -907,32 +973,41 @@ final class Checker {
     return module.isEmpty ? name : '$module.$name';
   }
 
-  /// Structs that must be complete because [type] contains an array of them.
-  void _completeStructDeps(KlinType? type, Set<String> out) {
+  /// Structs embedded by [type]. The value is true when the struct is stored
+  /// by value (infinite size if that edge cycles) and false when it is only
+  /// an array element that must be a complete C type.
+  void _completeStructDeps(
+    KlinType? type,
+    Map<String, bool> out, {
+    required bool viaArray,
+  }) {
     switch (type) {
       case null:
         return;
       case StructType(:final moduleName, :final name):
-        out.add(_key(moduleName, name));
+        final key = _key(moduleName, name);
+        final byValue = !viaArray;
+        final prev = out[key];
+        if (prev == null || (byValue && !prev)) out[key] = byValue;
       case ArrayType(:final elem):
-        _completeStructDeps(elem, out);
+        _completeStructDeps(elem, out, viaArray: true);
       case PtrType(:final pointee):
         if (pointee is ArrayType || typeNeedsCompleteStructArray(pointee)) {
-          _completeStructDeps(pointee, out);
+          _completeStructDeps(pointee, out, viaArray: true);
         }
       case SliceType(:final elem):
         if (typeNeedsCompleteStructArray(type)) {
-          _completeStructDeps(elem, out);
+          _completeStructDeps(elem, out, viaArray: true);
         }
       case FnType(:final params, :final ret):
         if (!typeNeedsCompleteStructArray(type)) return;
         for (final param in params) {
-          _completeStructDeps(param, out);
+          _completeStructDeps(param, out, viaArray: true);
         }
-        _completeStructDeps(ret, out);
+        _completeStructDeps(ret, out, viaArray: true);
       case ResultType(:final ok):
         if (typeNeedsCompleteStructArray(type)) {
-          _completeStructDeps(ok, out);
+          _completeStructDeps(ok, out, viaArray: true);
         }
       default:
         return;
@@ -942,6 +1017,7 @@ final class Checker {
   void _registerConsts(Program program) {
     for (final decl in program.consts) {
       _currentModule = decl.moduleName;
+      _currentSourcePath = decl.sourcePath;
       final key = _key(decl.moduleName, decl.name);
       if (_consts.containsKey(key)) {
         throw CheckError('redeclaration of constant `${decl.name}`', decl.pos);
@@ -1168,6 +1244,7 @@ final class Checker {
 
   void _registerEnums(Program program) {
     for (final decl in program.enums) {
+      _currentSourcePath = decl.sourcePath;
       final key = _key(decl.moduleName, decl.name);
       if (_enums.containsKey(key) || _structs.containsKey(key)) {
         throw CheckError('redeclaration of type `${decl.name}`', decl.pos);
@@ -1176,6 +1253,7 @@ final class Checker {
     }
     for (final decl in program.enums) {
       _currentModule = decl.moduleName;
+      _currentSourcePath = decl.sourcePath;
       final base = decl.baseTypeName == null
           ? const PrimType(PrimKind.i32)
           : _resolveType(decl.baseTypeName!, decl.pos);
@@ -1811,12 +1889,15 @@ final class Checker {
   /// An implicit next value that does not fit [EnumDecl.baseType] is an
   /// error. Explicit values are range-checked by [_checkCoercedIntLiteral]
   /// before this runs. The counter is [BigInt] so `i64` max + 1 does not
-  /// wrap through a host `int`.
+  /// wrap through a host `int`. Two variants with the same numeric value
+  /// are an error, whether the second value is written (`A = 1, B = 1`)
+  /// or implied (`A = 1, B = 0, C`). Aliases are not a feature (D25).
   List<(String name, BigInt value, SourcePos pos)> _enumDiscriminants(
     EnumDecl decl,
   ) {
     var next = BigInt.zero;
     final out = <(String, BigInt, SourcePos)>[];
+    final seen = <BigInt, String>{};
     final base = decl.baseType;
     for (final variant in decl.variants) {
       final valueExpr = variant.value;
@@ -1834,6 +1915,14 @@ final class Checker {
           variant.pos,
         );
       }
+      final prev = seen[next];
+      if (prev != null) {
+        throw CheckError(
+          'duplicate enum value $next (`${variant.name}` and `$prev`)',
+          variant.pos,
+        );
+      }
+      seen[next] = variant.name;
       out.add((variant.name, next, variant.pos));
       next += BigInt.one;
     }
@@ -1861,6 +1950,30 @@ final class Checker {
           pos,
         );
       }
+    }
+  }
+
+  /// A constant integer index of `[N]T` is checked here. A runtime index,
+  /// a subslice, and `str[i]` stay unchecked (D15, D23): no hidden branch.
+  void _checkFixedArrayConstIndex(
+    ArrayType array,
+    Expr index,
+    PrimType indexType,
+  ) {
+    if (!_isIntegerConstExpr(index)) return;
+    final BigInt value;
+    try {
+      value = _evalConstInt(index, indexType);
+    } on _NotConstExpr {
+      return;
+    }
+    final len = BigInt.from(array.len);
+    if (value.isNegative || value >= len) {
+      throw CheckError(
+        'index $value is out of range for '
+        '`[${array.len}]${array.elem.displayName}`',
+        index.pos,
+      );
     }
   }
 
@@ -2068,7 +2181,8 @@ final class Checker {
   /// them. `pick` / `match`
   /// / `or` count when any arm is read-only: the checker does not know
   /// which arm runs. A call, a parameter, a struct field, and a `let mut`
-  /// global are not tracked.
+  /// global are not tracked. A `let mut` local may hold these bytes; the
+  /// header can be reseated, the bytes cannot be written (D10).
   bool _isReadOnlyBytes(Expr expr) {
     final node = _unwrapGroups(expr);
     if (node is ByteStringLit) return true;
@@ -2120,27 +2234,14 @@ final class Checker {
   bool _isU8Slice(KlinType? type) =>
       type is SliceType && type.elem == const PrimType(PrimKind.u8);
 
-  void _rejectMutableReadOnlyBinding(Expr init, KlinType type) {
-    if (!_isU8Slice(type) || !_isReadOnlyBytes(init)) return;
-    throw CheckError(
-      'cannot bind read-only bytes to a mutable slice '
-      '(copy them into a `[N]u8` to modify)',
-      init.pos,
-    );
-  }
-
-  /// `let mut s = xs[:] ; s = b"fn"`. Fields are not tracked.
-  void _rejectReadOnlySliceAssign(Expr target, Expr value) {
+  /// `let mut s = b"fn"` then `s = xs[:]` updates the flag. A later `s[i] = …`
+  /// follows whatever the name points at now. Fields are not tracked.
+  void _trackSliceBytes(Expr target, Expr value) {
     final place = _unwrapGroups(target);
     if (place is! NameExpr) return;
     final sym = _scope.lookup(place.name);
     if (sym == null || !sym.isMut || !_isU8Slice(sym.type)) return;
-    if (!_isReadOnlyBytes(value)) return;
-    throw CheckError(
-      'cannot assign read-only bytes to a mutable slice '
-      '(copy them into a `[N]u8` to modify)',
-      value.pos,
-    );
+    sym.readOnlyBytes = _isReadOnlyBytes(value);
   }
 
   /// Maps an `import X` alias to the file module name.
@@ -2218,11 +2319,19 @@ final class Checker {
         }
 
         stmt.resolvedType = resolved;
-        if (init != null && isMut) {
-          _rejectMutableReadOnlyBinding(init, resolved);
+        // `_` is a discard. It evaluates the initializer and binds nothing,
+        // so it can be repeated in one scope. A `!T` still has to be
+        // handled: discarding it would drop the error.
+        if (name == '_') {
+          if (resolved is ResultType) {
+            throw CheckError(
+              'result `${resolved.displayName}` must be handled with `!` or `or`',
+              init?.pos ?? pos,
+            );
+          }
+          break;
         }
         final readOnlyBytes = init != null &&
-            !isMut &&
             _isU8Slice(resolved) &&
             _isReadOnlyBytes(init);
         if (_currentIsAsync) {
@@ -2291,6 +2400,7 @@ final class Checker {
         stmt.sourceType = sourceType;
         stmt.fieldTypes = fieldTypes;
         for (var i = 0; i < binds.length; i++) {
+          if (binds[i] == '_') continue;
           _scope.define(
             _Symbol(
                 name: binds[i], type: fieldTypes[i], isMut: isMut, pos: pos),
@@ -2384,7 +2494,7 @@ final class Checker {
         final valueType = _inferLetOrAssignValue(value);
         _expectAssignable(targetType, valueType, value.pos);
         _materialize(value, targetType);
-        _rejectReadOnlySliceAssign(target, value);
+        _trackSliceBytes(target, value);
 
       case MultiAssignStmt(:final targets, :final values):
         for (var i = 0; i < targets.length; i++) {
@@ -2410,7 +2520,7 @@ final class Checker {
           final valueType = _inferExpr(value);
           _expectAssignable(targetType, valueType, value.pos);
           _materialize(value, targetType);
-          _rejectReadOnlySliceAssign(target, value);
+          _trackSliceBytes(target, value);
         }
 
       case StructAssignStmt(
@@ -2475,6 +2585,11 @@ final class Checker {
             _expectBoolCond(when);
           }
         }
+        _checkDuplicateMatchArms(
+          subjectType,
+          arms.map((a) => a.pattern).toList(),
+          arms.map((a) => a.when).toList(),
+        );
         _checkMatchExhaustive(
           subjectType,
           arms.map((a) => a.pattern).toList(),
@@ -2530,6 +2645,10 @@ final class Checker {
         }
 
       case AwaitStmt(:final expr):
+        _inferExpr(expr);
+
+      case PropagateStmt(:final expr):
+        // `f()!` as a statement propagates and discards the ok value.
         _inferExpr(expr);
 
       case IfStmt(:final cond, :final thenBlock, :final elseBranch):
@@ -2600,19 +2719,33 @@ final class Checker {
             final initTy = _inferExpr(initExpr);
             final concrete = _defaultConcrete(initTy, initExpr.pos);
             _materialize(initExpr, concrete);
-            _rejectMutableReadOnlyBinding(initExpr, concrete);
             stmt.resolvedInitType = concrete;
             _scope.define(
-              _Symbol(name: initName, type: concrete, isMut: true, pos: pos),
+              _Symbol(
+                name: initName,
+                type: concrete,
+                isMut: true,
+                pos: pos,
+                readOnlyBytes:
+                    _isU8Slice(concrete) && _isReadOnlyBytes(initExpr),
+              ),
             );
           } else {
             // `=` assigns to an existing mutable local or global.
             stmt.initCName = _bindForCTarget(initName, initExpr, null);
+            _trackSliceBytes(NameExpr(initName, initExpr.pos), initExpr);
           }
         }
         if (cond != null) _expectBoolCond(cond);
         if (postName != null && postExpr != null) {
           stmt.postCName = _bindForCTarget(postName, postExpr, postCompoundOp);
+          // The post runs after the body. If it reseats onto read-only
+          // bytes, later iterations must not write. Do not clear a flag
+          // the initializer already set: the body still sees that value.
+          if (postCompoundOp == null && _isReadOnlyBytes(postExpr)) {
+            final sym = _scope.lookup(postName);
+            if (sym != null && _isU8Slice(sym.type)) sym.readOnlyBytes = true;
+          }
         }
         _loopDepth++;
         _checkBlock(body);
@@ -3035,9 +3168,40 @@ final class Checker {
         );
       }
       if (callee == 'puts' || callee == 'printf') {
+        // `puts` is `int puts(const char *)`. `b"..."` is `[]u8`, not `str`
+        // (D10). There is no implicit conversion. `printf`'s format is the
+        // same `str`; later arguments stay varargs and fold (D12).
+        if (callee == 'puts') {
+          if (args.length != 1) {
+            throw CheckError(
+              '`puts` expects 1 argument of type `str`, got ${args.length}',
+              pos,
+            );
+          }
+          final arg = args[0];
+          final ty = _inferExpr(arg);
+          if (ty is! StrType) {
+            throw CheckError(
+              '`puts` expects `str`, got `${_typeForMismatch(ty)}`',
+              arg.pos,
+            );
+          }
+          return const _CheckedCall(PrimType(PrimKind.i32), null);
+        }
+        if (args.isEmpty) {
+          throw CheckError('`printf` expects a `str` format string', pos);
+        }
+        final fmt = args[0];
+        final fmtTy = _inferExpr(fmt);
+        if (fmtTy is! StrType) {
+          throw CheckError(
+            '`printf` expects a `str` format, got `${_typeForMismatch(fmtTy)}`',
+            fmt.pos,
+          );
+        }
         // No parameter types, so an untyped argument uses the same default
         // as an unannotated `let` (`i32` / `f64`) and folds (D12).
-        for (final arg in args) {
+        for (final arg in args.skip(1)) {
           final ty = _inferExpr(arg);
           if (ty is UntypedInt || ty is UntypedFloat || _containsUntyped(ty)) {
             final concrete = _defaultConcrete(ty, arg.pos);
@@ -3613,6 +3777,13 @@ final class Checker {
           if (!global.isMut) {
             throw CheckError('cannot assign through an immutable slice', pos);
           }
+          if (global.readOnlyBytes) {
+            throw CheckError(
+              'cannot assign through read-only bytes '
+              '(the binding can be reassigned; copy into a `[N]u8` to modify)',
+              pos,
+            );
+          }
           _stampGlobal(base, global);
           return;
         }
@@ -3620,6 +3791,13 @@ final class Checker {
       }
       if (!symbol.isMut) {
         throw CheckError('cannot assign through an immutable slice', pos);
+      }
+      if (symbol.readOnlyBytes) {
+        throw CheckError(
+          'cannot assign through read-only bytes '
+          '(the binding can be reassigned; copy into a `[N]u8` to modify)',
+          pos,
+        );
       }
       base.isPtrReceiver = symbol.isPtrReceiver;
       base.arrayByValue = symbol.arrayByValue;
@@ -3940,6 +4118,11 @@ final class Checker {
                 'index requires an integer or enum type', index.pos);
           }
           _materialize(index, indexType);
+          if (objectType is ArrayType &&
+              indexType is PrimType &&
+              indexType.kind.isInteger) {
+            _checkFixedArrayConstIndex(objectType, index, indexType);
+          }
           return switch (objectType) {
             ArrayType(:final elem) => elem,
             SliceType(:final elem) => elem,
@@ -4226,6 +4409,15 @@ final class Checker {
               pos,
             );
           }
+          // `main` is always C `int`, even when the Klin signature says
+          // `!T`. Propagating would return a result struct from `int main`.
+          if (_currentFunction == 'main') {
+            throw CheckError(
+              'postfix operator `!` cannot be used in `main` '
+              '(`main` is emitted as C `int`)',
+              pos,
+            );
+          }
           return resultType.ok;
         }(),
       OrExpr(:final result, :final fallback, :final pos) => () {
@@ -4382,8 +4574,10 @@ final class Checker {
     final place = _unwrapGroups(expr);
     if (place is NameExpr) {
       final local = _scope.lookup(place.name);
-      if (local != null) return local.isMut;
-      return _currentGlobal(place.name)?.isMut ?? false;
+      if (local != null) return local.isMut && !local.readOnlyBytes;
+      final global = _currentGlobal(place.name);
+      if (global == null) return false;
+      return global.isMut && !global.readOnlyBytes;
     }
     if (place is FieldExpr) {
       final object = _unwrapGroups(place.object);
@@ -5074,6 +5268,88 @@ final class Checker {
     _materialize(subject, concrete);
   }
 
+  /// Unguarded arms whose patterns denote the same constant values are an
+  /// error (D24). A `when` guard is not part of the pattern. Overlapping
+  /// but different patterns stay accepted; the first match wins.
+  void _checkDuplicateMatchArms(
+    KlinType subjectType,
+    List<MatchPattern> patterns,
+    List<Expr?> whens,
+  ) {
+    final seen = <String, SourcePos>{};
+    for (var i = 0; i < patterns.length; i++) {
+      if (whens[i] != null) continue;
+      final pattern = patterns[i];
+      final key = _matchPatternKey(pattern, subjectType);
+      if (key == null) continue;
+      if (seen.containsKey(key)) {
+        throw CheckError(
+          'duplicate `match` pattern '
+          '(an earlier arm already matches the same values)',
+          pattern.pos,
+        );
+      }
+      seen[key] = pattern.pos;
+    }
+  }
+
+  /// Null when the pattern is not a closed set of constant values (`else`,
+  /// `_`, a guard was already skipped, or a value is not a constant).
+  String? _matchPatternKey(MatchPattern pattern, KlinType subjectType) {
+    switch (pattern) {
+      case LitPattern(:final values):
+        final keys = <String>[];
+        for (final value in values) {
+          final key = _matchValueKey(value, subjectType);
+          if (key == null) return null;
+          keys.add(key);
+        }
+        keys.sort();
+        return 'lit:${keys.join(',')}';
+      case RangePattern(:final start, :final endInclusive):
+        if (subjectType is! PrimType || !subjectType.kind.isInteger) {
+          return null;
+        }
+        final a = _tryEvalMatchInt(start, subjectType);
+        final b = _tryEvalMatchInt(endInclusive, subjectType);
+        if (a == null || b == null) return null;
+        return 'range:$a..=$b';
+      case RelPattern(:final op, :final rhs):
+        if (subjectType is! PrimType || !subjectType.kind.isInteger) {
+          return null;
+        }
+        final k = _tryEvalMatchInt(rhs, subjectType);
+        if (k == null) return null;
+        return 'rel:$op:$k';
+      case WildPattern() || ElsePattern():
+        return null;
+    }
+  }
+
+  String? _matchValueKey(Expr value, KlinType subjectType) {
+    final expr = _unwrapGroups(value);
+    if (subjectType is EnumType) {
+      final name = _enumVariantCoveredBy(expr, subjectType);
+      if (name == null) return null;
+      return 'enum:${subjectType.moduleName}.${subjectType.name}.$name';
+    }
+    if (subjectType is PrimType && subjectType.kind.isInteger) {
+      final n = _tryEvalMatchInt(expr, subjectType);
+      if (n == null) return null;
+      return 'int:$n';
+    }
+    return null;
+  }
+
+  BigInt? _tryEvalMatchInt(Expr expr, PrimType type) {
+    if (!_isIntegerConstExpr(expr)) return null;
+    try {
+      return _evalConstInt(expr, type);
+    } on _NotConstExpr {
+      return null;
+    }
+  }
+
   void _checkMatchArmsOrder(List<MatchPattern> patterns) {
     for (var i = 0; i < patterns.length; i++) {
       final pattern = patterns[i];
@@ -5232,6 +5508,11 @@ final class Checker {
           _expectBoolCond(when);
         }
       }
+      _checkDuplicateMatchArms(
+        subjectType,
+        arms.map((a) => a.pattern).toList(),
+        arms.map((a) => a.when).toList(),
+      );
       _checkMatchExhaustive(
         subjectType,
         arms.map((a) => a.pattern).toList(),

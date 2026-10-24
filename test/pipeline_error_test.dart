@@ -1634,55 +1634,39 @@ fn main() {
     );
   });
 
-  test('error: mutable slice cannot hold read-only bytes', () {
-    const cases = <(String, String)>[
-      (
-        '''
+  test('mutable binding may hold read-only bytes', () {
+    const cases = <String>[
+      '''
 fn main() {
   let mut s = b"fn"
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let s = (b"fn")
   let mut w = s
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 const KW: []u8 = b"fn"
 fn main() {
   let mut s = KW
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let s = b"fn"
   let mut w = s
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let mut xs: [2]u8 = [1, 2]
   let mut s = xs[:]
   s = b"fn"
 }
 ''',
-        'cannot assign read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let k = b"fn"
   let mut xs: [2]u8 = [1, 2]
@@ -1690,27 +1674,18 @@ fn main() {
   s = k
 }
 ''',
-        'cannot assign read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let mut s = pick true { b"fn" } { b"if" }
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let mut xs: [1]u8 = [1]
   let mut s = pick true { b"fn" } { xs[:] }
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let mut s = match 0 {
     0 { b"fn" }
@@ -1718,27 +1693,18 @@ fn main() {
   }
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn miss(): ![]u8 { return error(1) }
 fn main() {
   let mut s = miss() or { b"fn" }
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   for s := b"fn"; false; s = s {}
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let mut n = 0
   let mut xs: [2]u8 = [1, 2]
@@ -1746,19 +1712,13 @@ fn main() {
   s, n = b"fn", 1
 }
 ''',
-        'cannot assign read-only bytes',
-      ),
-      (
-        '''
+      '''
 let kw: []u8 = b"fn"
 fn main() {
   let mut w = kw
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 const KW: []u8 = b"fn"
 let kw: []u8 = KW
 fn main() {
@@ -1766,10 +1726,7 @@ fn main() {
   let mut w = s
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 let kw: []u8 = b"fn"
 fn main() {
   let mut xs: [2]u8 = [1, 2]
@@ -1777,96 +1734,61 @@ fn main() {
   s = kw
 }
 ''',
-        'cannot assign read-only bytes',
-      ),
-      (
-        '''
+      '''
 let kw: []u8 = b"fn"
 fn main() {
   let mut s = pick true { kw } { b"if" }
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 let kw: []u8 = b"fn"
 fn main() {
   for s := kw; false; s = s {}
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let mut s = b"ab"[0:1]
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let mut s = b"ab"[0:]
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let mut s = b"ab"[:1]
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 const KW: []u8 = b"fn"
 fn main() {
   let mut s = KW[0:1]
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let s = b"ab"[0:1]
   let mut w = s
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let mut xs: [2]u8 = [1, 2]
   let mut s = xs[:]
   s = b"ab"[1:]
 }
 ''',
-        'cannot assign read-only bytes',
-      ),
-      (
-        '''
+      '''
 fn main() {
   let mut s = pick true { b"ab"[0:1] } { b"cd"[:1] }
 }
 ''',
-        'cannot bind read-only bytes',
-      ),
     ];
-    for (final item in cases) {
-      final program = Parser(Lexer(item.$1).tokenize()).parse();
-      expect(
-        () => Checker().check(program),
-        throwsA(predicate(
-          (e) => e is CheckError && e.toString().contains(item.$2),
-        )),
-        reason: item.$1,
-      );
+    for (final source in cases) {
+      final program = Parser(Lexer(source).tokenize()).parse();
+      expect(() => Checker().check(program), returnsNormally, reason: source);
     }
   });
 

@@ -164,7 +164,9 @@ fn main() {
 ```
 
 - `!T` is a tagged struct in C (flag + value)
-- `expr!` propagates: `if (r.is_err) return r;`
+- `expr!` propagates: `if (r.is_err) return r;`. As a statement
+  (`step(ok)!`) it discards the success value. The function must
+  return `!T` either way. `main` is C `int`, so `!` is not allowed there
 - `or { … }` handles locally; `err` is in scope. The block may end
   with a value, or leave with `return` / `break` / `continue` instead
   of a value (`let n = level(x) or { return err }`, D21)
@@ -221,10 +223,14 @@ fn main() {
   (`let mut s`, or `&xs[:][i]` when `xs` is `let mut`) and `*T` when
   it is not (an immutable binding, a slice parameter, an immutable array).
   Writing `s[i]` uses that same place: an immutable slice cannot be
-  assigned (`s[i] = …`, `s[i] += …`). `let mut s` can.
+  assigned (`s[i] = …`, `s[i] += …`). `let mut s` can, unless the
+  header currently points at read-only bytes (`let mut s = b"fn"`
+  can be reseated; `s[0] = 1` cannot until it views a mutable buffer).
 - `[N]T` — fixed array. `N` is an integer constant expression: a
   literal, an integer module `const`, or arithmetic on those
   (`[N * 2]T`, `[1 + 2]T`). The C bound is the folded value.
+  A constant integer index outside `0 .. N` is a compile-time error
+  (`a[5]` on `[3]i32`). A runtime index is not checked.
   A literal `[1, 2]` takes the element type from that array
   (`let a: [2]u8 = [1, 2]`); each element must fit. Without a type,
   it is `[2]i32`. An empty literal `[]` is `[0]T` from the declaration
