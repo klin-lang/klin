@@ -1,0 +1,23 @@
+const STEP: i32 = 2
+
+struct Point {
+    x: i32
+    y: i32
+}
+
+fn (mut pt: Point) bump() {
+    pt.x = pt.x + pt.y
+}
+
+let mut n: i32 = 1
+let limit: i32 = STEP + 5
+let mut pt: Point = Point{ x: 10, y: 1 }
+let mut xs: [3]i32 = [1, 2, 3]
+
+fn main() {
+    n += STEP
+    pt.bump()
+    xs[0] = xs[0] + xs[2]
+    printf("%d %d %d\n", n, limit, pt.x)
+    printf("%d\n", xs[0])
+}

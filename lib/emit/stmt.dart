@@ -258,8 +258,8 @@ void _emitStmt(
       // later field reads do not use a newly declared scalar.
       final String access;
       if (source is NameExpr && !binds.contains(source.name)) {
-        access = _emitExpr(source, ctx) +
-            (_exprIsPtrReceiver(source) ? '->' : '.');
+        access =
+            _emitExpr(source, ctx) + (_exprIsPtrReceiver(source) ? '->' : '.');
       } else {
         final tmp = state.nextValueTemp();
         final rhs = source is NameExpr && _exprIsPtrReceiver(source)
@@ -269,8 +269,7 @@ void _emitStmt(
         access = '$tmp.';
       }
       for (var i = 0; i < fields.length; i++) {
-        buf.writeln(
-            '$pad${_cDecl(fts[i], binds[i])} = $access${fields[i]};');
+        buf.writeln('$pad${_cDecl(fts[i], binds[i])} = $access${fields[i]};');
       }
 
     case LetArrayDestructureStmt(
@@ -384,8 +383,7 @@ void _emitStmt(
           : _emitExpr(source, ctx);
       buf.writeln('$pad${_cDecl(sourceType!, tmp)} = $rhs;');
       for (var i = 0; i < fields.length; i++) {
-        buf.writeln(
-            '$pad${_emitExpr(targets[i], ctx)} = $tmp.${fields[i]};');
+        buf.writeln('$pad${_emitExpr(targets[i], ctx)} = $tmp.${fields[i]};');
       }
 
     case CallStmt(
@@ -511,14 +509,16 @@ void _emitStmt(
         :final postCompoundOp,
         :final body,
         :final pos,
-        :final resolvedInitType
+        :final resolvedInitType,
+        :final initCName,
+        :final postCName,
       ):
       _line(buf, pos.line, sourcePath);
       final initPart = () {
         if (initName == null || initExpr == null) return '';
         final rhs = _emitExpr(initExpr, ctx);
         if (!initDecl) {
-          return '$initName = $rhs';
+          return '${initCName ?? initName} = $rhs';
         }
         final ty = resolvedInitType;
         if (ty is! PrimType) {
@@ -527,10 +527,11 @@ void _emitStmt(
         return '${ty.kind.cType} $initName = $rhs';
       }();
       final condPart = cond == null ? '' : _emitExpr(cond, ctx);
-      final postPart = (postName != null && postExpr != null)
+      final postIdent = postCName ?? postName;
+      final postPart = (postIdent != null && postExpr != null)
           ? (postCompoundOp != null
-              ? '$postName $postCompoundOp= ${_emitExpr(postExpr, ctx)}'
-              : '$postName = ${_emitExpr(postExpr, ctx)}')
+              ? '$postIdent $postCompoundOp= ${_emitExpr(postExpr, ctx)}'
+              : '$postIdent = ${_emitExpr(postExpr, ctx)}')
           : '';
       buf.writeln('${pad}for ($initPart; $condPart; $postPart) {');
       _emitBlock(
@@ -689,9 +690,7 @@ void _emitMatchStmt(
   for (var i = 0; i < stmt.arms.length; i++) {
     final arm = stmt.arms[i];
     final isElse = arm.pattern is ElsePattern;
-    final cond = isElse
-        ? null
-        : _armCond(temp, arm.pattern, arm.when, ctx);
+    final cond = isElse ? null : _armCond(temp, arm.pattern, arm.when, ctx);
     if (i == 0) {
       buf.writeln(isElse ? '$pad{' : '${pad}if ($cond) {');
     } else {
@@ -740,9 +739,7 @@ void _emitMatchAssign(
   for (var i = 0; i < match.arms.length; i++) {
     final arm = match.arms[i];
     final isElse = arm.pattern is ElsePattern;
-    final cond = isElse
-        ? null
-        : _armCond(temp, arm.pattern, arm.when, ctx);
+    final cond = isElse ? null : _armCond(temp, arm.pattern, arm.when, ctx);
     if (i == 0) {
       buf.writeln(isElse ? '$pad{' : '${pad}if ($cond) {');
     } else {
@@ -787,12 +784,10 @@ String _patternCond(String temp, MatchPattern pattern, _ExprCtx ctx) {
       values.map((v) => '$temp == ${_emitExpr(v, ctx)}').join(' || '),
     RangePattern(:final start, :final endInclusive) =>
       '($temp >= ${_emitExpr(start, ctx)} && $temp <= ${_emitExpr(endInclusive, ctx)})',
-    RelPattern(:final op, :final rhs) =>
-      '$temp $op ${_emitExpr(rhs, ctx)}',
+    RelPattern(:final op, :final rhs) => '$temp $op ${_emitExpr(rhs, ctx)}',
     WildPattern() =>
       throw StateError('emit: wildcard pattern needs a `when` guard'),
-    ElsePattern() =>
-      throw StateError('emit: `else` pattern has no condition'),
+    ElsePattern() => throw StateError('emit: `else` pattern has no condition'),
   };
 }
 
@@ -928,4 +923,3 @@ void _emitElse(
   }
   throw StateError('emit: unexpected else branch ${elseBranch.runtimeType}');
 }
-

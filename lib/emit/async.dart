@@ -1,7 +1,8 @@
 part of '../emit_c.dart';
 
 /// Emit state struct + init + poll (+ erased wrappers) for each `async fn`.
-void _emitAsyncFunctions(StringBuffer buf, Program program, String defaultPath) {
+void _emitAsyncFunctions(
+    StringBuffer buf, Program program, String defaultPath) {
   for (final func in program.funcs) {
     if (!func.isAsync || func.body == null) continue;
     _emitAsyncFunction(buf, func, program, func.sourcePath ?? defaultPath);
@@ -185,20 +186,17 @@ void _emitAsyncStmt(Stmt stmt, _AsyncEmitCtx ctx) {
         if (call is! CallExpr) {
           throw StateError('emit async: async await operand must be a call');
         }
-        final args = call.args
-            .map((a) => _emitAsyncExpr(a, ctx))
-            .join(', ');
-        final initArgs = args.isEmpty ? '&st->__aw$idx' : '&st->__aw$idx, $args';
+        final args = call.args.map((a) => _emitAsyncExpr(a, ctx)).join(', ');
+        final initArgs =
+            args.isEmpty ? '&st->__aw$idx' : '&st->__aw$idx, $args';
         buf.writeln('$pad${callee}_init($initArgs);');
         buf.writeln('${pad}st->__stage = $stage;');
         buf.writeln('${pad}/* fallthrough */');
         buf.writeln('${pad}case $stage:');
-        buf.writeln(
-            '${pad}if (${callee}_poll(&st->__aw$idx) == 0) return 0;');
+        buf.writeln('${pad}if (${callee}_poll(&st->__aw$idx) == 0) return 0;');
       } else {
         final poll = aw.pollMangled!;
-        buf.writeln(
-            '${pad}st->__aw$idx = ${_emitAsyncExpr(aw.operand, ctx)};');
+        buf.writeln('${pad}st->__aw$idx = ${_emitAsyncExpr(aw.operand, ctx)};');
         buf.writeln('${pad}st->__stage = $stage;');
         buf.writeln('${pad}/* fallthrough */');
         buf.writeln('${pad}case $stage:');
@@ -265,8 +263,7 @@ void _emitAsyncStmt(Stmt stmt, _AsyncEmitCtx ctx) {
       final end = '${label}_end';
       buf.writeln('$pad$label:');
       // Do not `break` — we are inside a `switch` for the state machine.
-      buf.writeln(
-          '${pad}if (!(${_emitAsyncExpr(cond, ctx)})) goto $end;');
+      buf.writeln('${pad}if (!(${_emitAsyncExpr(cond, ctx)})) goto $end;');
       _emitAsyncBlock(body, ctx);
       buf.writeln('${pad}goto $label;');
       buf.writeln('$pad$end: ;');
@@ -315,10 +312,17 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
     BoolLit(:final value) => value ? 'true' : 'false',
     StringLit(:final value) => '"${_escapeC(value)}"',
     ByteStringLit(:final value) => _emitByteString(value),
-    NameExpr(:final name, :final resolvedFnCName, :final resolvedConstCName) =>
-      resolvedConstCName ?? resolvedFnCName ?? 'st->$name',
-    UnaryExpr(:final op, :final operand, :final resolvedType) =>
-      _emitUnary(
+    NameExpr(
+      :final name,
+      :final resolvedFnCName,
+      :final resolvedConstCName,
+      :final resolvedGlobalCName,
+    ) =>
+      resolvedGlobalCName ??
+          resolvedConstCName ??
+          resolvedFnCName ??
+          'st->$name',
+    UnaryExpr(:final op, :final operand, :final resolvedType) => _emitUnary(
         op,
         operand,
         resolvedType,
@@ -339,16 +343,27 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
       :final isAssociated,
     ) =>
       () {
-        final callee =
-            mangledName ?? (throw StateError('emit async: method without mangling'));
+        final callee = mangledName ??
+            (throw StateError('emit async: method without mangling'));
         final argList = args.map((a) => _emitAsyncArg(a, ctx)).join(', ');
         if (isAssociated) return '$callee($argList)';
         final recv =
             '${receiverByRef ? '&' : ''}${_emitAsyncExpr(receiver, ctx)}';
         return args.isEmpty ? '$callee($recv)' : '$callee($recv, $argList)';
       }(),
-    FieldExpr(:final object, :final name, :final constCName) =>
-      constCName ?? '${_emitAsyncExpr(object, ctx)}.$name',
+    FieldExpr(
+      :final object,
+      :final name,
+      :final enumConstCName,
+      :final constCName,
+      :final globalCName,
+      :final fnCName,
+    ) =>
+      enumConstCName ??
+          constCName ??
+          globalCName ??
+          fnCName ??
+          '${_emitAsyncExpr(object, ctx)}.$name',
     CastExpr(:final resolvedType, :final expr) => () {
         final target = resolvedType;
         if (target == null) throw StateError('emit async: cast without type');

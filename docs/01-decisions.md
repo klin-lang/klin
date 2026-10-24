@@ -262,14 +262,15 @@ printf("%d\n", b"ab\0".len)            // 3
 printf("%d\n", b"/proc/self/cmdline\0".len)  // 19
 ```
 
-## D11. Module-level `const` — DECIDED
+## D11. Module-level `const` and `let` — DECIDED
 
-**Choice: `pub? const Name: Type = expression`.** Immutable. No mutable
-globals, and no `let` at module scope.
+**Choice: `pub? const Name: Type = expression` is a compile-time value.
+`pub? let` / `pub? let mut` at module scope is an object with an address.**
 
 A keyword table, a page size, or a syscall number should be a named
 value with no storage surprise. The initializer is the value; emission
-is a C constant.
+is a C constant. A counter, a buffer, or a function pointer that the
+program assigns is a global: `let` (not assignable) or `let mut`.
 
 - Top level only. A local binding stays `let` (and a local shadows a
   constant of the same name in a value). A type still sees the constant.
@@ -334,6 +335,87 @@ fn main() {
     let buf: [PAGE]u8
     let half: [TWICE]u8
     printf("%d %d %d\n", cast(i32, PAGE), KW.len, half.len)
+}
+```
+
+### Module-level `let`
+
+`const` does not name storage. It cannot be the operand of `&`, and it
+is not an object another global can point at. `let` is that object.
+Immutable `let` exists beside `const` for that reason: `let limit: i32
+= PAGE` has an address, `const PAGE` does not. `let` is not assignable
+and `&limit` is `*i32`. `let mut` is assignable and `&n` is `*mut i32`.
+
+- Top level only. `:=` is not a module declaration (it stays the local
+  sugar for `let mut`). The type is required (`let mut n: i32 = 1`).
+  One name per declaration.
+- Allowed types: an integer or float prim, `bool`, `str`, an enum, a
+  struct, a pointer, a slice, a function pointer, and `[N]T` of those.
+  `!T` is not a global (`a global cannot have type …`).
+- The initializer is optional. Omitting it zero-initializes, the same
+  values as a local without an initializer (integer `0`, `false`,
+  `NULL`, `{0}`, a slice `{ NULL, 0 }`, an enum `0`). A function
+  pointer's zero is the integer `0`, not `NULL`: ISO C does not convert
+  `void *` to a function pointer.
+- When present, the initializer must be a constant expression. Allowed:
+  literals (including `b"..."`), `const` names (`N`, `mod.NAME`),
+  integer constant expressions (the same operators as a `const`),
+  float arithmetic of constant floats, array and struct literals of
+  those, an enum variant, `cast` of a constant to a pointer, prim, or
+  enum, the address of a global, a `const`, a function, a field, or a
+  constant index of a global array, `xs[:]` of a global array, and a
+  function name (a function-pointer initializer, including `mod.func`).
+  A global's value is not a constant — C cannot copy that object into
+  static storage. A non-constant initializer is
+  `global initializer must be a constant expression`.
+- A name used in the initializer is emitted as that constant's own
+  value (the folded decimal, the source spelling, or the `[]u8` brace),
+  not as the C object. `static int x = PAGE` is not a constant
+  initializer. Aggregate initializers are brace lists, not compound
+  literals.
+- A global is not an `[N]T` length. The length is still a `const` or a
+  literal expression.
+- Assignment, compound assignment (`+=` and the rest), and the `for
+  name = …; …; name += …` header follow the same mutability as a local.
+  A field, an index, and `*p` do too. A `mut` method accepts a `let mut`
+  global. Writing an immutable global is `cannot assign to immutable
+  variable`.
+- `pub let` / `pub let mut` is `mod.name` after `import`. Another module
+  may assign `mod.name` only when the global is `pub let mut`. `pub let`
+  is readable and not writable. Private is `static` in C and is neither
+  readable nor writable from another module (the diagnostic names
+  `mod.name` and says the global is private). There is no generated
+  setter. `mut` is a property of the
+  storage; `pub` is visibility. The checker is the gate, because the
+  whole program is one `.c`.
+- A local of the same name shadows the global in a value. A global of
+  the same name as an import qualifier shadows that qualifier in a
+  value (`let mut os: i32` then `os.PAGE` is not the imported constant).
+  A type still sees the module constant, as it does for a local.
+- The C name is `module_name`, the same prefix as a free function.
+  Every global is declared before any initializer, so a later global
+  can be named (`let mut p: *mut i32 = &later` above `later`).
+  Prototypes are emitted before globals, so a function-pointer
+  initializer can name a function. Typedefs for structs, slices, and
+  function returns are emitted before both.
+- No attributes on a global. A global must not reuse the name of a
+  `const`, a type, or a free function in the same module.
+- A mutable slice still has no read-only flavor (D10). `let mut s: []u8
+  = b"..."` or `xs[:]` of an immutable array can write and may crash.
+  Copy into a `[N]u8` to modify.
+- Async functions and threads share the global the way C does. There is
+  no atomics, no lock, and no implicit synchronization. A data race is
+  the program's.
+
+```klin
+let mut n: i32 = 1
+let limit: i32 = PAGE
+let mut buf: [8]u8
+let mut p: *mut i32 = &n
+
+fn main() {
+    n = n + limit
+    *p += 1
 }
 ```
 

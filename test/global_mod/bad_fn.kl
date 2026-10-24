@@ -1,0 +1,8 @@
+module badfn
+import store
+
+let mut op: fn(i32): i32 = store.hidden_fn
+
+fn main() {
+    printf("%d\n", op(1))
+}

@@ -55,17 +55,22 @@ String formatUnit(
   }
   if (unit.declaredName != null || unit.imports.isNotEmpty) {
     out.buf.writeln();
-    first = true; // next decl starts a new "group" without extra blank before first
+    first =
+        true; // next decl starts a new "group" without extra blank before first
   }
 
   Object? prev;
   for (final decl in unit.decls) {
-    // Keep a run of consts on consecutive lines together (syscall-number
-    // tables); every other pair of top-level decls gets one blank line.
+    // Keep a run of consts, or of globals, on consecutive lines together
+    // (syscall-number tables, a block of module state). Every other pair of
+    // top-level decls gets one blank line.
     final constRun = prev is ConstDecl &&
         decl is ConstDecl &&
         _declLine(decl) == prev.pos.line + 1;
-    if (constRun) {
+    final globalRun = prev is GlobalDecl &&
+        decl is GlobalDecl &&
+        _declLine(decl) == prev.pos.line + 1;
+    if (constRun || globalRun) {
       first = false;
     } else {
       blankBefore();
@@ -79,6 +84,8 @@ String formatUnit(
         _writeEnum(out, decl, 0);
       case ConstDecl():
         _writeConst(out, decl, 0);
+      case GlobalDecl():
+        _writeGlobal(out, decl, 0);
       case FuncDecl():
         _writeFunc(out, decl, 0);
       default:
@@ -99,6 +106,8 @@ int _declLine(Object decl) {
     case EnumDecl(:final attrs, :final pos):
       return attrs.isNotEmpty ? attrs.first.pos.line : pos.line;
     case ConstDecl(:final attrs, :final pos):
+      return attrs.isNotEmpty ? attrs.first.pos.line : pos.line;
+    case GlobalDecl(:final attrs, :final pos):
       return attrs.isNotEmpty ? attrs.first.pos.line : pos.line;
     default:
       return 1;
@@ -155,6 +164,7 @@ final class _FmtOut {
         case TokenKind.struct:
         case TokenKind.enum_:
         case TokenKind.const_:
+        case TokenKind.let:
         case TokenKind.pub:
         case TokenKind.atSign:
         case TokenKind.async_:
@@ -231,8 +241,7 @@ void _writeStruct(_FmtOut out, StructDecl decl, int indent) {
   out.buf.write(pad);
   if (decl.isPub) out.buf.write('pub ');
   out.buf.write('struct ${decl.name} {');
-  final fieldsShareHeader =
-      decl.fields.any((f) => f.pos.line == decl.pos.line);
+  final fieldsShareHeader = decl.fields.any((f) => f.pos.line == decl.pos.line);
   out.endLine(decl.pos.line, takeTrailing: !fieldsShareHeader);
   final fieldPad = '$pad$indentUnit';
   for (var i = 0; i < decl.fields.length; i++) {
@@ -281,6 +290,20 @@ void _writeConst(_FmtOut out, ConstDecl decl, int indent) {
   out.buf.write(pad);
   if (decl.isPub) out.buf.write('pub ');
   out.buf.write('const ${decl.name}: ${decl.typeName} = ${_expr(decl.init)}');
+  out.endLine(decl.namePos.line);
+}
+
+void _writeGlobal(_FmtOut out, GlobalDecl decl, int indent) {
+  _writeAttrs(out, decl.attrs, indent);
+  final pad = indentUnit * indent;
+  out.buf.write(pad);
+  if (decl.isPub) out.buf.write('pub ');
+  out.buf.write(decl.isMut ? 'let mut ' : 'let ');
+  out.buf.write('${decl.name}: ${decl.typeName}');
+  final init = decl.init;
+  if (init != null) {
+    out.buf.write(' = ${_expr(init)}');
+  }
   out.endLine(decl.namePos.line);
 }
 
@@ -374,7 +397,8 @@ void _writeStmt(_FmtOut out, Stmt stmt, int indent, {bool inline = false}) {
       out.buf.write(isMut ? 'let mut { ' : 'let { ');
       final parts = <String>[];
       for (var i = 0; i < fields.length; i++) {
-        parts.add(fields[i] == binds[i] ? fields[i] : '${fields[i]}: ${binds[i]}');
+        parts.add(
+            fields[i] == binds[i] ? fields[i] : '${fields[i]}: ${binds[i]}');
       }
       out.buf.write(parts.join(', '));
       out.buf.write(' } = ');
@@ -427,7 +451,12 @@ void _writeStmt(_FmtOut out, Stmt stmt, int indent, {bool inline = false}) {
       if (!inline) out.buf.write(pad);
       out.buf.write('while ${_expr(cond, indent)} ');
       _writeBlock(out, body, indent, leadingNewline: false);
-    case ForRangeStmt(:final name, :final start, :final endExclusive, :final body):
+    case ForRangeStmt(
+        :final name,
+        :final start,
+        :final endExclusive,
+        :final body
+      ):
       if (!inline) out.buf.write(pad);
       out.buf.write(
         'for $name in ${_expr(start, indent)}..<${_expr(endExclusive, indent)} ',
@@ -518,8 +547,7 @@ String _armPatternText(MatchPattern pattern, Expr? when, int indent) {
 
 String _patternText(MatchPattern pattern, int indent) {
   return switch (pattern) {
-    LitPattern(:final values) =>
-      values.map((v) => _expr(v, indent)).join(', '),
+    LitPattern(:final values) => values.map((v) => _expr(v, indent)).join(', '),
     RangePattern(:final start, :final endInclusive) =>
       '${_expr(start, indent)}..=${_expr(endInclusive, indent)}',
     RelPattern(:final op, :final rhs) => '$op ${_expr(rhs, indent)}',
@@ -597,8 +625,7 @@ String _expr(Expr expr, [int indent = 0]) {
       :final positionalFields
     ) =>
       () {
-        final type =
-            moduleName == null ? typeName : '$moduleName.$typeName';
+        final type = moduleName == null ? typeName : '$moduleName.$typeName';
         if (namedFields != null) {
           final fields = namedFields.entries
               .map((e) => '${e.key}: ${_expr(e.value, indent)}')

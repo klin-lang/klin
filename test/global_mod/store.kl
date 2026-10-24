@@ -1,0 +1,23 @@
+module store
+
+pub struct Point {
+    x: i32
+    y: i32
+}
+
+pub fn (mut pt: Point) bump() {
+    pt.x = pt.x + 1
+}
+
+pub fn inc(x: i32): i32 {
+    return x + 1
+}
+
+fn hidden_fn(x: i32): i32 {
+    return x
+}
+
+pub let mut count: i32 = 1
+pub let limit: i32 = 10
+let mut hidden: i32 = 5
+pub let mut point: Point = Point{ x: 1, y: 2 }
