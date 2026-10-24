@@ -43,6 +43,7 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `slice_sum.kl` | Arrays / slices |
 | `slice_struct.kl` | Slice of a struct, `s[i].field`, `&s[i]` ([D14](../docs/01-decisions.md)) |
 | `slice_range.kl` | Subslice `xs[a:b]` / `xs[a:]` / `xs[:b]` ([D15](../docs/01-decisions.md)) |
+| `slice_ptr.kl` | Slice and index through `*mut [N]T` / `*[N]T` ([D19](../docs/01-decisions.md)) |
 | `fn_field.kl` | Call a function field `h.cb(1)` ([D16](../docs/01-decisions.md)) |
 | `ptr_int_cast.kl` | `cast(usize, &x)` and back ([D17](../docs/01-decisions.md)) |
 | `main_args.kl` | `fn main(args: []str)` ([D18](../docs/01-decisions.md)) |

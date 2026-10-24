@@ -337,7 +337,11 @@ void _emitStmt(
         final String indexed;
         if (peeled is NameExpr && names.contains(peeled.name)) {
           final tmp = state.nextValueTemp();
-          buf.writeln('$pad${_cType(et)} *$tmp = $base;');
+          // `*mut [N]T` is `T (*tmp)[N]`. A prefix `T (*)[N] *tmp` is not C.
+          final ptrDecl = _typeNeedsPtrArrayDecl(PtrType(et))
+              ? _cDecl(PtrType(et), tmp)
+              : '${_cType(et)} *$tmp';
+          buf.writeln('$pad$ptrDecl = $base;');
           indexed = tmp;
         } else {
           indexed = base;
@@ -621,7 +625,10 @@ void _emitStmt(
                 : returnCType.startsWith('klin_res_')
                     ? '($returnCType){ .is_err = false, .u.ok = ${_emitExpr(value, ctx)} }'
                     : _emitExpr(value, ctx);
-        buf.writeln('$pad$returnCType $temp = $returnValue;');
+        final tempDecl = valueType != null
+            ? _cValueDecl(valueType, temp)
+            : '$returnCType $temp';
+        buf.writeln('$pad$tempDecl = $returnValue;');
         _emitExitCleanups(
           buf,
           state.deferStack,

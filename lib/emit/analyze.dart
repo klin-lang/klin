@@ -17,7 +17,10 @@ void _collectStructKeys(
     case StructType(:final moduleName, :final name):
       output.add('$moduleName.$name');
     case PtrType(:final pointee):
-      if (throughPointer) {
+      // A pointer to a struct may be incomplete (`struct Node *`).
+      // A pointer to an array of that struct may not: `T (*)[N]` needs
+      // `T` complete. Count that struct so the body is emitted first.
+      if (throughPointer || typeNeedsCompleteStructArray(pointee)) {
         _collectStructKeys(pointee, output, throughPointer: throughPointer);
       }
     case ArrayType(:final elem):

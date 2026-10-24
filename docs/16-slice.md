@@ -130,6 +130,30 @@ as `xs[i]`. Mutability of the view follows the source place. A
 subslice of read-only bytes is those bytes: `let mut s = b"ab"[0:1]`
 is the D10 error.
 
+## Pointer to an array
+
+`*[N]T` and `*mut [N]T` are a pointer to the array
+([D19](01-decisions.md)). `(*p)[:]`, `(*p)[a:b]`, `(*p)[a:]`, and
+`(*p)[:b]` are `[]T` for any element D14 allows, including `Token` and
+`[]u8`. `(*p)[i]` indexes the array. There is no runtime bounds check.
+`*mut [N]T` is a mutable place; `*[N]T` is immutable. `let mut s =
+(*p)[:]` can write either way, except read-only bytes (D10). A cast is
+not tracked.
+
+`p` may be a local, a parameter, a field, a global, or a call.
+`(*get())[:]` runs the call once. `&` of a `[N]T` value returned from
+a function addresses the array inside the return wrapper.
+
+A field `buf: *mut [N]Token` is allowed. A field `[]*mut [N]Token`,
+`fn(): *mut [N]Token`, or `!*mut [N]Token` is not: that typedef needs
+the struct to be complete. `kids: *mut [N]Node` is not either (the array needs `Node`
+complete). `next: *Node` and `kids: []Node` stay valid. `async fn`
+rejects a slice range; `(*p)[i]` there is fine. `p[:]` and `p[i]` on
+the pointer itself are errors.
+
+Example: [`examples/slice_ptr.kl`](../examples/slice_ptr.kl).
+Golden: `test/slice_ptr.kl`.
+
 ## Non-goals
 
 - Bare `xs.map(f)` / hidden `malloc`

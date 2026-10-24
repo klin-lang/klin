@@ -661,6 +661,39 @@ int main(void) {
     expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
   });
 
+  test('slice through a pointer to an array', () async {
+    final result = await compileAndRun('test/slice_ptr.kl', tmp, cc: 'gcc');
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stdout, await File('test/slice_ptr.out').readAsString());
+
+    final program = loadProject('test/slice_ptr.kl');
+    Checker().check(program);
+    final c = emitC(program, 'test/slice_ptr.kl');
+    expect(c, contains('int32_t (*p)[4]'));
+    expect(c, contains('(klin_slice_i32){ (*(p)), 4 }'));
+    expect(c, contains('((*(p))) + (size_t)(1)'));
+    expect(c, contains('(int32_t (*)[4])(uintptr_t)'));
+    expect(c, contains('struct slice_ptr_Token (*tp)[2]'));
+    expect(c, contains('&(back.v)'));
+    expect(c, contains('((*(st->p)))[0]'));
+    expect(c, isNot(contains('if (')));
+    expect(
+      c.indexOf('typedef struct slice_ptr_Token {'),
+      lessThan(c.indexOf('struct slice_ptr_Token (**ptr)[2]')),
+    );
+    final cPath = '${tmp.path}/slice_ptr_pedantic.c';
+    await File(cPath).writeAsString(c);
+    final pedantic = await Process.run('gcc', [
+      '-std=c11',
+      '-pedantic-errors',
+      '-Wall',
+      cPath,
+      '-o',
+      '${tmp.path}/slice_ptr_pedantic',
+    ]);
+    expect(pedantic.exitCode, 0, reason: pedantic.stderr.toString());
+  });
+
   test('call a function field', () async {
     final result = await compileAndRun('test/fn_field.kl', tmp, cc: 'gcc');
     expect(result.exitCode, 0, reason: result.stderr);

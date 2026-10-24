@@ -824,7 +824,118 @@ final class Checker {
             field.pos,
           );
         }
+        // `[]*mut [N]Token` and `fn(): *mut [N]Token` are typedefs that
+        // need the struct complete, and those typedefs are emitted after
+        // struct bodies. A field `buf: *mut [N]Token` is inline and stays.
+        if (_structFieldNeedsLateTypedef(field.resolvedType!)) {
+          throw CheckError(
+            'a struct field cannot be `${field.resolvedType!.displayName}` '
+            '(the C typedef needs an array of structs to be complete)',
+            field.pos,
+          );
+        }
       }
+    }
+    _rejectCompleteStructCycles();
+  }
+
+  /// A slice or function typedef, or one nested under a pointer, an array,
+  /// or `!T`. `*mut [N]Token` is not one: its declarator is inline.
+  bool _structFieldNeedsLateTypedef(KlinType type) {
+    switch (type) {
+      case SliceType() || FnType():
+        return typeNeedsCompleteStructArray(type);
+      case PtrType(:final pointee):
+        return _structFieldNeedsLateTypedef(pointee);
+      case ArrayType(:final elem):
+        return _structFieldNeedsLateTypedef(elem);
+      case ResultType(:final ok):
+        // `!*mut [N]Token` is a typedef whose `ok` field is
+        // `struct Token (*ok)[N]`. That typedef is emitted after struct
+        // bodies, so it cannot be a field.
+        if (typeNeedsCompleteStructArray(type)) return true;
+        return _structFieldNeedsLateTypedef(ok);
+      default:
+        return false;
+    }
+  }
+
+  /// `T (*)[N]` needs `T` complete. A cycle (`kids: *mut [N]Node`, or two
+  /// structs that each hold an array of the other) cannot be ordered.
+  /// `next: *Node` and `kids: []Node` are pointers and are not edges.
+  void _rejectCompleteStructCycles() {
+    final graph = <String, List<({String dep, String field, SourcePos pos})>>{};
+    for (final struct in _structs.values) {
+      final key = _key(struct.moduleName, struct.name);
+      final edges = <({String dep, String field, SourcePos pos})>[];
+      for (final field in struct.fields) {
+        final deps = <String>{};
+        _completeStructDeps(field.resolvedType, deps);
+        for (final dep in deps) {
+          edges.add((dep: dep, field: field.name, pos: field.pos));
+        }
+      }
+      graph[key] = edges;
+    }
+    final color = <String, int>{};
+    void visit(String key) {
+      color[key] = 1;
+      for (final edge in graph[key] ?? const []) {
+        final state = color[edge.dep] ?? 0;
+        if (edge.dep == key || state == 1) {
+          throw CheckError(
+            'field `${edge.field}` needs `${_structKeyDisplay(edge.dep)}` '
+            'to be complete (it contains an array of that struct)',
+            edge.pos,
+          );
+        }
+        if (state == 0 && graph.containsKey(edge.dep)) visit(edge.dep);
+      }
+      color[key] = 2;
+    }
+
+    for (final key in graph.keys) {
+      if ((color[key] ?? 0) == 0) visit(key);
+    }
+  }
+
+  String _structKeyDisplay(String key) {
+    final dot = key.indexOf('.');
+    if (dot < 0) return key;
+    final module = key.substring(0, dot);
+    final name = key.substring(dot + 1);
+    return module.isEmpty ? name : '$module.$name';
+  }
+
+  /// Structs that must be complete because [type] contains an array of them.
+  void _completeStructDeps(KlinType? type, Set<String> out) {
+    switch (type) {
+      case null:
+        return;
+      case StructType(:final moduleName, :final name):
+        out.add(_key(moduleName, name));
+      case ArrayType(:final elem):
+        _completeStructDeps(elem, out);
+      case PtrType(:final pointee):
+        if (pointee is ArrayType || typeNeedsCompleteStructArray(pointee)) {
+          _completeStructDeps(pointee, out);
+        }
+      case SliceType(:final elem):
+        if (typeNeedsCompleteStructArray(type)) {
+          _completeStructDeps(elem, out);
+        }
+      case FnType(:final params, :final ret):
+        if (!typeNeedsCompleteStructArray(type)) return;
+        for (final param in params) {
+          _completeStructDeps(param, out);
+        }
+        _completeStructDeps(ret, out);
+      case ResultType(:final ok):
+        if (typeNeedsCompleteStructArray(type)) {
+          _completeStructDeps(ok, out);
+        }
+      default:
+        return;
     }
   }
 
@@ -3740,6 +3851,14 @@ final class Checker {
           };
         }(),
       SliceFromExpr(:final array, :final start, :final end, :final pos) => () {
+          // The async MVP lowers statements, not a slice header expression.
+          if (_currentIsAsync) {
+            throw CheckError(
+              'async fn MVP does not support a slice range '
+              '(index the array or the slice)',
+              pos,
+            );
+          }
           final src = _inferExpr(array);
           final KlinType elem;
           if (src is ArrayType) {

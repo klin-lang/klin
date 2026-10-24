@@ -227,6 +227,47 @@ bool _arrayReturnOfStruct(KlinType type) {
   return elem is StructType;
 }
 
+/// True when [type] is a pointer to an array, or an array or pointer
+/// chain that contains one. The C declarator is `T (*name)[N]`, not a
+/// prefix `T (*)[N] name`.
+bool typeNeedsPtrArrayDecl(KlinType type) {
+  switch (type) {
+    case PtrType(:final pointee):
+      if (pointee is ArrayType) return true;
+      return typeNeedsPtrArrayDecl(pointee);
+    case ArrayType(:final elem):
+      return typeNeedsPtrArrayDecl(elem);
+    default:
+      return false;
+  }
+}
+
+/// True when the C type contains an array whose element is a struct.
+/// That struct has to be complete. A pointer or a slice of the struct
+/// does not count — those are `struct Tag *` and may be incomplete.
+bool typeNeedsCompleteStructArray(KlinType type) {
+  switch (type) {
+    case ArrayType():
+      var elem = type.elem;
+      while (elem is ArrayType) {
+        elem = elem.elem;
+      }
+      if (elem is StructType) return true;
+      return typeNeedsCompleteStructArray(elem);
+    case PtrType(:final pointee):
+      return typeNeedsCompleteStructArray(pointee);
+    case SliceType(:final elem):
+      return typeNeedsCompleteStructArray(elem);
+    case FnType(:final params, :final ret):
+      if (typeNeedsCompleteStructArray(ret)) return true;
+      return params.any(typeNeedsCompleteStructArray);
+    case ResultType(:final ok):
+      return typeNeedsCompleteStructArray(ok);
+    default:
+      return false;
+  }
+}
+
 final class SliceType extends KlinType {
   /// Element type. A primitive, struct, enum, `str`, pointer, slice,
   /// function, or array. Not `void`, not `!T`, and not an array of structs
