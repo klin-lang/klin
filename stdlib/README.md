@@ -59,7 +59,9 @@ Returns bytes written excluding NUL, or `-1` on error/truncation. Needs
 ## `str`
 
 Content compare and length via libc ([issue 080](../issues/080-stdlib-str.md)).
-Cost is a function call — `==` on `str` is intentionally unsupported:
+Cost is a function call — `==` on `str` is intentionally unsupported.
+Language `s.len` is also `strlen`, as `i32`, with no import
+([D22](../docs/01-decisions.md)). `str.len` here returns `usize`:
 
 ```klin
 import str

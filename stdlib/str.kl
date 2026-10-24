@@ -12,7 +12,8 @@ pub fn eq(a, b: str): bool {
     return c_strcmp(a, b) == 0
 }
 
-/// Byte length (`strlen`). Visible cost.
+/// Byte length (`strlen`) as `usize`. Visible cost.
+/// Language `s.len` is the same walk as `i32` and needs no import (D22).
 pub fn len(s: str): usize {
     return c_strlen(s)
 }

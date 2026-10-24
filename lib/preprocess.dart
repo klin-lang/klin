@@ -68,7 +68,10 @@ final class _MacroDef {
   /// Import qualifier when this `$fn` was loaded from `import "…" [alias]`.
   final String? packageQualifier;
 
-  const _MacroDef({
+  /// How many times this definition has been expanded in this file.
+  int expandCount = 0;
+
+  _MacroDef({
     required this.name,
     required this.params,
     required this.body,
@@ -614,6 +617,10 @@ final class _PpScanner {
         callPos,
       );
     }
+    def.expandCount++;
+    // Names are taken from the template, before `$` substitution, so
+    // `fn each_$T` stays a stable name and `fn helper` does not.
+    final helpers = _plainFreeFnNames(def.body);
     var body = def.body;
     for (var i = 0; i < def.params.length; i++) {
       final param = def.params[i];
@@ -628,6 +635,12 @@ final class _PpScanner {
         RegExp(r'\$mod\b'),
         (_) => def.packageQualifier!,
       );
+    }
+    if (helpers.isNotEmpty) {
+      final suffix = '__${def.name}_${_expansionStem(path)}_${def.expandCount}';
+      body = _renameIdents(body, {
+        for (final name in helpers) name: '$name$suffix',
+      });
     }
     // Nested calls in substituted text (e.g. `$event_loop` inside `$rtos_task`).
     body = _expandNested(body);
@@ -836,5 +849,190 @@ final class _PpScanner {
   static bool _isDigit(String c) {
     final u = c.codeUnitAt(0);
     return u >= 48 && u <= 57;
+  }
+}
+
+/// File stem used in expansion-local function names. `<input>` → `input`.
+String _expansionStem(String path) {
+  var base = path;
+  final slash = base.lastIndexOf('/');
+  if (slash >= 0) base = base.substring(slash + 1);
+  final bslash = base.lastIndexOf('\\');
+  if (bslash >= 0) base = base.substring(bslash + 1);
+  if (base.endsWith('.kl')) base = base.substring(0, base.length - 3);
+  final buf = StringBuffer();
+  for (var i = 0; i < base.length; i++) {
+    final c = base[i];
+    if (!_PpScanner._isIdentContinue(c)) continue;
+    if (buf.isEmpty && !_PpScanner._isIdentStart(c)) buf.write('f');
+    buf.write(c);
+  }
+  if (buf.isEmpty) return 'kl';
+  return buf.toString();
+}
+
+/// Plain free-function names in a macro template: `fn helper`, not
+/// `fn (v: T) get`, not `fn Type.name`, not `fn each_$T`.
+Set<String> _plainFreeFnNames(String body) {
+  final names = <String>{};
+  final scan = _MacroText(body);
+  var depth = 0;
+  while (!scan.done) {
+    if (scan.peek == '"') {
+      scan.skipString();
+      continue;
+    }
+    if (scan.startsComment) {
+      scan.skipComment();
+      continue;
+    }
+    if (scan.peek == "'") {
+      scan.skipChar();
+      continue;
+    }
+    if (scan.peek == '{') {
+      depth++;
+      scan.advance();
+      continue;
+    }
+    if (scan.peek == '}') {
+      if (depth > 0) depth--;
+      scan.advance();
+      continue;
+    }
+    if (scan.startsIdent) {
+      final ident = scan.readIdent();
+      if (depth != 0 || ident != 'fn') continue;
+      scan.skipSpaceAndComments();
+      if (scan.done || scan.peek == '(' || !scan.startsIdent) continue;
+      final name = scan.readIdent();
+      scan.skipSpaceAndComments();
+      if (!scan.done && (scan.peek == '.' || scan.peek == r'$')) continue;
+      names.add(name);
+      continue;
+    }
+    scan.advance();
+  }
+  return names;
+}
+
+/// Replace [renames] identifiers in [body]. Strings and `//` comments stay.
+String _renameIdents(String body, Map<String, String> renames) {
+  if (renames.isEmpty) return body;
+  final scan = _MacroText(body);
+  final buf = StringBuffer();
+  while (!scan.done) {
+    if (scan.peek == '"') {
+      buf.write(scan.takeString());
+      continue;
+    }
+    if (scan.startsComment) {
+      buf.write(scan.takeComment());
+      continue;
+    }
+    if (scan.peek == "'") {
+      buf.write(scan.takeChar());
+      continue;
+    }
+    if (scan.startsIdent) {
+      final at = scan.index;
+      final ident = scan.readIdent();
+      // `$inner` is a nested macro (or a leftover splice), not a use
+      // of the helper `inner`.
+      final dollar = at > 0 && body[at - 1] == r'$';
+      buf.write(dollar ? ident : (renames[ident] ?? ident));
+      continue;
+    }
+    buf.write(scan.advance());
+  }
+  return buf.toString();
+}
+
+/// Cursor over macro text. One UTF-16 code unit per step, same as the
+/// preprocessor scanner.
+final class _MacroText {
+  final String source;
+  int _i = 0;
+
+  _MacroText(this.source);
+
+  bool get done => _i >= source.length;
+
+  int get index => _i;
+
+  String get peek => source[_i];
+
+  bool get startsIdent => !done && _PpScanner._isIdentStart(peek);
+
+  bool get startsComment =>
+      !done &&
+      peek == '/' &&
+      _i + 1 < source.length &&
+      source[_i + 1] == '/';
+
+  String advance() => source[_i++];
+
+  String readIdent() {
+    final start = _i;
+    _i++;
+    while (!done && _PpScanner._isIdentContinue(peek)) {
+      _i++;
+    }
+    return source.substring(start, _i);
+  }
+
+  void skipSpaceAndComments() {
+    while (!done) {
+      final c = peek;
+      if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
+        _i++;
+        continue;
+      }
+      if (startsComment) {
+        skipComment();
+        continue;
+      }
+      break;
+    }
+  }
+
+  void skipString() => takeString();
+
+  String takeString() {
+    final start = _i;
+    _i++; // "
+    while (!done && peek != '"') {
+      if (peek == '\\' && _i + 1 < source.length) {
+        _i += 2;
+      } else {
+        _i++;
+      }
+    }
+    if (!done) _i++; // closing "
+    return source.substring(start, _i);
+  }
+
+  void skipComment() => takeComment();
+
+  String takeComment() {
+    final start = _i;
+    while (!done && peek != '\n') {
+      _i++;
+    }
+    return source.substring(start, _i);
+  }
+
+  void skipChar() => takeChar();
+
+  String takeChar() {
+    final start = _i;
+    _i++; // '
+    if (!done && peek == '\\' && _i + 1 < source.length) {
+      _i += 2;
+    } else if (!done && peek != '\n') {
+      _i++;
+    }
+    if (!done && peek == "'") _i++;
+    return source.substring(start, _i);
   }
 }

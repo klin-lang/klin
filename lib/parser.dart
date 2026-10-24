@@ -1319,6 +1319,29 @@ final class Parser {
     final open = _expect(TokenKind.lBrace, 'expected `{` after `or`');
     final stmts = <Stmt>[];
     while (!_check(TokenKind.rBrace) && !_check(TokenKind.eof)) {
+      // `match` is an expression (`or { match k { 1 { 0 } else { 1 } } }`)
+      // and a statement (`or { match k { 1 { return 0 } else { return 1 } } }`).
+      // Try the value form first. If an arm is not an expression, parse
+      // the statement (D21).
+      if (_check(TokenKind.match_)) {
+        final savedI = _i;
+        final savedNoStruct = _noStructLit;
+        final savedParen = _exprParenDepth;
+        try {
+          final expr = _expr();
+          if (_check(TokenKind.rBrace)) {
+            _advance();
+            return OrBlock(stmts, expr, open.pos);
+          }
+          stmts.add(_stmtFromExpr(expr));
+        } on ParseError {
+          _i = savedI;
+          _noStructLit = savedNoStruct;
+          _exprParenDepth = savedParen;
+          stmts.add(_matchStmt());
+        }
+        continue;
+      }
       if (_canStartExpr(_current.kind)) {
         final expr = _expr();
         if (_check(TokenKind.rBrace)) {
@@ -1330,7 +1353,13 @@ final class Parser {
         stmts.add(_stmt());
       }
     }
-    throw ParseError('`or` block requires a final expression', _current.pos);
+    if (!_check(TokenKind.rBrace)) {
+      throw ParseError('unclosed `or` block', _current.pos);
+    }
+    // No trailing value: `or { return }` / `or { break }`. The checker
+    // accepts the block only when every path diverges.
+    _advance();
+    return OrBlock(stmts, null, open.pos);
   }
 
   Expr _equality() {

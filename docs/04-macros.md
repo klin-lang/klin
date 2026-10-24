@@ -118,6 +118,24 @@ User page (SVD, fluent MMIO, fetch, pinout): [device.md](device.md).
 builtins in the same `$` family as `$fn`. They expand **before** parse
 and are not valid Klin until `--emit-pp`.
 
+## Free functions in a template
+
+A plain `fn helper` at the top of the template is private to that
+expansion (D20). The second `$note(i32)` does not redeclare `helper`.
+The expanded spelling is `helper__note_<file>_1`, then `_2`. It is not
+a name other code should call. Call `helper` inside the template.
+
+A method (`fn (p: T) get`), an associated function (`fn Type.name`),
+and a name built with `$` (`fn task_$name`, `fn id_$T`) keep the
+spelling after substitution. Those are the stable names. Two
+expansions that generate the same `task_blink` are still a
+redeclaration.
+
+The rewrite is textual, after `$` substitution, and it covers every
+identifier with that spelling in the expansion (a field, a parameter,
+a method, the block argument). Strings, `//` comments, and the name
+after `$` (a nested macro) stay.
+
 ## What this is not
 
 - Not `fn foo[T]` / `Vec[T]` in the parser or checker ([034](../issues/034-generic-types.md)).

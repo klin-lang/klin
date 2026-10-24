@@ -243,8 +243,36 @@ arguments as an immutable slice: `.len` is `argc` (it counts `argv[0]`),
 and `args[i]` is `argv[i]`. C is `int main(int klin_argc, char **klin_argv)`
 plus one header. No copy and no check that `argc` is negative.
 `[][]u8` is not this parameter — that would walk each string.
+Bytes of one argument are `args[i].len`, `args[i][j]`, or
+`cstr_u8(args[i])` (below). That walk is not part of entering `main`.
 See [D18](01-decisions.md). Runnable:
 [`examples/main_args.kl`](../examples/main_args.kl).
+
+## Reading a `str`
+
+`s.len` is `i32`. Each use is `(int32_t)strlen(s)`: a walk to the first
+NUL, no cache, no allocation. It is not a constant. `s[i]` is a
+read-only `u8`, with no bounds check. `&s[i]` is `*u8` even when `s`
+is `mut`. `cstr_u8(s)` builds one read-only `[]u8` (the argument is
+evaluated once). A user `fn cstr_u8` hides the builtin.
+
+```klin
+fn main(args: []str) {
+    let s = "Az"
+    printf("%d %d\n", s.len, s[0])
+    let b = cstr_u8(s)
+    printf("%d\n", cast(i32, b.len))
+    if args.len > 1 {
+        printf("%d\n", args[1].len)
+    }
+}
+```
+
+Writes are errors: `s[i] = 1`, `s.len = 1`, `let mut w = cstr_u8(s)`.
+There is no `s[a:b]` and no `cast` of a `str` to an integer. A NULL
+`str` is undefined, the same as `strlen`. `import str` / `str.len`
+still returns `usize`. See [D22](01-decisions.md). Runnable:
+[`examples/str_bytes.kl`](../examples/str_bytes.kl).
 
 ## Function field call
 
@@ -262,9 +290,10 @@ text and a length. No interpolation. Escapes match `"..."`:
 `\n`, `\t`, `\\`, `\"`, `\$`, `\0`.
 
 `\0` is a single NUL byte in both forms. `.len` on a byte string counts
-it (`b"ab\0".len` is 3). `str` has no length, so a C string operation on
-`"..."` stops at the first NUL; a counted buffer uses `b"..."`. `\0` is
-not an octal number — `b"\00"` is NUL then the character `0`.
+it (`b"ab\0".len` is 3). `s.len` on a `str` is `strlen` and stops at
+the first NUL (`"ab\0c".len` is 2). A counted buffer, including an
+embedded NUL, uses `b"..."`. `\0` is not an octal number — `b"\00"` is
+NUL then the character `0`.
 
 ```klin
 fn take(s: []u8): i32 { return s.len }

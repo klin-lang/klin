@@ -1,6 +1,6 @@
 # Design decisions
 
-This is the decision log (D1–D19), not an introduction. Start with
+This is the decision log (D1–D22), not an introduction. Start with
 [00-idea.md](00-idea.md). To write Klin: [guide.md](guide.md).
 
 The first three must be made **before the first line of the parser** — they permeate
@@ -229,18 +229,20 @@ Implemented in [097](../issues/097-logical-ops.md); example:
 **Choice: `b"fn"` has type `[]u8`.** The bytes of the text, plus `.len`.
 Not a `str`.
 
-`str` is `const char*` — a C string, no length, no indexing. Keyword
-tables, messages, and paths want the bytes. A second literal keeps
-`"..."` as `str` and does not allocate.
+`str` is `const char*`. Reading its bytes is explicit and read-only
+(D22): `.len` is `strlen`, `s[i]` is one `u8`, and `cstr_u8` is a
+read-only `[]u8`. Keyword tables, messages, and paths want counted
+bytes, so they use `b"..."`. A second literal keeps `"..."` as `str`
+and does not allocate.
 
 - Escapes are the same as `"..."` (`\n` `\t` `\\` `\"` `\$` `\0`). No
   interpolation (`$` is a byte).
 - `\0` is one NUL byte in both `"..."` and `b"..."`. It is not a
   multi-digit octal escape: `b"\00"` is a NUL followed by the character
   `0`. `"..."` accepts it because the two literals share one escape
-  list. `str` is still `const char*` with no length, so `puts` and
-  other C string operations stop at the first NUL. Counted bytes
-  (a syscall path, a keyword table) use `b"..."`.
+  list. `str` is still `const char*`. `s.len` is `strlen` and stops at
+  the first NUL (D22). `puts` does too. Counted bytes (a syscall path,
+  a keyword table, an embedded NUL) use `b"..."`.
 - Emission is a pointer at a static C string and an explicit length.
   The length is the number of bytes, including any embedded NUL. It is
   not `strlen`. The C literal spells that byte as `\000`, so a following
@@ -730,8 +732,10 @@ fn main() {
 `[]str` is the argv pointer and the count. One cast from `char **` to
 `const char **`, no loop, no allocation. `[][]u8` would measure every
 argument (`strlen`) and build a slice per argument — hidden work, so
-it is not the signature. Kliner can still read `/proc/self/cmdline`;
-the language path is this parameter.
+it is not the signature. A program that wants the bytes of one
+argument writes `args[i].len`, `args[i][j]`, or `cstr_u8(args[i])`
+(D22). That walk is not part of entering `main`. Kliner can still
+read `/proc/self/cmdline`; the language path is this parameter.
 
 `args.len` is `argc`, including `argv[0]`. The slice is immutable
 (a parameter, D5). A negative `argc` is not checked; the host does
@@ -793,6 +797,147 @@ fn main() {
     let mut s = (*p)[1:3]
     s[0].n = 9
     printf("%d\n", buf[1].n)
+}
+```
+
+## D20. Free functions inside `$fn` — DECIDED
+
+**Choice: a plain free function is private to one expansion. Its name is `name__<macro>_<file>_<n>`.**
+
+A second `$vec(B, u8)` after `$vec(A, i32)` used to redeclare `fn helper`.
+Emitting the helper once when the text matches does not work: the two
+bodies differ because `$T` was substituted. The expanded name is not a
+stable API. Call the helper with the spelling in the template
+(`helper(v)`).
+
+A name is plain when the template has `fn helper` at brace depth 0.
+These are not renamed:
+
+- `fn (v: T) get` — a method
+- `fn Type.name` — an associated function
+- `fn each_$T`, `fn helper$T`, `fn task_$name` — a `$` splice is the
+  public name (`task_blink`, `id_i32`)
+
+Two expansions that produce the same spliced name are still a
+redeclaration. That is the caller's spelling, not a hidden copy.
+
+After the parameters are substituted, every identifier with a plain
+helper's spelling in that expansion is rewritten. A field, a parameter,
+a method, and the block argument stay consistent with the function.
+Strings, `//` comments, and an identifier written after `$` (a nested
+macro, or a splice that is still open) are not rewritten. The count starts at 1 for
+each macro in that file. The file part is the last path segment without
+`.kl`, keeping identifier characters (`<input>` is `input`). An empty
+stem is `kl`. A stem that would start with a digit is prefixed with `f`.
+
+```klin
+$fn note(T: type) {
+    fn helper(v: $T): $T { return v }
+}
+$note(i32)
+$note(i32)
+```
+
+In `t.kl` that is `helper__note_t_1` and `helper__note_t_2`.
+
+## D21. An `or` block may diverge — DECIDED
+
+**Choice: the block ends with a value, or every path leaves with `return`, `break`, or `continue`.**
+
+`let n = parse() or { return }` is the same shape as `or { 0 }`. The
+expression type is the ok type of the `!T`. The diverging path does not
+have to match that type. `return` is checked against the enclosing
+function:
+
+- void: bare `return`. `return value` is `void function cannot return a value`
+- a function that returns `T`: `return value` of that type. A bare
+  `return` is `function … must return T`
+- `!T`: `return error(n)`, or `return` of that `!T`. A bare `return`
+  is still `must return !T`
+- in a function that does not return `!T`, `return error(n)` is
+  `type mismatch: expected i32, got error` (the `error` type)
+
+`break` and `continue` count only when they leave the `or`. A `break`
+inside an inner loop does not. `if` / `else`, including `else if`, both
+have to diverge. `if` without `else` does not. A nested block may.
+`match` uses the same exhaustiveness as a returning `match` (`else`, or
+every enum variant with no `when`), and every arm diverges. A `match`
+whose arms are statements is that statement. A `match` whose arms are
+values is still a match expression, so it is only legal when the `or`
+itself is a `let` or an assignment (the existing match-expression rule). `while true`
+(the literal `true` only) and `for ;;` diverge when the body does, seen
+from inside that loop. `while true { break }` does not: the `break`
+leaves the `while`, then the `or` falls through. `while 1 == 1` is not
+treated as always true.
+
+`expr!` is unchanged. It still needs a function that returns `!T`.
+`err: i32` is still in scope in the block. `pick` still cannot contain
+`or` (it is a C `?:`). An empty block, or a block that can fall
+through, is:
+
+`` `or` block must end with a value, or diverge with `return`, `break`, or `continue` ``
+
+The block is an expression. The form is `let n = f() or { return }`,
+not a bare statement.
+
+```klin
+fn take(ok: bool): !i32 {
+    if ok { return 7 }
+    return error(3)
+}
+
+fn use(ok: bool): i32 {
+    let n = take(ok) or { return err }
+    return n
+}
+```
+
+## D22. Reading `str` — DECIDED
+
+**Choice: `s.len` and `s[i]` on the pointer, plus `cstr_u8(s)` when the code wants a `[]u8`. All three are read-only.**
+
+`str` stays `const char*` (D10). `main(args: []str)` still does not
+measure each argument (D18). The walk happens only where the program
+writes it.
+
+- `s.len` has type `i32`, the same as a slice `.len`. Emission is
+  `(int32_t)strlen(…)`. Every evaluation walks from the pointer to the
+  first NUL. There is no cache and no allocation. A string longer than
+  2^31−1 truncates. It is not a constant, so it cannot be an `[N]T`
+  length. `b"ab\0".len` is 3 (the NUL counts). `"ab\0c".len` is 2
+  (`strlen` stops). `s.len = 1` is `` `len` is read-only ``. Any other
+  field is `` `str` has no field `foo` (`.len` is the byte length; `cstr_u8` builds a read-only `[]u8`) ``.
+- `s[i]` has type `u8`. No bounds check (D15). Emission is
+  `((uint8_t *)(…))[i]`, so a byte above 127 is not a negative `char`.
+  Assignment is `` cannot assign through a string (`str` is read-only) ``.
+  `&s[i]` is `*u8` even when the `str` variable is `mut`: the pointer
+  can be reseated, the byte cannot. There is no `s[a:b]`
+  (`` `str` has no subslice; `cstr_u8(s)` is a read-only `[]u8` ``).
+- `cstr_u8(s)` is a builtin of type `[]u8`. The argument is evaluated
+  once: one pointer temporary, one `strlen`, one slice header. The
+  bytes are read-only (D10), so `let mut w = cstr_u8(s)`, assigning
+  `cstr_u8(p)` into a mutable `[]u8`, and `let mut p = cstr_u8(s)[0:1]`
+  are errors. A user `fn cstr_u8` in scope hides the builtin.
+  `mod.cstr_u8` is that module's function, not the builtin.
+- `#include <string.h>` is emitted only when the program uses `s.len`
+  or `cstr_u8`. Indexing a `str` does not need it.
+- A NULL `str` is undefined behavior, the same as `strlen` in C. There
+  is no runtime check.
+- `cast` of a `str` to an integer stays rejected (D17).
+- `stdlib` `str.len` still returns `usize` and still needs
+  `import str`. Language `s.len` is `i32` and needs no import. Both
+  are a `strlen` call. `==` on `str` stays unsupported
+  ([080](../issues/080-stdlib-str.md)): the cost does not disappear,
+  so it is not an operator. `s.len` spells that cost as a call.
+
+```klin
+fn main(args: []str) {
+    if args.len > 1 {
+        let s = args[1]
+        printf("%d %d\n", s.len, s[0])
+        let b = cstr_u8(s)
+        printf("%d\n", cast(i32, b.len))
+    }
 }
 ```
 

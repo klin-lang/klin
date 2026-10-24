@@ -1,0 +1,111 @@
+fn parse(ok: bool): !i32 {
+    if ok {
+        return 7
+    }
+    return error(3)
+}
+
+fn use_value(ok: bool): i32 {
+    let n = parse(ok) or { return err }
+    return n
+}
+
+fn use_void(ok: bool, flag: *mut i32) {
+    let n = parse(ok) or { return }
+    *flag = n
+}
+
+fn skip_bad(): i32 {
+    let xs: [3]i32 = [1, 0, 1]
+    let mut sum = 0
+    let mut i = 0
+    while i < 3 {
+        let bit = xs[i]
+        i = i + 1
+        let n = parse(bit != 0) or { continue }
+        sum = sum + n
+    }
+    return sum
+}
+
+fn stop_bad(): i32 {
+    let xs: [3]i32 = [1, 0, 1]
+    let mut sum = 0
+    let mut i = 0
+    while i < 3 {
+        let bit = xs[i]
+        i = i + 1
+        let n = parse(bit != 0) or { break }
+        sum = sum + n
+    }
+    return sum
+}
+
+fn both(ok: bool): i32 {
+    let n = parse(ok) or {
+        if err == 3 {
+            return 1
+        }
+        return 2
+    }
+    return n
+}
+
+fn propagate(ok: bool): !i32 {
+    let n = parse(ok) or { return error(err) }
+    return n + 1
+}
+
+fn forever(): i32 {
+    let n = parse(false) or {
+        while true {
+            return 4
+        }
+    }
+    return n
+}
+
+fn forever_for(): i32 {
+    let n = parse(false) or {
+        for ; ;  {
+            return 5
+        }
+    }
+    return n
+}
+
+fn matched(): i32 {
+    let n = parse(false) or {
+        match 1 {
+            1 {
+                return 8
+            }
+            else {
+                return 9
+            }
+        }
+    }
+    return n
+}
+
+fn main() {
+    printf("%d\n", use_value(true))
+    printf("%d\n", use_value(false))
+    let mut flag: i32 = 9
+    use_void(true, &flag)
+    printf("%d\n", flag)
+    flag = 9
+    use_void(false, &flag)
+    printf("%d\n", flag)
+    printf("%d\n", skip_bad())
+    printf("%d\n", stop_bad())
+    printf("%d\n", both(true))
+    printf("%d\n", both(false))
+    let p = propagate(true) or { 0 - err }
+    printf("%d\n", p)
+    let q = propagate(false) or { 0 - err }
+    printf("%d\n", q)
+    printf("%d\n", forever())
+    printf("%d\n", forever_for())
+    printf("%d\n", matched())
+}

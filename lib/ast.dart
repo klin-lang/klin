@@ -1099,10 +1099,13 @@ final class AwaitExpr extends Expr {
   AwaitExpr(this.operand, this.pos);
 }
 
-/// Error branch body of `or`: statements and a required final value.
+/// Error branch of `or`.
+///
+/// [value] is the success value of this branch. It is null when the
+/// branch diverges (`return`, `break`, `continue`) and produces no value.
 final class OrBlock {
   final List<Stmt> stmts;
-  final Expr value;
+  final Expr? value;
   final SourcePos pos;
 
   const OrBlock(this.stmts, this.value, this.pos);
