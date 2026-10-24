@@ -64,8 +64,7 @@ String _emitArrayElements(String base, ArrayType type) {
   final elem = type.elem;
   if (elem is ArrayType) {
     final parts = [
-      for (var i = 0; i < type.len; i++)
-        _emitArrayElements('$base[$i]', elem),
+      for (var i = 0; i < type.len; i++) _emitArrayElements('$base[$i]', elem),
     ];
     return '{ ${parts.join(', ')} }';
   }
@@ -134,17 +133,26 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
     BoolLit(:final value) => value ? 'true' : 'false',
     StringLit(:final value) => '"${_escapeC(value)}"',
     ByteStringLit(:final value) => _emitByteString(value),
-    NameExpr(:final name, :final resolvedFnCName, :final resolvedConstCName) =>
-      resolvedConstCName ?? resolvedFnCName ?? name,
+    NameExpr(
+      :final name,
+      :final resolvedFnCName,
+      :final resolvedConstCName,
+      :final resolvedGlobalCName,
+    ) =>
+      resolvedGlobalCName ?? resolvedConstCName ?? resolvedFnCName ?? name,
     FieldExpr(
       :final object,
       :final name,
       :final enumConstCName,
       :final constCName,
+      :final globalCName,
+      :final fnCName,
     ) =>
       () {
         if (enumConstCName != null) return enumConstCName;
         if (constCName != null) return constCName;
+        if (globalCName != null) return globalCName;
+        if (fnCName != null) return fnCName;
         final objectType = object.resolvedType;
         if (name == 'len' && objectType is ArrayType) {
           return objectType.len.toString();
@@ -227,10 +235,10 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
       }(),
     BinaryExpr(:final left, :final op, :final right) =>
       '(${_emitExpr(left, ctx)} $op ${_emitExpr(right, ctx)})',
-    PickExpr(:final cond, :final thenExpr, :final elseExpr) =>
-      expr.resolvedType is ArrayType
-          ? '(${_emitExpr(cond, ctx)} ? ${_emitArrayValue(thenExpr, ctx)} : ${_emitArrayValue(elseExpr, ctx)})'
-          : '(${_emitExpr(cond, ctx)} ? ${_emitExpr(thenExpr, ctx)} : ${_emitExpr(elseExpr, ctx)})',
+    PickExpr(:final cond, :final thenExpr, :final elseExpr) => expr.resolvedType
+            is ArrayType
+        ? '(${_emitExpr(cond, ctx)} ? ${_emitArrayValue(thenExpr, ctx)} : ${_emitArrayValue(elseExpr, ctx)})'
+        : '(${_emitExpr(cond, ctx)} ? ${_emitExpr(thenExpr, ctx)} : ${_emitExpr(elseExpr, ctx)})',
     GroupExpr(:final inner) => '(${_emitExpr(inner, ctx)})',
     ErrorExpr(:final code, :final resolvedType) => () {
         if (resolvedType is! ResultType) {
@@ -243,8 +251,8 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         return '$temp.u.ok';
       }(),
     AwaitExpr() => throw StateError(
-          'emit: `.await` must be lowered inside an async poll function',
-        ),
+        'emit: `.await` must be lowered inside an async poll function',
+      ),
     OrExpr(:final resolvedType) => () {
         final outType = resolvedType;
         if (outType == null) {
@@ -273,9 +281,8 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         }
         final out = ctx.state.nextValueTemp();
         final pad = '    ' * ctx.indent;
-        final outC = outType is ArrayType
-            ? _cValueType(outType)
-            : _cType(outType);
+        final outC =
+            outType is ArrayType ? _cValueType(outType) : _cType(outType);
         ctx.buf.writeln('$pad$outC $out;');
         _emitMatchAssign(
           ctx.buf,
@@ -297,7 +304,8 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
 /// (`take([1, 2])` → `take((uint8_t[2]){ 1, 2 })`). A brace list is not
 /// an expression. Nested arrays and struct fields stay brace lists,
 /// because they initialize an array.
-String _emitArrayLit(ArrayLitExpr expr, _ExprCtx ctx, {bool asInitializer = false}) {
+String _emitArrayLit(ArrayLitExpr expr, _ExprCtx ctx,
+    {bool asInitializer = false}) {
   final inner = expr.elements.map((element) {
     if (element is ArrayLitExpr) {
       return _emitArrayLit(element, ctx, asInitializer: true);
@@ -526,9 +534,7 @@ bool _constKeepsSourceSpelling(ConstDecl decl) {
   final init = decl.init;
   final value = decl.intValue;
   final type = decl.resolvedType;
-  if (init is UnaryExpr &&
-      init.op == '~' &&
-      init.operand is IntLit) {
+  if (init is UnaryExpr && init.op == '~' && init.operand is IntLit) {
     return true;
   }
   if (init is UnaryExpr && init.op == '-' && init.operand is IntLit) {
@@ -653,6 +659,104 @@ bool _exprIsSimplePlace(Expr expr) {
       _exprIsSimplePlace(operand),
     _ => false,
   };
+}
+
+/// File-scope initializer. Aggregate literals are brace lists, not compound
+/// literals: a compound literal is not a constant expression in C. An integer
+/// `const` used by name is that constant's own initializer (a C constant),
+/// not the C object — `static int x = PAGE` is not a constant initializer.
+String _emitGlobalExpr(Program program, Expr expr) {
+  final node = _peelEmitGroups(expr);
+  if (node is ArrayLitExpr) {
+    final inner = node.elements
+        .map((element) => _emitGlobalExpr(program, element))
+        .join(', ');
+    return inner.isEmpty ? '{ }' : '{ $inner }';
+  }
+  if (node is StructLitExpr) {
+    final named = node.namedFields;
+    if (named != null) {
+      final parts = named.entries
+          .map((entry) =>
+              '.${entry.key} = ${_emitGlobalExpr(program, entry.value)}')
+          .join(', ');
+      return '{ $parts }';
+    }
+    final parts = node.positionalFields!
+        .map((field) => _emitGlobalExpr(program, field))
+        .join(', ');
+    return parts.isEmpty ? '{ }' : '{ $parts }';
+  }
+  if (node is ByteStringLit) {
+    final elem = const PrimType(PrimKind.u8);
+    final n = _utf8ByteLength(node.value);
+    return '{ (${elem.kind.cType} *)"${_escapeC(node.value)}", $n }';
+  }
+  if (node is SliceFromExpr) {
+    final arrayType = node.array.resolvedType;
+    if (arrayType is! ArrayType) {
+      throw StateError('emit: global slice initializer without an array');
+    }
+    final base = _emitGlobalExpr(program, node.array);
+    // `xs[:]` stays `{ arr, N }`. A constant subslice is the same brace
+    // with pointer arithmetic. Both are address constants in C.
+    if (node.start == null && node.end == null) {
+      return '{ $base, ${arrayType.len} }';
+    }
+    final ptr = node.start == null
+        ? base
+        : '($base) + (size_t)(${_emitGlobalExpr(program, node.start!)})';
+    final len = _globalSliceLen('${arrayType.len}', node, program);
+    return '{ $ptr, $len }';
+  }
+  final constant = _constDeclForGlobalInit(program, node);
+  if (constant != null) return _emitConstInitializer(constant);
+  final folded = expr.foldedInt ?? node.foldedInt;
+  final foldedType = expr.resolvedType ?? node.resolvedType;
+  if (folded != null && foldedType is PrimType && foldedType.kind.isInteger) {
+    return _cConstInt(folded, foldedType.kind);
+  }
+  final ctx = _ExprCtx(
+    buf: StringBuffer(),
+    sourcePath: '',
+    indent: 0,
+    bareReturnAsZero: false,
+    returnCType: 'int',
+    state: _EmitState(),
+  );
+  final text = _emitExpr(expr, ctx);
+  if (ctx.buf.isNotEmpty) {
+    throw StateError('emit: global initializer is not a constant expression');
+  }
+  return text;
+}
+
+ConstDecl? _constDeclForGlobalInit(Program program, Expr expr) {
+  final String? cName;
+  if (expr is NameExpr) {
+    cName = expr.resolvedConstCName;
+  } else if (expr is FieldExpr) {
+    cName = expr.constCName;
+  } else {
+    return null;
+  }
+  if (cName == null) return null;
+  for (final decl in program.consts) {
+    if (_freeCName(decl.moduleName, decl.name) == cName) return decl;
+  }
+  return null;
+}
+
+/// Length of a file-scope subslice. Bounds are constant expressions.
+String _globalSliceLen(String full, SliceFromExpr node, Program program) {
+  final start = node.start;
+  final end = node.end;
+  if (start == null && end == null) return full;
+  if (start == null) return '(size_t)(${_emitGlobalExpr(program, end!)})';
+  if (end == null) {
+    return '(($full) - (size_t)(${_emitGlobalExpr(program, start)}))';
+  }
+  return '((size_t)(${_emitGlobalExpr(program, end)}) - (size_t)(${_emitGlobalExpr(program, start)}))';
 }
 
 /// `b"..."` → `[]u8` over a static C string. `.len` is the byte count and

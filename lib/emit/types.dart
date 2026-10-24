@@ -719,6 +719,9 @@ Set<ArrayType> _arrayReturnTypes(Program program) {
       walk(field.resolvedType);
     }
   }
+  for (final global in program.globals) {
+    walk(global.resolvedType);
+  }
   return out;
 }
 

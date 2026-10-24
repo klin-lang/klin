@@ -102,6 +102,7 @@ final class Parser {
       unit.pos,
       enums: unit.enums,
       consts: unit.consts,
+      globals: unit.globals,
     );
     if (_errors.isNotEmpty) {
       throw ParseErrors(_errors, program: program);
@@ -126,6 +127,7 @@ final class Parser {
     final structs = <StructDecl>[];
     final enums = <EnumDecl>[];
     final consts = <ConstDecl>[];
+    final globals = <GlobalDecl>[];
     final decls = <Object>[];
     String? declaredName;
     final imports = <ImportSpec>[];
@@ -156,6 +158,10 @@ final class Parser {
           final decl = _constDecl(isPub, attrs);
           consts.add(decl);
           decls.add(decl);
+        } else if (_check(TokenKind.let)) {
+          final decl = _globalDecl(isPub, attrs);
+          globals.add(decl);
+          decls.add(decl);
         } else if (_check(TokenKind.async_)) {
           _advance();
           if (!_check(TokenKind.fn)) {
@@ -170,7 +176,7 @@ final class Parser {
           decls.add(decl);
         } else {
           throw ParseError(
-              'expected struct, enum, const or function declaration',
+              'expected struct, enum, const, let, or function declaration',
               _current.pos);
         }
       } on ParseError catch (e) {
@@ -183,7 +189,8 @@ final class Parser {
     if (funcs.isEmpty &&
         structs.isEmpty &&
         enums.isEmpty &&
-        consts.isEmpty) {
+        consts.isEmpty &&
+        globals.isEmpty) {
       if (_errors.isEmpty) {
         throw ParseError('expected declaration', _current.pos);
       }
@@ -194,6 +201,7 @@ final class Parser {
         enums: enums,
         funcs: funcs,
         consts: consts,
+        globals: globals,
         decls: decls,
         pos: _current.pos,
       );
@@ -205,9 +213,11 @@ final class Parser {
             ? enums.first.pos
             : consts.isNotEmpty
                 ? consts.first.pos
-                : funcs.isNotEmpty
-                    ? funcs.first.pos
-                    : _current.pos;
+                : globals.isNotEmpty
+                    ? globals.first.pos
+                    : funcs.isNotEmpty
+                        ? funcs.first.pos
+                        : _current.pos;
     return ModuleUnit(
       declaredName: declaredName,
       imports: imports,
@@ -215,6 +225,7 @@ final class Parser {
       enums: enums,
       funcs: funcs,
       consts: consts,
+      globals: globals,
       decls: decls,
       pos: pos,
     );
@@ -227,6 +238,7 @@ final class Parser {
           _check(TokenKind.struct) ||
           _check(TokenKind.enum_) ||
           _check(TokenKind.const_) ||
+          _check(TokenKind.let) ||
           _check(TokenKind.async_) ||
           _check(TokenKind.pub) ||
           _check(TokenKind.atSign)) {
@@ -319,6 +331,38 @@ final class Parser {
     return StructDecl(
       name: name.lexeme,
       fields: fields,
+      attrs: attrs,
+      pos: keyword.pos,
+      namePos: name.pos,
+      isPub: isPub,
+    );
+  }
+
+  /// `pub? let mut? Name: Type [= expr]` — one module-level place.
+  GlobalDecl _globalDecl(bool isPub, List<Attr> attrs) {
+    final keyword = _expect(TokenKind.let, 'expected `let`');
+    var isMut = false;
+    if (_check(TokenKind.mut)) {
+      _advance();
+      isMut = true;
+    }
+    if (_check(TokenKind.lBrace) || _check(TokenKind.lBracket)) {
+      throw ParseError('module-level `let` binds one name', _current.pos);
+    }
+    final name = _expect(TokenKind.ident, 'expected global name');
+    _rejectCKeyword(name, 'a global name');
+    _expect(TokenKind.colon, 'expected `:` after global name');
+    final typeName = _typeName();
+    Expr? init;
+    if (_check(TokenKind.equal)) {
+      _advance();
+      init = _expr();
+    }
+    return GlobalDecl(
+      isMut: isMut,
+      name: name.lexeme,
+      typeName: typeName,
+      init: init,
       attrs: attrs,
       pos: keyword.pos,
       namePos: name.pos,

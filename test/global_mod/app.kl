@@ -1,0 +1,12 @@
+module app
+import store
+
+let mut count: i32 = 10
+
+fn main() {
+    count += 1
+    store.count = store.count + 1
+    store.count += 3
+    store.point.bump()
+    printf("%d %d %d %d\n", count, store.count, store.limit, store.point.x)
+}

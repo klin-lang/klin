@@ -1,0 +1,38 @@
+module app
+
+const STEP: i32 = 2
+const FLAG: bool = true
+const KW: []u8 = b"fn"
+
+let mut n: i32 = 1
+let mut wide: u64 = 18446744073709551615
+let mut min64: i64 = -9223372036854775808
+let mut flag: bool = FLAG
+let mut msg: str = "ok"
+let mut bytes: []u8 = b"ab"
+let mut from_kw: []u8 = KW
+let limit: i32 = STEP + 5
+let mut zero: i32
+let mut p: *mut i32 = &n
+
+fn inc(x: i32): i32 {
+    return x + 1
+}
+
+let mut op: fn(i32): i32 = inc
+let mut missing: fn(i32): i32
+
+async fn touch() {
+    n = n + 10
+}
+
+fn main() {
+    n += STEP
+    n = n * 2
+    *p = *p + 1
+    let shadowed: i32 = n
+    let n: i32 = 100
+    let hi: i32 = pick wide > 0 { 1 } { 0 }
+    let lo: i32 = pick min64 < 0 { 1 } { 0 }
+    printf("%d %d %d %d %d %d %d %d %d %d %s %d\n", shadowed, n, limit, zero, pick flag { 1 } { 0 }, bytes.len, from_kw.len, op(3), hi, lo, msg, bytes[0])
+}

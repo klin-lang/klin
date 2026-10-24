@@ -251,8 +251,9 @@ can crash — a mutable slice has no read-only flavor. Copy into a
 
 ## Constants
 
-`const` is a module-level immutable value. Not a mutable global, and
-not a local (`let` stays the local form).
+`const` is a module-level compile-time value. It is not storage and
+not a local (`let` at module scope is the object; a local stays `let`
+inside a function).
 
 ```klin
 pub const PAGE: i64 = 4096
@@ -304,6 +305,46 @@ fn main() {
 ```
 
 Runnable: [`examples/module_const.kl`](../examples/module_const.kl).
+
+## Module-level `let`
+
+`let` / `let mut` at module scope is an object. `const` has no address;
+`let` does. `:=` is not allowed here.
+
+```klin
+const PAGE: i64 = 4096
+
+let mut n: i32 = 1
+let limit: i32 = PAGE
+let mut buf: [8]u8
+let mut p: *mut i32 = &n
+
+fn bump() {
+    n = n + 1
+    *p += 1
+}
+```
+
+- `let` is not assignable. `&` of it is `*T`. `let mut` is assignable,
+  including compound assignment and a `for name = …` header. `&` of it
+  is `*mut T`. A `mut` method accepts a `let mut` global
+- The type is required. Omitted initializer means zero-init (C static
+  storage). A present initializer must be a constant expression:
+  literals, `const`, integer constant expressions, array and struct
+  literals of those, `b"..."`, an enum variant, `&` of a global or
+  function, `xs[:]` / `xs[a:b]` of a global array (constant bounds), or
+  a function name. Another global's value is not a constant
+- Types: prims, `str`, enums, structs, pointers, slices, function
+  pointers, `[N]T`. Not `!T`
+- `pub` is `mod.name` after `import`. Another module may write it only
+  when it is `pub let mut`. Private is `static` and invisible across
+  modules
+- A global is not an `[N]T` length. A local of the same name shadows it
+- No locks and no atomics. Async and threads race the way C does
+- `let mut s: []u8 = b"..."` can write the read-only bytes and may crash
+  (D10). Copy into a `[N]u8` to modify
+
+Runnable: [`examples/global_let.kl`](../examples/global_let.kl).
 
 ## Already documented elsewhere
 

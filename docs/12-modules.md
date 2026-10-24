@@ -32,16 +32,24 @@ fn main() {
 - `module name` — module declaration for the file (or all files in a directory package)
 - `import name` — qualifier in use: `name.Symbol`
 - without `pub` = private in **module**; `pub` = visible after `import`
-- `pub const NAME: Type = …` — immutable module value (integer, `bool`,
+- `pub const NAME: Type = …` — compile-time module value (integer, `bool`,
   or `b"..."`). An integer initializer may use other constants and
   `+ - * / % << >> & | ^` (and unary `-` / `~`). That value is a valid
   `[N]T` length (`[NAME]T`, `[mod.NAME]T`, `[NAME * 2]T`). Private
-  `const` is `static` in C. No mutable globals
+  `const` is `static const` in C
+- `pub let` / `pub let mut NAME: Type = …` — module storage. `pub let mut`
+  may be assigned from another module (`mod.name = …`, `mod.name += …`).
+  `pub let` is readable only. Private is `static` and not visible after
+  `import`. The initializer is a constant expression, or omitted (zero).
+  A global is not an `[N]T` length. The C name is `module_name`. No
+  implicit synchronization (D11)
 
 ## C emission
 
-- mangling: `module_Type_method` (e.g. `geom_Vec2_len_sq`) — [01-decisions.md](01-decisions.md)
-- private symbols → `static` in generated `.c`
+- mangling: `module_Type_method` (e.g. `geom_Vec2_len_sq`); a global is
+  `module_name` — [01-decisions.md](01-decisions.md)
+- private symbols → `static` in generated `.c` (`static const` for a
+  private `const`)
 - whole program still **one** `.c`
 
 ## File vs directory

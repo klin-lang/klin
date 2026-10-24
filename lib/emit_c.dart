@@ -31,6 +31,9 @@ String emitC(Program program, String sourcePath) {
   for (final constant in program.consts) {
     _collectSliceTypes(constant.resolvedType, sliceTypes);
   }
+  for (final global in program.globals) {
+    _collectSliceTypes(global.resolvedType, sliceTypes);
+  }
   for (final func in program.funcs) {
     _collectSliceTypes(func.resolvedReturnType, sliceTypes);
     for (final param in func.params) {
@@ -77,12 +80,15 @@ String emitC(Program program, String sourcePath) {
   for (final elem in sliceTypes) {
     _collectFnTypes(elem, fnTypes);
   }
+  for (final global in program.globals) {
+    _collectFnTypes(global.resolvedType, fnTypes);
+  }
   final orderedFnTypes = fnTypes.toList()
     ..sort((a, b) => _fnTypeDepth(a).compareTo(_fnTypeDepth(b)));
-  final earlyFnTypes =
-      orderedFnTypes.where((type) => !typeNeedsStructArrayReturn(type)).toList();
-  final lateFnTypes =
-      orderedFnTypes.where(typeNeedsStructArrayReturn).toList();
+  final earlyFnTypes = orderedFnTypes
+      .where((type) => !typeNeedsStructArrayReturn(type))
+      .toList();
+  final lateFnTypes = orderedFnTypes.where(typeNeedsStructArrayReturn).toList();
   _emitFnTypedefs(buf, earlyFnTypes);
   // `[]fn(i32): i32` names the function typedef. Emit it before any
   // struct that stores that slice.
@@ -124,9 +130,7 @@ String emitC(Program program, String sourcePath) {
     buf,
     program,
     sourcePath,
-    program.structs
-        .map((s) => '${s.moduleName}.${s.name}')
-        .toSet(),
+    program.structs.map((s) => '${s.moduleName}.${s.name}').toSet(),
   );
   // `uint8_t v[N]` of a struct needs that struct to be complete.
   _emitArrayReturnTypedefs(
@@ -165,6 +169,9 @@ String emitC(Program program, String sourcePath) {
       _collectResultTypesFromBlock(func.body!, resultTypes);
     }
   }
+  for (final global in program.globals) {
+    _collectResultTypes(global.resolvedType, resultTypes);
+  }
   for (final type in resultTypes) {
     final ok = _cType(type.ok);
     buf.writeln('typedef struct {');
@@ -184,6 +191,9 @@ String emitC(Program program, String sourcePath) {
     buf.writeln('${_functionHeader(func)};');
   }
   buf.writeln();
+  // After prototypes so a function-pointer initializer can name one, and
+  // after typedefs so a struct or slice global names a complete type.
+  _emitGlobals(buf, program, sourcePath);
   _emitAsyncFunctions(buf, program, sourcePath);
   for (final func in program.funcs) {
     if (func.body == null) continue;
@@ -205,9 +215,8 @@ String emitC(Program program, String sourcePath) {
       func.sourcePath ?? sourcePath,
       indent: 1,
       bareReturnAsZero: func.name == 'main',
-      returnCType: func.name == 'main'
-          ? 'int'
-          : _cValueType(func.resolvedReturnType!),
+      returnCType:
+          func.name == 'main' ? 'int' : _cValueType(func.resolvedReturnType!),
       state: _EmitState(),
     );
     if (func.name == 'main') buf.writeln('    return 0;');
@@ -261,6 +270,53 @@ void _emitConsts(StringBuffer buf, Program program, String sourcePath) {
   buf.writeln();
 }
 
+/// Private globals are `static`. `pub` has no `static` — every module is one
+/// `.c`, and the checker rejects a cross-module use of a private name.
+///
+/// Each global is declared before any initializer so a global can name one
+/// that appears later in the source (`let mut p: *mut i32 = &n` above `n`).
+void _emitGlobals(StringBuffer buf, Program program, String sourcePath) {
+  if (program.globals.isEmpty) return;
+  for (final decl in program.globals) {
+    final type = decl.resolvedType;
+    if (type == null) {
+      throw StateError('emit: missing type for global `${decl.name}`');
+    }
+    final name = _freeCName(decl.moduleName, decl.name);
+    buf.writeln('${_globalLinkage(decl)}${_cDecl(type, name)};');
+  }
+  for (final decl in program.globals) {
+    final type = decl.resolvedType!;
+    _line(buf, decl.pos.line, decl.sourcePath ?? sourcePath);
+    final name = _freeCName(decl.moduleName, decl.name);
+    final init = decl.init == null
+        ? _globalZero(type)
+        : _emitGlobalExpr(program, decl.init!);
+    buf.writeln('${_globalLinkage(decl)}${_cDecl(type, name)} = $init;');
+  }
+  buf.writeln();
+}
+
+String _globalLinkage(GlobalDecl decl) => decl.isPub ? '' : 'static ';
+
+/// Zero-initialization. The same values a local without an initializer gets.
+String _globalZero(KlinType type) => switch (type) {
+      PrimType(:final kind) => kind.cZero,
+      PtrType() => 'NULL',
+      // `NULL` is `void *`. ISO C does not convert that to a function
+      // pointer, and `gcc -std=c11 -pedantic-errors` rejects it. `0` is a
+      // null pointer constant of any pointer type.
+      FnType() => '0',
+      ArrayType() => '{0}',
+      SliceType() => '{ NULL, 0 }',
+      StructType() => '{0}',
+      EnumType() => '0',
+      StrType() => 'NULL',
+      _ => throw StateError(
+          'emit: no zero value for global `${type.displayName}`',
+        ),
+    };
+
 /// Named tag so a field `next: *Node` is `struct Node *` inside the typedef.
 /// An anonymous `typedef struct { Node *next; } Node` is not valid C.
 void _writeStructTypedef(StringBuffer buf, StructDecl struct) {
@@ -312,10 +368,11 @@ void _emitStructTypedefs(
       final fieldDeps = <String>{};
       for (final field in struct.fields) {
         // Pointer fields do not need the pointee complete (self-reference).
-        _collectStructKeys(field.resolvedType, fieldDeps, throughPointer: false);
+        _collectStructKeys(field.resolvedType, fieldDeps,
+            throughPointer: false);
       }
-      if (!fieldDeps.every(
-          (dep) => !structKeys.contains(dep) || emitted.contains(dep))) {
+      if (!fieldDeps
+          .every((dep) => !structKeys.contains(dep) || emitted.contains(dep))) {
         continue;
       }
       _line(buf, struct.pos.line, struct.sourcePath ?? sourcePath);
@@ -339,8 +396,9 @@ void _emitStructTypedefs(
 
 /// Emits a C header with prototypes for `@[cexport]` functions (`--emit-h`).
 String emitH(Program program, String sourcePath) {
-  final exports =
-      program.funcs.where((f) => f.attrs.any((a) => a.name == 'cexport')).toList();
+  final exports = program.funcs
+      .where((f) => f.attrs.any((a) => a.name == 'cexport'))
+      .toList();
   final guard = _headerGuard(sourcePath);
   final buf = StringBuffer();
   buf.writeln('/* Generated by klin --emit-h — do not edit. */');
@@ -391,8 +449,8 @@ String emitH(Program program, String sourcePath) {
   // The tag has to be in scope before that typedef.
   _emitStructForwardDecls(
     buf,
-    program.structs.where(
-        (s) => structKeys.contains('${s.moduleName}.${s.name}')),
+    program.structs
+        .where((s) => structKeys.contains('${s.moduleName}.${s.name}')),
   );
   final fnTypes = <FnType>{};
   for (final elem in sliceTypes) {
@@ -431,4 +489,3 @@ String emitH(Program program, String sourcePath) {
   buf.writeln('#endif /* $guard */');
   return buf.toString();
 }
-

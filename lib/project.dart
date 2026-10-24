@@ -21,12 +21,14 @@ Program loadProject(
   String entryPath, {
   List<String> klinPathDirs = const [],
   String? klinCacheDir,
+
   /// Absolute path → source text; wins over disk (LSP open buffers).
   Map<String, String>? sourceOverlay,
 }) {
   final structs = <StructDecl>[];
   final enums = <EnumDecl>[];
   final consts = <ConstDecl>[];
+  final globals = <GlobalDecl>[];
   final funcs = <FuncDecl>[];
   final importAliases = <String, Map<String, String>>{};
   final loading = <String>{};
@@ -140,6 +142,11 @@ Program loadProject(
         constant.sourcePath = u.path;
         consts.add(constant);
       }
+      for (final global in u.unit.globals) {
+        global.moduleName = moduleName;
+        global.sourcePath = u.path;
+        globals.add(global);
+      }
       for (final func in u.unit.funcs) {
         func.moduleName = moduleName;
         func.sourcePath = u.path;
@@ -161,8 +168,7 @@ Program loadProject(
     for (final u in units) {
       for (final imp in u.unit.imports) {
         final existing = byQualifier[imp.qualifier];
-        if (existing != null &&
-            existing.resolutionKey != imp.resolutionKey) {
+        if (existing != null && existing.resolutionKey != imp.resolutionKey) {
           throw ParseError(
             'import alias `${imp.qualifier}` is already bound to '
             '`${existing.spec}`',
@@ -211,8 +217,8 @@ Program loadProject(
   for (final path in _packageKlFiles(entryDir)) {
     if (path == entryAbs) continue;
     final raw = readSource(path);
-    final looksLikeSibling = _fileStem(path) == entryModule ||
-        moduleDecl.hasMatch(raw);
+    final looksLikeSibling =
+        _fileStem(path) == entryModule || moduleDecl.hasMatch(raw);
     try {
       final unit = _parseUnitFile(
         path,
@@ -238,6 +244,7 @@ Program loadProject(
     firstPos ?? const SourcePos(1, 1),
     enums: enums,
     consts: consts,
+    globals: globals,
     importAliases: importAliases,
   );
 }
