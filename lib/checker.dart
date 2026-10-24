@@ -4409,6 +4409,15 @@ final class Checker {
               pos,
             );
           }
+          // `main` is always C `int`, even when the Klin signature says
+          // `!T`. Propagating would return a result struct from `int main`.
+          if (_currentFunction == 'main') {
+            throw CheckError(
+              'postfix operator `!` cannot be used in `main` '
+              '(`main` is emitted as C `int`)',
+              pos,
+            );
+          }
           return resultType.ok;
         }(),
       OrExpr(:final result, :final fallback, :final pos) => () {

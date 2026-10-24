@@ -130,6 +130,10 @@ fn main() {}
 fn step(): !i32 { return 1 }
 fn main() { step()! }
 ''', 'postfix operator `!` requires a function returning `!T`');
+    expectCheck('''
+fn step(): !i32 { return 1 }
+fn main(): !i32 { step()! }
+''', 'cannot be used in `main`');
   });
 
   test('let _ is a discard and can be repeated', () {

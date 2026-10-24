@@ -166,7 +166,7 @@ fn main() {
 - `!T` is a tagged struct in C (flag + value)
 - `expr!` propagates: `if (r.is_err) return r;`. As a statement
   (`step(ok)!`) it discards the success value. The function must
-  return `!T` either way
+  return `!T` either way. `main` is C `int`, so `!` is not allowed there
 - `or { … }` handles locally; `err` is in scope. The block may end
   with a value, or leave with `return` / `break` / `continue` instead
   of a value (`let n = level(x) or { return err }`, D21)

@@ -883,7 +883,9 @@ treated as always true.
 
 `expr!` still needs a function that returns `!T`. As a statement
 (`f()!`) it propagates and discards the success value. As an
-expression it still yields that value (`let n = f()!`).
+expression it still yields that value (`let n = f()!`). `main` is
+emitted as C `int`, so `!` is rejected there even if the Klin
+signature says `!T`.
 `err: i32` is still in scope in the block. `pick` still cannot contain
 `or` (it is a C `?:`). An empty block, or a block that can fall
 through, is:

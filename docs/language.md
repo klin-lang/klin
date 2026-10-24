@@ -32,7 +32,7 @@ These compile. They are not “missing.”
 | `if` / `while` / `for` / `return` / `break` / `continue` | [guide.md](guide.md) |
 | `match` / `pick` | no fallthrough; `pick` → C `?:`. Untyped arms adopt the expected type (`let x: u8 = match k { 0 { 1 + 2 } else { 4 } }`) and are range-checked; with no type they are `i32`. Two unguarded arms that match the same constant values are an error (D24); a `when` guard and overlapping but different patterns stay |
 | `defer` | jump to cleanup |
-| `!T`, `or { }`, `!`, `error(n)` | D2 — value (`match` arm or `fn` return); not `Result[T,E]`. `f()!` is also a statement: it propagates and discards the success value. The enclosing function must return `!T`. An `or` block may end with a value or diverge (`return`, `break`, `continue`) (D21) |
+| `!T`, `or { }`, `!`, `error(n)` | D2 — value (`match` arm or `fn` return); not `Result[T,E]`. `f()!` is also a statement: it propagates and discards the success value. The enclosing function must return `!T` (`main` is C `int`, so `!` is not allowed there). An `or` block may end with a value or diverge (`return`, `break`, `continue`) (D21) |
 | `$fn` … `$name(args)` | **this is the generic** ([04-macros.md](04-macros.md)). A plain free function in the body is renamed per expansion (D20) |
 | `module` / `import` / `pub` | [12-modules.md](12-modules.md) |
 | `fn(T…): Ret` | function pointer; **no capture** |
