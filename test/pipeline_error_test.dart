@@ -1748,6 +1748,55 @@ fn main() {
 ''',
         'cannot assign read-only bytes',
       ),
+      (
+        '''
+let kw: []u8 = b"fn"
+fn main() {
+  let mut w = kw
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+const KW: []u8 = b"fn"
+let kw: []u8 = KW
+fn main() {
+  let s = kw
+  let mut w = s
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+let kw: []u8 = b"fn"
+fn main() {
+  let mut xs: [2]u8 = [1, 2]
+  let mut s = xs[:]
+  s = kw
+}
+''',
+        'cannot assign read-only bytes',
+      ),
+      (
+        '''
+let kw: []u8 = b"fn"
+fn main() {
+  let mut s = pick true { kw } { b"if" }
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+let kw: []u8 = b"fn"
+fn main() {
+  for s := kw; false; s = s {}
+}
+''',
+        'cannot bind read-only bytes',
+      ),
     ];
     for (final item in cases) {
       final program = Parser(Lexer(item.$1).tokenize()).parse();

@@ -62,6 +62,7 @@ are not valid Klin until expand — format `point.kl` (or `--emit-pp` output), n
 | `number_literals.kl` | Binary / exponent literals ([081](../issues/081-number-literals.md)) |
 | `byte_string.kl` | `b"..."` byte string (`[]u8`, read-only; copy into `[N]u8` to modify, [docs/syntax.md](../docs/syntax.md)) |
 | `module_const.kl` | Module-level `const` (integer, `bool`, `b"..."`, `[N]T` length, [docs/syntax.md](../docs/syntax.md)) |
+| `global_let.kl` | Module-level `let` / `let mut` (storage, constant initializer, [docs/syntax.md](../docs/syntax.md)) |
 | `const_fold.kl` | Integer constant expressions (`N * 2`, `~0x0F`, `[1 + 2]T`, [docs/01-decisions.md](../docs/01-decisions.md) D11) |
 | `const_expr.kl` | The same fold outside `const` (`let x: u8 = 1 + 2`, array element, `return`) |
 | `array_lit.kl` | Array literal takes the element type from context (`[3]u8 = [1, 2, 3]`) |

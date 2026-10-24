@@ -1,0 +1,9 @@
+module shade
+import store
+
+let mut store: i32 = 3
+
+fn main() {
+    let n: i32 = store.count + 1
+    printf("%d\n", n)
+}

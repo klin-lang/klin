@@ -344,6 +344,7 @@ final class Checker {
   final Map<String, StructDecl> _structs = {};
   final Map<String, EnumDecl> _enums = {};
   final Map<String, ConstDecl> _consts = {};
+  final Map<String, GlobalDecl> _globals = {};
 
   /// Constants currently being folded, to reject cycles.
   final Set<String> _constEvalStack = {};
@@ -383,7 +384,9 @@ final class Checker {
     _structs.clear();
     _enums.clear();
     _consts.clear();
+    _globals.clear();
     _constEvalStack.clear();
+    _scope = _Scope(null);
     _methods.clear();
     _assocFuncs.clear();
     _allFunctions
@@ -397,7 +400,12 @@ final class Checker {
     _registerConsts(program);
     // Field types after enums so `struct T { k: Tok }` resolves `Tok`.
     _resolveStructFields(program);
+    // Names and types before signatures so a global can conflict with a
+    // function. Initializers run after signatures so a function pointer can
+    // name a function, and so one global can name another.
+    _registerGlobalNames(program);
     _registerFunctions(program);
+    _checkGlobalInitializers(program);
     final main = program.funcs
         .where((func) =>
             func.receiver == null &&
@@ -504,6 +512,12 @@ final class Checker {
       if (constant.attrs.isNotEmpty) {
         throw CheckError(
             'attributes are not allowed on a constant', constant.attrs.first.pos);
+      }
+    }
+    for (final global in program.globals) {
+      if (global.attrs.isNotEmpty) {
+        throw CheckError(
+            'attributes are not allowed on a global', global.attrs.first.pos);
       }
     }
     final cNames = <String>{};
@@ -715,6 +729,12 @@ final class Checker {
             func.pos,
           );
         }
+        if (_globals.containsKey(key)) {
+          throw CheckError(
+            'function `${func.name}` conflicts with global `${func.name}`',
+            func.pos,
+          );
+        }
         collection = _functions;
       }
       if (collection.containsKey(key)) {
@@ -802,8 +822,7 @@ final class Checker {
       _currentModule = decl.moduleName;
       final key = _key(decl.moduleName, decl.name);
       if (_consts.containsKey(key)) {
-        throw CheckError(
-            'redeclaration of constant `${decl.name}`', decl.pos);
+        throw CheckError('redeclaration of constant `${decl.name}`', decl.pos);
       }
       if (_structs.containsKey(key) || _enums.containsKey(key)) {
         throw CheckError(
@@ -850,6 +869,174 @@ final class Checker {
     );
   }
 
+  /// Bind every global's name and type. Initializers are checked later, after
+  /// function signatures, so a forward reference to another global or to a
+  /// function is already in the table.
+  void _registerGlobalNames(Program program) {
+    for (final decl in program.globals) {
+      _currentModule = decl.moduleName;
+      _currentSourcePath = decl.sourcePath;
+      final key = _key(decl.moduleName, decl.name);
+      if (_globals.containsKey(key)) {
+        throw CheckError('redeclaration of global `${decl.name}`', decl.pos);
+      }
+      if (_consts.containsKey(key)) {
+        throw CheckError(
+          'global `${decl.name}` conflicts with constant `${decl.name}`',
+          decl.pos,
+        );
+      }
+      if (_structs.containsKey(key) || _enums.containsKey(key)) {
+        throw CheckError(
+          'global `${decl.name}` conflicts with type `${decl.name}`',
+          decl.pos,
+        );
+      }
+      final type = _resolveType(decl.typeName, decl.pos);
+      _rejectGlobalType(type, decl.pos);
+      decl.resolvedType = type;
+      _globals[key] = decl;
+    }
+  }
+
+  void _checkGlobalInitializers(Program program) {
+    for (final decl in program.globals) {
+      _currentModule = decl.moduleName;
+      _currentSourcePath = decl.sourcePath;
+      final init = decl.init;
+      if (init == null) continue;
+      final type = decl.resolvedType!;
+      final initType = _inferExpr(init);
+      _expectAssignable(type, initType, init.pos);
+      _materialize(init, type);
+      // `let kw: []u8 = b"fn"` names the same read-only bytes as a const.
+      // `let mut s: []u8 = b"fn"` stays assignable storage (D11).
+      if (!decl.isMut && _isU8Slice(type) && _isReadOnlyBytes(init)) {
+        decl.readOnlyBytes = true;
+      }
+      if (!_isGlobalConstInit(init)) {
+        throw CheckError(
+          'global initializer must be a constant expression',
+          init.pos,
+        );
+      }
+    }
+  }
+
+  /// A global is storage. `!T` is not: it is a function result, not a place
+  /// with a C object representation we want at file scope.
+  void _rejectGlobalType(KlinType type, SourcePos pos) {
+    switch (type) {
+      case PrimType() ||
+            StrType() ||
+            EnumType() ||
+            StructType() ||
+            PtrType() ||
+            SliceType() ||
+            FnType():
+        return;
+      case ArrayType(:final elem):
+        _rejectGlobalType(elem, pos);
+      default:
+        throw CheckError(
+          'a global cannot have type `${type.displayName}`',
+          pos,
+        );
+    }
+  }
+
+  /// Constant initializer: literals, `const`, integer constant expressions
+  /// (D11 / D12), array and struct literals of those, `b"..."`, an enum
+  /// variant, the address of a global or constant, or a slice of a global
+  /// array. A global's value is not a constant — C cannot copy it into
+  /// static storage.
+  bool _isGlobalConstInit(Expr expr) {
+    final node = _peelGroups(expr);
+    if (node is IntLit ||
+        node is FloatLit ||
+        node is BoolLit ||
+        node is StringLit ||
+        node is ByteStringLit) {
+      return true;
+    }
+    if (node is NameExpr) {
+      if (_scope.lookup(node.name) != null) return false;
+      if (_consts[_key(_currentModule, node.name)] != null) return true;
+      if (_globals[_key(_currentModule, node.name)] != null) return false;
+      return _fnTypeForName(node.name, node.pos) != null;
+    }
+    if (node is FieldExpr && node.object is NameExpr) {
+      if (node.enumConstCName != null ||
+          node.constCName != null ||
+          node.fnCName != null) {
+        return true;
+      }
+      return false;
+    }
+    if (node is UnaryExpr && node.op == '&') {
+      return _isAddressConstant(node.operand);
+    }
+    if (node is UnaryExpr && (node.op == '-' || node.op == '~')) {
+      return _isGlobalConstInit(node.operand);
+    }
+    if (node is BinaryExpr) {
+      const ops = {'+', '-', '*', '/', '%', '<<', '>>', '&', '|', '^'};
+      if (!ops.contains(node.op)) return false;
+      return _isGlobalConstInit(node.left) && _isGlobalConstInit(node.right);
+    }
+    if (node is ArrayLitExpr) {
+      return node.elements.every(_isGlobalConstInit);
+    }
+    if (node is StructLitExpr) {
+      final fields = node.namedFields?.values ?? node.positionalFields;
+      if (fields == null) return false;
+      return fields.every(_isGlobalConstInit);
+    }
+    if (node is SliceFromExpr) {
+      return _isAddressConstant(node.array);
+    }
+    if (node is CastExpr) {
+      final target = node.resolvedType;
+      if (target is! PtrType && target is! PrimType && target is! EnumType) {
+        return false;
+      }
+      return _isGlobalConstInit(node.expr);
+    }
+    return false;
+  }
+
+  /// Address constant: `&` of a global, a `const`, a function, a field of
+  /// one of those, or a constant index of a global array. Not a slice
+  /// element — that reads the slice header.
+  bool _isAddressConstant(Expr expr) {
+    final node = _peelGroups(expr);
+    if (node is NameExpr) {
+      if (_scope.lookup(node.name) != null) return false;
+      if (_globals[_key(_currentModule, node.name)] != null) return true;
+      if (_consts[_key(_currentModule, node.name)] != null) return true;
+      return _fnTypeForName(node.name, node.pos) != null;
+    }
+    if (node is FieldExpr) {
+      if (node.name == 'len') return false;
+      if (node.globalCName != null ||
+          node.constCName != null ||
+          node.fnCName != null) {
+        return true;
+      }
+      final objectType = node.object.resolvedType;
+      if (objectType is SliceType) return false;
+      return _isAddressConstant(node.object);
+    }
+    if (node is IndexExpr) {
+      if (!_isGlobalConstInit(node.index)) return false;
+      final objectType = node.object.resolvedType;
+      if (objectType is SliceType) return false;
+      if (objectType is! ArrayType) return false;
+      return _isAddressConstant(node.object);
+    }
+    return false;
+  }
+
   void _registerEnums(Program program) {
     for (final decl in program.enums) {
       final key = _key(decl.moduleName, decl.name);
@@ -879,8 +1066,7 @@ final class Checker {
         }
         final value = variant.value;
         if (value != null && value is! IntLit) {
-          throw CheckError(
-              'enum value must be an integer literal', value.pos);
+          throw CheckError('enum value must be an integer literal', value.pos);
         }
         if (value is IntLit) _checkCoercedIntLiteral(value, base);
       }
@@ -1535,6 +1721,7 @@ final class Checker {
   ({String module, String typeName, KlinType type})? _typeNameExpr(Expr expr) {
     if (expr is NameExpr) {
       if (_scope.lookup(expr.name) != null) return null;
+      if (_globals[_key(_currentModule, expr.name)] != null) return null;
       final key = _key(_currentModule, expr.name);
       if (!_enums.containsKey(key) && !_structs.containsKey(key)) return null;
       final type = _resolveType(expr.name, expr.pos);
@@ -1544,6 +1731,7 @@ final class Checker {
       final modAlias = (expr.object as NameExpr).name;
       final typeName = expr.name;
       if (_scope.lookup(modAlias) != null) return null;
+      if (_globals[_key(_currentModule, modAlias)] != null) return null;
       final actual = _importAliases[_currentModule]?[modAlias];
       if (actual == null && modAlias != _currentModule) return null;
       final module = actual ?? modAlias;
@@ -1580,10 +1768,8 @@ final class Checker {
       throw CheckError(
           'enum `${typeInfo.typeName}` has no variant `$variant`', pos);
     }
-    node.enumConstCName =
-        _enumConstCName(decl.moduleName, decl.name, variant);
-    final variantDecl =
-        decl.variants.firstWhere((v) => v.name == variant);
+    node.enumConstCName = _enumConstCName(decl.moduleName, decl.name, variant);
+    final variantDecl = decl.variants.firstWhere((v) => v.name == variant);
     node.resolvedDef = ResolvedDef(variantDecl.pos, decl.sourcePath);
     return decl.resolvedType ??
         EnumType(
@@ -1594,37 +1780,100 @@ final class Checker {
   }
 
   static String _enumConstCName(String module, String name, String variant) =>
-      module.isEmpty
-          ? '${name}_$variant'
-          : '${module}_${name}_$variant';
+      module.isEmpty ? '${name}_$variant' : '${module}_${name}_$variant';
 
   static String _constCName(String module, String name) =>
       module.isEmpty ? name : '${module}_$name';
 
   /// `mod.NAME` when [object] is an imported module (or this module's name).
-  /// Returns null when [object] is a value, so field access still runs.
-  KlinType? _tryModuleConst(
+  /// A constant, a global, or a free function. Returns null when [object] is
+  /// a value, so field access still runs.
+  KlinType? _tryModuleValue(
     FieldExpr node,
     Expr object,
     String name,
     SourcePos pos,
   ) {
     if (object is! NameExpr) return null;
-    if (_scope.lookup(object.name) != null) return null;
-    final module = object.name == _currentModule
-        ? object.name
-        : _importAliases[_currentModule]?[object.name];
+    final module = _qualifierModule(object.name);
     if (module == null) return null;
-    final decl = _consts[_key(module, name)];
-    if (decl == null) {
-      throw CheckError('unknown constant `${object.name}.$name`', pos);
+    final constant = _consts[_key(module, name)];
+    if (constant != null) {
+      if (module != _currentModule && !constant.isPub) {
+        throw CheckError('constant `${object.name}.$name` is private', pos);
+      }
+      node.constCName = _constCName(constant.moduleName, constant.name);
+      node.resolvedDef = ResolvedDef(constant.namePos, constant.sourcePath);
+      return constant.resolvedType!;
     }
-    if (module != _currentModule && !decl.isPub) {
-      throw CheckError('constant `${object.name}.$name` is private', pos);
+    final global = _globals[_key(module, name)];
+    if (global != null) {
+      if (module != _currentModule && !global.isPub) {
+        throw CheckError('global `${object.name}.$name` is private', pos);
+      }
+      _stampModuleGlobal(node, global);
+      return global.resolvedType!;
     }
-    node.constCName = _constCName(decl.moduleName, decl.name);
-    node.resolvedDef = ResolvedDef(decl.namePos, decl.sourcePath);
-    return decl.resolvedType!;
+    final signature = _functions[_key(module, name)];
+    if (signature != null) {
+      final decl = _functionDecl(module, name);
+      if (module != _currentModule && !decl.isPub) {
+        throw CheckError('function `${object.name}.$name` is private', pos);
+      }
+      node.fnCName = _cNameForFunction(decl);
+      node.resolvedDef = ResolvedDef(decl.pos, decl.sourcePath);
+      return FnType(signature.paramTypes, signature.returnType);
+    }
+    throw CheckError('unknown name `${object.name}.$name`', pos);
+  }
+
+  /// Imported module, or this file's module name, when [name] is not a value
+  /// in scope. A local or a global of the same name shadows the qualifier.
+  String? _qualifierModule(String name) {
+    if (_scope.lookup(name) != null) return null;
+    if (_globals[_key(_currentModule, name)] != null) return null;
+    if (name == _currentModule) return name;
+    return _importAliases[_currentModule]?[name];
+  }
+
+  GlobalDecl? _currentGlobal(String name) {
+    if (_scope.lookup(name) != null) return null;
+    return _globals[_key(_currentModule, name)];
+  }
+
+  void _stampGlobal(NameExpr expr, GlobalDecl decl) {
+    expr.resolvedGlobalCName = _constCName(decl.moduleName, decl.name);
+    expr.resolvedDef = ResolvedDef(decl.namePos, decl.sourcePath);
+  }
+
+  void _stampModuleGlobal(FieldExpr expr, GlobalDecl decl) {
+    expr.globalCName = _constCName(decl.moduleName, decl.name);
+    expr.resolvedDef = ResolvedDef(decl.namePos, decl.sourcePath);
+  }
+
+  /// `mod.name` when it names a global. Null for an ordinary field or a
+  /// constant (the caller reports the constant).
+  GlobalDecl? _moduleGlobal(FieldExpr expr) {
+    final object = _unwrapGroups(expr.object);
+    if (object is! NameExpr) return null;
+    final module = _qualifierModule(object.name);
+    if (module == null) return null;
+    final global = _globals[_key(module, expr.name)];
+    if (global == null) return null;
+    if (module != _currentModule && !global.isPub) {
+      throw CheckError(
+        'global `${object.name}.${expr.name}` is private',
+        expr.pos,
+      );
+    }
+    _stampModuleGlobal(expr, global);
+    return global;
+  }
+
+  String _modulePlaceText(FieldExpr place) {
+    final object = _unwrapGroups(place.object);
+    if (object is NameExpr) return '${object.name}.${place.name}';
+    return place.name;
   }
 
   /// True when [expr] is a module-level constant (not a local that shadows it).
@@ -1637,6 +1886,7 @@ final class Checker {
     if (base is FieldExpr && base.object is NameExpr) {
       final alias = (base.object as NameExpr).name;
       if (_scope.lookup(alias) != null) return false;
+      if (_globals[_key(_currentModule, alias)] != null) return false;
       final module = alias == _currentModule
           ? alias
           : _importAliases[_currentModule]?[alias];
@@ -1646,10 +1896,11 @@ final class Checker {
     return false;
   }
 
-  /// `b"..."`, a `[]u8` constant, or a local already marked as those bytes.
-  /// `pick` / `match` / `or` count when any arm is read-only: the checker
-  /// does not know which arm runs. A call, a parameter, and a struct field
-  /// are not tracked.
+  /// `b"..."`, a `[]u8` constant, an immutable `[]u8` global initialized
+  /// from those bytes, or a local already marked as them. `pick` / `match`
+  /// / `or` count when any arm is read-only: the checker does not know
+  /// which arm runs. A call, a parameter, a struct field, and a `let mut`
+  /// global are not tracked.
   bool _isReadOnlyBytes(Expr expr) {
     final node = _unwrapGroups(expr);
     if (node is ByteStringLit) return true;
@@ -1657,18 +1908,22 @@ final class Checker {
       final sym = _scope.lookup(node.name);
       if (sym != null) return sym.readOnlyBytes;
       final constant = _consts[_key(_currentModule, node.name)];
-      return _isU8Slice(constant?.resolvedType);
+      if (_isU8Slice(constant?.resolvedType)) return true;
+      return _globals[_key(_currentModule, node.name)]?.readOnlyBytes ??
+          false;
     }
-    if (node is FieldExpr &&
-        node.object is NameExpr &&
-        _placeIsConst(node)) {
-      final alias = (node.object as NameExpr).name;
-      final module = alias == _currentModule
-          ? alias
-          : _importAliases[_currentModule]?[alias];
-      if (module == null) return false;
-      final decl = _consts[_key(module, node.name)];
-      return _isU8Slice(decl?.resolvedType);
+    if (node is FieldExpr && node.object is NameExpr) {
+      if (_placeIsConst(node)) {
+        final alias = (node.object as NameExpr).name;
+        final module = alias == _currentModule
+            ? alias
+            : _importAliases[_currentModule]?[alias];
+        if (module == null) return false;
+        final decl = _consts[_key(module, node.name)];
+        return _isU8Slice(decl?.resolvedType);
+      }
+      final global = _moduleGlobal(node);
+      return global?.readOnlyBytes ?? false;
     }
     if (node is PickExpr) {
       return _isReadOnlyBytes(node.thenExpr) ||
@@ -1862,7 +2117,8 @@ final class Checker {
         stmt.fieldTypes = fieldTypes;
         for (var i = 0; i < binds.length; i++) {
           _scope.define(
-            _Symbol(name: binds[i], type: fieldTypes[i], isMut: isMut, pos: pos),
+            _Symbol(
+                name: binds[i], type: fieldTypes[i], isMut: isMut, pos: pos),
           );
         }
 
@@ -1922,7 +2178,12 @@ final class Checker {
           );
         }
 
-      case AssignStmt(:final target, :final value, :final pos, :final compoundOp):
+      case AssignStmt(
+          :final target,
+          :final value,
+          :final pos,
+          :final compoundOp
+        ):
         final targetType = _checkAssignableTarget(target, pos);
         if (targetType is ArrayType) {
           throw CheckError(
@@ -2170,53 +2431,13 @@ final class Checker {
               _Symbol(name: initName, type: concrete, isMut: true, pos: pos),
             );
           } else {
-            // `=` assigns to an existing mutable binding (looked up via parent).
-            final sym = _scope.lookup(initName);
-            if (sym == null) {
-              throw CheckError('unknown variable `$initName`', initExpr.pos);
-            }
-            if (!sym.isMut) {
-              throw CheckError(
-                'cannot assign to immutable variable `$initName`',
-                initExpr.pos,
-              );
-            }
-            final initTy = _inferExpr(initExpr);
-            _expectAssignable(sym.type, initTy, initExpr.pos);
-            _materialize(initExpr, sym.type);
+            // `=` assigns to an existing mutable local or global.
+            stmt.initCName = _bindForCTarget(initName, initExpr, null);
           }
         }
         if (cond != null) _expectBoolCond(cond);
         if (postName != null && postExpr != null) {
-          final sym = _scope.lookup(postName);
-          if (sym == null) {
-            throw CheckError('unknown variable `$postName`', postExpr.pos);
-          }
-          if (!sym.isMut) {
-            throw CheckError(
-              'cannot assign to immutable variable `$postName`',
-              postExpr.pos,
-            );
-          }
-          if (postCompoundOp != null) {
-            if (postExpr is OrExpr ||
-                postExpr is PropagateExpr ||
-                postExpr is MatchExpr) {
-              throw CheckError(
-                'compound assignment values must be plain expressions',
-                postExpr.pos,
-              );
-            }
-            final target = NameExpr(postName, postExpr.pos);
-            target.resolvedType = sym.type;
-            final resultType =
-                _inferBinary(target, postCompoundOp, postExpr, postExpr.pos);
-            _expectAssignable(sym.type, resultType, postExpr.pos);
-          } else {
-            final postTy = _inferExpr(postExpr);
-            _expectAssignable(sym.type, postTy, postExpr.pos);
-            _materialize(postExpr, sym.type);
-          }
+          stmt.postCName = _bindForCTarget(postName, postExpr, postCompoundOp);
         }
         _loopDepth++;
         _checkBlock(body);
@@ -2426,13 +2647,18 @@ final class Checker {
     }
   }
 
-  ({bool trimFrac, int trimFracDigits, String? printfSpec}) _resolveInterpFormat(
+  ({bool trimFrac, int trimFracDigits, String? printfSpec})
+      _resolveInterpFormat(
     String? raw,
     KlinType type,
     SourcePos pos,
   ) {
     if (raw == null || raw.isEmpty) {
-      return (trimFrac: false, trimFracDigits: 0, printfSpec: _defaultPrintf(type, pos));
+      return (
+        trimFrac: false,
+        trimFracDigits: 0,
+        printfSpec: _defaultPrintf(type, pos)
+      );
     }
     if (raw.startsWith('%')) {
       if (raw == '%' || raw.contains('%n')) {
@@ -2526,8 +2752,7 @@ final class Checker {
 
   void _expectInterpFloaty(KlinType type, String raw, SourcePos pos) {
     if (type is UntypedFloat || type is UntypedInt) return;
-    if (type is PrimType &&
-        (type.kind.isFloat || type.kind.isInteger)) {
+    if (type is PrimType && (type.kind.isFloat || type.kind.isInteger)) {
       return;
     }
     throw CheckError(
@@ -2545,17 +2770,9 @@ final class Checker {
       return switch (type.kind) {
         PrimKind.bool_ => '%d',
         PrimKind.f32 || PrimKind.f64 => '%g',
-        PrimKind.i8 ||
-        PrimKind.i16 ||
-        PrimKind.i32 ||
-        PrimKind.isize =>
-          '%d',
+        PrimKind.i8 || PrimKind.i16 || PrimKind.i32 || PrimKind.isize => '%d',
         PrimKind.i64 => '%lld',
-        PrimKind.u8 ||
-        PrimKind.u16 ||
-        PrimKind.u32 ||
-        PrimKind.usize =>
-          '%u',
+        PrimKind.u8 || PrimKind.u16 || PrimKind.u32 || PrimKind.usize => '%u',
         PrimKind.u64 => '%llu',
       };
     }
@@ -2597,6 +2814,14 @@ final class Checker {
     }
     final signature = _functions[_key(module, callee)];
     if (signature == null) {
+      final globalCall = _tryGlobalFnCall(
+        module,
+        moduleName,
+        callee,
+        args,
+        pos,
+      );
+      if (globalCall != null) return globalCall;
       if (moduleName != null) {
         throw CheckError('unknown function `$moduleName.$callee`', pos);
       }
@@ -2701,8 +2926,8 @@ final class Checker {
       return null;
     }
     final decl = asyncDecl ??
-        _allFunctions.firstWhere((f) =>
-            f.name == asyncName && f.isAsync && f.receiver == null);
+        _allFunctions.firstWhere(
+            (f) => f.name == asyncName && f.isAsync && f.receiver == null);
     if (decl.params.isNotEmpty) {
       throw CheckError(
         '`spawn` MVP requires a zero-parameter `async fn` (got `$asyncName`)',
@@ -2798,6 +3023,38 @@ final class Checker {
 
   String _methodCName(String module, String typeName, String method) =>
       module.isEmpty ? '${typeName}_$method' : '${module}_${typeName}_$method';
+
+  /// `op(1)` or `mod.op(1)` when `op` is a global of function-pointer type.
+  /// A global that is not a function is an error here, the same as a local
+  /// variable used as a call. Returns null when no global has that name.
+  _CheckedCall? _tryGlobalFnCall(
+    String module,
+    String? moduleName,
+    String callee,
+    List<Expr> args,
+    SourcePos pos,
+  ) {
+    final global = _globals[_key(module, callee)];
+    if (global == null) return null;
+    final shown = moduleName == null ? callee : '$moduleName.$callee';
+    if (module != _currentModule && !global.isPub) {
+      throw CheckError('global `$shown` is private', pos);
+    }
+    final fnType = global.resolvedType;
+    if (fnType is! FnType) {
+      throw CheckError(
+        '`$shown` is not a function (it is a '
+        '`${global.resolvedType!.displayName}` variable)',
+        pos,
+      );
+    }
+    final call = _checkFnTypeCall(fnType, callee, args, pos);
+    return _CheckedCall(
+      call.type,
+      _constCName(global.moduleName, global.name),
+      def: ResolvedDef(global.namePos, global.sourcePath),
+    );
+  }
 
   _CheckedCall _checkFnTypeCall(
     FnType fnType,
@@ -2922,8 +3179,7 @@ final class Checker {
     final signature = _methods['${receiverType.displayName}.${call.name}'];
     if (signature == null) {
       throw CheckError(
-          'type `$receiverName` has no method `${call.name}`',
-          call.pos);
+          'type `$receiverName` has no method `${call.name}`', call.pos);
     }
     if (receiverModule != _currentModule && !signature.isPub) {
       throw CheckError(
@@ -2996,9 +3252,17 @@ final class Checker {
     if (place is NameExpr) {
       final symbol = _scope.lookup(place.name);
       if (symbol == null) {
+        final global = _currentGlobal(place.name);
+        if (global != null) {
+          if (!global.isMut) {
+            throw CheckError(
+                'cannot assign to immutable variable `${place.name}`', pos);
+          }
+          _stampGlobal(place, global);
+          return global.resolvedType!;
+        }
         if (_consts[_key(_currentModule, place.name)] != null) {
-          throw CheckError(
-              'cannot assign to constant `${place.name}`', pos);
+          throw CheckError('cannot assign to constant `${place.name}`', pos);
         }
         throw CheckError('unknown variable `${place.name}`', pos);
       }
@@ -3011,6 +3275,14 @@ final class Checker {
       return symbol.type;
     }
     if (place is FieldExpr) {
+      final moduleGlobal = _moduleGlobal(place);
+      if (moduleGlobal != null) {
+        if (!moduleGlobal.isMut) {
+          final shown = _modulePlaceText(place);
+          throw CheckError('cannot assign to immutable variable `$shown`', pos);
+        }
+        return moduleGlobal.resolvedType!;
+      }
       if (_placeIsConst(place)) {
         throw CheckError('cannot assign to constant `${place.name}`', pos);
       }
@@ -3057,7 +3329,8 @@ final class Checker {
       _requireMutablePlace(
         object,
         pos,
-        immutableVarMessage: 'cannot assign to a field of an immutable variable',
+        immutableVarMessage:
+            'cannot assign to a field of an immutable variable',
         immutableExprMessage:
             'cannot assign to a field of an immutable expression',
       );
@@ -3082,6 +3355,14 @@ final class Checker {
     if (base is NameExpr) {
       final symbol = _scope.lookup(base.name);
       if (symbol == null) {
+        final global = _currentGlobal(base.name);
+        if (global != null) {
+          if (!global.isMut) {
+            throw CheckError('cannot assign through an immutable slice', pos);
+          }
+          _stampGlobal(base, global);
+          return;
+        }
         throw CheckError('unknown variable `${base.name}`', pos);
       }
       if (!symbol.isMut) {
@@ -3117,6 +3398,17 @@ final class Checker {
     if (base is NameExpr) {
       final symbol = _scope.lookup(base.name);
       if (symbol == null) {
+        final global = _currentGlobal(base.name);
+        if (global != null) {
+          if (!global.isMut) {
+            throw CheckError(immutableVarMessage, pos);
+          }
+          _stampGlobal(base, global);
+          return;
+        }
+        if (_consts[_key(_currentModule, base.name)] != null) {
+          throw CheckError(immutableVarMessage, pos);
+        }
         throw CheckError('unknown variable `${base.name}`', pos);
       }
       if (!symbol.isMut) {
@@ -3127,6 +3419,17 @@ final class Checker {
       return;
     }
     if (base is FieldExpr) {
+      final owner = _unwrapGroups(base.object);
+      if (owner is NameExpr && _qualifierModule(owner.name) != null) {
+        final global = _moduleGlobal(base);
+        if (global == null || !global.isMut) {
+          throw CheckError(
+            global == null ? immutableExprMessage : immutableVarMessage,
+            pos,
+          );
+        }
+        return;
+      }
       _requireMutablePlace(
         base.object,
         pos,
@@ -3187,13 +3490,12 @@ final class Checker {
         IfStmt(:final thenBlock, :final elseBranch) => elseBranch != null &&
             _returnsOnAllPaths(thenBlock) &&
             _stmtReturns(elseBranch),
-        MatchStmt(:final subject, :final arms) =>
-          _matchCoversAll(
-            subject.resolvedType,
-            arms.map((a) => a.pattern).toList(),
-            arms.map((a) => a.when).toList(),
-          ) &&
-              arms.every((arm) => _returnsOnAllPaths(arm.body)),
+        MatchStmt(:final subject, :final arms) => _matchCoversAll(
+              subject.resolvedType,
+              arms.map((a) => a.pattern).toList(),
+              arms.map((a) => a.when).toList(),
+            ) &&
+            arms.every((arm) => _returnsOnAllPaths(arm.body)),
         _ => false,
       };
 
@@ -3215,9 +3517,13 @@ final class Checker {
           if (sym != null) {
             nameExpr.isPtrReceiver = sym.isPtrReceiver;
             nameExpr.arrayByValue = sym.arrayByValue;
-            nameExpr.resolvedDef =
-                ResolvedDef(sym.pos, _currentSourcePath);
+            nameExpr.resolvedDef = ResolvedDef(sym.pos, _currentSourcePath);
             return sym.type;
+          }
+          final global = _currentGlobal(nameExpr.name);
+          if (global != null) {
+            _stampGlobal(nameExpr, global);
+            return global.resolvedType!;
           }
           final constant = _consts[_key(_currentModule, nameExpr.name)];
           if (constant != null) {
@@ -3231,12 +3537,10 @@ final class Checker {
           if (fnType != null) {
             nameExpr.resolvedFnCName = fnType.cName;
             final decl = _functionDecl(_currentModule, nameExpr.name);
-            nameExpr.resolvedDef =
-                ResolvedDef(decl.pos, decl.sourcePath);
+            nameExpr.resolvedDef = ResolvedDef(decl.pos, decl.sourcePath);
             return fnType.type;
           }
-          throw CheckError(
-              'unknown variable `${nameExpr.name}`', nameExpr.pos);
+          throw CheckError('unknown variable `${nameExpr.name}`', nameExpr.pos);
         }(),
       FieldExpr fieldExpr => () {
           final object = fieldExpr.object;
@@ -3245,7 +3549,7 @@ final class Checker {
           // `Enum.Variant`: a type name (not a variable) followed by a variant.
           final enumConst = _tryEnumConstant(fieldExpr, object, name, pos);
           if (enumConst != null) return enumConst;
-          final moduleConst = _tryModuleConst(fieldExpr, object, name, pos);
+          final moduleConst = _tryModuleValue(fieldExpr, object, name, pos);
           if (moduleConst != null) return moduleConst;
           final objectType = _inferExpr(object);
           if (name == 'len' && objectType is ArrayType) {
@@ -3272,8 +3576,7 @@ final class Checker {
             throw CheckError(
                 'struct `${objectType.name}` has no field `$name`', pos);
           }
-          fieldExpr.resolvedDef =
-              ResolvedDef(field.pos, struct.sourcePath);
+          fieldExpr.resolvedDef = ResolvedDef(field.pos, struct.sourcePath);
           return field.resolvedType!;
         }(),
       IndexExpr(:final object, :final index, :final pos) => () {
@@ -3676,8 +3979,18 @@ final class Checker {
 
   bool _isMutablePlace(Expr expr) {
     final place = _unwrapGroups(expr);
-    if (place is NameExpr) return _scope.lookup(place.name)?.isMut ?? false;
-    if (place is FieldExpr) return _isMutablePlace(place.object);
+    if (place is NameExpr) {
+      final local = _scope.lookup(place.name);
+      if (local != null) return local.isMut;
+      return _currentGlobal(place.name)?.isMut ?? false;
+    }
+    if (place is FieldExpr) {
+      final object = _unwrapGroups(place.object);
+      if (object is NameExpr && _qualifierModule(object.name) != null) {
+        return _moduleGlobal(place)?.isMut ?? false;
+      }
+      return _isMutablePlace(place.object);
+    }
     if (place is IndexExpr) return _isMutablePlace(place.object);
     // `xs[:][i]` — the slice is a view of the array place. `&` follows
     // that place: `let mut xs` yields `*mut`, an immutable `xs` yields `*`.
@@ -3785,9 +4098,8 @@ final class Checker {
     final rt = _inferExpr(right);
     final unified = _unifyNumeric(lt, rt, pos);
     if (unified is UntypedInt) return unified;
-    final concrete = unified is UntypedFloat
-        ? _defaultConcrete(unified, pos)
-        : unified;
+    final concrete =
+        unified is UntypedFloat ? _defaultConcrete(unified, pos) : unified;
     if (concrete is! PrimType || !concrete.kind.isInteger) {
       throw CheckError(
         'operator `$op` requires integer types, got `${concrete.displayName}`',
@@ -3939,15 +4251,55 @@ final class Checker {
     return false;
   }
 
-  /// Integer `const` named by a value. Null when the name is a local, is
-  /// missing, or is not an integer constant. Does not report errors —
-  /// [_evalConstInt] does, once this has returned non-null.
+  /// `for name = value` and the post update. A local keeps its source
+  /// spelling (returns null). A global returns the C name the header emits.
+  String? _bindForCTarget(String name, Expr value, String? compoundOp) {
+    final sym = _scope.lookup(name);
+    final GlobalDecl? global = sym == null ? _currentGlobal(name) : null;
+    if (sym == null && global == null) {
+      throw CheckError('unknown variable `$name`', value.pos);
+    }
+    final isMut = sym?.isMut ?? global!.isMut;
+    if (!isMut) {
+      throw CheckError(
+        'cannot assign to immutable variable `$name`',
+        value.pos,
+      );
+    }
+    final type = sym?.type ?? global!.resolvedType!;
+    if (compoundOp != null) {
+      if (value is OrExpr || value is PropagateExpr || value is MatchExpr) {
+        throw CheckError(
+          'compound assignment values must be plain expressions',
+          value.pos,
+        );
+      }
+      final target = NameExpr(name, value.pos);
+      target.resolvedType = type;
+      final resultType = _inferBinary(target, compoundOp, value, value.pos);
+      _expectAssignable(type, resultType, value.pos);
+    } else {
+      final actual = _inferExpr(value);
+      _expectAssignable(type, actual, value.pos);
+      _materialize(value, type);
+    }
+    if (global == null) return null;
+    return _constCName(global.moduleName, global.name);
+  }
+
+  /// Integer `const` named by a value. Null when the name is a local or a
+  /// global, is missing, or is not an integer constant. A global of the
+  /// same name as an import qualifier shadows that qualifier here, the same
+  /// as a local. Does not report errors — [_evalConstInt] does, once this
+  /// has returned non-null.
   ConstDecl? _lookupIntegerConst(String? qualifier, String name) {
     if (qualifier == null) {
       if (_scope.lookup(name) != null) return null;
+      if (_globals[_key(_currentModule, name)] != null) return null;
       return _integerConstOrNull(_consts[_key(_currentModule, name)]);
     }
     if (_scope.lookup(qualifier) != null) return null;
+    if (_globals[_key(_currentModule, qualifier)] != null) return null;
     final module = qualifier == _currentModule
         ? qualifier
         : _importAliases[_currentModule]?[qualifier];
@@ -4078,8 +4430,8 @@ final class Checker {
         if (op != '&' && op != '*') {
           // `-128` as `i8`: the result fits, the operand 128 does not.
           // `~` checks its operand inside [_checkCoercedIntLiteral].
-          final literalOp = (op == '-' || op == '~') &&
-              _groupedIntLit(operand) != null;
+          final literalOp =
+              (op == '-' || op == '~') && _groupedIntLit(operand) != null;
           _materialize(
             operand,
             type,
@@ -4583,8 +4935,7 @@ final class Checker {
         UntypedInt() => 'i32',
         UntypedFloat() => 'f64',
         UntypedEmptyArray() => '[0]',
-        ArrayType(:final elem, :final len) =>
-          '[$len]${_typeForMismatch(elem)}',
+        ArrayType(:final elem, :final len) => '[$len]${_typeForMismatch(elem)}',
         _ => type.displayName,
       };
 
@@ -4603,9 +4954,7 @@ final class Checker {
       return true;
     }
     // `[]` is `[0]T` for any element, including `[0][0]u8`.
-    if (source is UntypedEmptyArray &&
-        target is ArrayType &&
-        target.len == 0) {
+    if (source is UntypedEmptyArray && target is ArrayType && target.len == 0) {
       return true;
     }
     if (target is SliceType &&

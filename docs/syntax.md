@@ -184,13 +184,17 @@ immutable slice (`let s = b"fn"` then `s[0] = 1`, or a `[]u8`
 parameter). `let mut s = b"fn"` is an error too, including a `[]u8`
 constant, another read-only binding, and an assignment onto a mutable
 slice (`s = b"fn"`). `pick`, `match`, and `or` are read-only when any
-arm is. Copy into a `[N]u8` to modify. A `[]u8` parameter, a returned
-`[]u8`, and a struct field are not tracked (D10).
+arm is. Copy into a `[N]u8` to modify. An immutable module
+`let kw: []u8 = b"fn"` is the same error (`let mut w = kw`). A module
+`let mut s: []u8 = b"fn"` is storage and a write may crash (D11). A
+`[]u8` parameter, a returned `[]u8`, and a struct field are not tracked
+(D10).
 
 ## Constants
 
-`const` is a module-level immutable value. Not a mutable global, and
-not a local (`let` stays the local form).
+`const` is a module-level compile-time value. It is not storage and
+not a local (`let` at module scope is the object; a local stays `let`
+inside a function).
 
 ```klin
 pub const PAGE: i64 = 4096
@@ -242,6 +246,47 @@ fn main() {
 ```
 
 Runnable: [`examples/module_const.kl`](../examples/module_const.kl).
+
+## Module-level `let`
+
+`let` / `let mut` at module scope is an object. `const` has no address;
+`let` does. `:=` is not allowed here.
+
+```klin
+const PAGE: i64 = 4096
+
+let mut n: i32 = 1
+let limit: i32 = PAGE
+let mut buf: [8]u8
+let mut p: *mut i32 = &n
+
+fn bump() {
+    n = n + 1
+    *p += 1
+}
+```
+
+- `let` is not assignable. `&` of it is `*T`. `let mut` is assignable,
+  including compound assignment and a `for name = …` header. `&` of it
+  is `*mut T`. A `mut` method accepts a `let mut` global
+- The type is required. Omitted initializer means zero-init (C static
+  storage). A present initializer must be a constant expression:
+  literals, `const`, integer constant expressions, array and struct
+  literals of those, `b"..."`, an enum variant, `&` of a global or
+  function, `xs[:]`, or a function name. Another global's value is not
+  a constant
+- Types: prims, `str`, enums, structs, pointers, slices, function
+  pointers, `[N]T`. Not `!T`
+- `pub` is `mod.name` after `import`. Another module may write it only
+  when it is `pub let mut`. Private is `static` and invisible across
+  modules
+- A global is not an `[N]T` length. A local of the same name shadows it
+- No locks and no atomics. Async and threads race the way C does
+- An immutable `let kw: []u8 = b"..."` is read-only (D10): `let mut w = kw`
+  is an error. `let mut s: []u8 = b"..."` is accepted storage; a write
+  through it may crash. Copy into a `[N]u8` to modify
+
+Runnable: [`examples/global_let.kl`](../examples/global_let.kl).
 
 ## Already documented elsewhere
 

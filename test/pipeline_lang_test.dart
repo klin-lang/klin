@@ -2365,4 +2365,21 @@ fn main() {
     expect(c, contains('w = 4;'));
     expect(c, contains('w = 5;'));
   });
+
+  test('checker: match array arms next to error() still unify', () {
+    const source = '''
+fn main() {
+  let k = 1
+  let known: [2]u8 = [9, 8]
+  let x = match k {
+    0 { known }
+    1 { [1 + 2, 4] }
+    else { error(1) }
+  }
+  printf("%d\\n", k)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+  });
 }

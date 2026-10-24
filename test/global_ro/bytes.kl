@@ -1,0 +1,4 @@
+module bytes
+
+pub let kw: []u8 = b"fn"
+pub let mut buf: []u8 = b"ab"

@@ -65,7 +65,9 @@ numeric types.
 Writing `dst[i]` follows the slice place, the same rule as `&dst[i]`.
 An immutable binding and a slice parameter cannot write (`s[i] = …`,
 `s[i] += …`). `let mut s` can when the slice views a mutable buffer.
-A `b"..."` value cannot be bound or assigned that way (D10).
+A `b"..."` value cannot be bound or assigned that way (D10). An
+immutable module `let` of those bytes follows the same rule. A module
+`let mut` slice does not: a write through it may crash (D11).
 `xs[:][i] = …` follows the array.
 `map_into` / `filter_into` / `copy_into` / `reverse_into` copy the
 header (`let mut w = dst`) and write through `w`; the pointer is the

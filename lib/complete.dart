@@ -111,9 +111,8 @@ List<KlinCompletionItem> completeAt(
 
   // Editor coords for buffer prefix; expanded coords for AST scope walks.
   final map = result.sourceMap;
-  final query = map != null
-      ? map.toExpanded(SourcePos(line, col))
-      : SourcePos(line, col);
+  final query =
+      map != null ? map.toExpanded(SourcePos(line, col)) : SourcePos(line, col);
   final qLine = query.line;
   final qCol = query.col;
 
@@ -183,6 +182,16 @@ List<KlinCompletionItem> _topLevelItems(Program program) {
         label: c.name,
         kind: KlinCompletionKind.variable,
         detail: 'const ${c.typeName}',
+      ),
+    );
+  }
+  for (final g in program.globals) {
+    final kw = g.isMut ? 'let mut' : 'let';
+    out.add(
+      KlinCompletionItem(
+        label: g.name,
+        kind: KlinCompletionKind.variable,
+        detail: '$kw ${g.typeName}',
       ),
     );
   }
@@ -452,9 +461,7 @@ List<KlinCompletionItem> _methodsForType(
     final rt = recv.resolvedType;
     if (rt == null) continue;
     final ok = isEnum
-        ? rt is EnumType &&
-            rt.moduleName == moduleName &&
-            rt.name == typeName
+        ? rt is EnumType && rt.moduleName == moduleName && rt.name == typeName
         : rt is StructType &&
             rt.moduleName == moduleName &&
             rt.name == typeName;
@@ -606,8 +613,8 @@ KlinType? _bindingTypeInFunc(
 
 String? _receiverNameBeforeDot(String before) {
   var i = before.length - 1;
-  while (i >= 0 &&
-      (before[i] == ' ' || before[i] == '\t' || before[i] == '\n')) {
+  while (
+      i >= 0 && (before[i] == ' ' || before[i] == '\t' || before[i] == '\n')) {
     i--;
   }
   // Skip partial member after `.`
@@ -634,8 +641,8 @@ String? _receiverNameBeforeDot(String before) {
 
 bool _endsWithDot(String before) {
   var i = before.length - 1;
-  while (i >= 0 &&
-      (before[i] == ' ' || before[i] == '\t' || before[i] == '\n')) {
+  while (
+      i >= 0 && (before[i] == ' ' || before[i] == '\t' || before[i] == '\n')) {
     i--;
   }
   if (i < 0) return false;
