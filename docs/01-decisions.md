@@ -1,6 +1,6 @@
 # Design decisions
 
-This is the decision log (D1–D13), not an introduction. Start with
+This is the decision log (D1–D19), not an introduction. Start with
 [00-idea.md](00-idea.md). To write Klin: [guide.md](guide.md).
 
 The first three must be made **before the first line of the parser** — they permeate
@@ -745,6 +745,54 @@ including one inside `or`), the next free pair is
 ```klin
 fn main(args: []str) {
     printf("%d\n", cast(i32, args.len))
+}
+```
+
+## D19. Pointer to an array — DECIDED
+
+**Choice: `*[N]T` and `*mut [N]T` are a C pointer to the array, `T (*)[N]`.**
+
+`(*p)[:]`, `(*p)[a:b]`, `(*p)[a:]`, and `(*p)[:b]` are `[]T` for every
+element a slice allows (D14): a primitive, a struct, an enum, `str`, a
+pointer, a slice, a function, or an array that is not an array of
+structs. `[]Token` and `[][]u8` can be carved from a buffer without a
+helper per type. `(*p)[i]` indexes that array. There is no runtime
+bounds check (D15).
+
+`*mut [N]T` is a mutable place. `*[N]T` is an immutable place.
+`(*p)[i] = …` and `(*p)[:][i] = …` follow that place. `let mut s =
+(*p)[:]` is a new binding: it can write even when `p` is `*[N]T`, the
+same as `let mut s = xs[:]` on an immutable array. A cast is not
+tracked. Read-only bytes stay read-only (D10): a `b"..."` subslice
+still cannot be bound with `let mut`.
+
+`p` may be a local, a parameter, a struct field, a global, or a call.
+`(*get())[:]` evaluates the call once. `&` of a `[N]T` returned by
+value (a local holding that return) is the address of the array inside
+the wrapper, so the pointer type stays `T (*)[N]`. `cast` between that
+pointer and an integer still goes through `uintptr_t` / `intptr_t`
+(D17).
+
+These forms are a checker error, not broken C:
+
+- `p[:]` or `p[i]` on the pointer itself (it is not an array or a slice).
+- A struct field whose C typedef would need an array of structs to be
+  complete (`[]*mut [N]Token`, `fn(): *mut [N]Token`, `!*mut [N]Token`).
+  A field `buf: *mut [N]Token` is the pointer, written inline, and is
+  allowed.
+- A field that needs its own struct, or a cycle of structs, to be
+  complete (`kids: *mut [N]Node`, two structs each holding an array of
+  the other). `next: *Node` and `kids: []Node` stay valid.
+- A slice range inside `async fn` (the async MVP has no slice range).
+  `(*p)[i]` in an async function is allowed.
+
+```klin
+fn main() {
+    let mut buf: [4]Token = [Token{ kind: 1, n: 0 }, Token{ kind: 2, n: 0 }, Token{ kind: 3, n: 0 }, Token{ kind: 4, n: 0 }]
+    let p = cast(*mut [4]Token, cast(usize, &buf))
+    let mut s = (*p)[1:3]
+    s[0].n = 9
+    printf("%d\n", buf[1].n)
 }
 ```
 

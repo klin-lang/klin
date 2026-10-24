@@ -3007,6 +3007,126 @@ fn main() {
 ''', 'cannot assign through an immutable slice');
   });
 
+  test('error: write through an immutable pointer to an array', () {
+    expectRange('''
+fn main() {
+  let xs: [2]i32 = [1, 2]
+  let p = cast(*[2]i32, cast(usize, &xs))
+  (*p)[0] = 9
+}
+''', 'cannot write through an immutable pointer');
+  });
+
+  test('error: subslice write through an immutable pointer to an array', () {
+    expectRange('''
+fn main() {
+  let xs: [2]i32 = [1, 2]
+  let p = cast(*[2]i32, cast(usize, &xs))
+  (*p)[:][0] = 9
+}
+''', 'cannot write through an immutable pointer');
+  });
+
+  test('error: address of an immutable pointer-to-array element is *T', () {
+    expectRange('''
+fn main() {
+  let xs: [2]i32 = [1, 2]
+  let p = cast(*[2]i32, cast(usize, &xs))
+  let q: *mut i32 = &(*p)[:][0]
+}
+''', 'type mismatch: expected `*mut i32`, got `*i32`');
+  });
+
+  test('error: immutable binding of a slice from *mut [N]T', () {
+    expectRange('''
+fn main() {
+  let mut xs: [2]i32 = [1, 2]
+  let p: *mut [2]i32 = &xs
+  let s = (*p)[:]
+  s[0] = 9
+}
+''', 'cannot assign through an immutable slice');
+  });
+
+  test('error: slice range on the pointer itself', () {
+    expectRange('''
+fn main() {
+  let mut xs: [2]i32 = [1, 2]
+  let p: *mut [2]i32 = &xs
+  let s = p[:]
+}
+''', 'a slice range requires an array or slice');
+  });
+
+  test('error: index on the pointer itself', () {
+    expectRange('''
+fn main() {
+  let mut xs: [2]i32 = [1, 2]
+  let p: *mut [2]i32 = &xs
+  let n = p[0]
+}
+''', 'indexing requires an array or slice');
+  });
+
+  test('error: pointer to an array of the same struct', () {
+    expectRange('''
+struct Node {
+  kids: *mut [2]Node
+}
+fn main() {}
+''', 'field `kids` needs `Node` to be complete');
+  });
+
+  test('error: cycle of pointers to arrays of structs', () {
+    expectRange('''
+struct A { b: *mut [1]B }
+struct B { a: *mut [1]A }
+fn main() {}
+''', 'to be complete (it contains an array of that struct)');
+  });
+
+  test('error: struct field slice of a pointer to an array of structs', () {
+    expectRange('''
+struct Token { k: i32 }
+struct Hold { xs: []*mut [2]Token }
+fn main() {}
+''', 'a struct field cannot be `[]*mut [2]Token`');
+  });
+
+  test('error: struct field result of a pointer to an array of structs', () {
+    expectRange('''
+struct Token { k: i32 }
+struct Hold { r: !*mut [2]Token }
+fn main() {}
+''', 'a struct field cannot be `!*mut [2]Token`');
+  });
+
+  test('error: struct field function returning a pointer to an array of structs', () {
+    expectRange('''
+struct Token { k: i32 }
+struct Hold { get: fn(): *mut [2]Token }
+fn main() {}
+''', 'a struct field cannot be `fn(): *mut [2]Token`');
+  });
+
+  test('error: slice range in async fn', () {
+    expectRange('''
+async fn work(p: *mut [2]i32) {
+  let s = (*p)[:]
+}
+fn main() {}
+''', 'async fn MVP does not support a slice range');
+  });
+
+  test('error: global slice through a pointer is not a constant', () {
+    expectRange('''
+let mut xs: [2]i32 = [1, 2]
+let p: *mut [2]i32 = &xs
+let s: []i32 = (*p)[:]
+fn main() {}
+''', 'global initializer must be a constant expression');
+  });
+
   test('error: subslice of an immutable array', () {
     expectRange('''
 fn main() {

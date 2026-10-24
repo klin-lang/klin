@@ -240,7 +240,10 @@ fn main() {
   Writes and `&s[i]` follow the slice place, same as `[]i32`.
   `xs[a:b]`, `xs[a:]`, and `xs[:b]` are a subslice of an array or a
   slice: a new `{ptr, len}` over the same elements, no bounds check.
-  A write through that view follows the source place
+  A write through that view follows the source place.
+  `(*p)[:]`, `(*p)[a:b]`, `(*p)[a:]`, and `(*p)[:b]` do the same
+  through `*mut [N]T` or `*[N]T`, and `(*p)[i]` indexes that array
+  ([01-decisions.md](01-decisions.md) D19)
 - No hidden allocation. Heap is `import mem` and an explicit
   `Allocator` ([14-allocator.md](14-allocator.md))
 

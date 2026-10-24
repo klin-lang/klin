@@ -214,6 +214,28 @@ that already points at those bytes (D10). A slice parameter is not
 tracked. An array subslice needs an l-value. Runnable:
 [`examples/slice_range.kl`](../examples/slice_range.kl).
 
+## Pointer to an array
+
+`(*p)[:]`, `(*p)[a:b]`, `(*p)[a:]`, and `(*p)[:b]` slice the array
+behind `*mut [N]T` or `*[N]T`. The result is `[]T` for any slice
+element. `(*p)[i]` indexes it. No runtime check. `*mut` can write;
+`*` cannot. `let mut s = (*p)[:]` is a new binding and can write,
+except a subslice of read-only bytes (D10). `p[:]` and `p[i]` on the
+pointer itself are errors. A slice range in `async fn` is an error;
+`(*p)[i]` is not.
+
+```klin
+fn main() {
+    let mut buf: [4]i32 = [10, 20, 30, 40]
+    let p = cast(*mut [4]i32, cast(usize, &buf))
+    let mut s = (*p)[1:3]
+    s[0] = 7
+    printf("%d\n", buf[1])
+}
+```
+
+Runnable: [`examples/slice_ptr.kl`](../examples/slice_ptr.kl).
+
 ## `main` arguments
 
 `fn main()` or `fn main(args: []str)`. The parameter is the process

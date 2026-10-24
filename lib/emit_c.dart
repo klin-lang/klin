@@ -48,19 +48,22 @@ String emitC(Program program, String sourcePath) {
   _collectSliceTypesInBodies(program, sliceTypes);
   // Primitive / struct / enum / str / pointer / nested-slice elements.
   // A struct element is `struct Tag *`, so the body can come later.
+  // `[]*mut [N]Token` is `struct Token (**ptr)[N]` and waits for the body.
   // A slice of a function pointer waits until that typedef exists.
   _emitSliceTypedefs(
     buf,
-    sliceTypes.where((elem) => !_sliceElemNeedsFn(elem)),
+    sliceTypes.where((elem) =>
+        !_sliceElemNeedsFn(elem) && !_sliceNeedsCompleteStruct(elem)),
   );
   final arrayReturns = _arrayReturnTypes(program);
   // Primitive (and pointer / enum / slice) elements do not need a struct
-  // to be complete. Function-pointer typedefs that return them come next.
+  // to be complete. `[N]*mut [M]Token` does, so it waits. Function-pointer
+  // typedefs that return the early wrappers come next.
   _emitArrayReturnTypedefs(
     buf,
     arrayReturns.where((type) {
       final elem = _arrayShape(type).elem;
-      return elem is! StructType && elem is! FnType;
+      return elem is! FnType && !_arrayReturnAfterStruct(type);
     }),
   );
   final fnTypes = <FnType>{};
@@ -85,23 +88,25 @@ String emitC(Program program, String sourcePath) {
   }
   final orderedFnTypes = fnTypes.toList()
     ..sort((a, b) => _fnTypeDepth(a).compareTo(_fnTypeDepth(b)));
-  final earlyFnTypes = orderedFnTypes
-      .where((type) => !typeNeedsStructArrayReturn(type))
-      .toList();
-  final lateFnTypes = orderedFnTypes.where(typeNeedsStructArrayReturn).toList();
+  final earlyFnTypes =
+      orderedFnTypes.where((type) => !_fnNeedsCompleteStruct(type)).toList();
+  final lateFnTypes = orderedFnTypes.where(_fnNeedsCompleteStruct).toList();
   _emitFnTypedefs(buf, earlyFnTypes);
   // `[]fn(i32): i32` names the function typedef. Emit it before any
-  // struct that stores that slice.
+  // struct that stores that slice. A slice that needs an array of structs
+  // waits until those structs are complete.
   _emitSliceTypedefs(
     buf,
-    sliceTypes.where((elem) => _sliceElemNeedsFn(elem) && !_sliceElemIsLate(elem)),
+    sliceTypes.where((elem) =>
+        _sliceElemNeedsFn(elem) && !_sliceNeedsCompleteStruct(elem)),
   );
-  // `[N]fn(): …` needs the function typedef first.
+  // `[N]fn(): …` needs the function typedef first, unless that typedef
+  // itself waits for a struct body.
   _emitArrayReturnTypedefs(
     buf,
     arrayReturns.where((type) {
       final elem = _arrayShape(type).elem;
-      return elem is FnType && !typeNeedsStructArrayReturn(type);
+      return elem is FnType && !_arrayReturnAfterLateFn(type);
     }),
   );
   if (_programNeedsTrimFrac(program)) {
@@ -132,28 +137,13 @@ String emitC(Program program, String sourcePath) {
     sourcePath,
     program.structs.map((s) => '${s.moduleName}.${s.name}').toSet(),
   );
-  // `uint8_t v[N]` of a struct needs that struct to be complete.
-  _emitArrayReturnTypedefs(
-    buf,
-    arrayReturns.where((type) => _arrayShape(type).elem is StructType),
-  );
-  _emitFnTypedefs(buf, lateFnTypes);
-  // `[]fn(): [N]Struct` follows the late function typedef.
-  _emitSliceTypedefs(
-    buf,
-    sliceTypes.where(_sliceElemIsLate),
-  );
+  // `[]*mut [N]Token`, `[N]Token`, `fn(): *mut [N]Token`, and the slices
+  // and wrappers that name those typedefs. After the struct bodies.
+  _emitLateStructTypedefs(buf, sliceTypes, lateFnTypes, arrayReturns);
   // After every slice typedef. `s[a:]` on a call is this helper, not a
   // statement temporary: a `while` condition must evaluate the call each
   // time it is checked.
   _emitSliceTailHelpers(buf);
-  _emitArrayReturnTypedefs(
-    buf,
-    arrayReturns.where((type) {
-      final elem = _arrayShape(type).elem;
-      return elem is FnType && typeNeedsStructArrayReturn(type);
-    }),
-  );
   final resultTypes = <ResultType>{};
   for (final struct in program.structs) {
     for (final field in struct.fields) {
@@ -173,10 +163,10 @@ String emitC(Program program, String sourcePath) {
     _collectResultTypes(global.resolvedType, resultTypes);
   }
   for (final type in resultTypes) {
-    final ok = _cType(type.ok);
+    final ok = _resultOkField(type.ok);
     buf.writeln('typedef struct {');
     buf.writeln('    bool is_err;');
-    buf.writeln('    union { $ok ok; int32_t err; } u;');
+    buf.writeln('    union { $ok; int32_t err; } u;');
     buf.writeln('} ${_resultCName(type.ok)};');
     buf.writeln();
   }
@@ -460,22 +450,31 @@ String emitH(Program program, String sourcePath) {
     ..sort((a, b) => _fnTypeDepth(a).compareTo(_fnTypeDepth(b)));
   _emitSliceTypedefs(
     buf,
-    sliceTypes.where((elem) => !_sliceElemNeedsFn(elem)),
+    sliceTypes.where((elem) =>
+        !_sliceElemNeedsFn(elem) && !_sliceNeedsCompleteStruct(elem)),
   );
-  _emitFnTypedefs(buf, orderedFn.where((type) => !typeNeedsStructArrayReturn(type)).toList());
+  _emitFnTypedefs(
+    buf,
+    orderedFn.where((type) => !_fnNeedsCompleteStruct(type)).toList(),
+  );
   _emitSliceTypedefs(
     buf,
-    sliceTypes.where((elem) => _sliceElemNeedsFn(elem) && !_sliceElemIsLate(elem)),
+    sliceTypes.where((elem) =>
+        _sliceElemNeedsFn(elem) && !_sliceNeedsCompleteStruct(elem)),
   );
   _emitStructTypedefs(buf, program, sourcePath, structKeys);
-  _emitFnTypedefs(buf, orderedFn.where(typeNeedsStructArrayReturn).toList());
-  _emitSliceTypedefs(buf, sliceTypes.where(_sliceElemIsLate));
+  _emitLateStructTypedefs(
+    buf,
+    sliceTypes,
+    orderedFn.where(_fnNeedsCompleteStruct).toList(),
+    const <ArrayType>{},
+  );
 
   for (final type in resultTypes) {
-    final ok = _cType(type.ok);
+    final ok = _resultOkField(type.ok);
     buf.writeln('typedef struct {');
     buf.writeln('    bool is_err;');
-    buf.writeln('    union { $ok ok; int32_t err; } u;');
+    buf.writeln('    union { $ok; int32_t err; } u;');
     buf.writeln('} ${_resultCName(type.ok)};');
     buf.writeln();
   }

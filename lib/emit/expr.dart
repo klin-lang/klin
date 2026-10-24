@@ -217,7 +217,10 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         'emit: interpolated string must be lowered via printf / fmt.write',
       ),
     UnaryExpr(:final op, :final operand, :final resolvedType) =>
-      _emitUnary(op, operand, resolvedType, (inner) => _emitExpr(inner, ctx)),
+      op == '&' && _exprIsArrayValue(operand)
+          ? _emitAddrOfArrayValue(_emitExpr(operand, ctx))
+          : _emitUnary(
+              op, operand, resolvedType, (inner) => _emitExpr(inner, ctx)),
     IndexExpr(:final object, :final index) => () {
         final indexC = _emitExpr(index, ctx);
         if (object.resolvedType is SliceType) {
@@ -260,7 +263,7 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         }
         final out = ctx.state.nextValueTemp();
         final pad = '    ' * ctx.indent;
-        ctx.buf.writeln('$pad${_cType(outType)} $out;');
+        ctx.buf.writeln('$pad${_cValueDecl(outType, out)};');
         _emitValueAssignment(
           ctx.buf,
           target: out,
@@ -281,9 +284,7 @@ String _emitExprRaw(Expr expr, _ExprCtx ctx) {
         }
         final out = ctx.state.nextValueTemp();
         final pad = '    ' * ctx.indent;
-        final outC =
-            outType is ArrayType ? _cValueType(outType) : _cType(outType);
-        ctx.buf.writeln('$pad$outC $out;');
+        ctx.buf.writeln('$pad${_cValueDecl(outType, out)};');
         _emitMatchAssign(
           ctx.buf,
           target: out,
@@ -346,8 +347,17 @@ String _emitArrayInit(Expr expr, _ExprCtx ctx) {
   return _emitExpr(expr, ctx);
 }
 
+/// `&pair()` / `&back` where `[N]T` is the return wrapper. The pointer
+/// type is `T (*)[N]` (D19), so the address is of `.v`, not of the wrapper.
+String _emitAddrOfArrayValue(String raw) {
+  final simple = RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$').hasMatch(raw);
+  return simple ? '&($raw.v)' : '&(($raw).v)';
+}
+
 /// `uint8_t[2]` or `uint8_t[1][2]` for a compound literal.
+/// `[2]*mut [3]i32` is `int32_t (*[2])[3]`, not `int32_t (*)[3][2]`.
 String _cArraySuffixType(ArrayType type) {
+  if (_typeNeedsPtrArrayDecl(type)) return _ptrArrayAbstract(type);
   final shape = _arrayShape(type);
   return '${_cType(shape.elem)}[${shape.lens.join('][')}]';
 }

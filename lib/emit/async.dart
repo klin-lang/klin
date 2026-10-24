@@ -347,12 +347,15 @@ String _emitAsyncExpr(Expr expr, _AsyncEmitCtx ctx) {
           resolvedConstCName ??
           resolvedFnCName ??
           'st->$name',
-    UnaryExpr(:final op, :final operand, :final resolvedType) => _emitUnary(
-        op,
-        operand,
-        resolvedType,
-        (inner) => _emitAsyncExpr(inner, ctx),
-      ),
+    UnaryExpr(:final op, :final operand, :final resolvedType) =>
+      op == '&' && _exprIsArrayValue(operand)
+          ? _emitAddrOfArrayValue(_emitAsyncExpr(operand, ctx))
+          : _emitUnary(
+              op,
+              operand,
+              resolvedType,
+              (inner) => _emitAsyncExpr(inner, ctx),
+            ),
     BinaryExpr(:final left, :final op, :final right) =>
       '(${_emitAsyncExpr(left, ctx)} $op ${_emitAsyncExpr(right, ctx)})',
     PickExpr(:final cond, :final thenExpr, :final elseExpr) =>

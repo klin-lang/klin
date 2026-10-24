@@ -230,7 +230,14 @@ String _functionHeader(FuncDecl func) {
           func.body != null
       ? 'static '
       : '';
-  return '$staticPrefix${_cValueType(returnType)} $name(${params.isEmpty ? 'void' : params.join(', ')})';
+  final paramsText = params.isEmpty ? 'void' : params.join(', ');
+  // `fn get(): *mut [N]T` is `T (*get(...))[N]`, not `T (*)[N] get(...)`.
+  // A returned `[N]T` stays the wrapper struct ([_cValueType]).
+  if (returnType is! ArrayType && _typeNeedsPtrArrayDecl(returnType)) {
+    final parts = _declParts(returnType, '$name($paramsText)');
+    return '$staticPrefix${parts.spec} ${parts.declarator}';
+  }
+  return '$staticPrefix${_cValueType(returnType)} $name($paramsText)';
 }
 
 String _receiverTypeName(Receiver receiver) =>
@@ -248,8 +255,10 @@ String _cType(KlinType type) => switch (type) {
       EnumType(:final moduleName, :final name) =>
         _enumCName(moduleName, name),
       PtrType(:final pointee, :final isVolatile) =>
-        '${isVolatile ? 'volatile ' : ''}'
-        '${pointee is StructType ? 'struct ${_structCName(pointee.moduleName, pointee.name)}' : _cType(pointee)} *',
+        _typeNeedsPtrArrayDecl(type)
+            ? _ptrArrayAbstract(type)
+            : '${isVolatile ? 'volatile ' : ''}'
+                '${pointee is StructType ? 'struct ${_structCName(pointee.moduleName, pointee.name)}' : _cType(pointee)} *',
       // An array value (a function return) is a wrapper struct. A declaration
       // and a parameter stay a C array — see [_cDecl] and [_cValueType].
       ArrayType(:final elem) => _cType(elem),
@@ -259,20 +268,72 @@ String _cType(KlinType type) => switch (type) {
       _ => throw StateError('emit: type `${type.displayName}` has no C type'),
     };
 
-String _cDecl(KlinType type, String name) => switch (type) {
-      // `_cType` of an array is only the element. A declaration keeps every
-      // bound: `[1][2]u8` is `uint8_t name[1][2]`, not `uint8_t name[1]`.
-      ArrayType() => () {
-          final shape = _arrayShape(type);
-          return '${_cType(shape.elem)} $name[${shape.lens.join('][')}]';
-        }(),
-      FnType(:final params, :final ret) => () {
-          final ps = params.isEmpty
-              ? 'void'
-              : params.map(_cType).join(', ');
-          return '${_cValueType(ret)} (*$name)($ps)';
-        }(),
-      _ => '${_cType(type)} $name',
+String _cDecl(KlinType type, String name) {
+  // `*mut [N]T` is `T (*name)[N]`, not `T (*)[N] name`. The abstract
+  // form is only legal in a cast or a parameter type (see [_cType]).
+  if (_typeNeedsPtrArrayDecl(type)) {
+    final parts = _declParts(type, name);
+    return '${parts.spec} ${parts.declarator}';
+  }
+  return switch (type) {
+    // `_cType` of an array is only the element. A declaration keeps every
+    // bound: `[1][2]u8` is `uint8_t name[1][2]`, not `uint8_t name[1]`.
+    ArrayType() => () {
+        final shape = _arrayShape(type);
+        return '${_cType(shape.elem)} $name[${shape.lens.join('][')}]';
+      }(),
+    FnType(:final params, :final ret) => () {
+        final ps = params.isEmpty ? 'void' : params.map(_cType).join(', ');
+        if (ret is! ArrayType && _typeNeedsPtrArrayDecl(ret)) {
+          final parts = _declParts(ret, '(*$name)($ps)');
+          return '${parts.spec} ${parts.declarator}';
+        }
+        return '${_cValueType(ret)} (*$name)($ps)';
+      }(),
+    _ => '${_cType(type)} $name',
+  };
+}
+
+/// True when [type] is a pointer to an array, or an array of those,
+/// under any number of further pointers. `*i32` and a bare `[N]T` are
+/// not: those already have a prefix spelling.
+bool _typeNeedsPtrArrayDecl(KlinType type) => typeNeedsPtrArrayDecl(type);
+
+/// Abstract declarator: `int32_t (*)[4]`, `struct Token (**)[2]`.
+String _ptrArrayAbstract(KlinType type) {
+  final parts = _declParts(type, '');
+  return '${parts.spec} ${parts.declarator}';
+}
+
+/// Build a C declarator from the outside in.
+///
+/// `*mut [4]*mut i32` is `int32_t *(*name)[4]`. A star is parenthesized
+/// when the pointee is an array, so `[]` does not bind tighter than `*`.
+/// `volatile` stays on the base type, matching a plain `*volatile T`.
+({String spec, String declarator}) _declParts(KlinType type, String name) {
+  switch (type) {
+    case PtrType(:final pointee, :final isVolatile):
+      final next = pointee is ArrayType ? '(*$name)' : '*$name';
+      final inner = _declParts(pointee, next);
+      final spec = isVolatile && !inner.spec.startsWith('volatile ')
+          ? 'volatile ${inner.spec}'
+          : inner.spec;
+      return (spec: spec, declarator: inner.declarator);
+    case ArrayType(:final elem, :final len):
+      return _declParts(elem, '$name[$len]');
+    default:
+      return (spec: _declSpec(type), declarator: name);
+  }
+}
+
+/// Specifier for the base of a pointer-to-array declarator.
+/// A struct uses the tag so the declarator is valid inside that struct
+/// and before the typedef name exists. `str` keeps a space before `*`.
+String _declSpec(KlinType type) => switch (type) {
+      StructType(:final moduleName, :final name) =>
+        'struct ${_structCName(moduleName, name)}',
+      StrType() => 'const char *',
+      _ => _cType(type),
     };
 
 /// Innermost element and every bound, outer first.
@@ -292,6 +353,14 @@ String _cDecl(KlinType type, String name) => switch (type) {
 /// [_cDecl] and stay C arrays.
 String _cValueType(KlinType type) =>
     type is ArrayType ? _arrayValueCName(type) : _cType(type);
+
+/// A value declaration. `*mut [N]T` is `T (*name)[N]`, not the abstract
+/// `T (*)[N] name`. `[N]T` returned by value is the wrapper struct.
+String _cValueDecl(KlinType type, String name) {
+  if (type is ArrayType) return '${_cValueType(type)} $name';
+  if (_typeNeedsPtrArrayDecl(type)) return _cDecl(type, name);
+  return '${_cType(type)} $name';
+}
 
 String _arrayValueCName(ArrayType type) => 'klin_${_typeToken(type)}';
 
@@ -338,9 +407,12 @@ String _sliceElemToken(KlinType elem) => switch (elem) {
 /// A struct element uses the tag (`struct mod_Token *ptr`) so the typedef
 /// can be emitted before the struct body is complete.
 String _slicePtrField(KlinType elem) {
-  if (elem is ArrayType) {
-    final shape = _arrayShape(elem);
-    return '${_slicePointee(shape.elem)} (*ptr)[${shape.lens.join('][')}]';
+  // `[][N]T` and `[]*mut [N]T` are a pointer to an array. The field
+  // declarator is `T (*ptr)[N]` or `T (**ptr)[N]`, not a prefix type.
+  final pointed = PtrType(elem);
+  if (_typeNeedsPtrArrayDecl(pointed)) {
+    final parts = _declParts(pointed, 'ptr');
+    return '${parts.spec} ${parts.declarator}';
   }
   final base = _slicePointee(elem);
   if (base.endsWith('*')) return '$base*ptr';
@@ -393,10 +465,152 @@ bool _sliceElemNeedsFn(KlinType elem) {
   }
 }
 
-/// A function pointer that returns an array of structs is emitted after
-/// that struct. A slice of it has to follow the typedef.
-bool _sliceElemIsLate(KlinType elem) =>
-    _sliceElemNeedsFn(elem) && typeNeedsStructArrayReturn(elem);
+/// `[]*mut [N]Token` is `struct Token (**ptr)[N]`. The struct must be
+/// complete. `[]Token` is `struct Token *` and is not.
+bool _sliceNeedsCompleteStruct(KlinType elem) =>
+    typeNeedsCompleteStructArray(SliceType(elem));
+
+/// `fn(): [N]Token` and `fn(): *mut [N]Token` both need the struct body
+/// before the function typedef.
+bool _fnNeedsCompleteStruct(FnType type) =>
+    typeNeedsStructArrayReturn(type) || typeNeedsCompleteStructArray(type);
+
+/// `[N]Token` and `[N]*mut [M]Token`. Not `[N]fn(): …` — that wrapper
+/// names the function typedef.
+bool _arrayReturnAfterStruct(ArrayType type) {
+  final elem = _arrayShape(type).elem;
+  if (elem is FnType) return false;
+  return elem is StructType || typeNeedsCompleteStructArray(type);
+}
+
+/// `[N]fn(): [M]Token` and `[N]fn(): *mut [M]Token`.
+bool _arrayReturnAfterLateFn(ArrayType type) {
+  final elem = _arrayShape(type).elem;
+  if (elem is! FnType) return false;
+  return typeNeedsStructArrayReturn(type) ||
+      typeNeedsCompleteStructArray(type);
+}
+
+String _resultOkField(KlinType ok) => _typeNeedsPtrArrayDecl(ok)
+    ? _cDecl(ok, 'ok')
+    : '${_cType(ok)} ok';
+
+/// Typedefs that need a struct body first.
+///
+/// Slices and array wrappers that do not name a function typedef come
+/// first (`fn(): []*mut [N]Token` uses that slice name). Function
+/// typedefs, slices of those functions, and `[N]fn(): …` wrappers are
+/// then ordered by what they name. A cycle is an emit error, not broken C.
+void _emitLateStructTypedefs(
+  StringBuffer buf,
+  Set<KlinType> sliceTypes,
+  List<FnType> lateFns,
+  Set<ArrayType> arrayReturns,
+) {
+  _emitSliceTypedefs(
+    buf,
+    sliceTypes.where((elem) =>
+        !_sliceElemNeedsFn(elem) && _sliceNeedsCompleteStruct(elem)),
+  );
+  _emitArrayReturnTypedefs(buf, arrayReturns.where(_arrayReturnAfterStruct));
+
+  final postSlices = sliceTypes
+      .where((elem) =>
+          _sliceElemNeedsFn(elem) && _sliceNeedsCompleteStruct(elem))
+      .toList();
+  final postArrays = arrayReturns.where(_arrayReturnAfterLateFn).toList();
+  if (lateFns.isEmpty && postSlices.isEmpty && postArrays.isEmpty) return;
+
+  final nodes = <String, void Function()>{};
+  final deps = <String, Set<String>>{};
+  String fnId(FnType type) => 'f:${_fnTypedefName(type)}';
+  String sliceId(KlinType elem) => 's:${_sliceCName(elem)}';
+  String arrId(ArrayType type) => 'a:${_arrayValueCName(type)}';
+
+  for (final fn in lateFns) {
+    final id = fnId(fn);
+    nodes[id] = () => _emitFnTypedefs(buf, [fn]);
+    deps[id] = {};
+  }
+  for (final elem in postSlices) {
+    final id = sliceId(elem);
+    nodes[id] = () => _emitSliceTypedefs(buf, [elem]);
+    deps[id] = {};
+  }
+  for (final type in postArrays) {
+    final id = arrId(type);
+    nodes[id] = () => _emitArrayReturnTypedefs(buf, [type]);
+    deps[id] = {};
+  }
+  final known = nodes.keys.toSet();
+
+  void depend(String from, KlinType type, {required bool valuePos}) {
+    switch (type) {
+      case SliceType(:final elem):
+        final id = sliceId(elem);
+        if (known.contains(id) && id != from) deps[from]!.add(id);
+        depend(from, elem, valuePos: false);
+      case FnType(:final params, :final ret):
+        final id = fnId(type);
+        if (known.contains(id) && id != from) deps[from]!.add(id);
+        for (final param in params) {
+          depend(from, param, valuePos: false);
+        }
+        depend(from, ret, valuePos: true);
+      case ArrayType(:final elem):
+        if (valuePos) {
+          final id = arrId(type);
+          if (known.contains(id) && id != from) deps[from]!.add(id);
+        }
+        depend(from, elem, valuePos: false);
+      case PtrType(:final pointee):
+        depend(from, pointee, valuePos: false);
+      case ResultType(:final ok):
+        depend(from, ok, valuePos: true);
+      default:
+        break;
+    }
+  }
+
+  for (final fn in lateFns) {
+    final id = fnId(fn);
+    for (final param in fn.params) {
+      depend(id, param, valuePos: false);
+    }
+    depend(id, fn.ret, valuePos: true);
+  }
+  for (final elem in postSlices) {
+    depend(sliceId(elem), elem, valuePos: false);
+  }
+  for (final type in postArrays) {
+    depend(arrId(type), _arrayShape(type).elem, valuePos: true);
+  }
+
+  final incoming = {
+    for (final id in nodes.keys) id: <String>{...deps[id]!},
+  };
+  final ready = [
+    for (final id in nodes.keys)
+      if (incoming[id]!.isEmpty) id,
+  ]..sort();
+  final emitted = <String>{};
+  while (ready.isNotEmpty) {
+    final id = ready.removeAt(0);
+    if (!emitted.add(id)) continue;
+    nodes[id]!();
+    for (final other in nodes.keys) {
+      if (incoming[other]!.remove(id) && incoming[other]!.isEmpty) {
+        ready.add(other);
+      }
+    }
+    ready.sort();
+  }
+  if (emitted.length != nodes.length) {
+    throw StateError(
+      'emit: typedefs that need a complete array of structs form a cycle',
+    );
+  }
+}
 
 /// Element types whose `s[a:]` is emitted as `klin_slice_tail_*`.
 /// Cleared at the start of each [emitC]. Filled while walking bodies.
@@ -774,7 +988,12 @@ void _emitFnTypedefs(StringBuffer buf, List<FnType> types) {
     final ps = type.params.isEmpty
         ? 'void'
         : type.params.map(_cType).join(', ');
-    buf.writeln('typedef ${_cValueType(type.ret)} (*$name)($ps);');
+    if (type.ret is! ArrayType && _typeNeedsPtrArrayDecl(type.ret)) {
+      final parts = _declParts(type.ret, '(*$name)($ps)');
+      buf.writeln('typedef ${parts.spec} ${parts.declarator};');
+    } else {
+      buf.writeln('typedef ${_cValueType(type.ret)} (*$name)($ps);');
+    }
   }
   if (types.isNotEmpty) buf.writeln();
 }
@@ -786,8 +1005,12 @@ void _emitArrayReturnTypedefs(StringBuffer buf, Iterable<ArrayType> types) {
     ..sort((a, b) => _typeToken(a).compareTo(_typeToken(b)));
   for (final type in list) {
     final shape = _arrayShape(type);
+    // `[N]*mut [M]T` is `T (*v[N])[M]`, not `T (*)[M] v[N]`.
+    final field = _typeNeedsPtrArrayDecl(type)
+        ? _cDecl(type, 'v')
+        : '${_cType(shape.elem)} v[${shape.lens.join('][')}]';
     buf.writeln(
-      'typedef struct { ${_cType(shape.elem)} v[${shape.lens.join('][')}]; } ${_arrayValueCName(type)};',
+      'typedef struct { $field; } ${_arrayValueCName(type)};',
     );
   }
   if (list.isNotEmpty) buf.writeln();

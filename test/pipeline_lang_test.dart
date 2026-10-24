@@ -2492,6 +2492,77 @@ fn main() {
     expect(c, isNot(contains('id((klin_slice_i32){ xs, 5 }).ptr')));
   });
 
+  test('slice and index through a pointer to an array', () {
+    const source = '''
+struct Token { k: i32 }
+struct Hold { buf: *mut [2]Token }
+fn get(p: *mut [4]i32): *mut [4]i32 { return p }
+fn pair(): [2]i32 { return [1, 2] }
+fn boom(): !*mut [2]i32 { return error(1) }
+fn idp(xs: []*mut [2]Token): []*mut [2]Token { return xs }
+fn take(p: *mut [2]Token): *mut [2]Token { return p }
+fn main() {
+  let mut xs: [4]i32 = [1, 2, 3, 4]
+  let mut p = cast(*mut [4]i32, cast(usize, &xs))
+  let mut s = (*p)[:]
+  let mid = (*p)[1:3]
+  let tail = (*p)[2:]
+  let head = (*p)[:2]
+  s[0] = 7
+  (*p)[1] = 8
+  let imm = cast(*[4]i32, cast(usize, &xs))
+  let mut copied = (*imm)[:]
+  copied[0] = 5
+  let mp: *mut i32 = &(*p)[:][0]
+  let ip: *i32 = &(*imm)[:][0]
+  let back = pair()
+  let bp = &back
+  let q: *mut *mut [4]i32 = &p
+  let mut n: i32 = 1
+  let mut row: [4]*mut i32 = [&n, &n, &n, &n]
+  let rp: *mut [4]*mut i32 = &row
+  let mut grid: [2][3]u8 = [[1, 2, 3], [4, 5, 6]]
+  let gp: *mut [2][3]u8 = &grid
+  let mut tok: [2]Token = [Token{ k: 1 }, Token{ k: 2 }]
+  let tp: *mut [2]Token = &tok
+  let h = Hold{ buf: tp }
+  let ts = (*tp)[:]
+  let f: fn(*mut [2]Token): *mut [2]Token = take
+  printf("%d\\n", mid.len + tail.len + head.len + (*bp)[0] + (*get(p))[0] + (*(*q))[0] + *(*rp)[0] + ts[0].k + (*h.buf)[0].k + *mp + *ip + cast(i32, (*gp)[0][0]) + (*f(tp))[0].k)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'slice_ptr_unit.kl');
+    expect(c, contains('int32_t (*p)[4]'));
+    expect(c, contains('(klin_slice_i32){ (*(p)), 4 }'));
+    expect(
+      c,
+      contains('((*(p))) + (size_t)(1)'),
+    );
+    expect(c, contains('(klin_slice_i32){ ((*(p))) + (size_t)(2), ((4) - (size_t)(2)) }'));
+    expect(c, contains('(klin_slice_i32){ (*(p)), (size_t)(2) }'));
+    expect(c, contains('(int32_t (*)[4])(uintptr_t)'));
+    expect(c, contains('struct Token (*tp)[2]'));
+    expect(c, contains('int32_t (*get(int32_t (*p)[4]))[4]'));
+    expect(c, contains('&(back.v)'));
+    expect(c, contains('int32_t (*ok)[2]'));
+    expect(c, contains('struct Token (**ptr)[2]'));
+    expect(c, contains('int32_t (**q)[4]'));
+    expect(c, contains('int32_t *(*rp)[4]'));
+    expect(c, contains('uint8_t (*gp)[2][3]'));
+    expect(c, contains('(*(p))[1] = 8'));
+    expect(
+      c.indexOf('typedef struct Token {'),
+      lessThan(c.indexOf('struct Token (**ptr)[2]')),
+    );
+    expect(
+      c,
+      contains('struct Token (*(*f)(struct Token (*)[2]))[2]'),
+    );
+    expect(c, isNot(contains('if (')));
+  });
+
   test('function field call emits h.cb(1), a non-fn field does not hide a method', () {
     const source = '''
 struct Holder { cb: fn(i32): i32 }
