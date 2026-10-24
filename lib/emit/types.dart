@@ -1,7 +1,194 @@
 part of '../emit_c.dart';
 
+/// C names for `argc` / `argv`. They stay off every name bound in `main`
+/// (the parameter and any local), so the host parameters are not a second
+/// declaration of the same identifier. `gcc` rejects that in one block.
+({String argc, String argv}) _mainHostNames(FuncDecl func) {
+  final used = <String>{
+    for (final param in func.params) param.name,
+  };
+  final body = func.body;
+  if (body != null) _collectBoundNames(body, used);
+  const pairs = <(String, String)>[
+    ('klin_argc', 'klin_argv'),
+    ('klin_main_argc', 'klin_main_argv'),
+  ];
+  for (final (argc, argv) in pairs) {
+    if (!used.contains(argc) && !used.contains(argv)) {
+      return (argc: argc, argv: argv);
+    }
+  }
+  var n = 2;
+  while (used.contains('klin_argc_$n') || used.contains('klin_argv_$n')) {
+    n++;
+  }
+  return (argc: 'klin_argc_$n', argv: 'klin_argv_$n');
+}
+
+void _collectBoundNames(Block block, Set<String> used) {
+  for (final stmt in block.stmts) {
+    _collectBoundNamesStmt(stmt, used);
+  }
+}
+
+void _collectBoundNamesStmt(Stmt stmt, Set<String> used) {
+  switch (stmt) {
+    case LetStmt(:final name, :final init):
+      used.add(name);
+      if (init != null) _collectBoundNamesExpr(init, used);
+    case LetDestructureStmt(:final binds, :final source):
+      used.addAll(binds);
+      _collectBoundNamesExpr(source, used);
+    case LetArrayDestructureStmt(:final names, :final source):
+      for (final name in names) {
+        if (name != null) used.add(name);
+      }
+      _collectBoundNamesExpr(source, used);
+    case AssignStmt(:final target, :final value):
+      _collectBoundNamesExpr(target, used);
+      _collectBoundNamesExpr(value, used);
+    case MultiAssignStmt(:final targets, :final values):
+      for (final target in targets) {
+        _collectBoundNamesExpr(target, used);
+      }
+      for (final value in values) {
+        _collectBoundNamesExpr(value, used);
+      }
+    case StructAssignStmt(:final source):
+      _collectBoundNamesExpr(source, used);
+    case ReturnStmt(:final value):
+      if (value != null) _collectBoundNamesExpr(value, used);
+    case IfStmt(:final cond, :final thenBlock, :final elseBranch):
+      _collectBoundNamesExpr(cond, used);
+      _collectBoundNames(thenBlock, used);
+      if (elseBranch != null) _collectBoundNamesStmt(elseBranch, used);
+    case WhileStmt(:final cond, :final body):
+      _collectBoundNamesExpr(cond, used);
+      _collectBoundNames(body, used);
+    case ForRangeStmt(:final name, :final start, :final endExclusive, :final body):
+      used.add(name);
+      _collectBoundNamesExpr(start, used);
+      _collectBoundNamesExpr(endExclusive, used);
+      _collectBoundNames(body, used);
+    case ForCStmt(
+        :final initName,
+        :final initDecl,
+        :final initExpr,
+        :final cond,
+        :final postExpr,
+        :final body,
+      ):
+      if (initDecl && initName != null) used.add(initName);
+      if (initExpr != null) _collectBoundNamesExpr(initExpr, used);
+      if (cond != null) _collectBoundNamesExpr(cond, used);
+      if (postExpr != null) _collectBoundNamesExpr(postExpr, used);
+      _collectBoundNames(body, used);
+    case MatchStmt(:final subject, :final arms):
+      _collectBoundNamesExpr(subject, used);
+      for (final arm in arms) {
+        if (arm.when != null) _collectBoundNamesExpr(arm.when!, used);
+        _collectBoundNames(arm.body, used);
+      }
+    case BlockStmt(:final block):
+      _collectBoundNames(block, used);
+    case DeferStmt(:final body):
+      _collectBoundNamesStmt(body, used);
+    case CallStmt(:final args):
+      for (final arg in args) {
+        _collectBoundNamesExpr(arg, used);
+      }
+    case MethodCallStmt(:final call):
+      _collectBoundNamesExpr(call, used);
+    case AwaitStmt(:final expr):
+      _collectBoundNamesExpr(expr, used);
+    default:
+      break;
+  }
+}
+
+/// Locals inside `or { … }` are emitted in the same function. A name there
+/// still collides with a C parameter of `main`.
+void _collectBoundNamesExpr(Expr expr, Set<String> used) {
+  switch (expr) {
+    case OrExpr(:final result, :final fallback):
+      _collectBoundNamesExpr(result, used);
+      for (final stmt in fallback.stmts) {
+        _collectBoundNamesStmt(stmt, used);
+      }
+      _collectBoundNamesExpr(fallback.value, used);
+    case BinaryExpr(:final left, :final right):
+      _collectBoundNamesExpr(left, used);
+      _collectBoundNamesExpr(right, used);
+    case UnaryExpr(:final operand):
+      _collectBoundNamesExpr(operand, used);
+    case GroupExpr(:final inner):
+      _collectBoundNamesExpr(inner, used);
+    case CallExpr(:final args):
+      for (final arg in args) {
+        _collectBoundNamesExpr(arg, used);
+      }
+    case MethodCallExpr(:final receiver, :final args):
+      _collectBoundNamesExpr(receiver, used);
+      for (final arg in args) {
+        _collectBoundNamesExpr(arg, used);
+      }
+    case FieldExpr(:final object):
+      _collectBoundNamesExpr(object, used);
+    case IndexExpr(:final object, :final index):
+      _collectBoundNamesExpr(object, used);
+      _collectBoundNamesExpr(index, used);
+    case SliceFromExpr(:final array, :final start, :final end):
+      _collectBoundNamesExpr(array, used);
+      if (start != null) _collectBoundNamesExpr(start, used);
+      if (end != null) _collectBoundNamesExpr(end, used);
+    case CastExpr(:final expr):
+      _collectBoundNamesExpr(expr, used);
+    case PickExpr(:final cond, :final thenExpr, :final elseExpr):
+      _collectBoundNamesExpr(cond, used);
+      _collectBoundNamesExpr(thenExpr, used);
+      _collectBoundNamesExpr(elseExpr, used);
+    case MatchExpr(:final subject, :final arms):
+      _collectBoundNamesExpr(subject, used);
+      for (final arm in arms) {
+        if (arm.when != null) _collectBoundNamesExpr(arm.when!, used);
+        _collectBoundNamesExpr(arm.body, used);
+      }
+    case ArrayLitExpr(:final elements):
+      for (final element in elements) {
+        _collectBoundNamesExpr(element, used);
+      }
+    case StructLitExpr(:final namedFields, :final positionalFields):
+      if (namedFields != null) {
+        for (final value in namedFields.values) {
+          _collectBoundNamesExpr(value, used);
+        }
+      }
+      if (positionalFields != null) {
+        for (final value in positionalFields) {
+          _collectBoundNamesExpr(value, used);
+        }
+      }
+    case PropagateExpr(:final result):
+      _collectBoundNamesExpr(result, used);
+    case ErrorExpr(:final code):
+      _collectBoundNamesExpr(code, used);
+    case AwaitExpr(:final operand):
+      _collectBoundNamesExpr(operand, used);
+    case InterpolatedStringExpr(:final parts):
+      for (final part in parts) {
+        if (part is InterpSlot) _collectBoundNamesExpr(part.expr, used);
+      }
+    default:
+      break;
+  }
+}
+
 String _functionHeader(FuncDecl func) {
-  if (func.name == 'main') return 'int main(void)';
+  if (func.name == 'main') {
+    if (func.params.isEmpty) return 'int main(void)';
+    final host = _mainHostNames(func);
+    return 'int main(int ${host.argc}, char **${host.argv})';
+  }
   final returnType = func.resolvedReturnType;
   if (returnType == null) {
     throw StateError('emit: missing return type for function `${func.name}`');
@@ -129,10 +316,143 @@ int _fnTypeDepth(FnType type) {
   return depth;
 }
 
-String _sliceCName(PrimType elem) => 'klin_slice_${elem.kind.klinName}';
+/// `[]u8` → `klin_slice_u8`. `[][]u8` → `klin_slice_slice_u8`.
+/// A struct uses its C name (`klin_slice_mod_Token`), so two modules
+/// do not share a typedef.
+String _sliceCName(KlinType elem) => 'klin_slice_${_sliceElemToken(elem)}';
 
-void _collectSliceTypes(KlinType? type, Set<PrimType> output) {
-  if (type case SliceType(:final elem)) output.add(elem);
+/// Token used inside [_sliceCName]. Nested slices unwrap so the name does
+/// not repeat the `klin_slice_` prefix (`slice_u8`, not `klin_slice_u8`).
+/// Arrays and pointers unwrap the same way (`arr2_slice_u8`, `ptr_slice_u8`).
+String _sliceElemToken(KlinType elem) => switch (elem) {
+      SliceType(:final elem) => 'slice_${_sliceElemToken(elem)}',
+      ArrayType(:final elem, :final len) => 'arr${len}_${_sliceElemToken(elem)}',
+      PtrType(:final pointee, :final isMut, :final isVolatile) =>
+        '${isMut ? 'mut_' : ''}${isVolatile ? 'volatile_' : ''}ptr_${_sliceElemToken(pointee)}',
+      FnType(:final params, :final ret) =>
+        'fn_${params.map(_sliceElemToken).join('_')}_${_sliceElemToken(ret)}',
+      _ => _typeToken(elem),
+    };
+
+/// `ptr` field of a slice typedef. Primitive slices stay `int32_t *ptr`.
+/// A struct element uses the tag (`struct mod_Token *ptr`) so the typedef
+/// can be emitted before the struct body is complete.
+String _slicePtrField(KlinType elem) {
+  if (elem is ArrayType) {
+    final shape = _arrayShape(elem);
+    return '${_slicePointee(shape.elem)} (*ptr)[${shape.lens.join('][')}]';
+  }
+  final base = _slicePointee(elem);
+  if (base.endsWith('*')) return '$base*ptr';
+  return '$base *ptr';
+}
+
+String _slicePointee(KlinType elem) {
+  if (elem is StrType) return 'const char *';
+  if (elem is StructType) {
+    return 'struct ${_structCName(elem.moduleName, elem.name)}';
+  }
+  if (elem is PrimType) return elem.kind.cType;
+  return _cType(elem);
+}
+
+/// How many slice typedefs [type] names. Inner typedefs sort first, so
+/// `[][2][]u8` emits `klin_slice_u8` before `klin_slice_arr2_slice_u8`.
+int _sliceDepDepth(KlinType type) {
+  switch (type) {
+    case SliceType(:final elem):
+      return 1 + _sliceDepDepth(elem);
+    case ArrayType(:final elem):
+    case PtrType(pointee: final elem):
+      return _sliceDepDepth(elem);
+    case FnType(:final params, :final ret):
+      var depth = _sliceDepDepth(ret);
+      for (final param in params) {
+        final paramDepth = _sliceDepDepth(param);
+        if (paramDepth > depth) depth = paramDepth;
+      }
+      return depth;
+    default:
+      return 0;
+  }
+}
+
+/// True when the slice typedef names a function-pointer typedef.
+bool _sliceElemNeedsFn(KlinType elem) {
+  switch (elem) {
+    case FnType():
+      return true;
+    case SliceType(:final elem):
+      return _sliceElemNeedsFn(elem);
+    case ArrayType(:final elem):
+      return _sliceElemNeedsFn(elem);
+    case PtrType(:final pointee):
+      return _sliceElemNeedsFn(pointee);
+    default:
+      return false;
+  }
+}
+
+/// A function pointer that returns an array of structs is emitted after
+/// that struct. A slice of it has to follow the typedef.
+bool _sliceElemIsLate(KlinType elem) =>
+    _sliceElemNeedsFn(elem) && typeNeedsStructArrayReturn(elem);
+
+/// Element types whose `s[a:]` is emitted as `klin_slice_tail_*`.
+/// Cleared at the start of each [emitC]. Filled while walking bodies.
+final Set<KlinType> _sliceTailElems = {};
+
+void _noteSliceTail(Expr array, Expr? start, Expr? end) {
+  if (!_sliceOpenTailNeedsHelper(array, start, end)) return;
+  final type = array.resolvedType;
+  switch (type) {
+    case ArrayType(:final elem):
+    case SliceType(:final elem):
+      _sliceTailElems.add(elem);
+    default:
+      break;
+  }
+}
+
+String _sliceTailHelperName(KlinType elem) =>
+    'klin_slice_tail_${_sliceElemToken(elem)}';
+
+/// One evaluation of a slice header and its start bound. An expression,
+/// so it is valid in a loop condition. The typedef already exists.
+void _emitSliceTailHelpers(StringBuffer buf) {
+  if (_sliceTailElems.isEmpty) return;
+  final list = _sliceTailElems.toList()
+    ..sort((a, b) => _sliceCName(a).compareTo(_sliceCName(b)));
+  for (final elem in list) {
+    final slice = _sliceCName(elem);
+    final name = _sliceTailHelperName(elem);
+    buf.writeln('static $slice $name($slice s, size_t start) {');
+    buf.writeln('    return ($slice){ s.ptr + start, s.len - start };');
+    buf.writeln('}');
+    buf.writeln();
+  }
+}
+
+void _emitSliceTypedefs(StringBuffer buf, Iterable<KlinType> elems) {
+  final list = elems.toList()
+    ..sort((a, b) {
+      final byNest = _sliceDepDepth(a).compareTo(_sliceDepDepth(b));
+      if (byNest != 0) return byNest;
+      return _sliceCName(a).compareTo(_sliceCName(b));
+    });
+  for (final elem in list) {
+    buf.writeln(
+      'typedef struct { ${_slicePtrField(elem)}; size_t len; } ${_sliceCName(elem)};',
+    );
+  }
+  if (list.isNotEmpty) buf.writeln();
+}
+
+void _collectSliceTypes(KlinType? type, Set<KlinType> output) {
+  if (type case SliceType(:final elem)) {
+    output.add(elem);
+    _collectSliceTypes(elem, output);
+  }
   if (type case PtrType(:final pointee)) _collectSliceTypes(pointee, output);
   if (type case ArrayType(:final elem)) _collectSliceTypes(elem, output);
   if (type case ResultType(:final ok)) _collectSliceTypes(ok, output);
@@ -154,6 +474,7 @@ void _collectFnTypes(KlinType? type, Set<FnType> output) {
   }
   if (type case PtrType(:final pointee)) _collectFnTypes(pointee, output);
   if (type case ArrayType(:final elem)) _collectFnTypes(elem, output);
+  if (type case SliceType(:final elem)) _collectFnTypes(elem, output);
   if (type case ResultType(:final ok)) _collectFnTypes(ok, output);
 }
 
@@ -174,7 +495,7 @@ void _collectResultTypes(KlinType? type, Set<ResultType> output) {
 
 /// Set while walking bodies so a slice that exists only as a local
 /// (`let s = xs[:]`) still gets a `klin_slice_*` typedef.
-Set<PrimType>? _sliceTypesFromWalk;
+Set<KlinType>? _sliceTypesFromWalk;
 
 void _noteSliceType(KlinType? type) {
   final dest = _sliceTypesFromWalk;
@@ -185,7 +506,7 @@ void _noteSliceType(KlinType? type) {
 /// Slice typedefs are emitted from signatures and struct fields. Locals and
 /// temporaries are not on those lists — walk bodies when [output] is the
 /// set about to be emitted.
-void _collectSliceTypesInBodies(Program program, Set<PrimType> output) {
+void _collectSliceTypesInBodies(Program program, Set<KlinType> output) {
   final saved = _sliceTypesFromWalk;
   _sliceTypesFromWalk = output;
   final unused = <ResultType>{};
@@ -331,8 +652,11 @@ void _collectResultTypesFromExpr(Expr expr, Set<ResultType> output) {
           _collectResultTypesFromExpr(v, output);
         }
       }
-    case SliceFromExpr(:final array):
+    case SliceFromExpr(:final array, :final start, :final end):
       _collectResultTypesFromExpr(array, output);
+      if (start != null) _collectResultTypesFromExpr(start, output);
+      if (end != null) _collectResultTypesFromExpr(end, output);
+      _noteSliceTail(array, start, end);
     case AwaitExpr(:final operand):
       _collectResultTypesFromExpr(operand, output);
     case InterpolatedStringExpr(:final parts):
@@ -367,6 +691,8 @@ Set<ArrayType> _arrayReturnTypes(Program program) {
         }
       case PtrType(:final pointee):
         walk(pointee);
+      case SliceType(:final elem):
+        walk(elem);
       case ResultType(:final ok):
         walk(ok);
       default:

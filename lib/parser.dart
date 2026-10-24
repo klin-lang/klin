@@ -1586,17 +1586,32 @@ final class Parser {
     while (_check(TokenKind.dot) || _check(TokenKind.lBracket)) {
       if (_check(TokenKind.lBracket)) {
         final bracket = _advance();
+        // `xs[:]`, `xs[:b]`, `xs[a:]`, `xs[a:b]`. A `:` after the `[`
+        // or after one expression is a subslice, not an index.
         if (_check(TokenKind.colon)) {
           _advance();
+          final end = _optionalSliceBound();
           _expect(TokenKind.rBracket, 'expected `]` after `:`');
-          expr = SliceFromExpr(array: expr, pos: bracket.pos);
+          expr = SliceFromExpr(array: expr, end: end, pos: bracket.pos);
         } else {
           final savedNoStructIndex = _noStructLit;
           _noStructLit = false;
-          final index = _expr();
+          final first = _expr();
           _noStructLit = savedNoStructIndex;
-          _expect(TokenKind.rBracket, 'expected `]` after the index');
-          expr = IndexExpr(object: expr, index: index, pos: bracket.pos);
+          if (_check(TokenKind.colon)) {
+            _advance();
+            final end = _optionalSliceBound();
+            _expect(TokenKind.rBracket, 'expected `]` after `:`');
+            expr = SliceFromExpr(
+              array: expr,
+              start: first,
+              end: end,
+              pos: bracket.pos,
+            );
+          } else {
+            _expect(TokenKind.rBracket, 'expected `]` after the index');
+            expr = IndexExpr(object: expr, index: first, pos: bracket.pos);
+          }
         }
         continue;
       }
@@ -1619,6 +1634,17 @@ final class Parser {
       }
     }
     return expr;
+  }
+
+  /// Bound after `:` in `xs[:b]` / `xs[a:b]`. Absent when the next token
+  /// is `]` (`xs[:]`, `xs[a:]`).
+  Expr? _optionalSliceBound() {
+    if (_check(TokenKind.rBracket)) return null;
+    final saved = _noStructLit;
+    _noStructLit = false;
+    final bound = _expr();
+    _noStructLit = saved;
+    return bound;
   }
 
   StructLitExpr _structLit(Token typeName, {String? moduleName}) {

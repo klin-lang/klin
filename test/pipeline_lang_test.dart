@@ -2382,4 +2382,237 @@ fn main() {
     final program = Parser(Lexer(source).tokenize()).parse();
     expect(() => Checker().check(program), returnsNormally);
   });
+
+  test('checker: match and pick adopt []str and []struct elements', () {
+    const source = '''
+struct Tok { n: i32 }
+fn main() {
+  let k = 0
+  let xs: [2]Tok = [Tok{ n: 1 }, Tok{ n: 2 }]
+  let row: [2]Tok = match k {
+    0 { [Tok{ n: 1 + 2 }, Tok{ n: 4 }] }
+    else { [Tok{ n: 8 }, Tok{ n: 9 }] }
+  }
+  let words: [2]str = ["ab", "cd"]
+  let names: [2]str = pick k == 0 { ["ab", "cd"] } { ["e", "f"] }
+  let view: []Tok = match k {
+    0 { xs[:] }
+    else { error(1) }
+  } or { xs[0:1] }
+  let text: []str = pick true { words[:] } { names[0:1] }
+  printf("%d %d %d %s %d\\n", row[0].n, row[1].n, view.len, text[0], text.len)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(() => Checker().check(program), returnsNormally);
+    final c = emitC(program, 'match_slice_elem.kl');
+    expect(c, contains('(Tok){ .n = 3 }'));
+    expect(c, contains('klin_arr2_str names'));
+    expect(c, contains('klin_slice_Tok view'));
+    expect(c, contains('klin_slice_str text'));
+    expect(c, isNot(contains('1 + 2')));
+  });
+
+  test('slice of a struct emits a tag pointer before the struct body', () {
+    const source = '''
+struct Token { k: i32 }
+struct Node { kids: []Node
+    value: i32 }
+fn main() {
+  let xs: [1]Token = [Token{ k: 1 }]
+  let s = xs[:]
+  let mut empty: []Node
+  let n = Node{ kids: empty, value: s[0].k }
+  printf("%d\\n", n.kids.len)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'slice_struct_unit.kl');
+    expect(
+      c,
+      contains(
+        'typedef struct { struct Token *ptr; size_t len; } klin_slice_Token;',
+      ),
+    );
+    expect(
+      c,
+      contains(
+        'typedef struct { struct Node *ptr; size_t len; } klin_slice_Node;',
+      ),
+    );
+    expect(
+      c.indexOf('klin_slice_Node;'),
+      lessThan(c.indexOf('typedef struct Node {')),
+    );
+    expect(c, contains('s.ptr[0].k'));
+  });
+
+  test('subslice of an array is pointer plus length, no check', () {
+    const source = '''
+fn id(xs: []i32): []i32 { return xs }
+fn main() {
+  let xs: [5]i32 = [10, 20, 30, 40, 50]
+  let mid = xs[1:4]
+  let tail = xs[3:]
+  let head = xs[:2]
+  let again = id(xs)[1:]
+  printf("%d\\n", mid[0] + tail.len + head[1] + again[0])
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'slice_range_unit.kl');
+    expect(
+      c,
+      contains('(klin_slice_i32){ (xs) + (size_t)(1), ((size_t)(4) - (size_t)(1)) }'),
+    );
+    expect(
+      c,
+      contains('(klin_slice_i32){ (xs) + (size_t)(3), ((5) - (size_t)(3)) }'),
+    );
+    expect(c, contains('(klin_slice_i32){ xs, (size_t)(2) }'));
+    expect(
+      c,
+      contains(
+        'static klin_slice_i32 klin_slice_tail_i32(klin_slice_i32 s, size_t start) {',
+      ),
+    );
+    expect(
+      c,
+      contains('return (klin_slice_i32){ s.ptr + start, s.len - start };'),
+    );
+    expect(
+      c,
+      contains(
+        'klin_slice_tail_i32(id((klin_slice_i32){ xs, 5 }), (size_t)(1))',
+      ),
+    );
+    expect(c, isNot(contains('klin_val_0')));
+    expect(c, isNot(contains('id((klin_slice_i32){ xs, 5 }).ptr')));
+  });
+
+  test('function field call emits h.cb(1), a non-fn field does not hide a method', () {
+    const source = '''
+struct Holder { cb: fn(i32): i32 }
+struct Box { n: i32 }
+fn inc(x: i32): i32 { return x + 1 }
+fn (b: Box) n(): i32 { return b.n }
+fn main() {
+  let h = Holder{ cb: inc }
+  let p: *Holder = &h
+  printf("%d\\n", h.cb(1))
+  printf("%d\\n", (*p).cb(4))
+  let b = Box{ n: 3 }
+  printf("%d\\n", b.n())
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'fn_field_unit.kl');
+    expect(c, contains('h.cb(1)'));
+    expect(c, contains('(*(p)).cb(4)'));
+    expect(c, contains('Box_n(b)'));
+    expect(c, isNot(contains('Holder_cb')));
+  });
+
+  test('pointer and integer casts use uintptr_t and intptr_t', () {
+    const source = '''
+fn main() {
+  let x: i32 = 1
+  let a = cast(usize, &x)
+  let b = cast(i64, &x)
+  let n: i64 = 0
+  let u: u64 = 0
+  let p = cast(*i32, n)
+  let q = cast(*i32, u)
+  let r = cast(*i32, 0)
+  printf("%d\\n", cast(i32, a) + cast(i32, b) + *p + *q + *r)
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'ptr_int_unit.kl');
+    expect(c, contains('(size_t)(uintptr_t)(&(x))'));
+    expect(c, contains('(int64_t)(intptr_t)(&(x))'));
+    expect(c, contains('(int32_t *)(intptr_t)(n)'));
+    expect(c, contains('(int32_t *)(uintptr_t)(u)'));
+    expect(c, contains('(int32_t *)(uintptr_t)(0)'));
+  });
+
+  test('main() stays int main(void)', () {
+    const source = '''
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'main_void_unit.kl');
+    expect(c, contains('int main(void)'));
+    expect(c, isNot(contains('klin_argc')));
+  });
+
+  test('main(args: []str) is argc/argv under names that do not collide', () {
+    const source = '''
+fn main(args: []str) {
+  printf("%d\\n", cast(i32, args.len))
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'main_args_unit.kl');
+    expect(c, contains('int main(int klin_argc, char **klin_argv)'));
+    expect(
+      c,
+      contains(
+        'klin_slice_str args = { (const char **)klin_argv, (size_t)klin_argc };',
+      ),
+    );
+    expect(c, isNot(contains('strlen')));
+  });
+
+  test('main parameter named klin_argc uses a different C name', () {
+    const source = '''
+fn main(klin_argc: []str) {
+  printf("%d\\n", cast(i32, klin_argc.len))
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'main_argc_name_unit.kl');
+    expect(
+      c,
+      contains('int main(int klin_main_argc, char **klin_main_argv)'),
+    );
+    expect(
+      c,
+      contains(
+        'klin_slice_str klin_argc = { (const char **)klin_main_argv, (size_t)klin_main_argc };',
+      ),
+    );
+  });
+
+  test('main local named klin_argc does not reuse that C parameter', () {
+    const source = '''
+fn main(args: []str) {
+  let klin_argc = 1
+  let klin_argv = 2
+  printf("%d\\n", klin_argc + klin_argv + cast(i32, args.len))
+}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'main_local_argc_unit.kl');
+    expect(
+      c,
+      contains('int main(int klin_main_argc, char **klin_main_argv)'),
+    );
+    expect(c, contains('int32_t klin_argc = 1;'));
+    expect(c, contains('int32_t klin_argv = 2;'));
+    expect(
+      c,
+      contains(
+        'klin_slice_str args = { (const char **)klin_main_argv, (size_t)klin_main_argc };',
+      ),
+    );
+  });
 }

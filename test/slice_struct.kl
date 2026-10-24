@@ -1,0 +1,90 @@
+struct Token {
+    kind: i32
+    n: i32
+}
+
+struct Bag {
+    items: []Token
+}
+
+struct Node {
+    kids: []Node
+    value: i32
+}
+
+enum Tag: u8 { A, B }
+
+fn id(x: i32): i32 { return x }
+
+fn sum_kind(xs: []Token): i32 {
+    let mut i = 0
+    let mut acc = 0
+    while i < xs.len {
+        acc = acc + xs[i].kind
+        i = i + 1
+    }
+    return acc
+}
+
+fn first_byte(rows: [][]u8): i32 {
+    return cast(i32, rows[0][0])
+}
+
+fn first_word(args: []str): str {
+    return args[0]
+}
+
+fn tag_of(xs: []Tag): i32 {
+    return cast(i32, xs[0])
+}
+
+fn apply0(fs: []fn(i32): i32): i32 {
+    let f = fs[0]
+    return f(7)
+}
+
+fn main() {
+    let mut xs: [2]Token = [Token{ kind: 3, n: 1 }, Token{ kind: 4, n: 2 }]
+    let mut s = xs[:]
+    s[0].n = 9
+    s[1] = Token{ kind: 5, n: 6 }
+    let p = &s[0]
+    (*p).kind = 8
+    xs[:][1].n = 7
+    let view = xs[:]
+    let q: *Token = &view[0]
+    let bag = Bag{ items: xs[:] }
+    printf("%d %d %d %d %d\n", sum_kind(xs), xs[0].kind, xs[0].n, (*q).n, bag.items.len)
+
+    let row: [2]u8 = [10, 20]
+    let rows: [1][2]u8 = [[10, 20]]
+    let rs: [][2]u8 = rows[:]
+    let one: []u8 = row[:]
+    let table: [1][]u8 = [one]
+    printf("%d %d %d %d\n", rs.len, rs[0].len, rs[0][1], first_byte(table[:]))
+
+    let grid: [1][2][]u8 = [[one, one]]
+    let gs = grid[:]
+    printf("%d %d\n", gs.len, gs[0][1][0])
+
+    let words: [2]str = ["hi", "yo"]
+    printf("%s %d\n", first_word(words[:]), words[:].len)
+
+    let tags: [1]Tag = [Tag.B]
+    printf("%d\n", tag_of(tags[:]))
+
+    let mut x: i32 = 1
+    let ptrs: [1]*mut i32 = [&x]
+    let ps = ptrs[:]
+    *ps[0] = 6
+    printf("%d\n", x)
+
+    let fs: [1]fn(i32): i32 = [id]
+    printf("%d\n", apply0(fs[:]))
+
+    let mut empty: []Node
+    let mut child = Node{ kids: empty, value: 4 }
+    let mut kids: [1]Node = [child]
+    let parent = Node{ kids: kids[:], value: 1 }
+    printf("%d %d %d\n", parent.value, parent.kids.len, parent.kids[0].value)
+}

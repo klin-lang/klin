@@ -295,8 +295,10 @@ final class _CollectNav {
       case IndexExpr(:final object, :final index):
         walkExpr(object);
         walkExpr(index);
-      case SliceFromExpr(:final array):
+      case SliceFromExpr(:final array, :final start, :final end):
         walkExpr(array);
+        if (start != null) walkExpr(start);
+        if (end != null) walkExpr(end);
       case ArrayLitExpr(:final elements):
         for (final el in elements) {
           walkExpr(el);
@@ -481,8 +483,10 @@ final class _NavWalker {
       case IndexExpr(:final object, :final index):
         walkExpr(object);
         walkExpr(index);
-      case SliceFromExpr(:final array):
+      case SliceFromExpr(:final array, :final start, :final end):
         walkExpr(array);
+        if (start != null) walkExpr(start);
+        if (end != null) walkExpr(end);
       case ArrayLitExpr(:final elements):
         for (final el in elements) {
           walkExpr(el);

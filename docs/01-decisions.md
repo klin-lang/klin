@@ -252,8 +252,10 @@ tables, messages, and paths want the bytes. A second literal keeps
   then `s[0] = 1`, or a `[]u8` parameter). A mutable slice cannot be
   bound to those bytes: `let mut s = b"fn"`, `let mut s = KW`,
   `let mut w = s` when `s` already points at them, and
-  `for s := b"fn"`. A mutable `[]u8` local cannot be assigned them
-  either (`let mut s = xs[:]; s = b"fn"`). `pick`, `match`, and `or`
+  `for s := b"fn"`. A subslice is those same bytes: `let mut s =
+  b"ab"[0:1]`, `b"ab"[0:]`, `b"ab"[:1]`, `KW[0:1]`, and `s[0:1]` when
+  `s` already points at them. A mutable `[]u8` local cannot be assigned
+  them either (`let mut s = xs[:]; s = b"fn"`). `pick`, `match`, and `or`
   count as read-only when any arm is, because the checker does not
   know which arm runs. Copy into a `[N]u8` to modify.
   An immutable module `let kw: []u8 = b"fn"` (or `= KW`) is those same
@@ -374,8 +376,10 @@ and `&limit` is `*i32`. `let mut` is assignable and `&n` is `*mut i32`.
   float arithmetic of constant floats, array and struct literals of
   those, an enum variant, `cast` of a constant to a pointer, prim, or
   enum, the address of a global, a `const`, a function, a field, or a
-  constant index of a global array, `xs[:]` of a global array, and a
-  function name (a function-pointer initializer, including `mod.func`).
+  constant index of a global array, `xs[:]`, `xs[a:b]`, `xs[a:]`, and
+  `xs[:b]` of a global array when `a` and `b` are constant expressions,
+  and a function name (a function-pointer initializer, including
+  `mod.func`).
   A global's value is not a constant — C cannot copy that object into
   static storage. A non-constant initializer is
   `global initializer must be a constant expression`.
@@ -570,6 +574,179 @@ extension (`let a: [0]u8 = []`, D12).
 `async fn` still returns void. A struct field cannot be a function
 type that returns an array of structs — the wrapper needs that struct
 to be complete. A parameter or a local of that function type is fine.
+
+## D14. Slice element type — DECIDED
+
+**Choice: `[]T` is `{ T *ptr; size_t len; }` for any value `T` C can point at.**
+Not only a primitive.
+
+`[]Token`, `[]str`, `[][]u8`, `[]*T`, `[]fn(i32): i32`, and `[][N]u8`
+are the same two-word header as `[]i32`. No allocation, no capacity,
+no bounds check (an index is still a C index). `.len` is the header's
+`len`. `s[i].field` is `s.ptr[i].field`.
+
+- Allowed elements: a primitive, a struct, an enum, `str`, a pointer,
+  a slice, a function pointer, or an array whose element is one of
+  those and is not itself a struct.
+- `xs[:]` on `[N]Token` has type `[]Token`. The pointer is the array
+  (it decays to `struct Token *`). `rows[i][:]` on `[N][M]Token` is
+  `[]Token` — one row. A slice whose element is the row array
+  (`[][M]Token`, or `rows[:]`) is rejected: the slice typedef would
+  need `Token` complete, and a struct that stored that slice would
+  need the typedef first.
+- `[]!T` and `[]void` are errors.
+- Writes and `&s[i]` follow the slice place (D5). `let mut s = xs[:]`
+  can write `s[i].field`. An immutable binding and a slice parameter
+  cannot. `&s[i]` is `*mut T` when that place is mutable and `*T`
+  when it is not.
+- The C typedef is `klin_slice_<element>`. A struct element uses the
+  struct tag (`struct mod_Token *ptr`) so the typedef can come before
+  the struct body. `struct Node { kids: []Node }` is that order.
+  A nested slice is `klin_slice_slice_u8` (the inner typedef first).
+  A slice of a function pointer is emitted after that function typedef.
+
+```klin
+struct Token {
+    kind: i32
+    n: i32
+}
+
+fn sum_kind(xs: []Token): i32 {
+    let mut i = 0
+    let mut acc = 0
+    while i < xs.len {
+        acc = acc + xs[i].kind
+        i = i + 1
+    }
+    return acc
+}
+```
+
+## D15. Subslice — DECIDED
+
+**Choice: `xs[a:b]`, `xs[a:]`, and `xs[:b]` are a header. No runtime bounds check.**
+
+Same policy as indexing. Issue 007 considered a check and did not add
+one; a subslice does not add a hidden branch either. `a` and `b` are
+integers, or an enum used the same way as an array index (it must fit
+a fixed array; a slice rejects it). The pointer is `base + a` (`base`
+when `a` is omitted). The length is `b - a`, or `len - a` when `b` is
+omitted, or `b` when `a` is omitted. Each bound is converted to
+`size_t` so the header field stays `size_t`. Out of range, `a > b`,
+and a negative bound are undefined behavior — not a Klin error and
+not a check in the generated C.
+
+The result is `[]T` over the same elements. Mutability follows the
+source place (D5), including through another subslice: `let mut xs`
+makes `xs[a:b][i] = …` a write; an immutable binding, a slice
+parameter, a byte-string literal, and a `const` do not. `&xs[a:b][i]`
+is `*mut T` or `*T` by that same place. A subslice of read-only bytes
+is those bytes (D10): `let mut s = b"ab"[0:1]` (also `[0:]`, `[:1]`,
+a `[]u8` const, and a binding that already points at them) is an
+error, not a mutable header. `let s = b"ab"[0:1]` stays legal and is
+itself read-only. A `[]u8` parameter's subslice is not tracked.
+
+An array subslice needs an l-value, the same rule as `xs[:]`. A slice
+`s[:]` is that header. `s[a:]` reads the pointer and the length. When
+the source is not a plain place, or the start is not a plain place or
+an integer literal, C is one call to `klin_slice_tail_*`. That call is
+an expression, so a `while` or `for` condition evaluates it on every
+check, and the start bound is a single argument. A plain `xs[1:]`
+stays inline (`base + a`, `len - a`). `s[:b]` and `s[a:b]` read only
+the pointer. Two calls in one tail (`take(xs)[step():]`) each run
+once; C does not sequence the helper's two arguments.
+
+```klin
+fn main() {
+    let mut xs: [5]i32 = [10, 20, 30, 40, 50]
+    let mut mid = xs[1:4]
+    mid[0] = 7
+    printf("%d %d\n", mid.len, xs[1])
+}
+```
+
+## D16. Function field call — DECIDED
+
+**Choice: `h.cb(1)` calls a function-typed field. A method of the same name conflicts.**
+
+The parser already treats `name(` on the same line as a call. The checker decides what it calls:
+
+- A method and no function field of that name: the method, as before.
+  A field that is not a function does not hide the method (`n: i32` and
+  `fn (b: Box) n()` — `b.n()` is the method, `b.n` is the field).
+- A function field and no method: the call is `h.cb(1)` in C (the field
+  is a function pointer). `(*p).cb(1)` is the same. There is no
+  auto-deref (`p.cb` on a `*Holder` is still not a method call) and no
+  `s[i](…)` postfix. Calling does not require the place to be mutable.
+- Both a method and a function field, including a private method:
+  `ambiguous call \`cb\`: \`Holder\` has both a method and a function field of that name`.
+- A field that is not a function, and no method:
+  `field \`cb\` has type \`i32\`, not a function`.
+- Neither: `type \`Holder\` has no method \`cb\``.
+
+```klin
+struct Holder {
+    cb: fn(i32): i32
+}
+
+fn inc(x: i32): i32 { return x + 1 }
+
+fn main() {
+    let h = Holder{ cb: inc }
+    printf("%d\n", h.cb(1))
+}
+```
+
+## D17. Pointer and integer cast — DECIDED
+
+**Choice: `cast` between a pointer and an integer goes through `uintptr_t` or `intptr_t`.**
+
+`stdint.h` is already included. The cast is the only conversion; there is
+no pointer arithmetic (`p + 1` is not a pointer add).
+
+- Pointer → unsigned (`usize`, `u8`…`u64`): `(target)(uintptr_t)ptr`.
+- Pointer → signed (`isize`, `i8`…`i64`): `(target)(intptr_t)ptr`.
+  A narrower target truncates, like any other numeric cast.
+- Unsigned, untyped integer, or pointer → pointer: `(T *)(uintptr_t)…`
+  (unchanged).
+- Signed integer → pointer: `(T *)(intptr_t)…`.
+- Not a float, not `bool`, not a function pointer. `cast(f64, &x)` is
+  `cast from a pointer requires an integer type`.
+
+```klin
+fn main() {
+    let mut x: i32 = 42
+    let a = cast(usize, &x)
+    let p: *mut i32 = cast(*mut i32, a)
+    *p = 7
+    printf("%d\n", x)
+}
+```
+
+## D18. `main` arguments — DECIDED
+
+**Choice: `fn main()` or `fn main(args: []str)`. Not `[][]u8`.**
+
+`[]str` is the argv pointer and the count. One cast from `char **` to
+`const char **`, no loop, no allocation. `[][]u8` would measure every
+argument (`strlen`) and build a slice per argument — hidden work, so
+it is not the signature. Kliner can still read `/proc/self/cmdline`;
+the language path is this parameter.
+
+`args.len` is `argc`, including `argv[0]`. The slice is immutable
+(a parameter, D5). A negative `argc` is not checked; the host does
+not pass one. C parameters are `klin_argc` and `klin_argv`. When
+either name is already bound in `main` (the parameter, or a local,
+including one inside `or`), the next free pair is
+`klin_main_argc` / `klin_main_argv`, then `klin_argc_2` /
+`klin_argv_2`. `main()` with no parameters stays `int main(void)`.
+`async fn main` stays rejected.
+
+```klin
+fn main(args: []str) {
+    printf("%d\n", cast(i32, args.len))
+}
+```
 
 ## D7. To decide later
 

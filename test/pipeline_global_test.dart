@@ -424,4 +424,66 @@ fn main() {
           e is CheckError && e.toString().contains('`n` is not a function'))),
     );
   });
+
+  test('global subslice of an array is a constant brace initializer', () {
+    const source = '''
+module app
+let mut xs: [5]i32 = [10, 20, 30, 40, 50]
+let mut mid: []i32 = xs[1:4]
+let mut tail: []i32 = xs[3:]
+let mut head: []i32 = xs[:2]
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    Checker().check(program);
+    final c = emitC(program, 'global_subslice_unit.kl');
+    expect(
+      c,
+      contains(
+        'static klin_slice_i32 mid = { (xs) + (size_t)(1), ((size_t)(4) - (size_t)(1)) };',
+      ),
+    );
+    expect(
+      c,
+      contains(
+        'static klin_slice_i32 tail = { (xs) + (size_t)(3), ((5) - (size_t)(3)) };',
+      ),
+    );
+    expect(
+      c,
+      contains('static klin_slice_i32 head = { xs, (size_t)(2) };'),
+    );
+  });
+
+  test('error: a slice global is not a constant slice source', () {
+    const source = '''
+let mut xs: [3]i32 = [1, 2, 3]
+let mut view: []i32 = xs[:]
+let mut again: []i32 = view[:]
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError &&
+          e.toString().contains('must be a constant expression'))),
+    );
+  });
+
+  test('error: a global subslice bound must be a constant', () {
+    const source = '''
+fn one(): i32 { return 1 }
+let mut xs: [3]i32 = [1, 2, 3]
+let mut mid: []i32 = xs[one():]
+fn main() {}
+''';
+    final program = Parser(Lexer(source).tokenize()).parse();
+    expect(
+      () => Checker().check(program),
+      throwsA(predicate((e) =>
+          e is CheckError &&
+          e.toString().contains('must be a constant expression'))),
+    );
+  });
 }

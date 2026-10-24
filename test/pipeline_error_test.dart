@@ -1797,6 +1797,66 @@ fn main() {
 ''',
         'cannot bind read-only bytes',
       ),
+      (
+        '''
+fn main() {
+  let mut s = b"ab"[0:1]
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut s = b"ab"[0:]
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut s = b"ab"[:1]
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+const KW: []u8 = b"fn"
+fn main() {
+  let mut s = KW[0:1]
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let s = b"ab"[0:1]
+  let mut w = s
+}
+''',
+        'cannot bind read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut xs: [2]u8 = [1, 2]
+  let mut s = xs[:]
+  s = b"ab"[1:]
+}
+''',
+        'cannot assign read-only bytes',
+      ),
+      (
+        '''
+fn main() {
+  let mut s = pick true { b"ab"[0:1] } { b"cd"[:1] }
+}
+''',
+        'cannot bind read-only bytes',
+      ),
     ];
     for (final item in cases) {
       final program = Parser(Lexer(item.$1).tokenize()).parse();
@@ -2908,5 +2968,194 @@ fn main() {
   } or { 1 }
 }
 ''', 'integer literal `300` is out of range for `u8` (0..=255)');
+  });
+
+  test('error: slice element cannot be a result', () {
+    expectRange('''
+fn main() {
+  let s: []!i32
+}
+''', 'slice element cannot be a result type');
+  });
+
+  test('error: slice element cannot be void', () {
+    expectRange('''
+fn main() {
+  let s: []void
+}
+''', 'slice element cannot be `void`');
+  });
+
+  test('error: slice of an array of structs', () {
+    expectRange('''
+struct Token { k: i32 }
+fn main() {
+  let rows: [1][1]Token = [[Token{ k: 1 }]]
+  let s = rows[:]
+}
+''', 'slice element cannot be an array of structs');
+  });
+
+  test('error: cannot assign a field through an immutable struct slice', () {
+    expectRange('''
+struct Token { k: i32 }
+fn main() {
+  let xs: [1]Token = [Token{ k: 1 }]
+  let s = xs[:]
+  s[0].k = 2
+}
+''', 'cannot assign through an immutable slice');
+  });
+
+  test('error: subslice of an immutable array', () {
+    expectRange('''
+fn main() {
+  let xs: [3]i32 = [1, 2, 3]
+  xs[1:3][0] = 9
+}
+''', 'cannot assign to an immutable array');
+  });
+
+  test('error: subslice of an immutable slice parameter', () {
+    expectRange('''
+fn f(s: []i32) {
+  s[0:1][0] = 1
+}
+fn main() {}
+''', 'cannot assign through an immutable slice');
+  });
+
+  test('error: subslice of a byte string', () {
+    expectRange('''
+fn main() {
+  b"fn"[0:1][0] = 65
+}
+''', 'cannot assign through a byte-string literal');
+  });
+
+  test('error: subslice of a []u8 constant', () {
+    expectRange('''
+const S: []u8 = b"ab"
+fn main() {
+  S[0:1][0] = 1
+}
+''', 'cannot assign through a constant');
+  });
+
+  test('error: slice bound must be an integer', () {
+    expectRange('''
+fn main() {
+  let xs: [3]i32 = [1, 2, 3]
+  let s = xs[1:true]
+}
+''', 'slice bound requires an integer or enum type');
+  });
+
+  test('error: function field and method share a name', () {
+    expectRange('''
+struct Holder { cb: fn(i32): i32 }
+fn inc(x: i32): i32 { return x }
+fn (h: Holder) cb(x: i32): i32 { return x }
+fn main() {
+  let h = Holder{ cb: inc }
+  h.cb(1)
+}
+''', 'ambiguous call `cb`');
+  });
+
+  test('error: private method and function field are ambiguous', () {
+    final dir = Directory.systemTemp.createTempSync('klin_fn_field_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    File('${dir.path}/holder.kl').writeAsStringSync('''
+module holder
+pub struct Holder {
+  cb: fn(i32): i32
+}
+fn (h: Holder) cb(x: i32): i32 { return x }
+''');
+    File('${dir.path}/app.kl').writeAsStringSync('''
+module app
+import holder
+fn inc(x: i32): i32 { return x + 1 }
+fn main() {
+  let h = holder.Holder{ cb: inc }
+  h.cb(1)
+}
+''');
+    final program = loadProject('${dir.path}/app.kl');
+    expect(
+      () => Checker().check(program),
+      throwsA(
+        predicate(
+          (e) =>
+              e is CheckError &&
+              e.toString().contains('ambiguous call `cb`') &&
+              e.toString().contains('holder.Holder'),
+        ),
+      ),
+    );
+  });
+
+  test('error: call a non-function field', () {
+    expectRange('''
+struct Holder { n: i32 }
+fn main() {
+  let h = Holder{ n: 1 }
+  h.n(1)
+}
+''', 'field `n` has type `i32`, not a function');
+  });
+
+  test('error: cast pointer to float', () {
+    expectRange('''
+fn main() {
+  let x = 1
+  let n = cast(f64, &x)
+}
+''', 'cast from a pointer requires an integer type');
+  });
+
+  test('error: cast pointer to bool', () {
+    expectRange('''
+fn main() {
+  let x = 1
+  let n = cast(bool, &x)
+}
+''', 'cast from a pointer requires an integer type');
+  });
+
+  test('error: main with an integer parameter', () {
+    expectRange('''
+fn main(argc: i32) {}
+''', '`main` takes no parameters, or one parameter of type `[]str`');
+  });
+
+  test('error: main with [][]u8', () {
+    expectRange('''
+fn main(args: [][]u8) {}
+''', '`main` takes no parameters, or one parameter of type `[]str`');
+  });
+
+  test('error: main with two parameters', () {
+    expectRange('''
+fn main(args: []str, extra: i32) {}
+''', '`main` takes no parameters, or one parameter of type `[]str`');
+  });
+
+  test('error: assign through main args', () {
+    expectRange('''
+fn main(args: []str) {
+  args[0] = "no"
+}
+''', 'cannot assign through an immutable slice');
+  });
+
+  test('error: slice range on a non-array', () {
+    expectRange('''
+fn main() {
+  let x = 1
+  let s = x[0:1]
+}
+''', 'a slice range requires an array or slice');
   });
 }

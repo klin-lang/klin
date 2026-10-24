@@ -26,6 +26,11 @@ fn main() {
 declaration. Everything else needs `@[cimport]` ([09-ffi-c.md](09-ffi-c.md)).
 An untyped integer argument folds as `i32` (`printf("%d\n", 1 + 2)` is `3`).
 
+`fn main()` takes no arguments. `fn main(args: []str)` is the process
+arguments: `args.len` is `argc` (including the program name) and
+`args[0]` is `argv[0]`. The slice is immutable. Other signatures are
+an error ([D18](01-decisions.md)).
+
 ## 2. Values
 
 ```klin
@@ -227,7 +232,15 @@ fn main() {
   struct (`a[0]` in Klin). A zero-length array cannot be returned, and
   `pick` / `match` cannot produce one
   ([01-decisions.md](01-decisions.md) D13)
-- `[]T` — slice `{ ptr, len }` (and `cap` where allocated)
+- `[]T` — slice `{ ptr, len }` (and `cap` where allocated).
+  `T` is a primitive, a struct, an enum, `str`, a pointer, a slice,
+  a function, or an array that is not an array of structs.
+  `xs[:]` on `[N]Token` is `[]Token`; `s[i].kind` reads a field.
+  A slice of an array of structs (`[][N]Token`) is an error.
+  Writes and `&s[i]` follow the slice place, same as `[]i32`.
+  `xs[a:b]`, `xs[a:]`, and `xs[:b]` are a subslice of an array or a
+  slice: a new `{ptr, len}` over the same elements, no bounds check.
+  A write through that view follows the source place
 - No hidden allocation. Heap is `import mem` and an explicit
   `Allocator` ([14-allocator.md](14-allocator.md))
 
